@@ -1,0 +1,22 @@
+{
+  "name": "deped-leave-tracker-backend",
+  "version": "1.0.0",
+  "description": "Backend for DepEd Employee Leave Tracker",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node src/app.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "mysql2": "^2.3.3",
+    "jsonwebtoken": "^8.5.1",
+    "dotenv": "^10.0.0",
+    "body-parser": "^1.19.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7"
+  },
+  "author": "Alexis P. Torrefiel",
+  "license": "ISC"
+}
