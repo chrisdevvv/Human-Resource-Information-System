@@ -1,54 +1,81 @@
-const db = require('../config/db');
+﻿const pool = require('../config/db');
 
 const Leave = {
-    createLeave: (leaveData, callback) => {
-        const query = 'INSERT INTO leaves (employee_id, leave_type, start_date, end_date, status) VALUES (?, ?, ?, ?, ?)';
-        db.query(query, [leaveData.employee_id, leaveData.leave_type, leaveData.start_date, leaveData.end_date, leaveData.status], (error, results) => {
-            if (error) {
-                return callback(error);
-            }
-            return callback(null, results);
-        });
+    getAll: async () => {
+        const [rows] = await pool.promise().query(`
+            SELECT leaves.*, employees.full_name, employees.employee_type
+            FROM leaves
+            JOIN employees ON leaves.employee_id = employees.id
+        `);
+        return rows;
     },
 
-    getLeaveById: (leaveId, callback) => {
-        const query = 'SELECT * FROM leaves WHERE id = ?';
-        db.query(query, [leaveId], (error, results) => {
-            if (error) {
-                return callback(error);
-            }
-            return callback(null, results[0]);
-        });
+    getById: async (id) => {
+        const [rows] = await pool.promise().query(`
+            SELECT leaves.*, employees.full_name, employees.employee_type
+            FROM leaves
+            JOIN employees ON leaves.employee_id = employees.id
+            WHERE leaves.id = ?
+        `, [id]);
+        return rows[0];
     },
 
-    updateLeave: (leaveId, leaveData, callback) => {
-        const query = 'UPDATE leaves SET leave_type = ?, start_date = ?, end_date = ?, status = ? WHERE id = ?';
-        db.query(query, [leaveData.leave_type, leaveData.start_date, leaveData.end_date, leaveData.status, leaveId], (error, results) => {
-            if (error) {
-                return callback(error);
-            }
-            return callback(null, results);
-        });
+    getByEmployeeId: async (employee_id) => {
+        const [rows] = await pool.promise().query('SELECT * FROM leaves WHERE employee_id = ?', [employee_id]);
+        return rows;
     },
 
-    deleteLeave: (leaveId, callback) => {
-        const query = 'DELETE FROM leaves WHERE id = ?';
-        db.query(query, [leaveId], (error, results) => {
-            if (error) {
-                return callback(error);
-            }
-            return callback(null, results);
-        });
+    create: async (data) => {
+        const {
+            employee_id, period_of_leave, particulars,
+            earned_vl, abs_with_pay_vl, abs_without_pay_vl, bal_vl,
+            earned_sl, abs_with_pay_sl, abs_without_pay_sl, bal_sl,
+            date_of_action
+        } = data;
+        const [result] = await pool.promise().query(
+            `INSERT INTO leaves (
+                employee_id, period_of_leave, particulars,
+                earned_vl, abs_with_pay_vl, abs_without_pay_vl, bal_vl,
+                earned_sl, abs_with_pay_sl, abs_without_pay_sl, bal_sl,
+                date_of_action
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                employee_id, period_of_leave, particulars,
+                earned_vl, abs_with_pay_vl, abs_without_pay_vl, bal_vl,
+                earned_sl, abs_with_pay_sl, abs_without_pay_sl, bal_sl,
+                date_of_action
+            ]
+        );
+        return result;
     },
 
-    getAllLeaves: (callback) => {
-        const query = 'SELECT * FROM leaves';
-        db.query(query, (error, results) => {
-            if (error) {
-                return callback(error);
-            }
-            return callback(null, results);
-        });
+    update: async (id, data) => {
+        const {
+            period_of_leave, particulars,
+            earned_vl, abs_with_pay_vl, abs_without_pay_vl, bal_vl,
+            earned_sl, abs_with_pay_sl, abs_without_pay_sl, bal_sl,
+            date_of_action
+        } = data;
+        const [result] = await pool.promise().query(
+            `UPDATE leaves SET
+                period_of_leave = ?, particulars = ?,
+                earned_vl = ?, abs_with_pay_vl = ?, abs_without_pay_vl = ?, bal_vl = ?,
+                earned_sl = ?, abs_with_pay_sl = ?, abs_without_pay_sl = ?, bal_sl = ?,
+                date_of_action = ?
+            WHERE id = ?`,
+            [
+                period_of_leave, particulars,
+                earned_vl, abs_with_pay_vl, abs_without_pay_vl, bal_vl,
+                earned_sl, abs_with_pay_sl, abs_without_pay_sl, bal_sl,
+                date_of_action, id
+            ]
+        );
+        return result;
+    },
+
+    delete: async (id) => {
+        const [result] = await pool.promise().query('DELETE FROM leaves WHERE id = ?', [id]);
+        return result;
     }
 };
 

@@ -1,54 +1,53 @@
-﻿const db = require('../config/db');
+﻿const pool = require('../config/db');
 
 const Employee = {
-    create: (employeeData, callback) => {
-        const query = 'INSERT INTO employees SET ?';
-        db.query(query, employeeData, (error, results) => {
-            if (error) {
-                return callback(error);
-            }
-            callback(null, results.insertId);
-        });
+    getAll: async () => {
+        const [rows] = await pool.promise().query(`
+            SELECT employees.*, schools.school_name
+            FROM employees
+            JOIN schools ON employees.school_id = schools.id
+        `);
+        return rows;
     },
 
-    getAll: (callback) => {
-        const query = 'SELECT * FROM employees';
-        db.query(query, (error, results) => {
-            if (error) {
-                return callback(error);
-            }
-            callback(null, results);
-        });
+    getById: async (id) => {
+        const [rows] = await pool.promise().query(`
+            SELECT employees.*, schools.school_name
+            FROM employees
+            JOIN schools ON employees.school_id = schools.id
+            WHERE employees.id = ?
+        `, [id]);
+        return rows[0];
     },
 
-    getById: (id, callback) => {
-        const query = 'SELECT * FROM employees WHERE id = ?';
-        db.query(query, [id], (error, results) => {
-            if (error) {
-                return callback(error);
-            }
-            callback(null, results[0]);
-        });
+    getBySchool: async (school_id) => {
+        const [rows] = await pool.promise().query(
+            'SELECT * FROM employees WHERE school_id = ?', [school_id]
+        );
+        return rows;
     },
 
-    update: (id, employeeData, callback) => {
-        const query = 'UPDATE employees SET ? WHERE id = ?';
-        db.query(query, [employeeData, id], (error, results) => {
-            if (error) {
-                return callback(error);
-            }
-            callback(null, results.affectedRows);
-        });
+    create: async (data) => {
+        const { first_name, last_name, email, employee_type, school_id } = data;
+        const [result] = await pool.promise().query(
+            'INSERT INTO employees (first_name, last_name, email, employee_type, school_id) VALUES (?, ?, ?, ?, ?)',
+            [first_name, last_name, email, employee_type, school_id]
+        );
+        return result;
     },
 
-    delete: (id, callback) => {
-        const query = 'DELETE FROM employees WHERE id = ?';
-        db.query(query, [id], (error, results) => {
-            if (error) {
-                return callback(error);
-            }
-            callback(null, results.affectedRows);
-        });
+    update: async (id, data) => {
+        const { first_name, last_name, email, employee_type, school_id } = data;
+        const [result] = await pool.promise().query(
+            'UPDATE employees SET first_name = ?, last_name = ?, email = ?, employee_type = ?, school_id = ? WHERE id = ?',
+            [first_name, last_name, email, employee_type, school_id, id]
+        );
+        return result;
+    },
+
+    delete: async (id) => {
+        const [result] = await pool.promise().query('DELETE FROM employees WHERE id = ?', [id]);
+        return result;
     }
 };
 

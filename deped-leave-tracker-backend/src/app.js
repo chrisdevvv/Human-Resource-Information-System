@@ -4,6 +4,9 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const authRoutes = require('./routes/authRoutes');
 const leaveRoutes = require('./routes/leaveRoutes');
+const employeeRoutes = require('./routes/employeeRoutes');
+const schoolRoutes = require('./routes/schoolRoutes');
+const backlogRoutes = require('./routes/backlogRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,6 +19,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/leave', leaveRoutes);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/schools', schoolRoutes);
+app.use('/api/backlogs', backlogRoutes);
 
 // Start the server
 app.listen(PORT, () => {

@@ -1,44 +1,58 @@
 ﻿const Leave = require('../models/leave');
 
-const createLeaveRequest = (req, res) => {
-    const leaveData = req.body;
-    Leave.createLeave(leaveData, (err, result) => {
-        if (err) return res.status(500).json({ message: 'Error creating leave request', error: err.message });
+const createLeaveRequest = async (req, res) => {
+    try {
+        const result = await Leave.create(req.body);
         res.status(201).json({ message: 'Leave request created successfully', data: result });
-    });
+    } catch (err) {
+        res.status(500).json({ message: 'Error creating leave request', error: err.message });
+    }
 };
 
-const getAllLeaveRequests = (req, res) => {
-    Leave.getAllLeaves((err, results) => {
-        if (err) return res.status(500).json({ message: 'Error retrieving leave requests', error: err.message });
+const getAllLeaveRequests = async (req, res) => {
+    try {
+        const results = await Leave.getAll();
         res.status(200).json({ data: results });
-    });
+    } catch (err) {
+        res.status(500).json({ message: 'Error retrieving leave requests', error: err.message });
+    }
 };
 
-const getLeaveRequestById = (req, res) => {
-    const { id } = req.params;
-    Leave.getLeaveById(id, (err, result) => {
-        if (err) return res.status(500).json({ message: 'Error retrieving leave request', error: err.message });
+const getLeaveRequestById = async (req, res) => {
+    try {
+        const result = await Leave.getById(req.params.id);
         if (!result) return res.status(404).json({ message: 'Leave request not found' });
         res.status(200).json({ data: result });
-    });
+    } catch (err) {
+        res.status(500).json({ message: 'Error retrieving leave request', error: err.message });
+    }
 };
 
-const updateLeaveRequest = (req, res) => {
-    const { id } = req.params;
-    const leaveData = req.body;
-    Leave.updateLeave(id, leaveData, (err, result) => {
-        if (err) return res.status(500).json({ message: 'Error updating leave request', error: err.message });
+const getLeavesByEmployee = async (req, res) => {
+    try {
+        const results = await Leave.getByEmployeeId(req.params.employee_id);
+        res.status(200).json({ data: results });
+    } catch (err) {
+        res.status(500).json({ message: 'Error retrieving leave requests', error: err.message });
+    }
+};
+
+const updateLeaveRequest = async (req, res) => {
+    try {
+        const result = await Leave.update(req.params.id, req.body);
         res.status(200).json({ message: 'Leave request updated successfully', data: result });
-    });
+    } catch (err) {
+        res.status(500).json({ message: 'Error updating leave request', error: err.message });
+    }
 };
 
-const deleteLeaveRequest = (req, res) => {
-    const { id } = req.params;
-    Leave.deleteLeave(id, (err, result) => {
-        if (err) return res.status(500).json({ message: 'Error deleting leave request', error: err.message });
+const deleteLeaveRequest = async (req, res) => {
+    try {
+        const result = await Leave.delete(req.params.id);
         res.status(200).json({ message: 'Leave request deleted successfully', data: result });
-    });
+    } catch (err) {
+        res.status(500).json({ message: 'Error deleting leave request', error: err.message });
+    }
 };
 
-module.exports = { createLeaveRequest, getAllLeaveRequests, getLeaveRequestById, updateLeaveRequest, deleteLeaveRequest };
+module.exports = { createLeaveRequest, getAllLeaveRequests, getLeaveRequestById, getLeavesByEmployee, updateLeaveRequest, deleteLeaveRequest };
