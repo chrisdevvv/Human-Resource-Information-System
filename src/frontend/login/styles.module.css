@@ -1,0 +1,223 @@
+.loginPage {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: var(--primary, #0056b3);
+  font-family:
+    Poppins,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial;
+}
+
+.container {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.welcomeCardWrapper {
+  text-align: center;
+}
+
+.welcomeCard {
+  background: #fff;
+  color: var(--text-dark);
+  width: 920px;
+  max-width: 96%;
+  padding: 48px 56px;
+  border-radius: 12px;
+  box-shadow: 0 18px 36px rgba(11, 35, 60, 0.18);
+  text-align: center;
+}
+.welcomeCard h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+}
+.welcomeCard p {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+}
+.brandLogo {
+  display: block;
+  margin: 16px auto;
+  max-width: 140px;
+}
+
+/* modal overlay */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 180ms ease;
+  will-change: opacity;
+}
+.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.modalContent {
+  position: relative;
+  background: var(--card-bg, #fff);
+  padding: 28px;
+  border-radius: 10px;
+  min-width: 360px;
+  max-width: 640px;
+  width: 560px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
+  border: 2px solid var(--primary);
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+.modalContent h3 {
+  text-align: center;
+  margin: 4px 0 10px;
+  font-size: 20px;
+}
+
+.modalClose {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  border: 0;
+  background: transparent;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* inputs + icons */
+.inputWithIcon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.inputWithIcon i {
+  width: 34px;
+  text-align: center;
+  color: var(--primary);
+  font-size: 16px;
+}
+.inputWithIcon input {
+  flex: 1;
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 6px;
+  margin-bottom: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+}
+
+.btnPrimary {
+  background: var(--primary, #2b6ea3);
+  color: #fff;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btnCancel {
+  background: transparent;
+  border: 1px solid #ccc;
+  color: inherit;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.modalActions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* inline message for forgot-password (appear under input) */
+.forgotMsg {
+  color: #d9534f;
+  margin-top: 6px;
+  font-size: 13px;
+  display: block;
+}
+
+/* forgot steps */
+.forgotSlider {
+  display: none;
+}
+.forgotTrack {
+  display: flex;
+  width: 200%;
+  transform: translateX(0%);
+  transition: transform 220ms ease;
+}
+.forgotSlide {
+  flex: 0 0 50%;
+  box-sizing: border-box;
+  padding-right: 12px;
+}
+.forgotSlide .inputWithIcon {
+  margin-bottom: 6px;
+}
+
+.errorModal {
+  max-width: 420px;
+}
+.errorIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 700px) {
+  .loginPage {
+    padding: 20px;
+  }
+  .welcomeCard {
+    width: 94%;
+    padding: 22px;
+  }
+  .welcomeCard h2 {
+    font-size: 22px;
+  }
+  .brandLogo {
+    max-width: 110px;
+  }
+  .modalContent {
+    width: 94%;
+    padding: 16px;
+    min-width: auto;
+  }
+  .modalActions {
+    flex-direction: column;
+  }
+  .modalActions .btnPrimary,
+  .modalActions .btnCancel {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .welcomeCard {
+    padding: 16px;
+  }
+  .welcomeCard h2 {
+    font-size: 18px;
+  }
+  .brandLogo {
+    max-width: 96px;
+  }
+}
