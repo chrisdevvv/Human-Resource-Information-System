@@ -2,7 +2,7 @@
 // Component: LoginPage
 // Filename: LoginPage.tsx
 // Purpose: Compose welcome card and modals; manage visibility state for the login landing
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   WelcomeCard,
   LoginModal,
@@ -11,6 +11,12 @@ import {
   RegistrationModal,
 } from "./components";
 
+const backgroundImages = [
+  "/images/deped-bg.jpg",
+  "/images/deped-bg-2.jpg",
+  "/images/deped-bg-3.jpg",
+];
+
 export default function LoginPage() {
   const [showLogin, setShowLogin] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
@@ -18,13 +24,46 @@ export default function LoginPage() {
   const [error, setError] = useState<{ title?: string; desc?: string } | null>(
     null,
   );
+  const [currentBgIndex, setCurrentBgIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentBgIndex(
+        (prevIndex) => (prevIndex + 1) % backgroundImages.length,
+      );
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-blue-600 flex items-center justify-center p-10">
-      <div className="max-w-3xl w-full">
+    <div className="min-h-screen flex items-center justify-center p-10 relative overflow-hidden">
+      {/* Background images with fade transition */}
+      {backgroundImages.map((image, index) => (
+        <div
+          key={image}
+          className="absolute inset-0 transition-opacity duration-1000 ease-in-out"
+          style={{
+            backgroundImage: `url(${image})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+            opacity: currentBgIndex === index ? 1 : 0,
+            zIndex: 0,
+          }}
+        />
+      ))}
+
+      {/* Blur and grey overlay */}
+      <div className="absolute inset-0 bg-gray-600/50 backdrop-blur-sm z-1"></div>
+
+      <div className="max-w-3xl w-full relative z-10">
         <main>
           <div className="text-center">
-            <WelcomeCard onLogin={() => setShowLogin(true)} />
+            <WelcomeCard
+              onLogin={() => setShowLogin(true)}
+              onRegister={() => setShowRegister(true)}
+            />
           </div>
         </main>
       </div>
@@ -36,10 +75,6 @@ export default function LoginPage() {
         onOpenForgot={() => {
           setShowLogin(false);
           setShowForgot(true);
-        }}
-        onOpenRegister={() => {
-          setShowLogin(false);
-          setShowRegister(true);
         }}
       />
 

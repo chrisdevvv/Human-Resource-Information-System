@@ -3,7 +3,7 @@
 // Filename: RegistrationModal.tsx
 // Purpose: Simple registration modal placeholder to be opened from the login modal
 import React, { useState } from "react";
-import { Mail, Key, User, X } from "../../assets/icons";
+import { Mail, Key, User, X, Building2 } from "../../assets/icons";
 
 type Props = {
   visible: boolean;
@@ -11,12 +11,300 @@ type Props = {
 };
 
 export default function RegistrationModal({ visible, onClose }: Props) {
-  const [name, setName] = useState("");
+  const [step, setStep] = useState(1);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [school, setSchool] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  function submit() {
-    // Placeholder: replace with real registration logic
+  // Individual field errors
+  const [firstNameError, setFirstNameError] = useState("");
+  const [lastNameError, setLastNameError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [schoolError, setSchoolError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
+
+  function validateEmail(email: string) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  }
+
+  function validateName(name: string) {
+    // At least 2 characters, letters only (including spaces and hyphens)
+    const re = /^[a-zA-Z\s\-]{2,}$/;
+    return re.test(name.trim());
+  }
+
+  function validatePassword(password: string) {
+    // At least 8 characters, must contain uppercase, lowercase, number, and special char
+    if (password.length < 8)
+      return {
+        valid: false,
+        message: "Password must be at least 8 characters",
+      };
+    if (!/[A-Z]/.test(password))
+      return {
+        valid: false,
+        message: "Password must contain an uppercase letter",
+      };
+    if (!/[a-z]/.test(password))
+      return {
+        valid: false,
+        message: "Password must contain a lowercase letter",
+      };
+    if (!/[0-9]/.test(password))
+      return { valid: false, message: "Password must contain a number" };
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password))
+      return {
+        valid: false,
+        message: "Password must contain a special character",
+      };
+    return { valid: true, message: "" };
+  }
+
+  function validateSchool(school: string) {
+    const trimmed = school.trim();
+    if (!trimmed) return { valid: false, message: "School name is required" };
+    if (trimmed.length < 3)
+      return {
+        valid: false,
+        message: "School name must be at least 3 characters",
+      };
+
+    // Check if first letter is capitalized
+    if (!/^[A-Z]/.test(trimmed))
+      return {
+        valid: false,
+        message: "School name must start with a capital letter",
+      };
+
+    // Check for proper capitalization (words should start with capital letters)
+    // Allow common lowercase words like "of", "the", "and", "for", "in"
+    const words = trimmed.split(/\s+/);
+    const invalidWords = words.filter((word, index) => {
+      // Skip empty words
+      if (!word) return false;
+      // First word must be capitalized (already checked above)
+      // Other words: allow lowercase for articles/prepositions, but check others
+      const commonLowercase = [
+        "of",
+        "the",
+        "and",
+        "for",
+        "in",
+        "at",
+        "to",
+        "a",
+        "an",
+      ];
+      if (index > 0 && commonLowercase.includes(word.toLowerCase())) {
+        return false; // Allow these words in lowercase
+      }
+      // Other words should start with capital letter
+      return !/^[A-Z]/.test(word);
+    });
+
+    if (invalidWords.length > 0)
+      return {
+        valid: false,
+        message: "Each major word should start with a capital letter",
+      };
+
+    // Check if it ends with proper punctuation (optional period or no punctuation)
+    // Just ensure it doesn't end with invalid characters
+    if (/[,;:]$/.test(trimmed))
+      return {
+        valid: false,
+        message: "School name should not end with comma, semicolon, or colon",
+      };
+
+    return { valid: true, message: "" };
+  }
+
+  function handleFirstNameBlur() {
+    if (!firstName.trim()) {
+      setFirstNameError("First name is required");
+    } else if (!validateName(firstName)) {
+      setFirstNameError("First name must be at least 2 letters");
+    } else {
+      setFirstNameError("");
+    }
+  }
+
+  function handleLastNameBlur() {
+    if (!lastName.trim()) {
+      setLastNameError("Last name is required");
+    } else if (!validateName(lastName)) {
+      setLastNameError("Last name must be at least 2 letters");
+    } else {
+      setLastNameError("");
+    }
+  }
+
+  function handleEmailBlur() {
+    if (!email.trim()) {
+      setEmailError("Email is required");
+    } else if (!validateEmail(email)) {
+      setEmailError("Please enter a valid email address");
+    } else {
+      setEmailError("");
+    }
+  }
+
+  function handleSchoolBlur() {
+    const validation = validateSchool(school);
+    if (!validation.valid) {
+      setSchoolError(validation.message);
+    } else {
+      setSchoolError("");
+    }
+  }
+
+  function handlePasswordBlur() {
+    const validation = validatePassword(password);
+    if (!password.trim()) {
+      setPasswordError("Password is required");
+    } else if (!validation.valid) {
+      setPasswordError(validation.message);
+    } else {
+      setPasswordError("");
+    }
+  }
+
+  function handleConfirmPasswordBlur() {
+    if (!confirmPassword.trim()) {
+      setConfirmPasswordError("Please confirm your password");
+    } else if (password !== confirmPassword) {
+      setConfirmPasswordError("Passwords do not match");
+    } else {
+      setConfirmPasswordError("");
+    }
+  }
+
+  function handleStep1Submit() {
+    setError("");
+    let hasError = false;
+
+    if (!firstName.trim()) {
+      setFirstNameError("First name is required");
+      hasError = true;
+    } else if (!validateName(firstName)) {
+      setFirstNameError("First name must be at least 2 letters");
+      hasError = true;
+    }
+
+    if (!lastName.trim()) {
+      setLastNameError("Last name is required");
+      hasError = true;
+    } else if (!validateName(lastName)) {
+      setLastNameError("Last name must be at least 2 letters");
+      hasError = true;
+    }
+
+    if (!email.trim()) {
+      setEmailError("Email is required");
+      hasError = true;
+    } else if (!validateEmail(email)) {
+      setEmailError("Please enter a valid email address");
+      hasError = true;
+    }
+
+    const schoolValidation = validateSchool(school);
+    if (!schoolValidation.valid) {
+      setSchoolError(schoolValidation.message);
+      hasError = true;
+    }
+
+    if (hasError) {
+      setError("Please correct the errors before continuing");
+      return;
+    }
+
+    setStep(2);
+  }
+
+  async function handleStep2Submit() {
+    setError("");
+    let hasError = false;
+
+    const passwordValidation = validatePassword(password);
+    if (!password.trim()) {
+      setPasswordError("Password is required");
+      hasError = true;
+    } else if (!passwordValidation.valid) {
+      setPasswordError(passwordValidation.message);
+      hasError = true;
+    }
+
+    if (!confirmPassword.trim()) {
+      setConfirmPasswordError("Please confirm your password");
+      hasError = true;
+    } else if (password !== confirmPassword) {
+      setConfirmPasswordError("Passwords do not match");
+      hasError = true;
+    }
+
+    if (hasError) {
+      setError("Please correct the errors before submitting");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("http://localhost:3000/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email,
+          school,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "Failed to register");
+        return;
+      }
+
+      // Store token if provided
+      if (data.token) {
+        localStorage.setItem("authToken", data.token);
+      }
+
+      handleReset();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "An error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function handleReset() {
+    setStep(1);
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setSchool("");
+    setPassword("");
+    setConfirmPassword("");
+    setError("");
+    setFirstNameError("");
+    setLastNameError("");
+    setEmailError("");
+    setSchoolError("");
+    setPasswordError("");
+    setConfirmPasswordError("");
     onClose();
   }
 
@@ -25,63 +313,208 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       className={`${visible ? "flex" : "hidden"} fixed inset-0 items-center justify-center bg-black/40 z-50`}
       aria-hidden={!visible}
     >
-      <div className="relative bg-white p-6 rounded-lg w-full max-w-md border shadow">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Create an account</h3>
+      <div className="relative bg-white p-10 rounded-lg w-full max-w-3xl border-2 border-blue-700 shadow">
+        <div className="flex items-center justify-center mb-6">
+          <h2 className="text-3xl font-bold text-sky-800">Registration Form</h2>
           <button
             aria-label="Close"
-            onClick={onClose}
-            className="text-gray-600 hover:bg-gray-100 p-1 rounded"
+            onClick={handleReset}
+            className="transition hover:cursor-pointer hover:bg-red-500 hover:text-white absolute top-6 right-6 text-gray-600 p-1 rounded"
           >
             <X size={18} />
           </button>
         </div>
 
-        <label className="mt-4 block text-sm">Full name</label>
-        <div className="flex items-center gap-3 mt-2 text-gray-600">
-          <User className="text-blue-600" size={18} />
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Your full name"
-            className="flex-1 px-3 py-2 border rounded-md"
-          />
-        </div>
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
+            {error}
+          </div>
+        )}
 
-        <label className="mt-3 block text-sm">Email</label>
-        <div className="flex items-center gap-3 mt-2 text-gray-600">
-          <Mail className="text-blue-600" size={18} />
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            className="flex-1 px-3 py-2 border rounded-md"
-          />
-        </div>
+        {step === 1 ? (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <User className="text-blue-600" size={18} />
+                  First name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  value={firstName}
+                  onChange={(e) => {
+                    setFirstName(e.target.value);
+                    if (firstNameError) setFirstNameError("");
+                  }}
+                  onBlur={handleFirstNameBlur}
+                  placeholder="First name"
+                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
+                    firstNameError ? "border-red-500" : ""
+                  }`}
+                />
+                {firstNameError && (
+                  <p className="text-sm text-red-600 mt-1">{firstNameError}</p>
+                )}
+              </div>
+              <div>
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <User className="text-blue-600" size={18} />
+                  Last name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  value={lastName}
+                  onChange={(e) => {
+                    setLastName(e.target.value);
+                    if (lastNameError) setLastNameError("");
+                  }}
+                  onBlur={handleLastNameBlur}
+                  placeholder="Last name"
+                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
+                    lastNameError ? "border-red-500" : ""
+                  }`}
+                />
+                {lastNameError && firstName && firstName.length >= 2 && (
+                  <p className="text-sm text-red-600 mt-1">{lastNameError}</p>
+                )}
+              </div>
+            </div>
 
-        <label className="mt-3 block text-sm">Password</label>
-        <div className="flex items-center gap-3 mt-2 text-gray-600">
-          <Key className="text-blue-600" size={18} />
-          <input
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Create a password"
-            type="password"
-            className="flex-1 px-3 py-2 border rounded-md"
-          />
-        </div>
+            <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+              <Mail className="text-blue-600" size={18} />
+              Email <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (emailError) setEmailError("");
+              }}
+              onBlur={handleEmailBlur}
+              placeholder="name@deped.gov.ph"
+              className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
+                emailError ? "border-red-500" : ""
+              }`}
+            />
+            {emailError && lastName && lastName.length >= 2 && (
+              <p className="text-sm text-red-600 mt-1">{emailError}</p>
+            )}
 
-        <div className="flex gap-3 justify-end mt-4">
-          <button
-            onClick={submit}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md"
-          >
-            Sign up
-          </button>
-          <button onClick={onClose} className="px-4 py-2 border rounded-md">
-            Cancel
-          </button>
-        </div>
+            <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+              <Building2 className="text-blue-600" size={18} />
+              School <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={school}
+              onChange={(e) => {
+                setSchool(e.target.value);
+                if (schoolError) setSchoolError("");
+              }}
+              onBlur={handleSchoolBlur}
+              placeholder="School Name (e.g., San Jose Del Monte National High School)"
+              className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
+                schoolError ? "border-red-500" : ""
+              }`}
+            />
+            {schoolError && email && validateEmail(email) && (
+              <p className="text-sm text-red-600 mt-1">{schoolError}</p>
+            )}
+
+            <div className="flex flex-col gap-3 items-center mt-6">
+              <button
+                onClick={handleStep1Submit}
+                className="hover:cursor-pointer px-6 py-2 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition"
+              >
+                Continue
+              </button>
+              <button
+                onClick={handleReset}
+                className="text-gray-700 cursor-pointer px-6 py-2 border rounded-md w-full hover:bg-gray-400 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="mb-4 p-3 bg-blue-50 text-blue-800 rounded-md text-sm">
+              <p className="font-semibold mb-1">Password requirements:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>At least 8 characters long</li>
+                <li>Contains uppercase and lowercase letters</li>
+                <li>Contains at least one number</li>
+                <li>Contains at least one special character (!@#$%^&*...)</li>
+              </ul>
+            </div>
+
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <Key className="text-blue-600" size={18} />
+              Create password <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (passwordError) setPasswordError("");
+                if (confirmPassword && confirmPasswordError) {
+                  if (e.target.value === confirmPassword) {
+                    setConfirmPasswordError("");
+                  }
+                }
+              }}
+              onBlur={handlePasswordBlur}
+              placeholder="Create a password"
+              type="password"
+              className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
+                passwordError ? "border-red-500" : ""
+              }`}
+            />
+            {passwordError && (
+              <p className="text-sm text-red-600 mt-1">{passwordError}</p>
+            )}
+
+            <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+              <Key className="text-blue-600" size={18} />
+              Confirm password <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (confirmPasswordError) setConfirmPasswordError("");
+              }}
+              onBlur={handleConfirmPasswordBlur}
+              placeholder="Confirm password"
+              type="password"
+              className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
+                confirmPasswordError ? "border-red-500" : ""
+              }`}
+            />
+            {confirmPasswordError && password && password.length >= 8 && (
+              <p className="text-sm text-red-600 mt-1">
+                {confirmPasswordError}
+              </p>
+            )}
+
+            <div className="flex flex-col gap-3 items-center mt-6">
+              <button
+                onClick={handleStep2Submit}
+                disabled={isLoading}
+                className="hover:cursor-pointer px-6 py-2 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? "Signing up..." : "Sign up"}
+              </button>
+              <button
+                onClick={() => {
+                  setStep(1);
+                  setError("");
+                }}
+                disabled={isLoading}
+                className="px-6 py-2 border rounded-md w-full hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Back
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

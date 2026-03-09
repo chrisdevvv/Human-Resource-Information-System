@@ -10,6 +10,7 @@ import {
   Key,
   Eye,
   EyeOff,
+  Building2,
 } from "lucide-react";
 
-export { Mail, Lock, X, AlertCircle, User, Key, Eye, EyeOff };
+export { Mail, Lock, X, AlertCircle, User, Key, Eye, EyeOff, Building2 };
