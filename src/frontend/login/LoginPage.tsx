@@ -6,6 +6,7 @@ import React, { useState, useEffect } from "react";
 import {
   WelcomeCard,
   LoginModal,
+  LoginSuccessModal,
   ForgotModal,
   ErrorModal,
   RegistrationModal,
@@ -21,6 +22,12 @@ export default function LoginPage() {
   const [showLogin, setShowLogin] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [showLoginSuccess, setShowLoginSuccess] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState<{
+    username?: string;
+    email?: string;
+    role?: string;
+  } | null>(null);
   const [error, setError] = useState<{ title?: string; desc?: string } | null>(
     null,
   );
@@ -71,11 +78,21 @@ export default function LoginPage() {
       <LoginModal
         visible={showLogin}
         onClose={() => setShowLogin(false)}
+        onSuccess={(user) => {
+          setLoggedInUser(user);
+          setShowLoginSuccess(true);
+        }}
         onError={(title: string, desc?: string) => setError({ title, desc })}
         onOpenForgot={() => {
           setShowLogin(false);
           setShowForgot(true);
         }}
+      />
+
+      <LoginSuccessModal
+        visible={showLoginSuccess}
+        user={loggedInUser}
+        onClose={() => setShowLoginSuccess(false)}
       />
 
       <ForgotModal visible={showForgot} onClose={() => setShowForgot(false)} />

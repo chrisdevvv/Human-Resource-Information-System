@@ -4,6 +4,9 @@
 // Purpose: Simple registration modal placeholder to be opened from the login modal
 import React, { useState } from "react";
 import { Mail, Key, User, X, Building2 } from "../../assets/icons";
+import { RegistrationSuccessModal } from "../../registration";
+
+type School = { id: number; school_name: string; school_code: string };
 
 type Props = {
   visible: boolean;
@@ -64,65 +67,6 @@ export default function RegistrationModal({ visible, onClose }: Props) {
         valid: false,
         message: "Password must contain a special character",
       };
-    return { valid: true, message: "" };
-  }
-
-  function validateSchool(school: string) {
-    const trimmed = school.trim();
-    if (!trimmed) return { valid: false, message: "School name is required" };
-    if (trimmed.length < 3)
-      return {
-        valid: false,
-        message: "School name must be at least 3 characters",
-      };
-
-    // Check if first letter is capitalized
-    if (!/^[A-Z]/.test(trimmed))
-      return {
-        valid: false,
-        message: "School name must start with a capital letter",
-      };
-
-    // Check for proper capitalization (words should start with capital letters)
-    // Allow common lowercase words like "of", "the", "and", "for", "in"
-    const words = trimmed.split(/\s+/);
-    const invalidWords = words.filter((word, index) => {
-      // Skip empty words
-      if (!word) return false;
-      // First word must be capitalized (already checked above)
-      // Other words: allow lowercase for articles/prepositions, but check others
-      const commonLowercase = [
-        "of",
-        "the",
-        "and",
-        "for",
-        "in",
-        "at",
-        "to",
-        "a",
-        "an",
-      ];
-      if (index > 0 && commonLowercase.includes(word.toLowerCase())) {
-        return false; // Allow these words in lowercase
-      }
-      // Other words should start with capital letter
-      return !/^[A-Z]/.test(word);
-    });
-
-    if (invalidWords.length > 0)
-      return {
-        valid: false,
-        message: "Each major word should start with a capital letter",
-      };
-
-    // Check if it ends with proper punctuation (optional period or no punctuation)
-    // Just ensure it doesn't end with invalid characters
-    if (/[,;:]$/.test(trimmed))
-      return {
-        valid: false,
-        message: "School name should not end with comma, semicolon, or colon",
-      };
-
     return { valid: true, message: "" };
   }
 
@@ -262,8 +206,6 @@ export default function RegistrationModal({ visible, onClose }: Props) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          firstName,
-          lastName,
           email,
           school,
           password,
@@ -325,58 +267,63 @@ export default function RegistrationModal({ visible, onClose }: Props) {
           </button>
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
-            {error}
-          </div>
-        )}
-
-        {step === 1 ? (
+        {/* Success screen */}
+        {submitted ? (
+          <RegistrationSuccessModal onClose={handleReset} />
+        ) : (
           <>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <User className="text-blue-600" size={18} />
-                  First name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  value={firstName}
-                  onChange={(e) => {
-                    setFirstName(e.target.value);
-                    if (firstNameError) setFirstNameError("");
-                  }}
-                  onBlur={handleFirstNameBlur}
-                  placeholder="First name"
-                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
-                    firstNameError ? "border-red-500" : ""
-                  }`}
-                />
-                {firstNameError && (
-                  <p className="text-sm text-red-600 mt-1">{firstNameError}</p>
-                )}
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
+                {error}
               </div>
-              <div>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <User className="text-blue-600" size={18} />
-                  Last name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  value={lastName}
-                  onChange={(e) => {
-                    setLastName(e.target.value);
-                    if (lastNameError) setLastNameError("");
-                  }}
-                  onBlur={handleLastNameBlur}
-                  placeholder="Last name"
-                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
-                    lastNameError ? "border-red-500" : ""
-                  }`}
-                />
-                {lastNameError && firstName && firstName.length >= 2 && (
-                  <p className="text-sm text-red-600 mt-1">{lastNameError}</p>
-                )}
-              </div>
-            </div>
+            )}
+
+            {step === 1 ? (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <User className="text-blue-600" size={18} />
+                      First name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      value={firstName}
+                      onChange={(e) => {
+                        setFirstName(e.target.value);
+                        if (firstNameError) setFirstNameError("");
+                      }}
+                      onBlur={handleFirstNameBlur}
+                      placeholder="First name"
+                      className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${firstNameError ? "border-red-500" : ""}`}
+                    />
+                    {firstNameError && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {firstNameError}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <User className="text-blue-600" size={18} />
+                      Last name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      value={lastName}
+                      onChange={(e) => {
+                        setLastName(e.target.value);
+                        if (lastNameError) setLastNameError("");
+                      }}
+                      onBlur={handleLastNameBlur}
+                      placeholder="Last name"
+                      className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${lastNameError ? "border-red-500" : ""}`}
+                    />
+                    {lastNameError && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {lastNameError}
+                      </p>
+                    )}
+                  </div>
+                </div>
 
             <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
               <Mail className="text-blue-600" size={18} />
@@ -418,32 +365,34 @@ export default function RegistrationModal({ visible, onClose }: Props) {
               <p className="text-sm text-red-600 mt-1">{schoolError}</p>
             )}
 
-            <div className="flex flex-col gap-3 items-center mt-6">
-              <button
-                onClick={handleStep1Submit}
-                className="hover:cursor-pointer px-6 py-2 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition"
-              >
-                Continue
-              </button>
-              <button
-                onClick={handleReset}
-                className="text-gray-700 cursor-pointer px-6 py-2 border rounded-md w-full hover:bg-gray-400 transition"
-              >
-                Cancel
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="mb-4 p-3 bg-blue-50 text-blue-800 rounded-md text-sm">
-              <p className="font-semibold mb-1">Password requirements:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>At least 8 characters long</li>
-                <li>Contains uppercase and lowercase letters</li>
-                <li>Contains at least one number</li>
-                <li>Contains at least one special character (!@#$%^&*...)</li>
-              </ul>
-            </div>
+                <div className="flex flex-col gap-3 items-center mt-6">
+                  <button
+                    onClick={handleStep1Submit}
+                    className="hover:cursor-pointer px-6 py-2 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition"
+                  >
+                    Continue
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="hover:bg-gray-400 text-gray-700 cursor-pointer px-6 py-2 border rounded-md w-full transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mb-4 p-3 bg-blue-50 text-blue-800 rounded-md text-sm">
+                  <p className="font-semibold mb-1">Password requirements:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>At least 8 characters long</li>
+                    <li>Contains uppercase and lowercase letters</li>
+                    <li>Contains at least one number</li>
+                    <li>
+                      Contains at least one special character (!@#$%^&*...)
+                    </li>
+                  </ul>
+                </div>
 
             <label className="flex items-center gap-2 text-sm text-gray-700">
               <Key className="text-blue-600" size={18} />

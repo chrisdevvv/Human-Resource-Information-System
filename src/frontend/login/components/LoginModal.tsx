@@ -8,6 +8,11 @@ import { Mail, Lock, Eye, EyeOff } from "../../assets/icons";
 type Props = {
   visible: boolean;
   onClose: () => void;
+  onSuccess: (user: {
+    username?: string;
+    email?: string;
+    role?: string;
+  }) => void;
   onError: (title: string, desc?: string) => void;
   onOpenForgot: () => void;
 };
@@ -15,6 +20,7 @@ type Props = {
 export default function LoginModal({
   visible,
   onClose,
+  onSuccess,
   onError,
   onOpenForgot,
 }: Props) {
@@ -73,6 +79,7 @@ export default function LoginModal({
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
+      onSuccess(data.user);
       onClose();
     } catch (error) {
       onError(
