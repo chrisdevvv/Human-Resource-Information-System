@@ -1,9 +1,11 @@
-﻿const pool = require('../config/db');
+const pool = require('../../config/db');
 
 const Leave = {
     getAll: async () => {
         const [rows] = await pool.promise().query(`
-            SELECT leaves.*, employees.full_name, employees.employee_type
+            SELECT leaves.*,
+                   CONCAT(employees.first_name, ' ', employees.last_name) AS full_name,
+                   employees.employee_type
             FROM leaves
             JOIN employees ON leaves.employee_id = employees.id
         `);
@@ -12,7 +14,9 @@ const Leave = {
 
     getById: async (id) => {
         const [rows] = await pool.promise().query(`
-            SELECT leaves.*, employees.full_name, employees.employee_type
+            SELECT leaves.*,
+                   CONCAT(employees.first_name, ' ', employees.last_name) AS full_name,
+                   employees.employee_type
             FROM leaves
             JOIN employees ON leaves.employee_id = employees.id
             WHERE leaves.id = ?
@@ -21,7 +25,9 @@ const Leave = {
     },
 
     getByEmployeeId: async (employee_id) => {
-        const [rows] = await pool.promise().query('SELECT * FROM leaves WHERE employee_id = ?', [employee_id]);
+        const [rows] = await pool.promise().query(
+            'SELECT * FROM leaves WHERE employee_id = ?', [employee_id]
+        );
         return rows;
     },
 

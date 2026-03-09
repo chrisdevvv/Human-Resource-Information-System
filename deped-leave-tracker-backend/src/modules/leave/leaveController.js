@@ -1,4 +1,4 @@
-﻿const Leave = require('../models/leave');
+const Leave = require('./leaveModel');
 
 const createLeaveRequest = async (req, res) => {
     try {

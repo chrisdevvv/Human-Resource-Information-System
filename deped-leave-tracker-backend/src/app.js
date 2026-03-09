@@ -2,11 +2,11 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const authRoutes = require('./routes/authRoutes');
-const leaveRoutes = require('./routes/leaveRoutes');
-const employeeRoutes = require('./routes/employeeRoutes');
-const schoolRoutes = require('./routes/schoolRoutes');
-const backlogRoutes = require('./routes/backlogRoutes');
+const authRoutes = require('./modules/auth/authRoutes');
+const leaveRoutes = require('./modules/leave/leaveRoutes');
+const employeeRoutes = require('./modules/employee/employeeRoutes');
+const schoolRoutes = require('./modules/school/schoolRoutes');
+const backlogRoutes = require('./modules/backlog/backlogRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;

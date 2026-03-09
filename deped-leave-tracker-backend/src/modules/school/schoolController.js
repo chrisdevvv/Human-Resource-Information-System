@@ -1,4 +1,4 @@
-﻿const School = require('../models/school');
+const School = require('./schoolModel');
 
 const getAllSchools = async (req, res) => {
     try {

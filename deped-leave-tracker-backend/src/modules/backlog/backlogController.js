@@ -1,4 +1,4 @@
-﻿const Backlog = require('../models/backlog');
+const Backlog = require('./backlogModel');
 
 const getAllBacklogs = async (req, res) => {
     try {
