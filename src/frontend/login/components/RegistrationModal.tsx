@@ -23,6 +23,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   // Individual field errors
   const [firstNameError, setFirstNameError] = useState("");
@@ -70,6 +71,19 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     return { valid: true, message: "" };
   }
 
+  function validateSchool(school: string) {
+    if (!school.trim()) {
+      return { valid: false, message: "School name is required" };
+    }
+    if (school.trim().length < 3) {
+      return {
+        valid: false,
+        message: "School name must be at least 3 characters",
+      };
+    }
+    return { valid: true, message: "" };
+  }
+
   function handleFirstNameBlur() {
     if (!firstName.trim()) {
       setFirstNameError("First name is required");
@@ -99,7 +113,6 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       setEmailError("");
     }
   }
-
   function handleSchoolBlur() {
     const validation = validateSchool(school);
     if (!validation.valid) {
@@ -224,7 +237,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
         localStorage.setItem("authToken", data.token);
       }
 
-      handleReset();
+      setSubmitted(true);
     } catch (error) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
@@ -241,6 +254,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     setPassword("");
     setConfirmPassword("");
     setError("");
+    setSubmitted(false);
     setFirstNameError("");
     setLastNameError("");
     setEmailError("");
@@ -325,45 +339,45 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   </div>
                 </div>
 
-            <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
-              <Mail className="text-blue-600" size={18} />
-              Email <span className="text-red-500">*</span>
-            </label>
-            <input
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (emailError) setEmailError("");
-              }}
-              onBlur={handleEmailBlur}
-              placeholder="name@deped.gov.ph"
-              className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
-                emailError ? "border-red-500" : ""
-              }`}
-            />
-            {emailError && lastName && lastName.length >= 2 && (
-              <p className="text-sm text-red-600 mt-1">{emailError}</p>
-            )}
+                <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+                  <Mail className="text-blue-600" size={18} />
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (emailError) setEmailError("");
+                  }}
+                  onBlur={handleEmailBlur}
+                  placeholder="name@deped.gov.ph"
+                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
+                    emailError ? "border-red-500" : ""
+                  }`}
+                />
+                {emailError && (
+                  <p className="text-sm text-red-600 mt-1">{emailError}</p>
+                )}
 
-            <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
-              <Building2 className="text-blue-600" size={18} />
-              School <span className="text-red-500">*</span>
-            </label>
-            <input
-              value={school}
-              onChange={(e) => {
-                setSchool(e.target.value);
-                if (schoolError) setSchoolError("");
-              }}
-              onBlur={handleSchoolBlur}
-              placeholder="School Name (e.g., San Jose Del Monte National High School)"
-              className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
-                schoolError ? "border-red-500" : ""
-              }`}
-            />
-            {schoolError && email && validateEmail(email) && (
-              <p className="text-sm text-red-600 mt-1">{schoolError}</p>
-            )}
+                <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+                  <Building2 className="text-blue-600" size={18} />
+                  School <span className="text-red-500">*</span>
+                </label>
+                <input
+                  value={school}
+                  onChange={(e) => {
+                    setSchool(e.target.value);
+                    if (schoolError) setSchoolError("");
+                  }}
+                  onBlur={handleSchoolBlur}
+                  placeholder="School Name (e.g., San Jose Del Monte National High School)"
+                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
+                    schoolError ? "border-red-500" : ""
+                  }`}
+                />
+                {schoolError && (
+                  <p className="text-sm text-red-600 mt-1">{schoolError}</p>
+                )}
 
                 <div className="flex flex-col gap-3 items-center mt-6">
                   <button
@@ -394,74 +408,76 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   </ul>
                 </div>
 
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <Key className="text-blue-600" size={18} />
-              Create password <span className="text-red-500">*</span>
-            </label>
-            <input
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (passwordError) setPasswordError("");
-                if (confirmPassword && confirmPasswordError) {
-                  if (e.target.value === confirmPassword) {
-                    setConfirmPasswordError("");
-                  }
-                }
-              }}
-              onBlur={handlePasswordBlur}
-              placeholder="Create a password"
-              type="password"
-              className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
-                passwordError ? "border-red-500" : ""
-              }`}
-            />
-            {passwordError && (
-              <p className="text-sm text-red-600 mt-1">{passwordError}</p>
-            )}
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <Key className="text-blue-600" size={18} />
+                  Create password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (passwordError) setPasswordError("");
+                    if (confirmPassword && confirmPasswordError) {
+                      if (e.target.value === confirmPassword) {
+                        setConfirmPasswordError("");
+                      }
+                    }
+                  }}
+                  onBlur={handlePasswordBlur}
+                  placeholder="Create a password"
+                  type="password"
+                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
+                    passwordError ? "border-red-500" : ""
+                  }`}
+                />
+                {passwordError && (
+                  <p className="text-sm text-red-600 mt-1">{passwordError}</p>
+                )}
 
-            <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
-              <Key className="text-blue-600" size={18} />
-              Confirm password <span className="text-red-500">*</span>
-            </label>
-            <input
-              value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-                if (confirmPasswordError) setConfirmPasswordError("");
-              }}
-              onBlur={handleConfirmPasswordBlur}
-              placeholder="Confirm password"
-              type="password"
-              className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
-                confirmPasswordError ? "border-red-500" : ""
-              }`}
-            />
-            {confirmPasswordError && password && password.length >= 8 && (
-              <p className="text-sm text-red-600 mt-1">
-                {confirmPasswordError}
-              </p>
-            )}
+                <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+                  <Key className="text-blue-600" size={18} />
+                  Confirm password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (confirmPasswordError) setConfirmPasswordError("");
+                  }}
+                  onBlur={handleConfirmPasswordBlur}
+                  placeholder="Confirm password"
+                  type="password"
+                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
+                    confirmPasswordError ? "border-red-500" : ""
+                  }`}
+                />
+                {confirmPasswordError && (
+                  <p className="text-sm text-red-600 mt-1">
+                    {confirmPasswordError}
+                  </p>
+                )}
 
-            <div className="flex flex-col gap-3 items-center mt-6">
-              <button
-                onClick={handleStep2Submit}
-                disabled={isLoading}
-                className="hover:cursor-pointer px-6 py-2 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? "Signing up..." : "Sign up"}
-              </button>
-              <button
-                onClick={() => {
-                  setStep(1);
-                  setError("");
-                }}
-                disabled={isLoading}
-                className="px-6 py-2 border rounded-md w-full hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Back
-              </button>
-            </div>
+                <div className="flex flex-col gap-3 items-center mt-6">
+                  <button
+                    onClick={handleStep2Submit}
+                    disabled={isLoading}
+                    className="hover:cursor-pointer px-6 py-2 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? "Signing up..." : "Sign up"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setStep(1);
+                      setError("");
+                    }}
+                    disabled={isLoading}
+                    className="px-6 py-2 border rounded-md w-full hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Back
+                  </button>
+                </div>
+              </>
+            )}
           </>
         )}
       </div>
