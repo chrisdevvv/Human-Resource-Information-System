@@ -147,7 +147,13 @@ export default function SidebarIndex({
 
   return (
     <>
-      {!collapsed && <div className="fixed inset-0 bg-black/40 z-30" />}
+      {!collapsed && (
+        <div
+          className="fixed inset-0 bg-gray-500/45 z-30"
+          onClick={handleToggle}
+          aria-hidden="true"
+        />
+      )}
       <aside
         className={`fixed left-0 top-0 h-screen bg-blue-600 text-white border-r border-blue-700 transition-all duration-300 z-40 ${
           collapsed ? "w-20" : "w-72"

@@ -1,13 +1,8 @@
 import React from "react";
-import styles from "./styles.module.css";
+import RegistrationMobile from "./RegistrationMobile";
 
 export { default as RegistrationSuccessModal } from "./RegistrationSuccessModal";
 
 export default function Registration() {
-  return (
-    <div className={styles.container}>
-      <h1>Registration</h1>
-      <p>Placeholder component for the Registration UI.</p>
-    </div>
-  );
+  return <RegistrationMobile />;
 }

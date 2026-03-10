@@ -131,7 +131,7 @@ export default function LoginPage() {
           />
         </div>
 
-        <div className="border-blue-600 border-2 bg-white rounded-lg shadow-lg p-8 w-full max-w-2xl">
+        <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-2xl">
           <h2 className="text-2xl font-bold text-gray-900 mb-1">Sign in</h2>
           <p className="text-sm text-gray-500 mb-6">
             Use your email and password to continue

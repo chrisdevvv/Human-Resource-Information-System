@@ -26,9 +26,10 @@ export default function Page() {
         role={role}
         activeTab={activeTab}
         onTabChange={(t) => setActiveTab(t)}
+        defaultCollapsed={true}
         onToggleCollapse={(c) => setCollapsed(c)}
       />
-      <main className={`${collapsed ? "ml-20" : "ml-72"} p-6`}>
+      <main className="p-6">
         <Admin />
       </main>
     </>

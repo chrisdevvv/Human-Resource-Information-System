@@ -116,7 +116,7 @@ export default function ForgotModal({ visible, onClose }: Props) {
       className={`${visible ? "flex" : "hidden"} fixed inset-0 items-center justify-center bg-black/40 z-50`}
       aria-hidden={!visible}
     >
-      <div className="relative bg-white p-8 rounded-lg w-full max-w-2xl border-2 border-blue-600 shadow-lg">
+      <div className="relative bg-white p-8 rounded-lg w-full max-w-2xl shadow-lg">
         <button
           className="absolute right-2 top-2 text-xl hover:bg-red-500 hover:text-white rounded p-1 transition"
           id="forgotClose"

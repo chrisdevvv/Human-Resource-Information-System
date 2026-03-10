@@ -26,10 +26,11 @@ export default function Page() {
         role={role}
         activeTab={activeTab}
         onTabChange={(t) => setActiveTab(t)}
+        defaultCollapsed={true}
         onToggleCollapse={(c) => setCollapsed(c)}
       />
-      <main className={`${collapsed ? "ml-20" : "ml-72"} p-6`}>
-        <SuperAdmin />
+      <main className="p-6 bg-white min-h-screen">
+        <SuperAdmin activeTab={activeTab} />
       </main>
     </>
   );
