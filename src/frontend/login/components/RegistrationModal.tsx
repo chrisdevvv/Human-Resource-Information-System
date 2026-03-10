@@ -2,14 +2,12 @@
 // Component: RegistrationModal
 // Filename: RegistrationModal.tsx
 // Purpose: Registration request form — submits to registration_requests table for admin approval
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Mail, Key, User, X, Building2 } from "../../assets/icons";
 import { RegistrationSuccessModal } from "../../registration";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
-
-type School = { id: number; school_name: string; school_code: string };
 
 type Props = {
   visible: boolean;
@@ -21,13 +19,11 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [schoolId, setSchoolId] = useState("");
-  const [requestedRole, setRequestedRole] = useState("");
+  const [school, setSchool] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [schools, setSchools] = useState<School[]>([]);
   const [submitted, setSubmitted] = useState(false);
 
   // Individual field errors
@@ -35,18 +31,8 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   const [lastNameError, setLastNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [schoolError, setSchoolError] = useState("");
-  const [roleError, setRoleError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
-
-  useEffect(() => {
-    if (visible) {
-      fetch(`${API_BASE_URL}/api/schools`)
-        .then((r) => r.json())
-        .then((d) => setSchools(d.data || []))
-        .catch(() => {});
-    }
-  }, [visible]);
 
   function validateEmail(value: string) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -164,13 +150,8 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       hasError = true;
     }
 
-    if (!schoolId) {
-      setSchoolError("Please select a school");
-      hasError = true;
-    }
-
-    if (!requestedRole) {
-      setRoleError("Please select a role");
+    if (!school.trim()) {
+      setSchoolError("School is required");
       hasError = true;
     }
 
@@ -218,8 +199,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
           lastName,
           email,
           password,
-          school_id: Number(schoolId),
-          requested_role: requestedRole,
+          school,
         }),
       });
 
@@ -243,8 +223,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     setFirstName("");
     setLastName("");
     setEmail("");
-    setSchoolId("");
-    setRequestedRole("");
+    setSchool("");
     setPassword("");
     setConfirmPassword("");
     setError("");
@@ -253,7 +232,6 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     setLastNameError("");
     setEmailError("");
     setSchoolError("");
-    setRoleError("");
     setPasswordError("");
     setConfirmPasswordError("");
     onClose();
@@ -264,7 +242,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       className={`${visible ? "flex" : "hidden"} fixed inset-0 items-center justify-center bg-black/40 z-50`}
       aria-hidden={!visible}
     >
-      <div className="relative bg-white p-10 rounded-lg w-full max-w-3xl border-2 border-blue-700 shadow">
+      <div className="relative bg-white p-10 rounded-lg w-full max-w-3xl shadow">
         <div className="flex items-center justify-center mb-6">
           <h2 className="text-3xl font-bold text-sky-800">Registration Form</h2>
           <button
@@ -352,51 +330,23 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   <p className="text-sm text-red-600 mt-1">{emailError}</p>
                 )}
 
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                  <div>
-                    <label className="flex items-center gap-2 text-sm text-gray-700">
-                      <Building2 className="text-blue-600" size={18} />
-                      School <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={schoolId}
-                      onChange={(e) => {
-                        setSchoolId(e.target.value);
-                        if (schoolError) setSchoolError("");
-                      }}
-                      className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md bg-white ${schoolError ? "border-red-500" : ""}`}
-                    >
-                      <option value="">Select a school</option>
-                      {schools.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.school_name}
-                        </option>
-                      ))}
-                    </select>
-                    {schoolError && (
-                      <p className="text-sm text-red-600 mt-1">{schoolError}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="flex items-center gap-2 text-sm text-gray-700">
-                      Role <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={requestedRole}
-                      onChange={(e) => {
-                        setRequestedRole(e.target.value);
-                        if (roleError) setRoleError("");
-                      }}
-                      className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md bg-white ${roleError ? "border-red-500" : ""}`}
-                    >
-                      <option value="">Select a role</option>
-                      <option value="DATA_ENCODER">Data Encoder</option>
-                      <option value="ADMIN">Admin</option>
-                    </select>
-                    {roleError && (
-                      <p className="text-sm text-red-600 mt-1">{roleError}</p>
-                    )}
-                  </div>
+                <div className="mt-4">
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <Building2 className="text-blue-600" size={18} />
+                    School <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    value={school}
+                    onChange={(e) => {
+                      setSchool(e.target.value);
+                      if (schoolError) setSchoolError("");
+                    }}
+                    placeholder="Enter school name"
+                    className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${schoolError ? "border-red-500" : ""}`}
+                  />
+                  {schoolError && (
+                    <p className="text-sm text-red-600 mt-1">{schoolError}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-3 items-center mt-6">

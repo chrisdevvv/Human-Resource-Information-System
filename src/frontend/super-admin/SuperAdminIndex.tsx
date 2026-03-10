@@ -1,11 +1,29 @@
+"use client";
+
 import React from "react";
+import UserRoles from "./functions/UserRoles";
 import styles from "./styles.module.css";
 
-export default function SuperAdmin() {
-  return (
-    <div className={styles.container}>
-      <h1>Super Admin</h1>
-      <p>Placeholder area for Super Admin dashboards and tools.</p>
-    </div>
-  );
+type SuperAdminProps = {
+  activeTab?: string;
+};
+
+export default function SuperAdmin({
+  activeTab = "dashboard",
+}: SuperAdminProps) {
+  const renderContent = () => {
+    switch (activeTab) {
+      case "user-roles":
+        return <UserRoles />;
+      default:
+        return (
+          <div className={styles.container}>
+            <h1>Super Admin Dashboard</h1>
+            <p>Welcome to the Super Admin dashboard.</p>
+          </div>
+        );
+    }
+  };
+
+  return <div>{renderContent()}</div>;
 }

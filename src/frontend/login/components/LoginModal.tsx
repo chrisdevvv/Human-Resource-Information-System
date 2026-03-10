@@ -5,9 +5,6 @@
 import React, { useState } from "react";
 import { Mail, Lock, Eye, EyeOff } from "../../assets/icons";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
-
 type Props = {
   visible: boolean;
   onClose: () => void;
@@ -63,7 +60,7 @@ export default function LoginModal({
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      const response = await fetch("http://localhost:3000/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
