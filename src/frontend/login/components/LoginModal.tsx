@@ -5,9 +5,17 @@
 import React, { useState } from "react";
 import { Mail, Lock, Eye, EyeOff } from "../../assets/icons";
 
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+
 type Props = {
   visible: boolean;
   onClose: () => void;
+  onSuccess: (user: {
+    username?: string;
+    email?: string;
+    role?: string;
+  }) => void;
   onError: (title: string, desc?: string) => void;
   onOpenForgot: () => void;
 };
@@ -15,6 +23,7 @@ type Props = {
 export default function LoginModal({
   visible,
   onClose,
+  onSuccess,
   onError,
   onOpenForgot,
 }: Props) {
@@ -54,7 +63,7 @@ export default function LoginModal({
 
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:3000/api/auth/login", {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -73,6 +82,7 @@ export default function LoginModal({
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
+      onSuccess(data.user);
       onClose();
     } catch (error) {
       onError(

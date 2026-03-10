@@ -1,0 +1,11 @@
+{
+  "files.associations": {
+    "**/deped_leave_tracker.sql": "plaintext",
+    "**/migrations/*.sql": "mysql",
+    "**/*_table.sql": "mysql"
+  },
+  "mssql.enableDiagnostics": false,
+  "[sql]": {
+    "editor.defaultFormatter": null
+  }
+}

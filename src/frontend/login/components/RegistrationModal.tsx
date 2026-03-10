@@ -4,6 +4,12 @@
 // Purpose: Registration request form — submits to registration_requests table for admin approval
 import React, { useState, useEffect } from "react";
 import { Mail, Key, User, X, Building2 } from "../../assets/icons";
+import { RegistrationSuccessModal } from "../../registration";
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+
+type School = { id: number; school_name: string; school_code: string };
 
 type School = { id: number; school_name: string; school_code: string };
 
@@ -39,7 +45,11 @@ export default function RegistrationModal({ visible, onClose }: Props) {
 
   useEffect(() => {
     if (visible) {
+<<<<<<< HEAD
       fetch("http://localhost:3000/api/schools")
+=======
+      fetch(`${API_BASE_URL}/api/schools`)
+>>>>>>> origin/shania-branch
         .then((r) => r.json())
         .then((d) => setSchools(d.data || []))
         .catch(() => {});
@@ -71,6 +81,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     return { valid: true, message: "" };
   }
 
+<<<<<<< HEAD
   function validateUsername(value: string) {
     if (!value.trim()) return "Username is required";
     if (value.length < 3) return "Username must be at least 3 characters";
@@ -88,6 +99,8 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     }
   }
 
+=======
+>>>>>>> origin/shania-branch
   function handleFirstNameBlur() {
     if (!firstName.trim()) {
       setFirstNameError("First name is required");
@@ -221,11 +234,14 @@ export default function RegistrationModal({ visible, onClose }: Props) {
 
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:3000/api/auth/register", {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+<<<<<<< HEAD
           username,
+=======
+>>>>>>> origin/shania-branch
           email,
           password,
           school_id: Number(schoolId),
@@ -290,6 +306,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
 
         {/* Success screen */}
         {submitted ? (
+<<<<<<< HEAD
           <div className="text-center py-6">
             <div className="text-green-600 text-5xl mb-4">✓</div>
             <h3 className="text-xl font-semibold text-gray-800 mb-2">
@@ -306,6 +323,9 @@ export default function RegistrationModal({ visible, onClose }: Props) {
               Close
             </button>
           </div>
+=======
+          <RegistrationSuccessModal onClose={handleReset} />
+>>>>>>> origin/shania-branch
         ) : (
           <>
             {error && (
@@ -362,6 +382,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                 </div>
 
                 <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+<<<<<<< HEAD
                   <User className="text-blue-600" size={18} />
                   Username <span className="text-red-500">*</span>
                 </label>
@@ -383,6 +404,8 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                 )}
 
                 <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+=======
+>>>>>>> origin/shania-branch
                   <Mail className="text-blue-600" size={18} />
                   Email <span className="text-red-500">*</span>
                 </label>
@@ -456,7 +479,11 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   </button>
                   <button
                     onClick={handleReset}
+<<<<<<< HEAD
                     className="text-gray-700 cursor-pointer px-6 py-2 border rounded-md w-full hover:bg-gray-100 transition"
+=======
+                    className="hover:bg-gray-400 text-gray-700 cursor-pointer px-6 py-2 border rounded-md w-full transition"
+>>>>>>> origin/shania-branch
                   >
                     Cancel
                   </button>
