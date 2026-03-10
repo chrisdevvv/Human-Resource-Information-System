@@ -66,7 +66,10 @@ const register = async (req, res) => {
   } catch (error) {
     return res
       .status(500)
-      .json({ message: "Error submitting registration request", error: error.message });
+      .json({
+        message: "Error submitting registration request",
+        error: error.message,
+      });
   }
 };
 

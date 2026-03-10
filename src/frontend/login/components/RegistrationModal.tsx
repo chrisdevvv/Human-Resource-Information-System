@@ -61,15 +61,27 @@ export default function RegistrationModal({ visible, onClose }: Props) {
 
   function validatePassword(password: string) {
     if (password.length < 8)
-      return { valid: false, message: "Password must be at least 8 characters" };
+      return {
+        valid: false,
+        message: "Password must be at least 8 characters",
+      };
     if (!/[A-Z]/.test(password))
-      return { valid: false, message: "Password must contain an uppercase letter" };
+      return {
+        valid: false,
+        message: "Password must contain an uppercase letter",
+      };
     if (!/[a-z]/.test(password))
-      return { valid: false, message: "Password must contain a lowercase letter" };
+      return {
+        valid: false,
+        message: "Password must contain a lowercase letter",
+      };
     if (!/[0-9]/.test(password))
       return { valid: false, message: "Password must contain a number" };
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(password))
-      return { valid: false, message: "Password must contain a special character" };
+      return {
+        valid: false,
+        message: "Password must contain a special character",
+      };
     return { valid: true, message: "" };
   }
 
@@ -483,4 +495,3 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     </div>
   );
 }
-
