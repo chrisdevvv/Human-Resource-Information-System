@@ -6,7 +6,8 @@ const Registration = {
             SELECT rr.id, rr.first_name, rr.last_name, rr.email, rr.school_name, rr.requested_role,
                    rr.approved_role, rr.status, rr.rejection_reason,
                    rr.reviewed_by, rr.reviewed_at, rr.created_at,
-                   u.username AS reviewed_by_username
+                   u.first_name AS reviewed_by_first_name,
+                   u.last_name AS reviewed_by_last_name
             FROM registration_requests rr
             LEFT JOIN users u ON rr.reviewed_by = u.id
         `;
@@ -41,17 +42,6 @@ const Registration = {
 
             const request = rows[0];
             const role = approved_role || request.requested_role || 'DATA_ENCODER';
-            const baseUsername = `${request.first_name.trim().toLowerCase()}.${request.last_name.trim().toLowerCase()}`;
-
-            // Find a unique username by appending a number if needed
-            let username = baseUsername;
-            let counter = 2;
-            while (true) {
-                const [existing] = await conn.query('SELECT id FROM users WHERE username = ?', [username]);
-                if (existing.length === 0) break;
-                username = `${baseUsername}${counter}`;
-                counter++;
-            }
 
             // Look up school by name; create it if it doesn't exist yet
             let school_id;
@@ -74,8 +64,8 @@ const Registration = {
             }
 
             await conn.query(
-                'INSERT INTO users (username, email, password_hash, role, school_id, is_active) VALUES (?, ?, ?, ?, ?, 1)',
-                [username, request.email, request.password_hash, role, school_id]
+                'INSERT INTO users (first_name, last_name, email, password_hash, role, school_id, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)',
+                [request.first_name, request.last_name, request.email, request.password_hash, role, school_id]
             );
 
             await conn.query(
