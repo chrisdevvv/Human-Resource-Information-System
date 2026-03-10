@@ -10,13 +10,14 @@ import {
   ClipboardList,
   FileText,
   LayoutDashboard,
+  LogOut,
   Menu,
   Settings,
-  ShieldCheck,
   SettingsIcon,
-  User,
+  ShieldCheck,
   Users,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export type SidebarRole = "data-encoder" | "admin" | "super-admin";
 
@@ -78,12 +79,6 @@ const SIDEBAR_TABS: SidebarTab[] = [
     icon: Settings,
     roles: ["super-admin"],
   },
-  {
-    id: "profile",
-    label: "Profile",
-    icon: User,
-    roles: ALL_ROLES,
-  },
 ];
 
 function normalizeRole(role: string): SidebarRole {
@@ -110,16 +105,7 @@ function normalizeRole(role: string): SidebarRole {
 
 export function getSidebarTabsByRole(role: string): SidebarTab[] {
   const normalizedRole = normalizeRole(role);
-  return SIDEBAR_TABS.filter(
-    (tab) => tab.roles.includes(normalizedRole) && tab.id !== "profile",
-  );
-}
-
-export function getProfileTab(role: string): SidebarTab | undefined {
-  const normalizedRole = normalizeRole(role);
-  return SIDEBAR_TABS.find(
-    (tab) => tab.id === "profile" && tab.roles.includes(normalizedRole),
-  );
+  return SIDEBAR_TABS.filter((tab) => tab.roles.includes(normalizedRole));
 }
 
 type SidebarProps = {
@@ -141,9 +127,9 @@ export default function SidebarIndex({
   onToggleCollapse,
   className = "",
 }: SidebarProps) {
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const tabs = useMemo(() => getSidebarTabsByRole(role), [role]);
-  const profileTab = useMemo(() => getProfileTab(role), [role]);
 
   const handleToggle = () => {
     const next = !collapsed;
@@ -151,6 +137,12 @@ export default function SidebarIndex({
     if (onToggleCollapse) {
       onToggleCollapse(next);
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+    router.push("/login");
   };
 
   return (
@@ -216,36 +208,28 @@ export default function SidebarIndex({
             })}
           </nav>
 
-          {profileTab && (
-            <div
-              className={`p-2 border-t border-blue-700 ${collapsed ? "flex flex-col items-center justify-center gap-1" : "flex items-center gap-1"}`}
+          <div
+            className={`p-3 border-t border-blue-700 ${collapsed ? "flex flex-col gap-2" : "flex items-center gap-2"}`}
+          >
+            <button
+              type="button"
+              onClick={handleLogout}
+              title={collapsed ? "Logout" : undefined}
+              className={`cursor-pointer ${collapsed ? "w-full" : "flex-1"} flex items-center gap-3 px-3 py-2 rounded-lg text-left transition text-blue-50 hover:bg-red-600`}
             >
-              <button
-                type="button"
-                onClick={() => onTabChange(profileTab.id)}
-                title={collapsed ? profileTab.label : undefined}
-                className={`cursor-pointer ${collapsed ? "flex items-center justify-center p-2" : "flex-1 flex items-center gap-3 px-3 py-2"} rounded-lg text-left transition ${
-                  activeTab === profileTab.id
-                    ? "bg-blue-800 text-white"
-                    : "text-blue-50 hover:bg-blue-700"
-                }`}
-              >
-                <User size={18} className="shrink-0" />
-                {!collapsed ? (
-                  <span className="text-sm font-medium">
-                    {profileTab.label}
-                  </span>
-                ) : null}
-              </button>
-              <button
-                type="button"
-                title="Settings"
-                className={`cursor-pointer p-2 rounded-lg transition text-blue-50 hover:bg-blue-700 flex items-center justify-center`}
-              >
-                <SettingsIcon size={18} className="shrink-0" />
-              </button>
-            </div>
-          )}
+              <LogOut size={18} className="shrink-0" />
+              {!collapsed && (
+                <span className="text-sm font-medium">Logout</span>
+              )}
+            </button>
+            <button
+              type="button"
+              title="Settings"
+              className="cursor-pointer p-2 rounded-lg transition text-blue-50 hover:bg-blue-700 flex items-center justify-center"
+            >
+              <SettingsIcon size={18} className="shrink-0" />
+            </button>
+          </div>
         </div>
       </aside>
     </>

@@ -11,8 +11,6 @@ const API_BASE_URL =
 
 type School = { id: number; school_name: string; school_code: string };
 
-type School = { id: number; school_name: string; school_code: string };
-
 type Props = {
   visible: boolean;
   onClose: () => void;
@@ -22,7 +20,6 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   const [step, setStep] = useState(1);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [schoolId, setSchoolId] = useState("");
   const [requestedRole, setRequestedRole] = useState("");
@@ -36,7 +33,6 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   // Individual field errors
   const [firstNameError, setFirstNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
-  const [usernameError, setUsernameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [schoolError, setSchoolError] = useState("");
   const [roleError, setRoleError] = useState("");
@@ -45,11 +41,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
 
   useEffect(() => {
     if (visible) {
-<<<<<<< HEAD
-      fetch("http://localhost:3000/api/schools")
-=======
       fetch(`${API_BASE_URL}/api/schools`)
->>>>>>> origin/shania-branch
         .then((r) => r.json())
         .then((d) => setSchools(d.data || []))
         .catch(() => {});
@@ -69,38 +61,30 @@ export default function RegistrationModal({ visible, onClose }: Props) {
 
   function validatePassword(password: string) {
     if (password.length < 8)
-      return { valid: false, message: "Password must be at least 8 characters" };
+      return {
+        valid: false,
+        message: "Password must be at least 8 characters",
+      };
     if (!/[A-Z]/.test(password))
-      return { valid: false, message: "Password must contain an uppercase letter" };
+      return {
+        valid: false,
+        message: "Password must contain an uppercase letter",
+      };
     if (!/[a-z]/.test(password))
-      return { valid: false, message: "Password must contain a lowercase letter" };
+      return {
+        valid: false,
+        message: "Password must contain a lowercase letter",
+      };
     if (!/[0-9]/.test(password))
       return { valid: false, message: "Password must contain a number" };
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(password))
-      return { valid: false, message: "Password must contain a special character" };
+      return {
+        valid: false,
+        message: "Password must contain a special character",
+      };
     return { valid: true, message: "" };
   }
 
-<<<<<<< HEAD
-  function validateUsername(value: string) {
-    if (!value.trim()) return "Username is required";
-    if (value.length < 3) return "Username must be at least 3 characters";
-    if (!/^[a-zA-Z0-9._-]+$/.test(value))
-      return "Username may only contain letters, numbers, dots, underscores, or hyphens";
-    return "";
-  }
-
-  // Auto-suggest username from first + last name
-  function autoSuggestUsername(first: string, last: string) {
-    if (!username && first.trim() && last.trim()) {
-      setUsername(
-        `${first.trim().toLowerCase()}.${last.trim().toLowerCase()}`,
-      );
-    }
-  }
-
-=======
->>>>>>> origin/shania-branch
   function handleFirstNameBlur() {
     if (!firstName.trim()) {
       setFirstNameError("First name is required");
@@ -108,7 +92,6 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       setFirstNameError("First name must be at least 2 letters");
     } else {
       setFirstNameError("");
-      autoSuggestUsername(firstName, lastName);
     }
   }
 
@@ -119,7 +102,6 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       setLastNameError("Last name must be at least 2 letters");
     } else {
       setLastNameError("");
-      autoSuggestUsername(firstName, lastName);
     }
   }
 
@@ -171,12 +153,6 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       hasError = true;
     } else if (!validateName(lastName)) {
       setLastNameError("Last name must be at least 2 letters");
-      hasError = true;
-    }
-
-    const uErr = validateUsername(username);
-    if (uErr) {
-      setUsernameError(uErr);
       hasError = true;
     }
 
@@ -238,10 +214,8 @@ export default function RegistrationModal({ visible, onClose }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-<<<<<<< HEAD
-          username,
-=======
->>>>>>> origin/shania-branch
+          firstName,
+          lastName,
           email,
           password,
           school_id: Number(schoolId),
@@ -268,7 +242,6 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     setStep(1);
     setFirstName("");
     setLastName("");
-    setUsername("");
     setEmail("");
     setSchoolId("");
     setRequestedRole("");
@@ -278,7 +251,6 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     setSubmitted(false);
     setFirstNameError("");
     setLastNameError("");
-    setUsernameError("");
     setEmailError("");
     setSchoolError("");
     setRoleError("");
@@ -306,26 +278,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
 
         {/* Success screen */}
         {submitted ? (
-<<<<<<< HEAD
-          <div className="text-center py-6">
-            <div className="text-green-600 text-5xl mb-4">✓</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">
-              Request Submitted!
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Your registration request has been submitted successfully. Please
-              wait for an administrator to review and approve your account.
-            </p>
-            <button
-              onClick={handleReset}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition hover:cursor-pointer"
-            >
-              Close
-            </button>
-          </div>
-=======
           <RegistrationSuccessModal onClose={handleReset} />
->>>>>>> origin/shania-branch
         ) : (
           <>
             {error && (
@@ -382,30 +335,6 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                 </div>
 
                 <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
-<<<<<<< HEAD
-                  <User className="text-blue-600" size={18} />
-                  Username <span className="text-red-500">*</span>
-                </label>
-                <input
-                  value={username}
-                  onChange={(e) => {
-                    setUsername(e.target.value);
-                    if (usernameError) setUsernameError("");
-                  }}
-                  onBlur={() => {
-                    const err = validateUsername(username);
-                    setUsernameError(err);
-                  }}
-                  placeholder="e.g. juan.dela.cruz"
-                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${usernameError ? "border-red-500" : ""}`}
-                />
-                {usernameError && (
-                  <p className="text-sm text-red-600 mt-1">{usernameError}</p>
-                )}
-
-                <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
-=======
->>>>>>> origin/shania-branch
                   <Mail className="text-blue-600" size={18} />
                   Email <span className="text-red-500">*</span>
                 </label>
@@ -479,11 +408,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   </button>
                   <button
                     onClick={handleReset}
-<<<<<<< HEAD
                     className="text-gray-700 cursor-pointer px-6 py-2 border rounded-md w-full hover:bg-gray-100 transition"
-=======
-                    className="hover:bg-gray-400 text-gray-700 cursor-pointer px-6 py-2 border rounded-md w-full transition"
->>>>>>> origin/shania-branch
                   >
                     Cancel
                   </button>
@@ -572,4 +497,3 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     </div>
   );
 }
-
