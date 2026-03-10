@@ -3,17 +3,33 @@ const jwt = require("jsonwebtoken");
 const pool = require("../../config/db");
 
 const register = async (req, res) => {
-    const { first_name, last_name, email, password, school_id, requested_role } = req.body;
+    const { first_name, last_name, email, password, school_name, requested_role } = req.body;
 
-    if (!first_name || !last_name || !email || !password || !school_id) {
+    if (!first_name || !last_name || !email || !password || !school_name) {
         return res.status(400).json({ message: 'First name, last name, email, password and school are required' });
     }
 
     try {
+        // Add school to schools table if it doesn't exist yet
+        const [existingSchool] = await pool.promise().query(
+            'SELECT id FROM schools WHERE school_name = ? LIMIT 1',
+            [school_name.trim()]
+        );
+        if (existingSchool.length === 0) {
+            const school_code = school_name.trim()
+                .split(/\s+/)
+                .map(word => word[0].toUpperCase())
+                .join('');
+            await pool.promise().query(
+                'INSERT INTO schools (school_name, school_code) VALUES (?, ?)',
+                [school_name.trim(), school_code]
+            );
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const [result] = await pool.promise().query(
-            'INSERT INTO registration_requests (first_name, last_name, email, password_hash, school_id, requested_role) VALUES (?, ?, ?, ?, ?, ?)',
-            [first_name, last_name, email, hashedPassword, school_id, requested_role || null]
+            'INSERT INTO registration_requests (first_name, last_name, email, password_hash, school_name, requested_role) VALUES (?, ?, ?, ?, ?, ?)',
+            [first_name, last_name, email, hashedPassword, school_name.trim(), requested_role || null]
         );
         res.status(201).json({
             message: 'Registration request submitted successfully. Please wait for admin approval.',

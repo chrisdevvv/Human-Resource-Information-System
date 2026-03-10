@@ -85,10 +85,11 @@ CREATE TABLE `leaves` (
 
 CREATE TABLE `registration_requests` (
   `id` int(11) NOT NULL,
-  `username` varchar(50) NOT NULL,
+  `first_name` varchar(75) NOT NULL,
+  `last_name` varchar(75) NOT NULL,
   `email` varchar(191) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
-  `school_id` int(11) NOT NULL,
+  `school_name` varchar(255) NOT NULL,
   `status` enum('PENDING','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING',
   `requested_role` enum('ADMIN','DATA_ENCODER') DEFAULT NULL,
   `approved_role` enum('ADMIN','DATA_ENCODER') DEFAULT NULL,
