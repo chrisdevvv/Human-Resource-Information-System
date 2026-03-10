@@ -45,7 +45,17 @@ const Registration = {
 
             const request = rows[0];
             const role = approved_role || request.requested_role || 'DATA_ENCODER';
-            const username = `${request.first_name.trim().toLowerCase()}.${request.last_name.trim().toLowerCase()}`;
+            const baseUsername = `${request.first_name.trim().toLowerCase()}.${request.last_name.trim().toLowerCase()}`;
+
+            // Find a unique username by appending a number if needed
+            let username = baseUsername;
+            let counter = 2;
+            while (true) {
+                const [existing] = await conn.query('SELECT id FROM users WHERE username = ?', [username]);
+                if (existing.length === 0) break;
+                username = `${baseUsername}${counter}`;
+                counter++;
+            }
 
             await conn.query(
                 'INSERT INTO users (username, email, password_hash, role, school_id, is_active) VALUES (?, ?, ?, ?, ?, 1)',
