@@ -73,7 +73,9 @@ export default function LoginSuccessModal({ visible, user, onClose }: Props) {
           <div className="flex justify-center mb-3 text-green-600">
             <CheckCircle2 size={46} />
           </div>
-          <h3 className="text-xl font-semibold text-green-700">Login Successful</h3>
+          <h3 className="text-xl font-semibold text-green-700">
+            Login Successful
+          </h3>
           <p className="mt-4 text-sm text-gray-600">
             Redirecting in {countdown} second{countdown === 1 ? "" : "s"}...
           </p>

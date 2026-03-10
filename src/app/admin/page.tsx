@@ -28,7 +28,7 @@ export default function Page() {
         onTabChange={(t) => setActiveTab(t)}
         onToggleCollapse={(c) => setCollapsed(c)}
       />
-      <main className={`${collapsed ? "ml-20" : "ml-72"} p-6`}> 
+      <main className={`${collapsed ? "ml-20" : "ml-72"} p-6`}>
         <Admin />
       </main>
     </>
