@@ -5,7 +5,7 @@ const pool = require('./config/db');
 const testAccounts = [
   {
     username: 'superadmin',
-    email: process.env.DEFAULT_ADMIN_EMAIL || 'admin@deped.com',
+    email: process.env.DEFAULT_ADMIN_EMAIL || 'superadmin@deped.gov.ph',
     password: process.env.DEFAULT_ADMIN_PASSWORD || 'Admin@1234',
     role: 'SUPER_ADMIN',
     school_id: null,
