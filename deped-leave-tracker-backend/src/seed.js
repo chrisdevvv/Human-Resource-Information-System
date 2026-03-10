@@ -17,7 +17,7 @@ const testAccounts = [
     email: "testadmin@deped.gov.ph",
     password: "Admin@1234",
     role: "ADMIN",
-    school_id: 1,
+    school_id: "__SAMPLE_SCHOOL__",
   },
   {
     first_name: "Test",
@@ -25,7 +25,7 @@ const testAccounts = [
     email: "testencoder@deped.gov.ph",
     password: "Encoder@1234",
     role: "DATA_ENCODER",
-    school_id: 1,
+    school_id: "__SAMPLE_SCHOOL__",
   },
 ];
 
@@ -38,22 +38,34 @@ async function seed() {
   const db = pool.promise();
 
   try {
-    // 1. Ensure at least one school exists (id=1)
-    const [schools] = await db.query("SELECT id FROM schools LIMIT 1");
-    if (schools.length === 0) {
+    // 1. Ensure the sample school exists and capture its actual id
+    let sampleSchoolId;
+    const [schoolRows] = await db.query(
+      "SELECT id FROM schools WHERE school_name = ? LIMIT 1",
+      [sampleSchool.school_name],
+    );
+    if (schoolRows.length === 0) {
       const [result] = await db.query(
         "INSERT INTO schools (school_name, school_code) VALUES (?, ?)",
         [sampleSchool.school_name, sampleSchool.school_code],
       );
+      sampleSchoolId = result.insertId;
       console.log(
-        `✔  School created: "${sampleSchool.school_name}" (id=${result.insertId})`,
+        `✔  School created: "${sampleSchool.school_name}" (id=${sampleSchoolId})`,
       );
     } else {
-      console.log(`✔  School already exists (id=${schools[0].id}), skipping.`);
+      sampleSchoolId = schoolRows[0].id;
+      console.log(`✔  School already exists (id=${sampleSchoolId}), skipping.`);
     }
 
+    // Resolve placeholder school_id to the actual id
+    const resolvedAccounts = testAccounts.map((a) => ({
+      ...a,
+      school_id: a.school_id === "__SAMPLE_SCHOOL__" ? sampleSchoolId : a.school_id,
+    }));
+
     // 2. Upsert test user accounts so credentials stay usable on every seed run
-    for (const account of testAccounts) {
+    for (const account of resolvedAccounts) {
       const [existing] = await db.query(
         "SELECT id FROM users WHERE email = ? LIMIT 1",
         [account.email],
