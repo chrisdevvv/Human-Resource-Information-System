@@ -1,10 +1,13 @@
 "use client";
 // Component: RegistrationModal
 // Filename: RegistrationModal.tsx
-// Purpose: Simple registration modal placeholder to be opened from the login modal
-import React, { useState } from "react";
+// Purpose: Registration request form — submits to registration_requests table for admin approval
+import React, { useState, useEffect } from "react";
 import { Mail, Key, User, X, Building2 } from "../../assets/icons";
 import { RegistrationSuccessModal } from "../../registration";
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
 type School = { id: number; school_name: string; school_code: string };
 
@@ -18,11 +21,13 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [school, setSchool] = useState("");
+  const [schoolId, setSchoolId] = useState("");
+  const [requestedRole, setRequestedRole] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [schools, setSchools] = useState<School[]>([]);
   const [submitted, setSubmitted] = useState(false);
 
   // Individual field errors
@@ -30,12 +35,22 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   const [lastNameError, setLastNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [schoolError, setSchoolError] = useState("");
+  const [roleError, setRoleError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
 
-  function validateEmail(email: string) {
+  useEffect(() => {
+    if (visible) {
+      fetch(`${API_BASE_URL}/api/schools`)
+        .then((r) => r.json())
+        .then((d) => setSchools(d.data || []))
+        .catch(() => {});
+    }
+  }, [visible]);
+
+  function validateEmail(value: string) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
+    return re.test(value);
   }
 
   function validateName(name: string) {
@@ -45,42 +60,16 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   }
 
   function validatePassword(password: string) {
-    // At least 8 characters, must contain uppercase, lowercase, number, and special char
     if (password.length < 8)
-      return {
-        valid: false,
-        message: "Password must be at least 8 characters",
-      };
+      return { valid: false, message: "Password must be at least 8 characters" };
     if (!/[A-Z]/.test(password))
-      return {
-        valid: false,
-        message: "Password must contain an uppercase letter",
-      };
+      return { valid: false, message: "Password must contain an uppercase letter" };
     if (!/[a-z]/.test(password))
-      return {
-        valid: false,
-        message: "Password must contain a lowercase letter",
-      };
+      return { valid: false, message: "Password must contain a lowercase letter" };
     if (!/[0-9]/.test(password))
       return { valid: false, message: "Password must contain a number" };
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(password))
-      return {
-        valid: false,
-        message: "Password must contain a special character",
-      };
-    return { valid: true, message: "" };
-  }
-
-  function validateSchool(school: string) {
-    if (!school.trim()) {
-      return { valid: false, message: "School name is required" };
-    }
-    if (school.trim().length < 3) {
-      return {
-        valid: false,
-        message: "School name must be at least 3 characters",
-      };
-    }
+      return { valid: false, message: "Password must contain a special character" };
     return { valid: true, message: "" };
   }
 
@@ -111,14 +100,6 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       setEmailError("Please enter a valid email address");
     } else {
       setEmailError("");
-    }
-  }
-  function handleSchoolBlur() {
-    const validation = validateSchool(school);
-    if (!validation.valid) {
-      setSchoolError(validation.message);
-    } else {
-      setSchoolError("");
     }
   }
 
@@ -171,9 +152,13 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       hasError = true;
     }
 
-    const schoolValidation = validateSchool(school);
-    if (!schoolValidation.valid) {
-      setSchoolError(schoolValidation.message);
+    if (!schoolId) {
+      setSchoolError("Please select a school");
+      hasError = true;
+    }
+
+    if (!requestedRole) {
+      setRoleError("Please select a role");
       hasError = true;
     }
 
@@ -213,33 +198,27 @@ export default function RegistrationModal({ visible, onClose }: Props) {
 
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:3000/api/auth/register", {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
-          school,
           password,
+          school_id: Number(schoolId),
+          requested_role: requestedRole,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || "Failed to register");
+        setError(data.message || "Failed to submit registration request");
         return;
       }
 
-      // Store token if provided
-      if (data.token) {
-        localStorage.setItem("authToken", data.token);
-      }
-
       setSubmitted(true);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -250,7 +229,8 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     setFirstName("");
     setLastName("");
     setEmail("");
-    setSchool("");
+    setSchoolId("");
+    setRequestedRole("");
     setPassword("");
     setConfirmPassword("");
     setError("");
@@ -259,6 +239,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     setLastNameError("");
     setEmailError("");
     setSchoolError("");
+    setRoleError("");
     setPasswordError("");
     setConfirmPasswordError("");
     onClose();
@@ -351,33 +332,58 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   }}
                   onBlur={handleEmailBlur}
                   placeholder="name@deped.gov.ph"
-                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
-                    emailError ? "border-red-500" : ""
-                  }`}
+                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${emailError ? "border-red-500" : ""}`}
                 />
                 {emailError && (
                   <p className="text-sm text-red-600 mt-1">{emailError}</p>
                 )}
 
-                <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
-                  <Building2 className="text-blue-600" size={18} />
-                  School <span className="text-red-500">*</span>
-                </label>
-                <input
-                  value={school}
-                  onChange={(e) => {
-                    setSchool(e.target.value);
-                    if (schoolError) setSchoolError("");
-                  }}
-                  onBlur={handleSchoolBlur}
-                  placeholder="School Name (e.g., San Jose Del Monte National High School)"
-                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
-                    schoolError ? "border-red-500" : ""
-                  }`}
-                />
-                {schoolError && (
-                  <p className="text-sm text-red-600 mt-1">{schoolError}</p>
-                )}
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <div>
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <Building2 className="text-blue-600" size={18} />
+                      School <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={schoolId}
+                      onChange={(e) => {
+                        setSchoolId(e.target.value);
+                        if (schoolError) setSchoolError("");
+                      }}
+                      className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md bg-white ${schoolError ? "border-red-500" : ""}`}
+                    >
+                      <option value="">Select a school</option>
+                      {schools.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.school_name}
+                        </option>
+                      ))}
+                    </select>
+                    {schoolError && (
+                      <p className="text-sm text-red-600 mt-1">{schoolError}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      Role <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={requestedRole}
+                      onChange={(e) => {
+                        setRequestedRole(e.target.value);
+                        if (roleError) setRoleError("");
+                      }}
+                      className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md bg-white ${roleError ? "border-red-500" : ""}`}
+                    >
+                      <option value="">Select a role</option>
+                      <option value="DATA_ENCODER">Data Encoder</option>
+                      <option value="ADMIN">Admin</option>
+                    </select>
+                    {roleError && (
+                      <p className="text-sm text-red-600 mt-1">{roleError}</p>
+                    )}
+                  </div>
+                </div>
 
                 <div className="flex flex-col gap-3 items-center mt-6">
                   <button
@@ -417,18 +423,13 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   onChange={(e) => {
                     setPassword(e.target.value);
                     if (passwordError) setPasswordError("");
-                    if (confirmPassword && confirmPasswordError) {
-                      if (e.target.value === confirmPassword) {
-                        setConfirmPasswordError("");
-                      }
-                    }
+                    if (confirmPassword && e.target.value === confirmPassword)
+                      setConfirmPasswordError("");
                   }}
                   onBlur={handlePasswordBlur}
                   placeholder="Create a password"
                   type="password"
-                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
-                    passwordError ? "border-red-500" : ""
-                  }`}
+                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${passwordError ? "border-red-500" : ""}`}
                 />
                 {passwordError && (
                   <p className="text-sm text-red-600 mt-1">{passwordError}</p>
@@ -447,9 +448,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   onBlur={handleConfirmPasswordBlur}
                   placeholder="Confirm password"
                   type="password"
-                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
-                    confirmPasswordError ? "border-red-500" : ""
-                  }`}
+                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${confirmPasswordError ? "border-red-500" : ""}`}
                 />
                 {confirmPasswordError && (
                   <p className="text-sm text-red-600 mt-1">
@@ -463,7 +462,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                     disabled={isLoading}
                     className="hover:cursor-pointer px-6 py-2 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isLoading ? "Signing up..." : "Sign up"}
+                    {isLoading ? "Submitting..." : "Submit Request"}
                   </button>
                   <button
                     onClick={() => {
@@ -471,7 +470,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                       setError("");
                     }}
                     disabled={isLoading}
-                    className="px-6 py-2 border rounded-md w-full hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="text-gray-700 cursor-pointer px-6 py-2 border rounded-md w-full hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Back
                   </button>
@@ -484,3 +483,4 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     </div>
   );
 }
+

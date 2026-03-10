@@ -1,6 +1,8 @@
 import React from "react";
 import styles from "./styles.module.css";
 
+export { default as RegistrationSuccessModal } from "./RegistrationSuccessModal";
+
 export default function Registration() {
   return (
     <div className={styles.container}>
