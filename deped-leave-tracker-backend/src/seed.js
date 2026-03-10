@@ -4,21 +4,24 @@ const pool = require("./config/db");
 
 const testAccounts = [
   {
-    username: "superadmin",
+    first_name: "Super",
+    last_name: "Admin",
     email: "superadmin@deped.gov.ph",
     password: "Admin@1234",
     role: "SUPER_ADMIN",
     school_id: null,
   },
   {
-    username: "test.admin",
+    first_name: "Test",
+    last_name: "Admin",
     email: "testadmin@deped.gov.ph",
     password: "Admin@1234",
     role: "ADMIN",
     school_id: 1,
   },
   {
-    username: "test.encoder",
+    first_name: "Test",
+    last_name: "Encoder",
     email: "testencoder@deped.gov.ph",
     password: "Encoder@1234",
     role: "DATA_ENCODER",
@@ -52,17 +55,18 @@ async function seed() {
     // 2. Upsert test user accounts so credentials stay usable on every seed run
     for (const account of testAccounts) {
       const [existing] = await db.query(
-        "SELECT id FROM users WHERE email = ? OR username = ? LIMIT 1",
-        [account.email, account.username],
+        "SELECT id FROM users WHERE email = ? LIMIT 1",
+        [account.email],
       );
 
       const hashedPassword = await bcrypt.hash(account.password, 10);
 
       if (existing.length > 0) {
         await db.query(
-          "UPDATE users SET username = ?, email = ?, password_hash = ?, role = ?, school_id = ?, is_active = 1 WHERE id = ?",
+          "UPDATE users SET first_name = ?, last_name = ?, email = ?, password_hash = ?, role = ?, school_id = ?, is_active = 1 WHERE id = ?",
           [
-            account.username,
+            account.first_name,
+            account.last_name,
             account.email,
             hashedPassword,
             account.role,
@@ -71,15 +75,16 @@ async function seed() {
           ],
         );
         console.log(
-          `↻  Updated [${account.role}]: ${account.username} / ${account.email} / password: ${account.password}`,
+          `↻  Updated [${account.role}]: ${account.first_name} ${account.last_name} / ${account.email} / password: ${account.password}`,
         );
         continue;
       }
 
       await db.query(
-        "INSERT INTO users (username, email, password_hash, role, school_id, is_active) VALUES (?, ?, ?, ?, ?, 1)",
+        "INSERT INTO users (first_name, last_name, email, password_hash, role, school_id, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)",
         [
-          account.username,
+          account.first_name,
+          account.last_name,
           account.email,
           hashedPassword,
           account.role,
@@ -87,7 +92,7 @@ async function seed() {
         ],
       );
       console.log(
-        `✔  Created [${account.role}]: ${account.username} / ${account.email} / password: ${account.password}`,
+        `✔  Created [${account.role}]: ${account.first_name} ${account.last_name} / ${account.email} / password: ${account.password}`,
       );
     }
 

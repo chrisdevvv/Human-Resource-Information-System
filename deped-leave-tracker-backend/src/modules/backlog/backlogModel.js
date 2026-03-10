@@ -3,7 +3,7 @@ const pool = require('../../config/db');
 const Backlog = {
     getAll: async () => {
         const [rows] = await pool.promise().query(`
-            SELECT backlogs.*, users.username
+            SELECT backlogs.*, users.first_name, users.last_name
             FROM backlogs
             LEFT JOIN users ON backlogs.user_id = users.id
             ORDER BY backlogs.created_at DESC
