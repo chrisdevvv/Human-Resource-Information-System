@@ -207,7 +207,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
           last_name: lastName,
           email,
           password,
-          school,
+          school_name: school,
         }),
       });
 
