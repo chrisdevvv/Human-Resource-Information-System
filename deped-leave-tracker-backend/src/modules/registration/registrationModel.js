@@ -3,7 +3,7 @@ const pool = require('../../config/db');
 const Registration = {
     getAll: async (status = null) => {
         let query = `
-            SELECT rr.id, rr.username, rr.email, rr.school_id, rr.requested_role,
+            SELECT rr.id, rr.first_name, rr.last_name, rr.email, rr.school_id, rr.requested_role,
                    rr.approved_role, rr.status, rr.rejection_reason,
                    rr.reviewed_by, rr.reviewed_at, rr.created_at,
                    s.school_name, u.username AS reviewed_by_username
@@ -45,10 +45,11 @@ const Registration = {
 
             const request = rows[0];
             const role = approved_role || request.requested_role || 'DATA_ENCODER';
+            const username = `${request.first_name.trim().toLowerCase()}.${request.last_name.trim().toLowerCase()}`;
 
             await conn.query(
                 'INSERT INTO users (username, email, password_hash, role, school_id, is_active) VALUES (?, ?, ?, ?, ?, 1)',
-                [request.username, request.email, request.password_hash, role, request.school_id]
+                [username, request.email, request.password_hash, role, request.school_id]
             );
 
             await conn.query(

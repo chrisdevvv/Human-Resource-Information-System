@@ -8,14 +8,15 @@ import {
   ClipboardList,
   FileText,
   LayoutDashboard,
+  LogOut,
   Menu,
   X,
   Settings,
-  ShieldCheck,
   SettingsIcon,
-  User,
+  ShieldCheck,
   Users,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export type SidebarRole = "data-encoder" | "admin" | "super-admin";
 
@@ -77,12 +78,6 @@ const SIDEBAR_TABS: SidebarTab[] = [
     icon: Settings,
     roles: ["super-admin"],
   },
-  {
-    id: "profile",
-    label: "Profile",
-    icon: User,
-    roles: ALL_ROLES,
-  },
 ];
 
 function normalizeRole(role: string): SidebarRole {
@@ -109,16 +104,7 @@ function normalizeRole(role: string): SidebarRole {
 
 export function getSidebarTabsByRole(role: string): SidebarTab[] {
   const normalizedRole = normalizeRole(role);
-  return SIDEBAR_TABS.filter(
-    (tab) => tab.roles.includes(normalizedRole) && tab.id !== "profile",
-  );
-}
-
-export function getProfileTab(role: string): SidebarTab | undefined {
-  const normalizedRole = normalizeRole(role);
-  return SIDEBAR_TABS.find(
-    (tab) => tab.id === "profile" && tab.roles.includes(normalizedRole),
-  );
+  return SIDEBAR_TABS.filter((tab) => tab.roles.includes(normalizedRole));
 }
 
 type SidebarMobileProps = {
@@ -136,13 +122,19 @@ export default function SidebarMobile({
   title = "ELMS",
   className = "",
 }: SidebarMobileProps) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const tabs = useMemo(() => getSidebarTabsByRole(role), [role]);
-  const profileTab = useMemo(() => getProfileTab(role), [role]);
 
   const handleTabClick = (tabId: string) => {
     onTabChange(tabId);
     setIsOpen(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+    router.push("/login");
   };
 
   return (
@@ -195,30 +187,24 @@ export default function SidebarMobile({
             })}
           </div>
 
-          {/* Profile and Settings */}
-          {profileTab && (
-            <div className="border-t border-blue-700 p-3 space-y-1">
-              <button
-                type="button"
-                onClick={() => handleTabClick(profileTab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition ${
-                  activeTab === profileTab.id
-                    ? "bg-blue-800 text-white"
-                    : "text-blue-50 hover:bg-blue-700"
-                }`}
-              >
-                <User size={20} className="shrink-0" />
-                <span className="text-sm font-medium">{profileTab.label}</span>
-              </button>
-              <button
-                type="button"
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition text-blue-50 hover:bg-blue-700"
-              >
-                <SettingsIcon size={20} className="shrink-0" />
-                <span className="text-sm font-medium">Settings</span>
-              </button>
-            </div>
-          )}
+          {/* Logout and Settings */}
+          <div className="border-t border-blue-700 p-3 space-y-2">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition text-blue-50 hover:bg-red-600"
+            >
+              <LogOut size={20} className="shrink-0" />
+              <span className="text-sm font-medium">Logout</span>
+            </button>
+            <button
+              type="button"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition text-blue-50 hover:bg-blue-700"
+            >
+              <SettingsIcon size={20} className="shrink-0" />
+              <span className="text-sm font-medium">Settings</span>
+            </button>
+          </div>
         </nav>
       )}
     </div>

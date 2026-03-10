@@ -1,7 +1,36 @@
 "use client";
-import React from "react";
-import DataEncoder from "../../frontend/data-encoder";
+import React, { useEffect, useState } from "react";
+import DataEncoder from "../../frontend/data-encoder/EncoderIndex";
+import SidebarIndex from "../../frontend/sidebar/SidebarIndex";
 
 export default function Page() {
-  return <DataEncoder />;
+  const [role, setRole] = useState("data-encoder");
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("user");
+      if (raw) {
+        const u = JSON.parse(raw);
+        if (u?.role) setRole(u.role);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  return (
+    <>
+      <SidebarIndex
+        role={role}
+        activeTab={activeTab}
+        onTabChange={(t) => setActiveTab(t)}
+        onToggleCollapse={(c) => setCollapsed(c)}
+      />
+      <main className={`${collapsed ? "ml-20" : "ml-72"} p-6`}>
+        <DataEncoder />
+      </main>
+    </>
+  );
 }

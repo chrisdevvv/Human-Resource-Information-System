@@ -1,30 +1,58 @@
 "use client";
 
-import React from "react";
-import { CheckCircle2, ShieldCheck, X } from "lucide-react";
+"use client";
 
-type UserInfo = {
-  username?: string;
-  email?: string;
-  role?: string;
-};
+import React, { useEffect, useRef, useState } from "react";
+import { CheckCircle2, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 type Props = {
   visible: boolean;
-  user: UserInfo | null;
+  user: { username?: string; email?: string; role?: string } | null;
   onClose: () => void;
 };
 
-function formatRole(role?: string) {
-  if (!role) return "User";
-  return role
-    .toLowerCase()
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+function roleToPath(role?: string) {
+  if (!role) return "/";
+  const v = role.toLowerCase();
+  if (v.includes("super")) return "/super-admin";
+  if (v.includes("admin")) return "/admin";
+  if (v.includes("data") || v.includes("encoder")) return "/data-encoder";
+  return "/";
 }
 
 export default function LoginSuccessModal({ visible, user, onClose }: Props) {
+  const router = useRouter();
+  const REDIRECT_SECONDS = 3;
+  const [countdown, setCountdown] = useState(REDIRECT_SECONDS);
+  const hasRedirected = useRef(false);
+
+  useEffect(() => {
+    if (!visible) return;
+    hasRedirected.current = false;
+    setCountdown(REDIRECT_SECONDS);
+
+    const intervalId = window.setInterval(() => {
+      setCountdown((current) => Math.max(current - 1, 0));
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible || countdown !== 0 || hasRedirected.current) return;
+    hasRedirected.current = true;
+    onClose();
+    router.push(roleToPath(user?.role));
+  }, [countdown, visible, onClose, router, user?.role]);
+
   if (!visible) return null;
+
+  const handleContinue = () => {
+    hasRedirected.current = true;
+    onClose();
+    router.push(roleToPath(user?.role));
+  };
 
   return (
     <div
@@ -48,24 +76,14 @@ export default function LoginSuccessModal({ visible, user, onClose }: Props) {
           <h3 className="text-xl font-semibold text-green-700">
             Login Successful
           </h3>
-          <p className="text-gray-600 mt-2">Welcome back to DepEd ELMS.</p>
-
-          <div className="mt-5 p-3 rounded-md bg-green-50 border border-green-200 text-left">
-            <p className="text-sm text-gray-700">
-              <span className="font-medium">Account:</span>{" "}
-              {user?.email || user?.username || "Signed in"}
-            </p>
-            <div className="mt-1 flex items-center gap-2 text-sm text-gray-700">
-              <ShieldCheck size={16} className="text-green-600" />
-              <span className="font-medium">Role:</span>
-              <span>{formatRole(user?.role)}</span>
-            </div>
-          </div>
+          <p className="mt-4 text-sm text-gray-600">
+            Redirecting in {countdown} second{countdown === 1 ? "" : "s"}...
+          </p>
 
           <button
             type="button"
-            onClick={onClose}
-            className="cursor-pointer mt-5 px-5 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+            onClick={handleContinue}
+            className="cursor-pointer mt-3 px-5 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
           >
             Continue
           </button>
