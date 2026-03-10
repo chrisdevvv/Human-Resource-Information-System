@@ -3,6 +3,7 @@
 // Filename: LoginPage.tsx
 // Purpose: Compose welcome card and modals; manage visibility state for the login landing
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   WelcomeCard,
   LoginModal,
@@ -19,6 +20,7 @@ const backgroundImages = [
 ];
 
 export default function LoginPage() {
+  const router = useRouter();
   const [showLogin, setShowLogin] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
@@ -92,7 +94,12 @@ export default function LoginPage() {
       <LoginSuccessModal
         visible={showLoginSuccess}
         user={loggedInUser}
-        onClose={() => setShowLoginSuccess(false)}
+        onClose={() => {
+          setShowLoginSuccess(false);
+          if (loggedInUser?.role === "SUPER_ADMIN") router.push("/super-admin");
+          else if (loggedInUser?.role === "ADMIN") router.push("/admin");
+          else if (loggedInUser?.role === "DATA_ENCODER") router.push("/data-encoder");
+        }}
       />
 
       <ForgotModal visible={showForgot} onClose={() => setShowForgot(false)} />
