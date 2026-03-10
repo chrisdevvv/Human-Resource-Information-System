@@ -3,6 +3,7 @@
 // Filename: LoginPage.tsx
 // Purpose: Landing page with direct login form and sticky header
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff } from "../assets/icons";
 import {
   LoginSuccessModal,
@@ -12,9 +13,10 @@ import {
 } from "./components";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -245,7 +247,12 @@ export default function LoginPage() {
       <LoginSuccessModal
         visible={showLoginSuccess}
         user={loggedInUser}
-        onClose={() => setShowLoginSuccess(false)}
+        onClose={() => {
+          setShowLoginSuccess(false);
+          if (loggedInUser?.role === "SUPER_ADMIN") router.push("/super-admin");
+          else if (loggedInUser?.role === "ADMIN") router.push("/admin");
+          else if (loggedInUser?.role === "DATA_ENCODER") router.push("/data-encoder");
+        }}
       />
 
       <ForgotModal visible={showForgot} onClose={() => setShowForgot(false)} />

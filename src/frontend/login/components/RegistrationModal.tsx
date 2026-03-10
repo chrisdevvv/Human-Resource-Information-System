@@ -7,7 +7,7 @@ import { Mail, Key, User, X, Building2 } from "../../assets/icons";
 import { RegistrationSuccessModal } from "../../registration";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
 type Props = {
   visible: boolean;
@@ -69,6 +69,14 @@ export default function RegistrationModal({ visible, onClose }: Props) {
         message: "Password must contain a special character",
       };
     return { valid: true, message: "" };
+  }
+
+  function validateUsername(value: string) {
+    if (!value.trim()) return "Username is required";
+    if (value.length < 3) return "Username must be at least 3 characters";
+    if (!/^[a-zA-Z0-9._-]+$/.test(value))
+      return "Username may only contain letters, numbers, dots, underscores, or hyphens";
+    return "";
   }
 
   function handleFirstNameBlur() {
@@ -195,8 +203,8 @@ export default function RegistrationModal({ visible, onClose }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName,
-          lastName,
+          first_name: firstName,
+          last_name: lastName,
           email,
           password,
           school,
