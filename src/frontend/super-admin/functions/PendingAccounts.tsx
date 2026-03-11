@@ -2,12 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Search,
   ChevronLeft,
   ChevronRight,
   ArrowUpAZ,
   ArrowDownAZ,
 } from "lucide-react";
+import UserRolesDetailsModal, {
+  type RegistrationDetail,
+} from "../components/UserRolesDetailsModal";
+import RoleAssignmentModal from "../components/RoleAssignmentModal";
+import RejectModal from "../components/RejectModal";
 
 type RegistrationRequest = {
   id: number;
@@ -32,59 +36,64 @@ export default function PendingAccounts() {
   const [data, setData] = useState<RegistrationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Modal state
+  const [detailsTarget, setDetailsTarget] = useState<RegistrationDetail | null>(null);
+  const [assignTarget, setAssignTarget] = useState<{ id: number; name: string } | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<{ id: number; name: string } | null>(null);
+
   const itemsPerPage = 10;
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
   // Fetch pending accounts from backend
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        // Get JWT token from localStorage
-        const token = localStorage.getItem("authToken");
-        if (!token) {
-          throw new Error("No authentication token found. Please login first.");
-        }
-
-        const response = await fetch(
-          "http://localhost:3000/api/registrations/pending",
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch pending accounts");
-        }
-
-        const result = await response.json();
-        // Backend returns { data: [...] } format
-        const formattedData = (result.data || []).map((item: any) => ({
-          id: item.id,
-          firstName: item.first_name,
-          lastName: item.last_name,
-          email: item.email,
-          school: item.school_name,
-          requested_role: item.requested_role,
-          status: item.status,
-          created_at: item.created_at,
-        }));
-        setData(formattedData);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-        setData([]);
-      } finally {
-        setLoading(false);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("No authentication token found. Please login first.");
       }
-    };
 
+      const response = await fetch(
+        "http://localhost:3000/api/registrations/pending",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch pending accounts");
+      }
+
+      const result = await response.json();
+      const formattedData = (result.data || []).map((item: any) => ({
+        id: item.id,
+        firstName: item.first_name,
+        lastName: item.last_name,
+        email: item.email,
+        school: item.school_name,
+        requested_role: item.requested_role,
+        status: item.status,
+        created_at: item.created_at,
+      }));
+      setData(formattedData);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredData = data
@@ -262,13 +271,43 @@ export default function PendingAccounts() {
                     </td>
                     <td className="py-1 px-3">
                       <div className="flex items-center justify-center gap-2">
-                        <button className="px-4 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm font-medium cursor-pointer">
+                        <button
+                          onClick={() =>
+                            setDetailsTarget({
+                              id: item.id,
+                              firstName: item.firstName,
+                              lastName: item.lastName,
+                              email: item.email,
+                              school: item.school,
+                              requested_role: item.requested_role,
+                              status: item.status,
+                              created_at: item.created_at,
+                            })
+                          }
+                          className="px-4 py-1.5 bg-blue-400 text-white rounded hover:bg-blue-500 transition text-sm font-medium cursor-pointer"
+                        >
                           Details
                         </button>
-                        <button className="px-4 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm font-medium cursor-pointer">
+                        <button
+                          onClick={() =>
+                            setAssignTarget({
+                              id: item.id,
+                              name: `${item.firstName} ${item.lastName}`,
+                            })
+                          }
+                          className="px-4 py-1.5 bg-green-400 text-white rounded hover:bg-green-500 transition text-sm font-medium cursor-pointer"
+                        >
                           Assign Role
                         </button>
-                        <button className="px-4 py-1.5 bg-red-500 text-white rounded hover:bg-red-700 transition text-sm font-medium cursor-pointer">
+                        <button
+                          onClick={() =>
+                            setRejectTarget({
+                              id: item.id,
+                              name: `${item.firstName} ${item.lastName}`,
+                            })
+                          }
+                          className="px-4 py-1.5 bg-red-400 text-white rounded hover:bg-red-500 transition text-sm font-medium cursor-pointer"
+                        >
                           Reject
                         </button>
                       </div>
@@ -322,6 +361,38 @@ export default function PendingAccounts() {
             <ChevronRight size={18} />
           </button>
         </div>
+      )}
+
+      {/* Modals */}
+      {detailsTarget && (
+        <UserRolesDetailsModal
+          account={detailsTarget}
+          onClose={() => setDetailsTarget(null)}
+        />
+      )}
+
+      {assignTarget && (
+        <RoleAssignmentModal
+          accountId={assignTarget.id}
+          accountName={assignTarget.name}
+          onClose={() => setAssignTarget(null)}
+          onSuccess={() => {
+            setAssignTarget(null);
+            fetchData();
+          }}
+        />
+      )}
+
+      {rejectTarget && (
+        <RejectModal
+          accountId={rejectTarget.id}
+          accountName={rejectTarget.name}
+          onClose={() => setRejectTarget(null)}
+          onSuccess={() => {
+            setRejectTarget(null);
+            fetchData();
+          }}
+        />
       )}
     </div>
   );

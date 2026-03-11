@@ -89,4 +89,34 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+const verifyPassword = async (req, res) => {
+  const { password } = req.body;
+  if (!password) {
+    return res.status(400).json({ message: "Password is required" });
+  }
+
+  try {
+    const [results] = await pool
+      .promise()
+      .query("SELECT password_hash FROM users WHERE id = ? AND is_active = 1", [
+        req.user.id,
+      ]);
+    const user = results[0];
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Incorrect password" });
+    }
+
+    res.status(200).json({ message: "Password verified" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error verifying password", error: error.message });
+  }
+};
+
+module.exports = { register, login, verifyPassword };
