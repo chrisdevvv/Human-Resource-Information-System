@@ -82,14 +82,20 @@ const login = async (req, res) => {
   }
 
   try {
-    const [results] = await pool
+    const [allResults] = await pool
       .promise()
-      .query("SELECT * FROM users WHERE email = ? AND is_active = 1", [email]);
-    const user = results[0];
+      .query("SELECT * FROM users WHERE email = ?", [email]);
+    const userRecord = allResults[0];
 
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+    if (!userRecord || !(await bcrypt.compare(password, userRecord.password_hash))) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
+
+    if (!userRecord.is_active) {
+      return res.status(403).json({ message: "Account is deactivated" });
+    }
+
+    const user = userRecord;
 
     const token = jwt.sign(
       {

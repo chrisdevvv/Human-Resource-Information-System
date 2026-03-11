@@ -84,9 +84,11 @@ export default function LoginPage() {
         setError({
           title: "Login Error",
           desc:
-            backendMessage.toLowerCase() === "invalid credentials"
-              ? "Invalid email or password."
-              : backendMessage || "Failed to login",
+            backendMessage.toLowerCase() === "account is deactivated"
+              ? "Your account has been deactivated. Please contact your administrator for assistance."
+              : backendMessage.toLowerCase() === "invalid credentials"
+                ? "Invalid email or password."
+                : backendMessage || "Failed to login",
         });
         return;
       }
