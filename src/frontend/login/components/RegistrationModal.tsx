@@ -253,13 +253,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       <div className="relative bg-white p-10 rounded-lg w-full max-w-3xl shadow">
         <div className="flex items-center justify-center mb-6">
           <h2 className="text-3xl font-bold text-sky-800">Registration Form</h2>
-          <button
-            aria-label="Close"
-            onClick={handleReset}
-            className="transition hover:cursor-pointer hover:bg-red-500 hover:text-white absolute top-6 right-6 text-gray-600 p-1 rounded"
-          >
             <X size={18} />
-          </button>
         </div>
 
         {/* Success screen */}

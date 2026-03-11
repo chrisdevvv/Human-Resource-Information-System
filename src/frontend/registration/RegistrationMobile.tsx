@@ -6,7 +6,7 @@ import { Building2, Key, Mail, User } from "../assets/icons";
 import RegistrationSuccessModal from "./RegistrationSuccessModal";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
 type StepId = 1 | 2;
 
