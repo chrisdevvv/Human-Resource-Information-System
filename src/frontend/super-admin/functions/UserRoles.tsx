@@ -337,7 +337,9 @@ export default function UserRoles() {
       )}
 
       {/* Pending Accounts Tab */}
-      {activeTab === "pending" && <PendingAccounts />}
+      {activeTab === "pending" && (
+        <PendingAccounts onRefreshUsers={() => fetchUsers(false)} />
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
 import UserRoles from "./functions/UserRoles";
 import styles from "./styles.module.css";
 
@@ -11,10 +11,23 @@ type SuperAdminProps = {
 export default function SuperAdmin({
   activeTab = "dashboard",
 }: SuperAdminProps) {
+  // Increase tab key only when the selected tab changes so that tab content
+  // remounts and re-fetches fresh data on every tab re-entry.
+  const tabVisitCounts = useRef<Record<string, number>>({});
+  const lastActiveTab = useRef<string>(activeTab);
+
+  if (lastActiveTab.current !== activeTab) {
+    tabVisitCounts.current[activeTab] =
+      (tabVisitCounts.current[activeTab] ?? 0) + 1;
+    lastActiveTab.current = activeTab;
+  }
+
+  const tabKey = `${activeTab}-${tabVisitCounts.current[activeTab] ?? 0}`;
+
   const renderContent = () => {
     switch (activeTab) {
       case "user-roles":
-        return <UserRoles />;
+        return <UserRoles key={tabKey} />;
       default:
         return (
           <div className={styles.container}>
