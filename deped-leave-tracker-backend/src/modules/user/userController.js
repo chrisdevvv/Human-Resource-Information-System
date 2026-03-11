@@ -63,6 +63,11 @@ const updateUserStatus = async (req, res) => {
             return res.status(400).json({ message: 'is_active (true/false) is required' });
         }
 
+        // Only SUPER_ADMIN can change account status
+        if (req.user.role !== 'SUPER_ADMIN') {
+            return res.status(403).json({ message: 'Only SUPER_ADMIN users can change account status' });
+        }
+
         const user = await User.getById(req.params.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
