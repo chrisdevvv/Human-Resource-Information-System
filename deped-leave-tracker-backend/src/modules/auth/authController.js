@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const pool = require("../../config/db");
+const { sendRegistrationReceived } = require("../../utils/mailer");
 
 const register = async (req, res) => {
   const {
@@ -53,6 +54,9 @@ const register = async (req, res) => {
           requested_role || null,
         ],
       );
+    // Fire-and-forget — email failure must not block the registration response
+    sendRegistrationReceived(email, first_name);
+
     res.status(201).json({
       message:
         "Registration request submitted successfully. Please wait for admin approval.",
