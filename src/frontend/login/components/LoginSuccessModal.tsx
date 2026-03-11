@@ -8,7 +8,12 @@ import { useRouter } from "next/navigation";
 
 type Props = {
   visible: boolean;
-  user: { username?: string; email?: string; role?: string } | null;
+  user: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    role?: string;
+  } | null;
   onClose: () => void;
 };
 

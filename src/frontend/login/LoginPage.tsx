@@ -27,7 +27,8 @@ export default function LoginPage() {
   const [showRegister, setShowRegister] = useState(false);
   const [showLoginSuccess, setShowLoginSuccess] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<{
-    username?: string;
+    firstName?: string;
+    lastName?: string;
     email?: string;
     role?: string;
   } | null>(null);
@@ -251,7 +252,8 @@ export default function LoginPage() {
           setShowLoginSuccess(false);
           if (loggedInUser?.role === "SUPER_ADMIN") router.push("/super-admin");
           else if (loggedInUser?.role === "ADMIN") router.push("/admin");
-          else if (loggedInUser?.role === "DATA_ENCODER") router.push("/data-encoder");
+          else if (loggedInUser?.role === "DATA_ENCODER")
+            router.push("/data-encoder");
         }}
       />
 
