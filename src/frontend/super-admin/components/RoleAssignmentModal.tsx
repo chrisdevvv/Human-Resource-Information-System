@@ -38,14 +38,17 @@ export default function RoleAssignmentModal({
       if (!token) throw new Error("No authentication token found.");
 
       // Verify super-admin password first
-      const verifyRes = await fetch("http://localhost:3000/api/auth/verify-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const verifyRes = await fetch(
+        "http://localhost:3000/api/auth/verify-password",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ password }),
         },
-        body: JSON.stringify({ password }),
-      });
+      );
 
       if (!verifyRes.ok) {
         const body = await verifyRes.json();

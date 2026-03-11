@@ -52,7 +52,10 @@ export default function UserRolesDetailsModal({ account, onClose }: Props) {
         </h2>
 
         <div className="space-y-3">
-          <Row label="Full Name" value={`${account.firstName} ${account.lastName}`} />
+          <Row
+            label="Full Name"
+            value={`${account.firstName} ${account.lastName}`}
+          />
           <Row label="Email" value={account.email} />
           <Row label="School" value={account.school} />
           <Row

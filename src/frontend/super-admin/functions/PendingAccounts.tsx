@@ -38,9 +38,17 @@ export default function PendingAccounts() {
   const [error, setError] = useState<string | null>(null);
 
   // Modal state
-  const [detailsTarget, setDetailsTarget] = useState<RegistrationDetail | null>(null);
-  const [assignTarget, setAssignTarget] = useState<{ id: number; name: string } | null>(null);
-  const [rejectTarget, setRejectTarget] = useState<{ id: number; name: string } | null>(null);
+  const [detailsTarget, setDetailsTarget] = useState<RegistrationDetail | null>(
+    null,
+  );
+  const [assignTarget, setAssignTarget] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
 
   const itemsPerPage = 10;
 
@@ -93,7 +101,7 @@ export default function PendingAccounts() {
 
   useEffect(() => {
     fetchData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredData = data
