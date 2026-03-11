@@ -8,6 +8,7 @@ const employeeRoutes = require('./modules/employee/employeeRoutes');
 const schoolRoutes = require('./modules/school/schoolRoutes');
 const backlogRoutes = require('./modules/backlog/backlogRoutes');
 const registrationRoutes = require('./modules/registration/registrationRoutes');
+const userRoutes = require('./modules/user/userRoutes');
 const pool = require('./config/db');
 
 const app = express();
@@ -25,6 +26,7 @@ app.use('/api/employees', employeeRoutes);
 app.use('/api/schools', schoolRoutes);
 app.use('/api/backlogs', backlogRoutes);
 app.use('/api/registrations', registrationRoutes);
+app.use('/api/users', userRoutes);
 
 // Start the server
 app.listen(PORT, async () => {
