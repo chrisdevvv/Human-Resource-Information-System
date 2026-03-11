@@ -30,7 +30,9 @@ type PendingAccountsProps = {
   onRefreshUsers?: () => void;
 };
 
-export default function PendingAccounts({ onRefreshUsers }: PendingAccountsProps) {
+export default function PendingAccounts({
+  onRefreshUsers,
+}: PendingAccountsProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("PENDING");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
