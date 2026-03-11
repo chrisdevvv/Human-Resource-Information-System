@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 09, 2026 at 07:16 AM
+-- Generation Time: Mar 10, 2026 at 08:23 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -112,13 +112,6 @@ CREATE TABLE `schools` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `schools`
---
-
-INSERT INTO `schools` (`id`, `school_name`, `school_code`, `created_at`) VALUES
-(1, 'San Jose Del Monte National High School', 'SJDMNHS', '2026-03-09 04:15:04');
-
 -- --------------------------------------------------------
 
 --
@@ -138,7 +131,8 @@ CREATE TABLE `super_admin_schools` (
 
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
-  `username` varchar(50) NOT NULL,
+  `first_name` varchar(75) NOT NULL,
+  `last_name` varchar(75) NOT NULL,
   `email` varchar(191) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
   `role` enum('SUPER_ADMIN','ADMIN','DATA_ENCODER') NOT NULL,
@@ -147,15 +141,6 @@ CREATE TABLE `users` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `users`
---
-
-INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `role`, `school_id`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'superadmin', 'admin@deped.com', '$2b$10$h8B.4Eosd5eOFls3Ps1uLeLTX1hgT3xJo4qgY1B5R/1RlB.56cXyC', 'SUPER_ADMIN', NULL, 1, '2026-03-09 04:15:04', '2026-03-09 04:15:04'),
-(2, 'test.admin', 'testadmin@deped.gov.ph', '$2b$10$NiIvkhJllAwQ0kzAEtJe9.owRaluKJzrx9crIjLywa8x.4JC5Cg2O', 'ADMIN', 1, 1, '2026-03-09 04:15:04', '2026-03-09 04:15:04'),
-(3, 'test.encoder', 'testencoder@deped.gov.ph', '$2b$10$MNjIZ/ze8X1RuvQ1bnxDbOZaIxWiNNifXPIdQF1ifCWD3TjVnnBxe', 'DATA_ENCODER', 1, 1, '2026-03-09 04:15:04', '2026-03-09 04:15:04');
 
 --
 -- Indexes for dumped tables
@@ -192,11 +177,9 @@ ALTER TABLE `leaves`
 --
 ALTER TABLE `registration_requests`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uk_regreq_username` (`username`),
   ADD UNIQUE KEY `uk_regreq_email` (`email`),
-  ADD KEY `idx_regreq_school` (`school_id`),
   ADD KEY `idx_regreq_status` (`status`),
-  ADD KEY `idx_regreq_reviewed_by` (`reviewed_by`);
+  ADD KEY `fk_regreq_reviewed_by` (`reviewed_by`);
 
 --
 -- Indexes for table `schools`
@@ -217,7 +200,6 @@ ALTER TABLE `super_admin_schools`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uk_username` (`username`),
   ADD UNIQUE KEY `uk_email` (`email`),
   ADD KEY `idx_users_school_id` (`school_id`);
 
@@ -247,13 +229,13 @@ ALTER TABLE `leaves`
 -- AUTO_INCREMENT for table `registration_requests`
 --
 ALTER TABLE `registration_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `schools`
 --
 ALTER TABLE `schools`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -290,8 +272,7 @@ ALTER TABLE `leaves`
 -- Constraints for table `registration_requests`
 --
 ALTER TABLE `registration_requests`
-  ADD CONSTRAINT `fk_regreq_reviewed_by` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_regreq_school` FOREIGN KEY (`school_id`) REFERENCES `schools` (`id`) ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_regreq_reviewed_by` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `super_admin_schools`
