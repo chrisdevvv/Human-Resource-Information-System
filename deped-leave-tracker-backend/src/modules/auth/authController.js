@@ -13,12 +13,9 @@ const register = async (req, res) => {
   } = req.body;
 
   if (!first_name || !last_name || !email || !password || !school_name) {
-    return res
-      .status(400)
-      .json({
-        message:
-          "First name, last name, email, password and school are required",
-      });
+    return res.status(400).json({
+      message: "First name, last name, email, password and school are required",
+    });
   }
 
   try {
@@ -65,12 +62,10 @@ const register = async (req, res) => {
     if (error.code === "ER_DUP_ENTRY") {
       return res.status(409).json({ message: "Email is already registered" });
     }
-    res
-      .status(500)
-      .json({
-        message: "Error submitting registration request",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Error submitting registration request",
+      error: error.message,
+    });
   }
 };
 
@@ -84,11 +79,15 @@ const login = async (req, res) => {
   try {
     const [results] = await pool
       .promise()
-      .query("SELECT * FROM users WHERE email = ? AND is_active != 0", [email]);
+      .query("SELECT * FROM users WHERE email = ?", [email]);
     const user = results[0];
 
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
       return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    if (!user.is_active) {
+      return res.status(403).json({ message: "Account is deactivated" });
     }
 
     const token = jwt.sign(
