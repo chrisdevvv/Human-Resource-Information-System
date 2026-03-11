@@ -56,16 +56,6 @@ export default function RejectModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 relative">
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          disabled={loading}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition cursor-pointer disabled:opacity-50"
-          aria-label="Close"
-        >
-          <X size={20} />
-        </button>
-
         <h2 className="text-xl font-bold text-gray-800 mb-1">
           Reject Registration
         </h2>

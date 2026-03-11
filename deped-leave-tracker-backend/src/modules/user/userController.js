@@ -36,6 +36,11 @@ const updateUserRole = async (req, res) => {
             return res.status(400).json({ message: `Role must be one of: ${VALID_ROLES.join(', ')}` });
         }
 
+        // Only SUPER_ADMIN can update user roles
+        if (req.user.role !== 'SUPER_ADMIN') {
+            return res.status(403).json({ message: 'Only SUPER_ADMIN users can assign roles' });
+        }
+
         const user = await User.getById(req.params.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 

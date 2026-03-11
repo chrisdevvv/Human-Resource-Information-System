@@ -31,6 +31,10 @@ const getRegistrationById = async (req, res) => {
 
 const approveRegistration = async (req, res) => {
     try {
+        if (req.user.role !== 'SUPER_ADMIN') {
+            return res.status(403).json({ message: 'Only super admin can approve registrations' });
+        }
+
         const { approved_role } = req.body;
         await Registration.approve(req.params.id, approved_role || null, req.user.id);
         res.status(200).json({ message: 'Registration request approved successfully' });
@@ -42,6 +46,10 @@ const approveRegistration = async (req, res) => {
 
 const rejectRegistration = async (req, res) => {
     try {
+        if (req.user.role !== 'SUPER_ADMIN') {
+            return res.status(403).json({ message: 'Only super admin can reject registrations' });
+        }
+
         const { rejection_reason } = req.body;
         await Registration.reject(req.params.id, rejection_reason || null, req.user.id);
         res.status(200).json({ message: 'Registration request rejected' });

@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
+  Activity,
   BarChart3,
   CalendarDays,
   ChevronLeft,
@@ -78,6 +79,12 @@ const SIDEBAR_TABS: SidebarTab[] = [
     label: "System Settings",
     icon: Settings,
     roles: ["super-admin"],
+  },
+  {
+    id: "logs",
+    label: "Logs",
+    icon: Activity,
+    roles: ["admin", "super-admin"],
   },
 ];
 

@@ -19,7 +19,9 @@ type RegistrationRequest = {
   lastName: string;
   email: string;
   school: string;
-  requested_role: string;
+  approved_role?: string | null;
+  rejection_reason?: string | null;
+  reviewed_at?: string | null;
   status: "PENDING" | "APPROVED" | "REJECTED";
   created_at: string;
 };
@@ -54,28 +56,33 @@ export default function PendingAccounts() {
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-  // Fetch pending accounts from backend
-  const fetchData = async () => {
+  // Fetch registrations from backend and optionally skip the full-page spinner for polling refreshes.
+  const fetchData = async (status: string, showSpinner = true) => {
     try {
-      setLoading(true);
+      if (showSpinner) {
+        setLoading(true);
+      }
+
       const token = localStorage.getItem("authToken");
       if (!token) {
         throw new Error("No authentication token found. Please login first.");
       }
 
-      const response = await fetch(
-        "http://localhost:3000/api/registrations/pending",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+      const url =
+        status === "ALL"
+          ? "http://localhost:3000/api/registrations/"
+          : `http://localhost:3000/api/registrations/?status=${status}`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch pending accounts");
+        throw new Error("Failed to fetch registrations");
       }
 
       const result = await response.json();
@@ -85,7 +92,9 @@ export default function PendingAccounts() {
         lastName: item.last_name,
         email: item.email,
         school: item.school_name,
-        requested_role: item.requested_role,
+        approved_role: item.approved_role,
+        rejection_reason: item.rejection_reason,
+        reviewed_at: item.reviewed_at,
         status: item.status,
         created_at: item.created_at,
       }));
@@ -93,16 +102,26 @@ export default function PendingAccounts() {
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
-      setData([]);
+      if (showSpinner) {
+        setData([]);
+      }
     } finally {
-      setLoading(false);
+      if (showSpinner) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(statusFilter);
+
+    const intervalId = window.setInterval(() => {
+      fetchData(statusFilter, false);
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [statusFilter]);
 
   const filteredData = data
     .filter((item) => {
@@ -111,11 +130,10 @@ export default function PendingAccounts() {
         item.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.school.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = item.status === statusFilter;
       const matchesLetter =
         letterFilter === "ALL" ||
         item.firstName.charAt(0).toUpperCase() === letterFilter;
-      return matchesSearch && matchesStatus && matchesLetter;
+      return matchesSearch && matchesLetter;
     })
     .sort((a, b) => {
       // First sort by date
@@ -182,6 +200,7 @@ export default function PendingAccounts() {
             }}
             className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
           >
+            <option value="ALL">All</option>
             <option value="PENDING">Pending</option>
             <option value="APPROVED">Approved</option>
             <option value="REJECTED">Rejected</option>
@@ -287,7 +306,9 @@ export default function PendingAccounts() {
                               lastName: item.lastName,
                               email: item.email,
                               school: item.school,
-                              requested_role: item.requested_role,
+                              approved_role: item.approved_role,
+                              rejection_reason: item.rejection_reason,
+                              reviewed_at: item.reviewed_at,
                               status: item.status,
                               created_at: item.created_at,
                             })
@@ -296,28 +317,44 @@ export default function PendingAccounts() {
                         >
                           Details
                         </button>
-                        <button
-                          onClick={() =>
-                            setAssignTarget({
-                              id: item.id,
-                              name: `${item.firstName} ${item.lastName}`,
-                            })
-                          }
-                          className="px-4 py-1.5 bg-green-400 text-white rounded hover:bg-green-500 transition text-sm font-medium cursor-pointer"
-                        >
-                          Assign Role
-                        </button>
-                        <button
-                          onClick={() =>
-                            setRejectTarget({
-                              id: item.id,
-                              name: `${item.firstName} ${item.lastName}`,
-                            })
-                          }
-                          className="px-4 py-1.5 bg-red-400 text-white rounded hover:bg-red-500 transition text-sm font-medium cursor-pointer"
-                        >
-                          Reject
-                        </button>
+                        {item.status === "PENDING" ? (
+                          <>
+                            <button
+                              onClick={() =>
+                                setAssignTarget({
+                                  id: item.id,
+                                  name: `${item.firstName} ${item.lastName}`,
+                                })
+                              }
+                              className="px-4 py-1.5 bg-green-400 text-white rounded hover:bg-green-500 transition text-sm font-medium cursor-pointer"
+                            >
+                              Assign Role
+                            </button>
+                            <button
+                              onClick={() =>
+                                setRejectTarget({
+                                  id: item.id,
+                                  name: `${item.firstName} ${item.lastName}`,
+                                })
+                              }
+                              className="px-4 py-1.5 bg-red-400 text-white rounded hover:bg-red-500 transition text-sm font-medium cursor-pointer"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        ) : (
+                          <span
+                            className={`px-4 py-1.5 rounded text-sm font-semibold ${
+                              item.status === "APPROVED"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {item.status === "APPROVED"
+                              ? "Approved"
+                              : "Rejected"}
+                          </span>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -386,7 +423,7 @@ export default function PendingAccounts() {
           onClose={() => setAssignTarget(null)}
           onSuccess={() => {
             setAssignTarget(null);
-            fetchData();
+            fetchData(statusFilter);
           }}
         />
       )}
@@ -398,7 +435,7 @@ export default function PendingAccounts() {
           onClose={() => setRejectTarget(null)}
           onSuccess={() => {
             setRejectTarget(null);
-            fetchData();
+            fetchData(statusFilter);
           }}
         />
       )}

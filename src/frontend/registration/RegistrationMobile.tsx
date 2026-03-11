@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { Building2, Key, Mail, User } from "../assets/icons";
 import RegistrationSuccessModal from "./RegistrationSuccessModal";
 
@@ -29,6 +30,8 @@ export default function RegistrationMobile() {
   const [schoolError, setSchoolError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   function validateEmail(value: string) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -333,22 +336,34 @@ export default function RegistrationMobile() {
                     <Key className="text-blue-600" size={18} />
                     Create password <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (passwordError) setPasswordError("");
-                      if (
-                        confirmPassword &&
-                        e.target.value === confirmPassword
-                      ) {
-                        setConfirmPasswordError("");
+                  <div className="relative mt-2">
+                    <input
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (passwordError) setPasswordError("");
+                        if (
+                          confirmPassword &&
+                          e.target.value === confirmPassword
+                        ) {
+                          setConfirmPasswordError("");
+                        }
+                      }}
+                      placeholder="Create a password"
+                      type={showPassword ? "text" : "password"}
+                      className={`w-full text-gray-700 px-3 py-2 pr-10 border rounded-md placeholder:text-gray-500 ${passwordError ? "border-red-500" : ""}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 cursor-pointer"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
                       }
-                    }}
-                    placeholder="Create a password"
-                    type="password"
-                    className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${passwordError ? "border-red-500" : ""}`}
-                  />
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                   {passwordError && (
                     <p className="text-sm text-red-600 mt-1">{passwordError}</p>
                   )}
@@ -357,16 +372,34 @@ export default function RegistrationMobile() {
                     <Key className="text-blue-600" size={18} />
                     Confirm password <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    value={confirmPassword}
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value);
-                      if (confirmPasswordError) setConfirmPasswordError("");
-                    }}
-                    placeholder="Confirm password"
-                    type="password"
-                    className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${confirmPasswordError ? "border-red-500" : ""}`}
-                  />
+                  <div className="relative mt-2">
+                    <input
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        if (confirmPasswordError) setConfirmPasswordError("");
+                      }}
+                      placeholder="Confirm password"
+                      type={showConfirmPassword ? "text" : "password"}
+                      className={`w-full text-gray-700 px-3 py-2 pr-10 border rounded-md placeholder:text-gray-500 ${confirmPasswordError ? "border-red-500" : ""}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 cursor-pointer"
+                      aria-label={
+                        showConfirmPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff size={16} />
+                      ) : (
+                        <Eye size={16} />
+                      )}
+                    </button>
+                  </div>
                   {confirmPasswordError && (
                     <p className="text-sm text-red-600 mt-1">
                       {confirmPasswordError}

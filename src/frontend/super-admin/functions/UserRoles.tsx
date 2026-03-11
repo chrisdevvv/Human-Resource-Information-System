@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Search,
   ChevronLeft,
   ChevronRight,
   ArrowUpAZ,
@@ -10,69 +9,105 @@ import {
 } from "lucide-react";
 import PendingAccounts from "./PendingAccounts";
 
-type RegistrationRequest = {
+type User = {
   id: number;
   firstName: string;
   lastName: string;
   email: string;
-  school: string;
-  requested_role: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
-  created_at: string;
+  schoolName: string;
+  role: "SUPER_ADMIN" | "ADMIN" | "DATA_ENCODER";
+  isActive: boolean;
 };
 
 export default function UserRoles() {
   const [activeTab, setActiveTab] = useState<"users" | "pending">("users");
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("PENDING");
+  const [roleFilter, setRoleFilter] = useState("ALL");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [dateSortOrder, setDateSortOrder] = useState<"newest" | "oldest">(
-    "newest",
-  );
   const [letterFilter, setLetterFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
+  const [userData, setUserData] = useState<User[]>([]);
+  const [userLoading, setUserLoading] = useState(true);
+  const [userError, setUserError] = useState<string | null>(null);
   const itemsPerPage = 10;
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-  // Mock data - will connect to backend later
-  const mockData: RegistrationRequest[] = [];
+  const fetchUsers = async (showSpinner = true) => {
+    try {
+      if (showSpinner) {
+        setUserLoading(true);
+      }
 
-  const filteredData = mockData
-    .filter((item) => {
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("No authentication token found.");
+
+      const response = await fetch("http://localhost:3000/api/users/", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch users");
+
+      const result = await response.json();
+      const formatted = (result.data || []).map((item: any) => ({
+        id: item.id,
+        firstName: item.first_name,
+        lastName: item.last_name,
+        email: item.email,
+        schoolName: item.school_name || "N/A",
+        role: item.role,
+        isActive: Boolean(item.is_active),
+      }));
+      setUserData(formatted);
+      setUserError(null);
+    } catch (err) {
+      setUserError(err instanceof Error ? err.message : "An error occurred");
+      if (showSpinner) {
+        setUserData([]);
+      }
+    } finally {
+      if (showSpinner) {
+        setUserLoading(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+
+    const intervalId = window.setInterval(() => {
+      fetchUsers(false);
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const filteredUsers = userData
+    .filter((user) => {
       const matchesSearch =
-        item.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.school.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = item.status === statusFilter;
+        user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.schoolName.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
       const matchesLetter =
         letterFilter === "ALL" ||
-        item.firstName.charAt(0).toUpperCase() === letterFilter;
-      return matchesSearch && matchesStatus && matchesLetter;
+        user.firstName.charAt(0).toUpperCase() === letterFilter;
+      return matchesSearch && matchesRole && matchesLetter;
     })
     .sort((a, b) => {
-      // First sort by date
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
-
-      if (dateSortOrder === "newest") {
-        if (dateB !== dateA) return dateB - dateA;
-      } else {
-        if (dateA !== dateB) return dateA - dateB;
-      }
-
-      // Then sort by name if dates are equal
-      if (sortOrder === "asc") {
-        return a.firstName.localeCompare(b.firstName);
-      } else {
-        return b.firstName.localeCompare(a.firstName);
-      }
+      if (sortOrder === "asc") return a.firstName.localeCompare(b.firstName);
+      return b.firstName.localeCompare(a.firstName);
     });
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredData.slice(startIdx, startIdx + itemsPerPage);
+  const paginatedUsers = filteredUsers.slice(startIdx, startIdx + itemsPerPage);
 
   const handleSearch = () => {
     setCurrentPage(1);
@@ -81,7 +116,7 @@ export default function UserRoles() {
   return (
     <div className="w-full">
       {/* Tabs */}
-      <div className="flex justify-end gap-2 mb-4">
+      <div className="flex justify-center gap-2 mb-4">
         <button
           onClick={() => setActiveTab("users")}
           className={`px-6 py-2 font-medium text-sm rounded-t-lg transition cursor-pointer ${
@@ -134,18 +169,19 @@ export default function UserRoles() {
 
             {/* Filters Row */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              {/* Status Filter */}
+              {/* Role Filter */}
               <select
-                value={statusFilter}
+                value={roleFilter}
                 onChange={(e) => {
-                  setStatusFilter(e.target.value);
+                  setRoleFilter(e.target.value);
                   setCurrentPage(1);
                 }}
                 className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
               >
-                <option value="PENDING">Pending</option>
-                <option value="APPROVED">Approved</option>
-                <option value="REJECTED">Rejected</option>
+                <option value="ALL">All Roles</option>
+                <option value="SUPER_ADMIN">Super Admin</option>
+                <option value="ADMIN">Admin</option>
+                <option value="DATA_ENCODER">Data Encoder</option>
               </select>
 
               {/* Alphabet Filter */}
@@ -163,19 +199,6 @@ export default function UserRoles() {
                     {letter}
                   </option>
                 ))}
-              </select>
-
-              {/* Date Sort Filter */}
-              <select
-                value={dateSortOrder}
-                onChange={(e) => {
-                  setDateSortOrder(e.target.value as "newest" | "oldest");
-                  setCurrentPage(1);
-                }}
-                className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
-              >
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
               </select>
 
               {/* Sort Button */}
@@ -202,51 +225,74 @@ export default function UserRoles() {
 
           {/* Table */}
           <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
-            <table className="w-full">
-              <thead className="sticky top-0 z-10 bg-white">
-                <tr className="border-b-2 border-gray-200">
-                  <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
-                    Name
-                  </th>
-                  <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
-                    Email
-                  </th>
-                  <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedData.length > 0 ? (
-                  paginatedData.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="border-b border-gray-100 hover:bg-gray-50 transition"
-                    >
-                      <td className="py-1 px-3 text-gray-900 text-sm font-medium">
-                        {item.firstName} {item.lastName}
-                      </td>
-                      <td className="py-1 px-3 text-gray-500 text-sm">
-                        {item.email}
-                      </td>
-                      <td className="py-1 px-3">
-                        <div className="flex items-center justify-center gap-2">
-                          <button className="px-4 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm font-medium cursor-pointer">
-                            View
-                          </button>
-                        </div>
+            {userLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-gray-500">Loading users...</p>
+              </div>
+            ) : userError ? (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-red-500">Error: {userError}</p>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="sticky top-0 z-10 bg-white">
+                  <tr className="border-b-2 border-gray-200">
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                      Name
+                    </th>
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                      Email
+                    </th>
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                      Role
+                    </th>
+                    <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedUsers.length > 0 ? (
+                    paginatedUsers.map((user) => (
+                      <tr
+                        key={user.id}
+                        className="border-b border-gray-100 hover:bg-gray-50 transition"
+                      >
+                        <td className="py-1 px-3 text-gray-900 text-sm font-medium">
+                          {user.firstName} {user.lastName}
+                        </td>
+                        <td className="py-1 px-3 text-gray-500 text-sm">
+                          {user.email}
+                        </td>
+                        <td className="py-1 px-3 text-gray-500 text-sm">
+                          {user.role.replace(/_/g, " ")}
+                        </td>
+                        <td className="py-1 px-3 text-center">
+                          <span
+                            className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                              user.isActive
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {user.isActive ? "Active" : "Inactive"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="py-8 text-center text-gray-500"
+                      >
+                        No users found.
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={3} className="py-8 text-center text-gray-500">
-                      No registration requests found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
 
           {/* Pagination */}

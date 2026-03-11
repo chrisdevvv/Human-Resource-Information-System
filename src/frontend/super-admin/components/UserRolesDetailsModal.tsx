@@ -9,7 +9,9 @@ export type RegistrationDetail = {
   lastName: string;
   email: string;
   school: string;
-  requested_role: string;
+  approved_role?: string | null;
+  rejection_reason?: string | null;
+  reviewed_at?: string | null;
   status: string;
   created_at: string;
 };
@@ -28,6 +30,16 @@ export default function UserRolesDetailsModal({ account, onClose }: Props) {
     minute: "2-digit",
   });
 
+  const formattedReviewedDate = account.reviewed_at
+    ? new Date(account.reviewed_at).toLocaleString("en-PH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+
   const statusColor =
     account.status === "PENDING"
       ? "bg-yellow-100 text-yellow-800"
@@ -39,14 +51,6 @@ export default function UserRolesDetailsModal({ account, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 relative">
         {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition cursor-pointer"
-          aria-label="Close"
-        >
-          <X size={20} />
-        </button>
-
         <h2 className="text-xl font-bold text-gray-800 mb-5">
           Registration Details
         </h2>
@@ -58,11 +62,16 @@ export default function UserRolesDetailsModal({ account, onClose }: Props) {
           />
           <Row label="Email" value={account.email} />
           <Row label="School" value={account.school} />
-          <Row
-            label="Requested Role"
-            value={account.requested_role || "Not specified"}
-          />
           <Row label="Date Registered" value={formattedDate} />
+          {formattedReviewedDate && (
+            <Row label="Processed At" value={formattedReviewedDate} />
+          )}
+          {account.status === "APPROVED" && account.approved_role && (
+            <Row
+              label="Assigned Role"
+              value={account.approved_role.replace(/_/g, " ")}
+            />
+          )}
           <div className="flex justify-between items-center py-2 border-b border-gray-100">
             <span className="text-sm font-medium text-gray-500">Status</span>
             <span
@@ -71,6 +80,16 @@ export default function UserRolesDetailsModal({ account, onClose }: Props) {
               {account.status}
             </span>
           </div>
+          {account.status === "REJECTED" && account.rejection_reason && (
+            <div className="py-2 border-b border-gray-100">
+              <span className="block text-sm font-medium text-gray-500 mb-1">
+                Rejection Reason
+              </span>
+              <p className="text-sm text-gray-800 text-right wrap-break-word">
+                {account.rejection_reason}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 flex justify-end">

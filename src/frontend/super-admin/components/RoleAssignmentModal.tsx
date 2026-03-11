@@ -23,13 +23,20 @@ export default function RoleAssignmentModal({
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const handleAssign = async () => {
+  const roleLabel = selectedRole === "ADMIN" ? "Admin" : "Data Encoder";
+
+  const handleAssignClick = () => {
     if (!password.trim()) {
       setError("Please enter your password to confirm.");
       return;
     }
+    setError(null);
+    setShowConfirm(true);
+  };
 
+  const handleConfirm = async () => {
     setLoading(true);
     setError(null);
 
@@ -75,6 +82,7 @@ export default function RoleAssignmentModal({
 
       onSuccess();
     } catch (err) {
+      setShowConfirm(false);
       setError(err instanceof Error ? err.message : "An error occurred.");
     } finally {
       setLoading(false);
@@ -84,15 +92,60 @@ export default function RoleAssignmentModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 relative">
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          disabled={loading}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition cursor-pointer disabled:opacity-50"
-          aria-label="Close"
-        >
-          <X size={20} />
-        </button>
+        {/* ── Confirmation overlay ── */}
+        {showConfirm && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white rounded-xl px-8 text-center">
+            <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mb-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-7 h-7 text-green-600"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-1">
+              Confirm Role Assignment
+            </h3>
+            <p className="text-sm text-gray-500 mb-1">
+              You are about to assign the role
+            </p>
+            <p className="text-base font-semibold text-blue-700 mb-1">
+              {roleLabel}
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              to{" "}
+              <span className="font-semibold text-gray-700">{accountName}</span>
+              .
+            </p>
+            {error && (
+              <p className="text-sm text-red-600 mb-4 bg-red-50 border border-red-200 rounded-lg px-3 py-2 w-full text-left">
+                {error}
+              </p>
+            )}
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => setShowConfirm(false)}
+                disabled={loading}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer disabled:opacity-50"
+              >
+                Back
+              </button>
+              <button
+                onClick={handleConfirm}
+                disabled={loading}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
+              >
+                {loading ? "Assigning…" : "Confirm"}
+              </button>
+            </div>
+          </div>
+        )}
 
         <h2 className="text-xl font-bold text-gray-800 mb-1">Assign Role</h2>
         <p className="text-sm text-gray-500 mb-5">
@@ -164,11 +217,11 @@ export default function RoleAssignmentModal({
             Cancel
           </button>
           <button
-            onClick={handleAssign}
+            onClick={handleAssignClick}
             disabled={loading}
             className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
           >
-            {loading ? "Assigning…" : "Assign Role"}
+            Assign Role
           </button>
         </div>
       </div>
