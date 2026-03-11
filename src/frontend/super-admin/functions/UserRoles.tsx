@@ -6,8 +6,11 @@ import {
   ChevronRight,
   ArrowUpAZ,
   ArrowDownAZ,
+  X,
+  Settings,
 } from "lucide-react";
 import PendingAccounts from "./PendingAccounts";
+import UserSettingModal from "../components/UserSettingModal";
 
 type User = {
   id: number;
@@ -19,16 +22,25 @@ type User = {
   isActive: boolean;
 };
 
+const normalizeIsActive = (value: unknown): boolean => {
+  return value === true || value === 1 || value === "1" || value === "true";
+};
+
 export default function UserRoles() {
   const [activeTab, setActiveTab] = useState<"users" | "pending">("users");
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
+  const [accountStatusFilter, setAccountStatusFilter] = useState<
+    "ACTIVE" | "INACTIVE" | "ALL"
+  >("ACTIVE");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [letterFilter, setLetterFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [userData, setUserData] = useState<User[]>([]);
   const [userLoading, setUserLoading] = useState(true);
   const [userError, setUserError] = useState<string | null>(null);
+  const [detailsTargetId, setDetailsTargetId] = useState<number | null>(null);
+  const [settingsTarget, setSettingsTarget] = useState<User | null>(null);
   const itemsPerPage = 10;
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
@@ -60,7 +72,7 @@ export default function UserRoles() {
         email: item.email,
         schoolName: item.school_name || "N/A",
         role: item.role,
-        isActive: Boolean(item.is_active),
+        isActive: normalizeIsActive(item.is_active),
       }));
       setUserData(formatted);
       setUserError(null);
@@ -95,10 +107,15 @@ export default function UserRoles() {
         user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.schoolName.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
+      const matchesAccountStatus =
+        accountStatusFilter === "ALL" ||
+        (accountStatusFilter === "ACTIVE" ? user.isActive : !user.isActive);
       const matchesLetter =
         letterFilter === "ALL" ||
         user.firstName.charAt(0).toUpperCase() === letterFilter;
-      return matchesSearch && matchesRole && matchesLetter;
+      return (
+        matchesSearch && matchesRole && matchesAccountStatus && matchesLetter
+      );
     })
     .sort((a, b) => {
       if (sortOrder === "asc") return a.firstName.localeCompare(b.firstName);
@@ -184,6 +201,21 @@ export default function UserRoles() {
                 <option value="DATA_ENCODER">Data Encoder</option>
               </select>
 
+              <select
+                value={accountStatusFilter}
+                onChange={(e) => {
+                  setAccountStatusFilter(
+                    e.target.value as "ACTIVE" | "INACTIVE" | "ALL",
+                  );
+                  setCurrentPage(1);
+                }}
+                className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+              >
+                <option value="ACTIVE">Active Accounts</option>
+                <option value="INACTIVE">Inactive Accounts</option>
+                <option value="ALL">All Accounts</option>
+              </select>
+
               {/* Alphabet Filter */}
               <select
                 value={letterFilter}
@@ -249,6 +281,9 @@ export default function UserRoles() {
                     <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
                       Status
                     </th>
+                    <th className="text-right py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -278,12 +313,30 @@ export default function UserRoles() {
                             {user.isActive ? "Active" : "Inactive"}
                           </span>
                         </td>
+                        <td className="py-1 px-3">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => setDetailsTargetId(user.id)}
+                              className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition text-xs font-semibold cursor-pointer"
+                            >
+                              Details
+                            </button>
+                            <button
+                              onClick={() => setSettingsTarget(user)}
+                              className="p-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition cursor-pointer"
+                              aria-label={`Open settings for ${user.firstName} ${user.lastName}`}
+                              title="User settings"
+                            >
+                              <Settings size={14} />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
                       <td
-                        colSpan={4}
+                        colSpan={5}
                         className="py-8 text-center text-gray-500"
                       >
                         No users found.
@@ -340,6 +393,173 @@ export default function UserRoles() {
       {activeTab === "pending" && (
         <PendingAccounts onRefreshUsers={() => fetchUsers(false)} />
       )}
+
+      {detailsTargetId && (
+        <UserDetailsModalInline
+          userId={detailsTargetId}
+          onClose={() => setDetailsTargetId(null)}
+        />
+      )}
+
+      {settingsTarget && (
+        <UserSettingModal
+          userId={settingsTarget.id}
+          userName={`${settingsTarget.firstName} ${settingsTarget.lastName}`}
+          initialRole={settingsTarget.role}
+          initialIsActive={settingsTarget.isActive}
+          onClose={() => setSettingsTarget(null)}
+          onSuccess={() => {
+            setSettingsTarget(null);
+            fetchUsers(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+type UserDetails = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  school_name?: string | null;
+  school_code?: string | null;
+  role: "SUPER_ADMIN" | "ADMIN" | "DATA_ENCODER";
+  is_active: boolean | number;
+  created_at?: string;
+  updated_at?: string;
+};
+
+type UserDetailsResponse = {
+  data?: UserDetails;
+};
+
+function UserDetailsModalInline({
+  userId,
+  onClose,
+}: {
+  userId: number;
+  onClose: () => void;
+}) {
+  const [user, setUser] = useState<UserDetails | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDetails = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("authToken");
+        if (!token) throw new Error("No authentication token found.");
+
+        const response = await fetch(
+          `http://localhost:3000/api/users/${userId}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        if (!response.ok) {
+          const body = await response.json();
+          throw new Error(body.message || "Failed to fetch user details.");
+        }
+
+        const result = (await response.json()) as UserDetailsResponse;
+        if (!result.data) {
+          throw new Error("User details not found.");
+        }
+
+        setUser(result.data);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDetails();
+  }, [userId]);
+
+  const formatDate = (value?: string) => {
+    if (!value) return "N/A";
+    return new Date(value).toLocaleString("en-PH", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 relative">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 cursor-pointer"
+          aria-label="Close details modal"
+        >
+          <X size={18} />
+        </button>
+
+        <h2 className="text-xl font-bold text-gray-800 mb-5">User Details</h2>
+
+        {loading ? (
+          <p className="text-sm text-gray-500">Loading details...</p>
+        ) : error ? (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {error}
+          </p>
+        ) : user ? (
+          <div className="space-y-3">
+            <DetailsRow
+              label="Full Name"
+              value={`${user.first_name} ${user.last_name}`}
+            />
+            <DetailsRow label="Email" value={user.email} />
+            <DetailsRow label="School" value={user.school_name || "N/A"} />
+            <DetailsRow label="Role" value={user.role.replace(/_/g, " ")} />
+            <DetailsRow
+              label="Status"
+              value={normalizeIsActive(user.is_active) ? "Active" : "Inactive"}
+            />
+            <DetailsRow
+              label="Created At"
+              value={formatDate(user.created_at)}
+            />
+            <DetailsRow
+              label="Updated At"
+              value={formatDate(user.updated_at)}
+            />
+          </div>
+        ) : null}
+
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailsRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between items-start py-2 border-b border-gray-100">
+      <span className="text-sm font-medium text-gray-500 shrink-0 mr-4">
+        {label}
+      </span>
+      <span className="text-sm text-gray-800 text-right">{value}</span>
     </div>
   );
 }

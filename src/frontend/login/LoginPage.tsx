@@ -78,9 +78,15 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        const backendMessage =
+          typeof data?.message === "string" ? data.message : "";
+
         setError({
           title: "Login Error",
-          desc: data.message || "Failed to login",
+          desc:
+            backendMessage.toLowerCase() === "invalid credentials"
+              ? "Invalid email or password."
+              : backendMessage || "Failed to login",
         });
         return;
       }

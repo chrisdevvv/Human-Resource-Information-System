@@ -3,7 +3,7 @@
 // Filename: RegistrationModal.tsx
 // Purpose: Registration request form — submits to registration_requests table for admin approval
 import React, { useState } from "react";
-import { Mail, Key, User, X, Building2 } from "../../assets/icons";
+import { Mail, Key, User, X, Building2, Eye, EyeOff } from "../../assets/icons";
 import { RegistrationSuccessModal } from "../../registration";
 
 const API_BASE_URL =
@@ -22,6 +22,8 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   const [school, setSchool] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -384,19 +386,29 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   <Key className="text-blue-600" size={18} />
                   Create password <span className="text-red-500">*</span>
                 </label>
-                <input
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (passwordError) setPasswordError("");
-                    if (confirmPassword && e.target.value === confirmPassword)
-                      setConfirmPasswordError("");
-                  }}
-                  onBlur={handlePasswordBlur}
-                  placeholder="Create a password"
-                  type="password"
-                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${passwordError ? "border-red-500" : ""}`}
-                />
+                <div className="relative mt-2">
+                  <input
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (passwordError) setPasswordError("");
+                      if (confirmPassword && e.target.value === confirmPassword)
+                        setConfirmPasswordError("");
+                    }}
+                    onBlur={handlePasswordBlur}
+                    placeholder="Create a password"
+                    type={showPassword ? "text" : "password"}
+                    className={`w-full text-gray-700 px-3 py-2 pr-10 border rounded-md placeholder:text-gray-500 ${passwordError ? "border-red-500" : ""}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 cursor-pointer"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 {passwordError && (
                   <p className="text-sm text-red-600 mt-1">{passwordError}</p>
                 )}
@@ -405,17 +417,27 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   <Key className="text-blue-600" size={18} />
                   Confirm password <span className="text-red-500">*</span>
                 </label>
-                <input
-                  value={confirmPassword}
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value);
-                    if (confirmPasswordError) setConfirmPasswordError("");
-                  }}
-                  onBlur={handleConfirmPasswordBlur}
-                  placeholder="Confirm password"
-                  type="password"
-                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${confirmPasswordError ? "border-red-500" : ""}`}
-                />
+                <div className="relative mt-2">
+                  <input
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      if (confirmPasswordError) setConfirmPasswordError("");
+                    }}
+                    onBlur={handleConfirmPasswordBlur}
+                    placeholder="Confirm password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    className={`w-full text-gray-700 px-3 py-2 pr-10 border rounded-md placeholder:text-gray-500 ${confirmPasswordError ? "border-red-500" : ""}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 cursor-pointer"
+                    aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 {confirmPasswordError && (
                   <p className="text-sm text-red-600 mt-1">
                     {confirmPasswordError}
