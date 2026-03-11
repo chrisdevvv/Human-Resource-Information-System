@@ -13,12 +13,9 @@ const register = async (req, res) => {
   } = req.body;
 
   if (!first_name || !last_name || !email || !password || !school_name) {
-    return res
-      .status(400)
-      .json({
-        message:
-          "First name, last name, email, password and school are required",
-      });
+    return res.status(400).json({
+      message: "First name, last name, email, password and school are required",
+    });
   }
 
   try {
@@ -65,12 +62,10 @@ const register = async (req, res) => {
     if (error.code === "ER_DUP_ENTRY") {
       return res.status(409).json({ message: "Email is already registered" });
     }
-    res
-      .status(500)
-      .json({
-        message: "Error submitting registration request",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Error submitting registration request",
+      error: error.message,
+    });
   }
 };
 
@@ -87,7 +82,10 @@ const login = async (req, res) => {
       .query("SELECT * FROM users WHERE email = ?", [email]);
     const userRecord = allResults[0];
 
-    if (!userRecord || !(await bcrypt.compare(password, userRecord.password_hash))) {
+    if (
+      !userRecord ||
+      !(await bcrypt.compare(password, userRecord.password_hash))
+    ) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
