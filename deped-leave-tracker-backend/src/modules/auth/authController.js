@@ -84,7 +84,7 @@ const login = async (req, res) => {
   try {
     const [results] = await pool
       .promise()
-      .query("SELECT * FROM users WHERE email = ? AND is_active = 1", [email]);
+      .query("SELECT * FROM users WHERE email = ? AND is_active != 0", [email]);
     const user = results[0];
 
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
