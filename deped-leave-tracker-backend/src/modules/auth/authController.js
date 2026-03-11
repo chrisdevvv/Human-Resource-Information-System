@@ -79,8 +79,8 @@ const login = async (req, res) => {
   try {
     const [allResults] = await pool
       .promise()
-      .query("SELECT * FROM users WHERE email = ?", [email]);
-    const userRecord = allResults[0];
+      .query("SELECT * FROM users WHERE email = ? AND is_active != 0", [email]);
+    const user = results[0];
 
     if (
       !userRecord ||

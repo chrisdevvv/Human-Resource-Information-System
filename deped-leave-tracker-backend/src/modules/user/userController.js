@@ -58,10 +58,13 @@ const updateUserRole = async (req, res) => {
 
 const updateUserStatus = async (req, res) => {
     try {
-        const { is_active } = req.body;
-        if (is_active === undefined || is_active === null) {
+        const rawValue = req.body.is_active;
+        if (rawValue === undefined || rawValue === null) {
             return res.status(400).json({ message: 'is_active (true/false) is required' });
         }
+
+        // Normalize to strict boolean regardless of whether frontend sends boolean or 0/1
+        const is_active = rawValue === true || rawValue === 1 || rawValue === '1' || rawValue === 'true';
 
         // Only SUPER_ADMIN can change account status
         if (req.user.role !== 'SUPER_ADMIN') {

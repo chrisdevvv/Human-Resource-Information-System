@@ -56,9 +56,11 @@ const User = {
     },
 
     updateStatus: async (id, is_active) => {
+        // Always write strict 1 or 0 to the tinyint column
+        const value = (is_active === true || is_active === 1) ? 1 : 0;
         const [result] = await pool.promise().query(
             `UPDATE users SET is_active = ? WHERE id = ?`,
-            [is_active ? 1 : 0, id]
+            [value, id]
         );
         return result;
     },
