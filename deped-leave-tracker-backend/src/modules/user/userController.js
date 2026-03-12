@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const pool = require('../../config/db');
 const User = require('./userModel');
+const Backlog = require('../backlog/backlogModel');
 const { sendRoleChanged, sendPasswordChanged } = require('../../utils/mailer');
 
 const VALID_ROLES = ['SUPER_ADMIN', 'ADMIN', 'DATA_ENCODER'];
@@ -60,6 +61,15 @@ const updateUserRole = async (req, res) => {
             sendRoleChanged(user.email, user.first_name, previousRole, role);
         }
 
+        Backlog.create({
+            user_id: req.user.id,
+            school_id: null,
+            employee_id: null,
+            leave_id: null,
+            action: 'USER_ROLE_UPDATED',
+            details: `${user.first_name} ${user.last_name}: ${previousRole} → ${role}`,
+        });
+
         res.status(200).json({ message: 'User role updated successfully' });
     } catch (err) {
         res.status(500).json({ message: 'Error updating user role', error: err.message });
@@ -90,6 +100,14 @@ const updateUserStatus = async (req, res) => {
         }
 
         await User.updateStatus(req.params.id, is_active);
+        Backlog.create({
+            user_id: req.user.id,
+            school_id: null,
+            employee_id: null,
+            leave_id: null,
+            action: 'USER_STATUS_UPDATED',
+            details: `${user.first_name} ${user.last_name}: ${is_active ? 'Activated' : 'Deactivated'}`,
+        });
         res.status(200).json({ message: `User ${is_active ? 'activated' : 'deactivated'} successfully` });
     } catch (err) {
         res.status(500).json({ message: 'Error updating user status', error: err.message });
@@ -107,6 +125,14 @@ const deleteUser = async (req, res) => {
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         await User.deleteUser(req.params.id);
+        Backlog.create({
+            user_id: req.user.id,
+            school_id: null,
+            employee_id: null,
+            leave_id: null,
+            action: 'USER_DELETED',
+            details: `${user.first_name} ${user.last_name} (${user.email})`,
+        });
         res.status(200).json({ message: 'User deleted successfully' });
     } catch (err) {
         res.status(500).json({ message: 'Error deleting user', error: err.message });
@@ -158,6 +184,14 @@ const adminResetPassword = async (req, res) => {
 
         // Fire-and-forget
         sendPasswordChanged(user.email, user.first_name);
+        Backlog.create({
+            user_id: req.user.id,
+            school_id: null,
+            employee_id: null,
+            leave_id: null,
+            action: 'USER_PASSWORD_RESET',
+            details: `Password reset for ${user.first_name} ${user.last_name}`,
+        });
 
         res.status(200).json({ message: 'Password reset successfully' });
     } catch (err) {

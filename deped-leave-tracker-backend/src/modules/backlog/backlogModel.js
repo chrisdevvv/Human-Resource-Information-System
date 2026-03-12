@@ -12,9 +12,13 @@ const Backlog = {
   },
 
   getById: async (id) => {
-    const [rows] = await pool
-      .promise()
-      .query("SELECT * FROM backlogs WHERE id = ?", [id]);
+    const [rows] = await pool.promise().query(
+      `SELECT backlogs.*, users.first_name, users.last_name, users.role
+       FROM backlogs
+       LEFT JOIN users ON backlogs.user_id = users.id
+       WHERE backlogs.id = ?`,
+      [id]
+    );
     return rows[0];
   },
 

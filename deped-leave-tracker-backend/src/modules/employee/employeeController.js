@@ -1,4 +1,5 @@
 const Employee = require('./employeeModel');
+const Backlog = require('../backlog/backlogModel');
 
 const getAllEmployees = async (req, res) => {
     try {
@@ -31,6 +32,15 @@ const getEmployeesBySchool = async (req, res) => {
 const createEmployee = async (req, res) => {
     try {
         const result = await Employee.create(req.body);
+        const { first_name, last_name, employee_type, school_id } = req.body;
+        Backlog.create({
+            user_id: req.user.id,
+            school_id: school_id || null,
+            employee_id: result.insertId,
+            leave_id: null,
+            action: 'EMPLOYEE_CREATED',
+            details: `${first_name} ${last_name} (${employee_type})`,
+        });
         res.status(201).json({ message: 'Employee created successfully', data: result });
     } catch (err) {
         res.status(500).json({ message: 'Error creating employee', error: err.message });
@@ -40,6 +50,15 @@ const createEmployee = async (req, res) => {
 const updateEmployee = async (req, res) => {
     try {
         const result = await Employee.update(req.params.id, req.body);
+        const { first_name, last_name, employee_type, school_id } = req.body;
+        Backlog.create({
+            user_id: req.user.id,
+            school_id: school_id || null,
+            employee_id: Number(req.params.id),
+            leave_id: null,
+            action: 'EMPLOYEE_UPDATED',
+            details: `${first_name} ${last_name} (${employee_type})`,
+        });
         res.status(200).json({ message: 'Employee updated successfully', data: result });
     } catch (err) {
         res.status(500).json({ message: 'Error updating employee', error: err.message });
@@ -48,7 +67,17 @@ const updateEmployee = async (req, res) => {
 
 const deleteEmployee = async (req, res) => {
     try {
+        const employee = await Employee.getById(req.params.id);
+        if (!employee) return res.status(404).json({ message: 'Employee not found' });
         const result = await Employee.delete(req.params.id);
+        Backlog.create({
+            user_id: req.user.id,
+            school_id: employee.school_id || null,
+            employee_id: Number(req.params.id),
+            leave_id: null,
+            action: 'EMPLOYEE_DELETED',
+            details: `${employee.first_name} ${employee.last_name} (${employee.employee_type})`,
+        });
         res.status(200).json({ message: 'Employee deleted successfully', data: result });
     } catch (err) {
         res.status(500).json({ message: 'Error deleting employee', error: err.message });

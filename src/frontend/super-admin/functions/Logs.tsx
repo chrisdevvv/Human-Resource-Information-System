@@ -192,6 +192,88 @@ export default function Logs() {
     DATA_ENCODER: "Data Encoder",
   };
 
+  const toRoleLabel = (raw: string) => {
+    const map: Record<string, string> = {
+      SUPER_ADMIN: "Super Admin",
+      ADMIN: "Admin",
+      DATA_ENCODER: "Data Encoder",
+    };
+    return map[raw?.trim()] ?? raw?.trim() ?? raw;
+  };
+
+  const formatAction = (action: string, details: string): string => {
+    const d = details?.trim() || "";
+    switch (action) {
+      case "EMPLOYEE_CREATED":
+        return d ? `Added ${d} as a new employee.` : "Added a new employee.";
+      case "EMPLOYEE_UPDATED":
+        return d ? `Updated the record of ${d}.` : "Updated an employee record.";
+      case "EMPLOYEE_DELETED":
+        return d ? `Removed ${d} from the system.` : "Removed an employee.";
+      case "LEAVE_CREATED":
+        return d ? `Filed a leave request for ${d}.` : "Filed a leave request.";
+      case "LEAVE_UPDATED":
+        return d ? `Updated a leave request — ${d}.` : "Updated a leave request.";
+      case "LEAVE_DELETED":
+        return d ? `Deleted the leave request for ${d}.` : "Deleted a leave request.";
+      case "USER_ROLE_UPDATED": {
+        // details: "Name: OLD_ROLE → NEW_ROLE"
+        const ci = d.indexOf(": ");
+        if (ci !== -1 && d.includes(" \u2192 ")) {
+          const name = d.slice(0, ci);
+          const [from, to] = d.slice(ci + 2).split(" \u2192 ");
+          return `Changed ${name}'s role from ${toRoleLabel(from)} to ${toRoleLabel(to)}.`;
+        }
+        return d ? `Updated a user's role — ${d}.` : "Updated a user's role.";
+      }
+      case "USER_STATUS_UPDATED": {
+        // details: "Name: Activated" or "Name: Deactivated"
+        const ci = d.indexOf(": ");
+        if (ci !== -1) {
+          const name = d.slice(0, ci);
+          const status = d.slice(ci + 2).toLowerCase();
+          return status === "activated"
+            ? `Activated ${name}'s account.`
+            : `Deactivated ${name}'s account.`;
+        }
+        return d || "Updated a user's account status.";
+      }
+      case "USER_DELETED": {
+        // details: "Name (email)"
+        const pi = d.indexOf(" (");
+        const name = pi !== -1 ? d.slice(0, pi) : d;
+        return name ? `Deleted the account of ${name}.` : "Deleted a user account.";
+      }
+      case "USER_PASSWORD_RESET": {
+        // details: "Password reset for Name"
+        const match = d.match(/^Password reset for (.+)$/);
+        return match ? `Reset the password of ${match[1]}.` : d || "Reset a user's password.";
+      }
+      case "REGISTRATION_APPROVED": {
+        // details: "Name as ROLE"
+        const ai = d.lastIndexOf(" as ");
+        if (ai !== -1) {
+          const name = d.slice(0, ai);
+          const role = toRoleLabel(d.slice(ai + 4));
+          return `Approved the registration of ${name} as ${role}.`;
+        }
+        return d ? `Approved the registration of ${d}.` : "Approved a registration request.";
+      }
+      case "REGISTRATION_REJECTED": {
+        // details: "Name" or "Name: reason"
+        const ci = d.indexOf(": ");
+        if (ci !== -1) {
+          const name = d.slice(0, ci);
+          const reason = d.slice(ci + 2);
+          return `Rejected the registration of ${name} — ${reason}.`;
+        }
+        return d ? `Rejected the registration of ${d}.` : "Rejected a registration request.";
+      }
+      default:
+        return d ? `${action.replace(/_/g, " ")}: ${d}.` : action.replace(/_/g, " ");
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-6 sticky top-4 h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Activity Logs</h1>
@@ -355,7 +437,7 @@ export default function Logs() {
                       {roleLabelMap[log.role] ?? log.role.replace(/_/g, " ")}
                     </td>
                     <td className="py-1 px-3 text-gray-500 text-sm">
-                      {log.action}
+                      {formatAction(log.action, log.details)}
                     </td>
                     <td className="py-1 px-3 text-center">
                       <button
