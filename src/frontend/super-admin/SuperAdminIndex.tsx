@@ -2,6 +2,7 @@
 
 import React, { useRef } from "react";
 import UserRoles from "./functions/UserRoles";
+import Logs from "./functions/Logs";
 import styles from "./styles.module.css";
 
 type SuperAdminProps = {
@@ -28,6 +29,8 @@ export default function SuperAdmin({
     switch (activeTab) {
       case "user-roles":
         return <UserRoles key={tabKey} />;
+      case "logs":
+        return <Logs key={tabKey} />;
       default:
         return (
           <div className={styles.container}>
