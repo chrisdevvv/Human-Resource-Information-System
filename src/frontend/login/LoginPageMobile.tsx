@@ -122,14 +122,9 @@ export default function LoginPageMobile() {
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] px-4 py-6">
         <div className="flex items-center justify-center gap-4 mb-6">
           <img
-            src="/images/deped-csjdm-logo.svg"
-            alt="DepEd CSJDM Logo"
-            className="h-20 sm:h-24 w-auto"
-          />
-          <img
-            src="/logo-deped-bagong-pilipinas-colored_orig.svg"
-            alt="DepEd Bagong Pilipinas Logo"
-            className="h-24 sm:h-28 w-auto"
+            src="/images/sdlogo.svg"
+            alt="SD Logo"
+            className="h-32 sm:h-36 w-auto"
           />
         </div>
 

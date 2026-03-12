@@ -125,19 +125,9 @@ export default function LoginPage() {
       {/* Login Form Section */}
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-80px)] p-4">
         {/* Logos Container */}
-        <div className="flex items-center justify-center gap-6 mb-8">
-          {/* DepEd CSJDM Logo */}
-          <img
-            src="/images/deped-csjdm-logo.svg"
-            alt="DepEd CSJDM Logo"
-            className="h-32 w-auto"
-          />
-          {/* Bagong Pilipinas Logo */}
-          <img
-            src="/logo-deped-bagong-pilipinas-colored_orig.svg"
-            alt="DepEd Bagong Pilipinas Logo"
-            className="h-40 md:h-44 w-auto"
-          />
+        <div className="-mt-10 flex items-center justify-center gap-6">
+          {/* Logo */}
+          <img src="/images/sdlogo.svg" alt="SD Logo" className="h-60 w-auto" />
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-2xl">
