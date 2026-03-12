@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import ViewLogsModal from "../components/ViewLogsModal";
 
 type Log = {
   id: number;
@@ -9,6 +10,7 @@ type Log = {
   firstName: string;
   lastName: string;
   role: string;
+  email: string;
   action: string;
   details: string;
   createdAt: string;
@@ -76,6 +78,7 @@ export default function Logs() {
   })();
 
   const [logsData, setLogsData] = useState<Log[]>([]);
+  const [selectedLog, setSelectedLog] = useState<Log | null>(null);
   const [logsLoading, setLogsLoading] = useState(true);
   const [logsError, setLogsError] = useState<string | null>(null);
   const itemsPerPage = 10;
@@ -106,6 +109,7 @@ export default function Logs() {
         firstName: item.first_name || "Unknown",
         lastName: item.last_name || "",
         role: item.role || "N/A",
+        email: item.email || "N/A",
         action: item.action || "N/A",
         details: item.details || "",
         createdAt: item.created_at,
@@ -207,15 +211,21 @@ export default function Logs() {
       case "EMPLOYEE_CREATED":
         return d ? `Added ${d} as a new employee.` : "Added a new employee.";
       case "EMPLOYEE_UPDATED":
-        return d ? `Updated the record of ${d}.` : "Updated an employee record.";
+        return d
+          ? `Updated the record of ${d}.`
+          : "Updated an employee record.";
       case "EMPLOYEE_DELETED":
         return d ? `Removed ${d} from the system.` : "Removed an employee.";
       case "LEAVE_CREATED":
         return d ? `Filed a leave request for ${d}.` : "Filed a leave request.";
       case "LEAVE_UPDATED":
-        return d ? `Updated a leave request — ${d}.` : "Updated a leave request.";
+        return d
+          ? `Updated a leave request — ${d}.`
+          : "Updated a leave request.";
       case "LEAVE_DELETED":
-        return d ? `Deleted the leave request for ${d}.` : "Deleted a leave request.";
+        return d
+          ? `Deleted the leave request for ${d}.`
+          : "Deleted a leave request.";
       case "USER_ROLE_UPDATED": {
         // details: "Name: OLD_ROLE → NEW_ROLE"
         const ci = d.indexOf(": ");
@@ -242,12 +252,16 @@ export default function Logs() {
         // details: "Name (email)"
         const pi = d.indexOf(" (");
         const name = pi !== -1 ? d.slice(0, pi) : d;
-        return name ? `Deleted the account of ${name}.` : "Deleted a user account.";
+        return name
+          ? `Deleted the account of ${name}.`
+          : "Deleted a user account.";
       }
       case "USER_PASSWORD_RESET": {
         // details: "Password reset for Name"
         const match = d.match(/^Password reset for (.+)$/);
-        return match ? `Reset the password of ${match[1]}.` : d || "Reset a user's password.";
+        return match
+          ? `Reset the password of ${match[1]}.`
+          : d || "Reset a user's password.";
       }
       case "REGISTRATION_APPROVED": {
         // details: "Name as ROLE"
@@ -257,7 +271,9 @@ export default function Logs() {
           const role = toRoleLabel(d.slice(ai + 4));
           return `Approved the registration of ${name} as ${role}.`;
         }
-        return d ? `Approved the registration of ${d}.` : "Approved a registration request.";
+        return d
+          ? `Approved the registration of ${d}.`
+          : "Approved a registration request.";
       }
       case "REGISTRATION_REJECTED": {
         // details: "Name" or "Name: reason"
@@ -267,10 +283,14 @@ export default function Logs() {
           const reason = d.slice(ci + 2);
           return `Rejected the registration of ${name} — ${reason}.`;
         }
-        return d ? `Rejected the registration of ${d}.` : "Rejected a registration request.";
+        return d
+          ? `Rejected the registration of ${d}.`
+          : "Rejected a registration request.";
       }
       default:
-        return d ? `${action.replace(/_/g, " ")}: ${d}.` : action.replace(/_/g, " ");
+        return d
+          ? `${action.replace(/_/g, " ")}: ${d}.`
+          : action.replace(/_/g, " ");
     }
   };
 
@@ -441,9 +461,7 @@ export default function Logs() {
                     </td>
                     <td className="py-1 px-3 text-center">
                       <button
-                        onClick={() => {
-                          /* TODO: open view modal */
-                        }}
+                        onClick={() => setSelectedLog(log)}
                         className="p-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer"
                         aria-label={`View log #${log.id}`}
                         title="View details"
@@ -501,6 +519,27 @@ export default function Logs() {
           </button>
         </div>
       )}
+
+      <ViewLogsModal
+        visible={!!selectedLog}
+        log={
+          selectedLog
+            ? {
+                name: `${selectedLog.firstName} ${selectedLog.lastName}`.trim(),
+                role:
+                  roleLabelMap[selectedLog.role] ??
+                  selectedLog.role.replace(/_/g, " "),
+                email: selectedLog.email,
+                dateTime: formatDateTime(selectedLog.createdAt),
+                actionTaken: formatAction(
+                  selectedLog.action,
+                  selectedLog.details,
+                ),
+              }
+            : null
+        }
+        onClose={() => setSelectedLog(null)}
+      />
     </div>
   );
 }
