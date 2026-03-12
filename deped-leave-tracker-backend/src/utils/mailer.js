@@ -224,8 +224,60 @@ async function sendRegistrationRejected(to, firstName, reason) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Email: Role changed (sent to user when super admin changes their role)
+// ---------------------------------------------------------------------------
+async function sendRoleChanged(to, firstName, oldRole, newRole) {
+  const html = baseTemplate(`
+        <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Hi ${firstName},</h2>
+        <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.6;">
+            Your account role in the <strong>DepEd Employee Leave Management System</strong>
+            has been updated by a system administrator.
+        </p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+          <tr>
+            <td width="48%" style="background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;
+                                   padding:16px;text-align:center;">
+              <p style="margin:0 0 6px;font-size:11px;color:#6b7280;text-transform:uppercase;
+                        letter-spacing:1px;">Previous Role</p>
+              <p style="margin:0;font-size:18px;font-weight:700;color:#6b7280;">${roleLabel(oldRole)}</p>
+            </td>
+            <td width="4%" style="text-align:center;color:#9ca3af;font-size:20px;">→</td>
+            <td width="48%" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;
+                                   padding:16px;text-align:center;">
+              <p style="margin:0 0 6px;font-size:11px;color:#1e40af;text-transform:uppercase;
+                        letter-spacing:1px;">New Role</p>
+              <p style="margin:0;font-size:18px;font-weight:700;color:#1d4ed8;">${roleLabel(newRole)}</p>
+            </td>
+          </tr>
+        </table>
+        <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">
+            Your access and permissions within the system have been updated accordingly.
+            Please sign out and sign back in for the changes to take full effect.
+        </p>
+        <div style="text-align:center;">
+            <a href="${APP_URL}/login"
+               style="display:inline-block;background:#1d4ed8;color:#ffffff;
+                      padding:12px 32px;border-radius:6px;text-decoration:none;
+                      font-size:15px;font-weight:600;">
+                Sign In
+            </a>
+        </div>
+        <p style="margin:24px 0 0;font-size:13px;color:#9ca3af;">
+            If you did not expect this change, please contact your system administrator immediately.
+        </p>
+    `);
+
+  await sendMail({
+    to,
+    subject: "Your Account Role Has Been Updated — DepEd ELMS",
+    html,
+  });
+}
+
 module.exports = {
   sendRegistrationReceived,
   sendRegistrationApproved,
   sendRegistrationRejected,
+  sendRoleChanged,
 };
