@@ -215,6 +215,42 @@ async function sendRegistrationRejected(to, firstName, reason) {
 }
 
 // ---------------------------------------------------------------------------
+// Email: Password changed (sent to user whenever their password is updated)
+// ---------------------------------------------------------------------------
+async function sendPasswordChanged(to, firstName) {
+    const html = baseTemplate(`
+        <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Hi ${firstName},</h2>
+        <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
+            This is a confirmation that the password for your
+            <strong>DepEd Employee Leave Management System</strong> account has been
+            <strong>successfully changed</strong>.
+        </p>
+        <div style="background:#fef9c3;border-left:4px solid #ca8a04;padding:14px 18px;
+                    border-radius:4px;margin-bottom:24px;">
+            <p style="margin:0;font-size:14px;color:#854d0e;">
+                <strong>If you did not make this change</strong>, your account may have been
+                accessed without your permission. Please contact your system administrator
+                immediately.
+            </p>
+        </div>
+        <div style="text-align:center;">
+            <a href="${APP_URL}/login"
+               style="display:inline-block;background:#1d4ed8;color:#ffffff;
+                      padding:12px 32px;border-radius:6px;text-decoration:none;
+                      font-size:15px;font-weight:600;">
+                Sign In
+            </a>
+        </div>
+    `);
+
+    await sendMail({
+        to,
+        subject: 'Your Password Has Been Changed \u2014 DepEd ELMS',
+        html,
+    });
+}
+
+// ---------------------------------------------------------------------------
 // Email: Role changed (sent to user when super admin changes their role)
 // ---------------------------------------------------------------------------
 async function sendRoleChanged(to, firstName, oldRole, newRole) {
@@ -269,5 +305,6 @@ module.exports = {
     sendRegistrationReceived,
     sendRegistrationApproved,
     sendRegistrationRejected,
+    sendPasswordChanged,
     sendRoleChanged,
 };

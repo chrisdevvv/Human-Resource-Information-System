@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const pool = require("../../config/db");
-const { sendRegistrationReceived } = require("../../utils/mailer");
+const { sendRegistrationReceived, sendPasswordChanged } = require("../../utils/mailer");
 
 const register = async (req, res) => {
   const {
@@ -153,4 +153,49 @@ const verifyPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, verifyPassword };
+const changePassword = async (req, res) => {
+  const { current_password, new_password } = req.body;
+
+  if (!current_password || !new_password) {
+    return res.status(400).json({ message: "current_password and new_password are required" });
+  }
+
+  if (new_password.length < 8) {
+    return res.status(400).json({ message: "New password must be at least 8 characters" });
+  }
+
+  try {
+    const [results] = await pool
+      .promise()
+      .query("SELECT id, first_name, email, password_hash FROM users WHERE id = ? AND is_active = 1", [
+        req.user.id,
+      ]);
+    const user = results[0];
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(current_password, user.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Current password is incorrect" });
+    }
+
+    if (await bcrypt.compare(new_password, user.password_hash)) {
+      return res.status(400).json({ message: "New password must be different from current password" });
+    }
+
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+    await pool
+      .promise()
+      .query("UPDATE users SET password_hash = ? WHERE id = ?", [hashedPassword, user.id]);
+
+    // Fire-and-forget
+    sendPasswordChanged(user.email, user.first_name);
+
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error changing password", error: error.message });
+  }
+};
+
+module.exports = { register, login, verifyPassword, changePassword };
