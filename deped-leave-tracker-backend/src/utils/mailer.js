@@ -68,7 +68,7 @@ function baseTemplate(bodyContent) {
             <!-- Logos -->
             <div style="text-align:center;margin-bottom:16px;">
               <img src="${FRONTEND_URL}/images/deped-csjdm-logo.svg" alt="DepEd CSJDM Logo" style="height:80px;width:auto;margin:0 12px;vertical-align:middle;display:inline-block;" />
-              <img src="${FRONTEND_URL}/logo-deped-bagong-pilipinas-colored_orig.png" alt="DepEd Bagong Pilipinas Logo" style="height:80px;width:auto;margin:0 12px;vertical-align:middle;display:inline-block;" />
+              <img src="${FRONTEND_URL}/logo-deped-bagong-pilipinas-colored_orig.svg" alt="DepEd Bagong Pilipinas Logo" style="height:80px;width:auto;margin:0 12px;vertical-align:middle;display:inline-block;" />
             </div>
             <p style="margin:0;font-size:11px;color:#bfdbfe;letter-spacing:2px;text-transform:uppercase;text-align:center;">
               Department of Education

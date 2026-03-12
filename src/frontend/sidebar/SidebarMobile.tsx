@@ -141,7 +141,9 @@ export default function SidebarMobile({
   const handleLogout = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("user");
-    router.push("/login");
+    sessionStorage.clear();
+    router.replace("/login");
+    router.refresh();
   };
 
   return (

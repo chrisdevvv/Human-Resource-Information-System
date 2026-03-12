@@ -1,7 +1,5 @@
 "use client";
-// Component: LoginPage
-// Filename: LoginPage.tsx
-// Purpose: Landing page with direct login form and sticky header
+
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff } from "../assets/icons";
@@ -15,7 +13,7 @@ import {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
-export default function LoginPage() {
+export default function LoginPageMobile() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -110,46 +108,42 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Sticky Header */}
-      <header className="sticky top-0 z-50 bg-blue-700 text-white py-4 px-6 shadow-md">
-        <div className="max-w-7xl mx-auto">
-          <p className="text-sm font-medium tracking-wide">
+      <header className="sticky top-0 z-50 bg-blue-700 text-white py-3 px-4 shadow-md">
+        <div className="max-w-md mx-auto w-full text-left">
+          <p className="text-[10px] sm:text-xs font-medium tracking-wider">
             DEPARTMENT OF EDUCATION
           </p>
-          <h1 className="text-xl font-bold">
+          <h1 className="text-sm sm:text-base font-bold leading-tight">
             Employee Leave Management System
           </h1>
         </div>
       </header>
 
-      {/* Login Form Section */}
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-80px)] p-4">
-        {/* Logos Container */}
-        <div className="flex items-center justify-center gap-6 mb-8">
-          {/* DepEd CSJDM Logo */}
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] px-4 py-6">
+        <div className="flex items-center justify-center gap-4 mb-6">
           <img
             src="/images/deped-csjdm-logo.svg"
             alt="DepEd CSJDM Logo"
-            className="h-32 w-auto"
+            className="h-20 sm:h-24 w-auto"
           />
-          {/* Bagong Pilipinas Logo */}
           <img
             src="/logo-deped-bagong-pilipinas-colored_orig.svg"
             alt="DepEd Bagong Pilipinas Logo"
-            className="h-40 md:h-44 w-auto"
+            className="h-24 sm:h-28 w-auto"
           />
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-2xl">
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">Sign in</h2>
-          <p className="text-sm text-gray-500 mb-6">
+        <div className="bg-white rounded-lg shadow-lg p-5 sm:p-6 w-full max-w-md">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
+            Sign in
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-500 mb-5">
             Use your email and password to continue
           </p>
 
-          {/* Email Field */}
           <div className="mb-4">
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-              <Mail className="text-blue-600" size={18} />
+            <label className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-gray-700 mb-2">
+              <Mail className="text-blue-600" size={16} />
               EMAIL
             </label>
             <input
@@ -168,26 +162,27 @@ export default function LoginPage() {
                   setEmailError("Please enter a valid email address");
                 else setEmailError(null);
               }}
-              className={`w-full px-4 py-2 border rounded-md text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full px-3 py-2.5 border rounded-md text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
                 emailError ? "border-red-500" : "border-blue-300"
               }`}
             />
             {emailError && (
-              <p className="text-sm text-red-600 mt-1">{emailError}</p>
+              <p className="text-xs sm:text-sm text-red-600 mt-1">
+                {emailError}
+              </p>
             )}
           </div>
 
-          {/* Password Field */}
-          <div className="mb-6">
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-              <Lock className="text-blue-600" size={18} />
+          <div className="mb-5">
+            <label className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-gray-700 mb-2">
+              <Lock className="text-blue-600" size={16} />
               PASSWORD
             </label>
             <div className="relative">
               <input
-                placeholder="••••••••"
                 id="loginPassword"
                 type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
@@ -197,7 +192,7 @@ export default function LoginPage() {
                   if (!password) setPasswordError("Password is required");
                   else setPasswordError(null);
                 }}
-                className={`w-full px-4 py-2 border rounded-md text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full px-3 py-2.5 border rounded-md text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
                   passwordError ? "border-red-500" : "border-blue-300"
                 }`}
               />
@@ -211,22 +206,22 @@ export default function LoginPage() {
               </button>
             </div>
             {passwordError && (
-              <p className="text-sm text-red-600 mt-1">{passwordError}</p>
+              <p className="text-xs sm:text-sm text-red-600 mt-1">
+                {passwordError}
+              </p>
             )}
           </div>
 
-          {/* Login Button */}
           <button
             id="submitLogin"
-            className="cursor-pointer w-full py-3 bg-blue-200 text-blue-700 rounded-md font-medium hover:bg-blue-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="cursor-pointer w-full py-3 bg-blue-200 text-blue-700 rounded-md font-medium hover:bg-blue-300 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             onClick={handleLogin}
             disabled={isLoading}
           >
             {isLoading ? "Signing in..." : "Login"}
           </button>
 
-          {/* Links */}
-          <div className="flex justify-between mt-4 text-sm">
+          <div className="flex flex-col sm:flex-row justify-between gap-2 mt-4 text-sm">
             <a
               href="#"
               id="registerLink"
@@ -270,7 +265,6 @@ export default function LoginPage() {
         visible={showRegister}
         onClose={() => setShowRegister(false)}
       />
-
       <ErrorModal error={error} onClose={() => setError(null)} />
     </div>
   );

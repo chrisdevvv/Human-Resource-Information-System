@@ -1,25 +1,53 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import SuperAdmin from "../../frontend/super-admin/SuperAdminIndex";
 import SidebarIndex from "../../frontend/sidebar/SidebarIndex";
 import StickyHeader from "../../frontend/components/StickyHeader";
 
 export default function Page() {
+  const router = useRouter();
   const [role, setRole] = useState("super-admin");
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("user");
-      if (raw) {
+    const verifyAuth = () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        const raw = localStorage.getItem("user");
+
+        if (!token || !raw) {
+          setIsAuthorized(false);
+          router.replace("/login");
+          return;
+        }
+
         const u = JSON.parse(raw);
-        if (u?.role) setRole(u.role);
+        if (u?.role !== "SUPER_ADMIN") {
+          setIsAuthorized(false);
+          router.replace("/login");
+          return;
+        }
+
+        setRole(u.role);
+        setIsAuthorized(true);
+      } catch (e) {
+        setIsAuthorized(false);
+        router.replace("/login");
       }
-    } catch (e) {
-      // ignore
-    }
-  }, []);
+    };
+
+    verifyAuth();
+    // Re-check auth when page is restored from browser back/forward cache.
+    window.addEventListener("pageshow", verifyAuth);
+    return () => window.removeEventListener("pageshow", verifyAuth);
+  }, [router]);
+
+  if (!isAuthorized) {
+    return null;
+  }
 
   const handleToggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
