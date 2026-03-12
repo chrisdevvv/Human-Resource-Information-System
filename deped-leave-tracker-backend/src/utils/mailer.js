@@ -15,7 +15,8 @@ const transporter = nodemailer.createTransport({
 });
 
 const FROM = process.env.SMTP_FROM || "DepEd ELMS <noreply@deped.gov.ph>";
-const APP_URL = process.env.APP_URL || "http://localhost:3001";
+const FRONTEND_URL =
+  process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3001";
 
 // Only attempt to send if all SMTP vars are present
 const SMTP_READY = !!(
@@ -66,8 +67,8 @@ function baseTemplate(bodyContent) {
           <td style="background:#1d4ed8;padding:24px 32px;">
             <!-- Logos -->
             <div style="text-align:center;margin-bottom:16px;">
-              <img src="${APP_URL}/images/deped-csjdm-logo.svg" alt="DepEd CSJDM Logo" style="height:80px;width:auto;margin:0 12px;vertical-align:middle;display:inline-block;" />
-              <img src="${APP_URL}/logo-deped-bagong-pilipinas-colored_orig.png" alt="DepEd Bagong Pilipinas Logo" style="height:80px;width:auto;margin:0 12px;vertical-align:middle;display:inline-block;" />
+              <img src="${FRONTEND_URL}/images/deped-csjdm-logo.svg" alt="DepEd CSJDM Logo" style="height:80px;width:auto;margin:0 12px;vertical-align:middle;display:inline-block;" />
+              <img src="${FRONTEND_URL}/logo-deped-bagong-pilipinas-colored_orig.png" alt="DepEd Bagong Pilipinas Logo" style="height:80px;width:auto;margin:0 12px;vertical-align:middle;display:inline-block;" />
             </div>
             <p style="margin:0;font-size:11px;color:#bfdbfe;letter-spacing:2px;text-transform:uppercase;text-align:center;">
               Department of Education
@@ -170,7 +171,7 @@ async function sendRegistrationApproved(to, firstName, role) {
             during registration.
         </p>
         <div style="text-align:center;">
-            <a href="${APP_URL}/login"
+          <a href="${FRONTEND_URL}/login"
                style="display:inline-block;background:#1d4ed8;color:#ffffff;
                       padding:12px 32px;border-radius:6px;text-decoration:none;
                       font-size:15px;font-weight:600;">
@@ -217,18 +218,18 @@ async function sendRegistrationRejected(to, firstName, reason) {
         </p>
     `);
 
-    await sendMail({
-        to,
-        subject: 'Registration Request Update — DepEd ELMS',
-        html,
-    });
+  await sendMail({
+    to,
+    subject: "Registration Request Update — DepEd ELMS",
+    html,
+  });
 }
 
 // ---------------------------------------------------------------------------
 // Email: Password reset link (sent to user on forgot-password request)
 // ---------------------------------------------------------------------------
 async function sendPasswordResetLink(to, firstName, resetLink) {
-    const html = baseTemplate(`
+  const html = baseTemplate(`
         <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Hi ${firstName},</h2>
         <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
             We received a request to reset the password for your
@@ -261,18 +262,18 @@ async function sendPasswordResetLink(to, firstName, resetLink) {
         </div>
     `);
 
-    await sendMail({
-        to,
-        subject: 'Reset Your Password \u2014 DepEd ELMS',
-        html,
-    });
+  await sendMail({
+    to,
+    subject: "Reset Your Password \u2014 DepEd ELMS",
+    html,
+  });
 }
 
 // ---------------------------------------------------------------------------
 // Email: Password changed (sent to user whenever their password is updated)
 // ---------------------------------------------------------------------------
 async function sendPasswordChanged(to, firstName) {
-    const html = baseTemplate(`
+  const html = baseTemplate(`
         <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Hi ${firstName},</h2>
         <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
             This is a confirmation that the password for your
@@ -288,7 +289,7 @@ async function sendPasswordChanged(to, firstName) {
             </p>
         </div>
         <div style="text-align:center;">
-            <a href="${APP_URL}/login"
+          <a href="${FRONTEND_URL}/login"
                style="display:inline-block;background:#1d4ed8;color:#ffffff;
                       padding:12px 32px;border-radius:6px;text-decoration:none;
                       font-size:15px;font-weight:600;">
@@ -297,11 +298,11 @@ async function sendPasswordChanged(to, firstName) {
         </div>
     `);
 
-    await sendMail({
-        to,
-        subject: 'Your Password Has Been Changed \u2014 DepEd ELMS',
-        html,
-    });
+  await sendMail({
+    to,
+    subject: "Your Password Has Been Changed \u2014 DepEd ELMS",
+    html,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -336,7 +337,7 @@ async function sendRoleChanged(to, firstName, oldRole, newRole) {
             Please sign out and sign back in for the changes to take full effect.
         </p>
         <div style="text-align:center;">
-            <a href="${APP_URL}/login"
+          <a href="${FRONTEND_URL}/login"
                style="display:inline-block;background:#1d4ed8;color:#ffffff;
                       padding:12px 32px;border-radius:6px;text-decoration:none;
                       font-size:15px;font-weight:600;">
@@ -356,10 +357,10 @@ async function sendRoleChanged(to, firstName, oldRole, newRole) {
 }
 
 module.exports = {
-    sendRegistrationReceived,
-    sendRegistrationApproved,
-    sendRegistrationRejected,
-    sendPasswordResetLink,
-    sendPasswordChanged,
-    sendRoleChanged,
+  sendRegistrationReceived,
+  sendRegistrationApproved,
+  sendRegistrationRejected,
+  sendPasswordResetLink,
+  sendPasswordChanged,
+  sendRoleChanged,
 };

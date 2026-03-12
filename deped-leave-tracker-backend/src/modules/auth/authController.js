@@ -1,7 +1,14 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const pool = require("../../config/db");
-const { sendRegistrationReceived, sendPasswordChanged, sendPasswordResetLink } = require("../../utils/mailer");
+const {
+  sendRegistrationReceived,
+  sendPasswordChanged,
+  sendPasswordResetLink,
+} = require("../../utils/mailer");
+
+const FRONTEND_URL =
+  process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3001";
 
 const register = async (req, res) => {
   const {
@@ -157,19 +164,24 @@ const changePassword = async (req, res) => {
   const { current_password, new_password } = req.body;
 
   if (!current_password || !new_password) {
-    return res.status(400).json({ message: "current_password and new_password are required" });
+    return res
+      .status(400)
+      .json({ message: "current_password and new_password are required" });
   }
 
   if (new_password.length < 8) {
-    return res.status(400).json({ message: "New password must be at least 8 characters" });
+    return res
+      .status(400)
+      .json({ message: "New password must be at least 8 characters" });
   }
 
   try {
     const [results] = await pool
       .promise()
-      .query("SELECT id, first_name, email, password_hash FROM users WHERE id = ? AND is_active = 1", [
-        req.user.id,
-      ]);
+      .query(
+        "SELECT id, first_name, email, password_hash FROM users WHERE id = ? AND is_active = 1",
+        [req.user.id],
+      );
     const user = results[0];
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -181,20 +193,29 @@ const changePassword = async (req, res) => {
     }
 
     if (await bcrypt.compare(new_password, user.password_hash)) {
-      return res.status(400).json({ message: "New password must be different from current password" });
+      return res
+        .status(400)
+        .json({
+          message: "New password must be different from current password",
+        });
     }
 
     const hashedPassword = await bcrypt.hash(new_password, 10);
     await pool
       .promise()
-      .query("UPDATE users SET password_hash = ? WHERE id = ?", [hashedPassword, user.id]);
+      .query("UPDATE users SET password_hash = ? WHERE id = ?", [
+        hashedPassword,
+        user.id,
+      ]);
 
     // Fire-and-forget
     sendPasswordChanged(user.email, user.first_name);
 
     res.status(200).json({ message: "Password changed successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Error changing password", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error changing password", error: error.message });
   }
 };
 
@@ -228,14 +249,15 @@ const forgotPassword = async (req, res) => {
         { expiresIn: "30m" },
       );
 
-      const resetLink = `${process.env.APP_URL || "http://localhost:3001"}/reset-password?token=${resetToken}`;
+      const resetLink = `${FRONTEND_URL}/reset-password?token=${resetToken}`;
 
       // Fire-and-forget
       sendPasswordResetLink(user.email, user.first_name, resetLink);
     }
 
     res.status(200).json({
-      message: "If an account with that email exists, a reset link has been sent.",
+      message:
+        "If an account with that email exists, a reset link has been sent.",
     });
   } catch (error) {
     res
@@ -265,7 +287,9 @@ const verifyOldPassword = async (req, res) => {
     // Decode without verifying first to extract the user id
     const decoded = jwt.decode(token);
     if (!decoded || !decoded.id || decoded.purpose !== "password-reset") {
-      return res.status(400).json({ message: "Invalid or malformed reset token" });
+      return res
+        .status(400)
+        .json({ message: "Invalid or malformed reset token" });
     }
 
     const [results] = await pool
@@ -285,7 +309,10 @@ const verifyOldPassword = async (req, res) => {
     } catch {
       return res
         .status(400)
-        .json({ message: "Reset link is invalid or has expired. Please request a new one." });
+        .json({
+          message:
+            "Reset link is invalid or has expired. Please request a new one.",
+        });
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
@@ -325,7 +352,9 @@ const resetPassword = async (req, res) => {
     // Decode without verifying first to extract the user id
     const decoded = jwt.decode(token);
     if (!decoded || !decoded.id || decoded.purpose !== "password-reset") {
-      return res.status(400).json({ message: "Invalid or malformed reset token" });
+      return res
+        .status(400)
+        .json({ message: "Invalid or malformed reset token" });
     }
 
     // Fetch the user — we need password_hash to complete verification
@@ -346,14 +375,19 @@ const resetPassword = async (req, res) => {
     } catch {
       return res
         .status(400)
-        .json({ message: "Reset link is invalid or has expired. Please request a new one." });
+        .json({
+          message:
+            "Reset link is invalid or has expired. Please request a new one.",
+        });
     }
 
     // Prevent reusing the same password
     if (await bcrypt.compare(newPassword, user.password_hash)) {
       return res
         .status(400)
-        .json({ message: "New password must be different from your current password" });
+        .json({
+          message: "New password must be different from your current password",
+        });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -375,4 +409,12 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, verifyPassword, changePassword, forgotPassword, verifyOldPassword, resetPassword };
+module.exports = {
+  register,
+  login,
+  verifyPassword,
+  changePassword,
+  forgotPassword,
+  verifyOldPassword,
+  resetPassword,
+};
