@@ -1,4 +1,5 @@
 const User = require('./userModel');
+const { sendRoleChanged } = require('../../utils/mailer');
 
 const VALID_ROLES = ['SUPER_ADMIN', 'ADMIN', 'DATA_ENCODER'];
 
@@ -49,7 +50,14 @@ const updateUserRole = async (req, res) => {
             return res.status(403).json({ message: 'You cannot change your own role' });
         }
 
+        const previousRole = user.role;
         await User.updateRole(req.params.id, role);
+
+        // Fire-and-forget — email failure must not block the response
+        if (previousRole !== role) {
+            sendRoleChanged(user.email, user.first_name, previousRole, role);
+        }
+
         res.status(200).json({ message: 'User role updated successfully' });
     } catch (err) {
         res.status(500).json({ message: 'Error updating user role', error: err.message });
