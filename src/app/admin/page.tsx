@@ -2,11 +2,12 @@
 import React, { useEffect, useState } from "react";
 import Admin from "../../frontend/admin/AdminIndex";
 import SidebarIndex from "../../frontend/sidebar/SidebarIndex";
+import StickyHeader from "../../frontend/components/StickyHeader";
 
 export default function Page() {
   const [role, setRole] = useState("data-encoder");
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [collapsed, setCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -20,16 +21,39 @@ export default function Page() {
     }
   }, []);
 
+  const handleToggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setSidebarOpen(false);
+  };
+
   return (
     <>
-      <SidebarIndex
-        role={role}
-        activeTab={activeTab}
-        onTabChange={(t) => setActiveTab(t)}
-        defaultCollapsed={true}
-        onToggleCollapse={(c) => setCollapsed(c)}
-      />
-      <main className="p-6">
+      <StickyHeader onMenuClick={handleToggleSidebar} />
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 z-30"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      {sidebarOpen && (
+        <div className="fixed left-0 top-0 z-40 h-screen animate-in slide-in-from-left-full duration-300">
+          <SidebarIndex
+            role={role}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            defaultCollapsed={false}
+            onToggleCollapse={(c) => {
+              if (c) setSidebarOpen(false);
+            }}
+          />
+        </div>
+      )}
+      <main className="p-6 w-full">
         <Admin />
       </main>
     </>

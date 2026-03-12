@@ -1,50 +1,55 @@
-require('dotenv').config();
-const nodemailer = require('nodemailer');
+require("dotenv").config();
+const nodemailer = require("nodemailer");
 
 // ---------------------------------------------------------------------------
 // Transporter — configured via .env (see README for required vars)
 // ---------------------------------------------------------------------------
 const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === 'true', // true for port 465, false for 587
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: process.env.SMTP_SECURE === "true", // true for port 465, false for 587
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
 });
 
-const FROM = process.env.SMTP_FROM || 'DepEd ELMS <noreply@deped.gov.ph>';
-const APP_URL = process.env.APP_URL || 'http://localhost:3001';
+const FROM = process.env.SMTP_FROM || "DepEd ELMS <noreply@deped.gov.ph>";
+const APP_URL = process.env.APP_URL || "http://localhost:3001";
 
 // Only attempt to send if all SMTP vars are present
 const SMTP_READY = !!(
-    process.env.SMTP_HOST &&
-    process.env.SMTP_USER &&
-    process.env.SMTP_PASS
+  process.env.SMTP_HOST &&
+  process.env.SMTP_USER &&
+  process.env.SMTP_PASS
 );
 
 // ---------------------------------------------------------------------------
 // Core send helper — fire-and-forget safe; logs but never throws
 // ---------------------------------------------------------------------------
 async function sendMail({ to, subject, html }) {
-    if (!SMTP_READY) {
-        console.warn(`[mailer] SMTP not configured — skipped email to ${to}: "${subject}"`);
-        return;
-    }
-    try {
-        await transporter.sendMail({ from: FROM, to, subject, html });
-        console.log(`[mailer] Sent "${subject}" → ${to}`);
-    } catch (err) {
-        console.error(`[mailer] Failed to send "${subject}" to ${to}:`, err.message);
-    }
+  if (!SMTP_READY) {
+    console.warn(
+      `[mailer] SMTP not configured — skipped email to ${to}: "${subject}"`,
+    );
+    return;
+  }
+  try {
+    await transporter.sendMail({ from: FROM, to, subject, html });
+    console.log(`[mailer] Sent "${subject}" → ${to}`);
+  } catch (err) {
+    console.error(
+      `[mailer] Failed to send "${subject}" to ${to}:`,
+      err.message,
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
 // Shared HTML wrapper
 // ---------------------------------------------------------------------------
 function baseTemplate(bodyContent) {
-    return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -56,13 +61,18 @@ function baseTemplate(bodyContent) {
       <table width="560" cellpadding="0" cellspacing="0"
              style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
 
-        <!-- Header -->
+        <!-- Header with Logos -->
         <tr>
           <td style="background:#1d4ed8;padding:24px 32px;">
-            <p style="margin:0;font-size:11px;color:#bfdbfe;letter-spacing:2px;text-transform:uppercase;">
+            <!-- Logos -->
+            <div style="text-align:center;margin-bottom:16px;">
+              <img src="${APP_URL}/images/deped-csjdm-logo.svg" alt="DepEd CSJDM Logo" style="height:80px;width:auto;margin:0 12px;vertical-align:middle;display:inline-block;" />
+              <img src="${APP_URL}/logo-deped-bagong-pilipinas-colored_orig.png" alt="DepEd Bagong Pilipinas Logo" style="height:80px;width:auto;margin:0 12px;vertical-align:middle;display:inline-block;" />
+            </div>
+            <p style="margin:0;font-size:11px;color:#bfdbfe;letter-spacing:2px;text-transform:uppercase;text-align:center;">
               Department of Education
             </p>
-            <h1 style="margin:4px 0 0;font-size:20px;color:#ffffff;">
+            <h1 style="margin:4px 0 0;font-size:20px;color:#ffffff;text-align:center;">
               Employee Leave Management System
             </h1>
           </td>
@@ -95,16 +105,16 @@ function baseTemplate(bodyContent) {
 // Role display helper
 // ---------------------------------------------------------------------------
 function roleLabel(role) {
-    if (role === 'ADMIN') return 'Admin';
-    if (role === 'DATA_ENCODER') return 'Data Encoder';
-    return role || 'User';
+  if (role === "ADMIN") return "Admin";
+  if (role === "DATA_ENCODER") return "Data Encoder";
+  return role || "User";
 }
 
 // ---------------------------------------------------------------------------
 // Email: Registration request received (sent to user on sign-up)
 // ---------------------------------------------------------------------------
 async function sendRegistrationReceived(to, firstName) {
-    const html = baseTemplate(`
+  const html = baseTemplate(`
         <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Hi ${firstName},</h2>
         <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
             We have received your registration request for the
@@ -127,18 +137,18 @@ async function sendRegistrationReceived(to, firstName) {
         </p>
     `);
 
-    await sendMail({
-        to,
-        subject: 'Registration Request Received — DepEd ELMS',
-        html,
-    });
+  await sendMail({
+    to,
+    subject: "Registration Request Received — DepEd ELMS",
+    html,
+  });
 }
 
 // ---------------------------------------------------------------------------
 // Email: Registration approved (sent to user when super admin approves)
 // ---------------------------------------------------------------------------
 async function sendRegistrationApproved(to, firstName, role) {
-    const html = baseTemplate(`
+  const html = baseTemplate(`
         <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Hi ${firstName},</h2>
         <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
             Great news! Your registration request has been
@@ -169,28 +179,28 @@ async function sendRegistrationApproved(to, firstName, role) {
         </div>
     `);
 
-    await sendMail({
-        to,
-        subject: 'Registration Approved — Welcome to DepEd ELMS',
-        html,
-    });
+  await sendMail({
+    to,
+    subject: "Registration Approved — Welcome to DepEd ELMS",
+    html,
+  });
 }
 
 // ---------------------------------------------------------------------------
 // Email: Registration rejected (sent to user when super admin rejects)
 // ---------------------------------------------------------------------------
 async function sendRegistrationRejected(to, firstName, reason) {
-    const reasonBlock = reason
-        ? `<div style="background:#fef2f2;border-left:4px solid #dc2626;padding:14px 18px;
+  const reasonBlock = reason
+    ? `<div style="background:#fef2f2;border-left:4px solid #dc2626;padding:14px 18px;
                        border-radius:4px;margin-bottom:24px;">
                <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#991b1b;">
                    Reason provided:
                </p>
                <p style="margin:0;font-size:14px;color:#7f1d1d;">${reason}</p>
            </div>`
-        : '';
+    : "";
 
-    const html = baseTemplate(`
+  const html = baseTemplate(`
         <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Hi ${firstName},</h2>
         <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
             We regret to inform you that your registration request for the
@@ -207,15 +217,15 @@ async function sendRegistrationRejected(to, firstName, reason) {
         </p>
     `);
 
-    await sendMail({
-        to,
-        subject: 'Registration Request Update — DepEd ELMS',
-        html,
-    });
+  await sendMail({
+    to,
+    subject: "Registration Request Update — DepEd ELMS",
+    html,
+  });
 }
 
 module.exports = {
-    sendRegistrationReceived,
-    sendRegistrationApproved,
-    sendRegistrationRejected,
+  sendRegistrationReceived,
+  sendRegistrationApproved,
+  sendRegistrationRejected,
 };
