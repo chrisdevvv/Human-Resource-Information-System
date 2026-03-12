@@ -154,6 +154,10 @@ export default function SidebarIndex({
     router.refresh();
   };
 
+  const handleOpenSettings = () => {
+    onTabChange("profile-settings");
+  };
+
   return (
     <>
       {!collapsed && (
@@ -239,8 +243,13 @@ export default function SidebarIndex({
             </button>
             <button
               type="button"
+              onClick={handleOpenSettings}
               title="Settings"
-              className="cursor-pointer p-2 rounded-lg transition text-blue-50 hover:bg-blue-700 flex items-center justify-center"
+              className={`cursor-pointer p-2 rounded-lg transition flex items-center justify-center ${
+                activeTab === "profile-settings"
+                  ? "bg-blue-800 text-white"
+                  : "text-blue-50 hover:bg-blue-700"
+              }`}
             >
               <SettingsIcon size={18} className="shrink-0" />
             </button>

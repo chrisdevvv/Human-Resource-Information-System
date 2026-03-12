@@ -146,6 +146,11 @@ export default function SidebarMobile({
     router.refresh();
   };
 
+  const handleOpenSettings = () => {
+    onTabChange("profile-settings");
+    setIsOpen(false);
+  };
+
   return (
     <div className={`md:hidden ${className}`}>
       {/* Header */}
@@ -208,7 +213,12 @@ export default function SidebarMobile({
             </button>
             <button
               type="button"
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition text-blue-50 hover:bg-blue-700"
+              onClick={handleOpenSettings}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition ${
+                activeTab === "profile-settings"
+                  ? "bg-blue-800 text-white"
+                  : "text-blue-50 hover:bg-blue-700"
+              }`}
             >
               <SettingsIcon size={20} className="shrink-0" />
               <span className="text-sm font-medium">Settings</span>

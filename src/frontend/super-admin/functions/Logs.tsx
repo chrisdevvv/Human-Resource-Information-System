@@ -11,6 +11,7 @@ type Log = {
   lastName: string;
   role: string;
   email: string;
+  schoolName: string;
   action: string;
   details: string;
   createdAt: string;
@@ -110,6 +111,7 @@ export default function Logs() {
         lastName: item.last_name || "",
         role: item.role || "N/A",
         email: item.email || "N/A",
+        schoolName: item.school_name || "N/A",
         action: item.action || "N/A",
         details: item.details || "",
         createdAt: item.created_at,
@@ -530,6 +532,7 @@ export default function Logs() {
                   roleLabelMap[selectedLog.role] ??
                   selectedLog.role.replace(/_/g, " "),
                 email: selectedLog.email,
+                school: selectedLog.schoolName,
                 dateTime: formatDateTime(selectedLog.createdAt),
                 actionTaken: formatAction(
                   selectedLog.action,

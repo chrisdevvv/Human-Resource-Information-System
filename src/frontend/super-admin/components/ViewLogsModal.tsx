@@ -1,12 +1,12 @@
 "use client";
 
 import React from "react";
-import { X } from "lucide-react";
 
 export type ViewLogDetails = {
   name: string;
   role: string;
   email: string;
+  school: string;
   dateTime: string;
   actionTaken: string;
 };
@@ -59,11 +59,18 @@ export default function ViewLogsModal({
 
           <div className="bg-gray-50 rounded-lg px-4 py-3">
             <p className="text-[11px] uppercase tracking-wide text-gray-500 mb-1">
-              Mail
+              Email
             </p>
             <p className="text-sm font-semibold text-gray-800 break-all">
               {log.email}
             </p>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg px-4 py-3">
+            <p className="text-[11px] uppercase tracking-wide text-gray-500 mb-1">
+              School
+            </p>
+            <p className="text-sm font-semibold text-gray-800">{log.school}</p>
           </div>
 
           <div className="bg-gray-50 rounded-lg px-4 py-3">

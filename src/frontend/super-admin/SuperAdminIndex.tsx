@@ -3,6 +3,7 @@
 import React, { useRef } from "react";
 import UserRoles from "./functions/UserRoles";
 import Logs from "./functions/Logs";
+import SuperAdminProfileSettings from "./functions/SuperAdminProfileSettings";
 import styles from "./styles.module.css";
 
 type SuperAdminProps = {
@@ -31,6 +32,8 @@ export default function SuperAdmin({
         return <UserRoles key={tabKey} />;
       case "logs":
         return <Logs key={tabKey} />;
+      case "profile-settings":
+        return <SuperAdminProfileSettings key={tabKey} />;
       default:
         return (
           <div className={styles.container}>

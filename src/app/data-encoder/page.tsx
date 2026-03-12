@@ -81,7 +81,7 @@ export default function Page() {
         </div>
       )}
       <main className="p-6 w-full">
-        <DataEncoder />
+        <DataEncoder activeTab={activeTab} />
       </main>
     </>
   );

@@ -81,7 +81,7 @@ export default function Page() {
         </div>
       )}
       <main className="p-6 w-full">
-        <Admin />
+        <Admin activeTab={activeTab} />
       </main>
     </>
   );
