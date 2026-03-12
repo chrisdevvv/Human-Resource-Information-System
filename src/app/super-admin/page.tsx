@@ -3,13 +3,14 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import SuperAdmin from "../../frontend/super-admin/SuperAdminIndex";
 import SidebarIndex from "../../frontend/sidebar/SidebarIndex";
+import SidebarMobile from "../../frontend/sidebar/SidebarMobile";
 import StickyHeader from "../../frontend/components/StickyHeader";
 
 export default function Page() {
   const router = useRouter();
   const [role, setRole] = useState("super-admin");
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
@@ -50,40 +51,44 @@ export default function Page() {
   }
 
   const handleToggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
+    setSidebarCollapsed((current) => !current);
   };
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    setSidebarOpen(false);
   };
 
   return (
-    <>
-      <StickyHeader onMenuClick={handleToggleSidebar} />
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 z-30"
-          onClick={() => setSidebarOpen(false)}
-          aria-hidden="true"
+    <div className="min-h-screen bg-white">
+      <div className="md:hidden">
+        <SidebarMobile
+          role={role}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          title="ELMS"
         />
-      )}
-      {sidebarOpen && (
-        <div className="fixed left-0 top-0 z-40 h-screen animate-in slide-in-from-left-full duration-300">
-          <SidebarIndex
-            role={role}
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            defaultCollapsed={false}
-            onToggleCollapse={(c) => {
-              if (c) setSidebarOpen(false);
-            }}
-          />
+      </div>
+
+      <div className="hidden md:flex min-h-screen">
+        <SidebarIndex
+          role={role}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={setSidebarCollapsed}
+        />
+
+        <div className="flex-1 min-w-0">
+          <StickyHeader onMenuClick={handleToggleSidebar} />
+          <main className="p-6 bg-white min-h-[calc(100vh-88px)] w-full transition-all duration-300">
+            <SuperAdmin activeTab={activeTab} />
+          </main>
         </div>
-      )}
-      <main className="p-6 bg-white min-h-screen w-full">
+      </div>
+
+      <main className="md:hidden p-4 bg-white min-h-[calc(100vh-72px)] w-full">
         <SuperAdmin activeTab={activeTab} />
       </main>
-    </>
+    </div>
   );
 }

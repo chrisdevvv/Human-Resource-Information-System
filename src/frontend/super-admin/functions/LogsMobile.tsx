@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import ViewLogsModal from "../components/ViewLogsModal";
 
 type Log = {
@@ -17,7 +17,7 @@ type Log = {
   createdAt: string;
 };
 
-export default function Logs() {
+export default function LogsMobile() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [letterFilter, setLetterFilter] = useState("ALL");
@@ -25,15 +25,12 @@ export default function Logs() {
     "date-desc" | "date-asc" | "name-asc" | "name-desc"
   >("date-desc");
   const [currentPage, setCurrentPage] = useState(1);
-
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-
   const MAX_RANGE_DAYS = 14;
 
-  // Overall allowed window: today and the 14 days before it
   const todayStr = new Date().toISOString().slice(0, 10);
   const twoWeeksAgoStr = (() => {
     const d = new Date();
@@ -41,7 +38,6 @@ export default function Logs() {
     return d.toISOString().slice(0, 10);
   })();
 
-  // When dateFrom changes, clamp dateTo so the range never exceeds 2 weeks
   const handleDateFrom = (value: string) => {
     setDateFrom(value);
     setCurrentPage(1);
@@ -55,7 +51,6 @@ export default function Logs() {
     }
   };
 
-  // When dateTo changes, clamp so range never exceeds 2 weeks
   const handleDateTo = (value: string) => {
     if (value && dateFrom) {
       const from = new Date(dateFrom);
@@ -69,7 +64,6 @@ export default function Logs() {
     setCurrentPage(1);
   };
 
-  // max selectable end date = min(dateFrom + 14 days, today)
   const maxDateTo = (() => {
     if (!dateFrom) return todayStr;
     const d = new Date(dateFrom);
@@ -86,9 +80,7 @@ export default function Logs() {
 
   const fetchLogs = async (showSpinner = true) => {
     try {
-      if (showSpinner) {
-        setLogsLoading(true);
-      }
+      if (showSpinner) setLogsLoading(true);
 
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
@@ -104,39 +96,33 @@ export default function Logs() {
       if (!response.ok) throw new Error("Failed to fetch logs");
 
       const result = await response.json();
-      const formatted = (result.data || []).map((item: any) => ({
-        id: item.id,
-        userId: item.user_id,
-        firstName: item.first_name || "Unknown",
-        lastName: item.last_name || "",
-        role: item.role || "N/A",
-        email: item.email || "N/A",
-        schoolName: item.school_name || "N/A",
-        action: item.action || "N/A",
-        details: item.details || "",
-        createdAt: item.created_at,
-      }));
+      const formatted = (result.data || []).map(
+        (item: Record<string, unknown>) => ({
+          id: item.id as number,
+          userId: item.user_id as number,
+          firstName: (item.first_name as string) || "Unknown",
+          lastName: (item.last_name as string) || "",
+          role: (item.role as string) || "N/A",
+          email: (item.email as string) || "N/A",
+          schoolName: (item.school_name as string) || "N/A",
+          action: (item.action as string) || "N/A",
+          details: (item.details as string) || "",
+          createdAt: item.created_at as string,
+        }),
+      );
       setLogsData(formatted);
       setLogsError(null);
     } catch (err) {
       setLogsError(err instanceof Error ? err.message : "An error occurred");
-      if (showSpinner) {
-        setLogsData([]);
-      }
+      if (showSpinner) setLogsData([]);
     } finally {
-      if (showSpinner) {
-        setLogsLoading(false);
-      }
+      if (showSpinner) setLogsLoading(false);
     }
   };
 
   useEffect(() => {
     fetchLogs();
-
-    const intervalId = window.setInterval(() => {
-      fetchLogs(false);
-    }, 5000);
-
+    const intervalId = window.setInterval(() => fetchLogs(false), 5000);
     return () => window.clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -228,18 +214,7 @@ export default function Logs() {
         return d
           ? `Deleted the leave request for ${d}.`
           : "Deleted a leave request.";
-      case "LEAVE_MONTHLY_CREDIT": {
-        // d: "Name — Period"
-        const sep = d.indexOf(" \u2014 ");
-        if (sep !== -1) {
-          const name = d.slice(0, sep);
-          const period = d.slice(sep + 3);
-          return `Applied monthly leave credit (+1.25 VL & SL) to ${name} for ${period}.`;
-        }
-        return d ? `Applied monthly leave credit \u2014 ${d}.` : "Applied monthly leave credit.";
-      }
       case "USER_ROLE_UPDATED": {
-        // details: "Name: OLD_ROLE → NEW_ROLE"
         const ci = d.indexOf(": ");
         if (ci !== -1 && d.includes(" \u2192 ")) {
           const name = d.slice(0, ci);
@@ -249,7 +224,6 @@ export default function Logs() {
         return d ? `Updated a user's role — ${d}.` : "Updated a user's role.";
       }
       case "USER_STATUS_UPDATED": {
-        // details: "Name: Activated" or "Name: Deactivated"
         const ci = d.indexOf(": ");
         if (ci !== -1) {
           const name = d.slice(0, ci);
@@ -261,7 +235,6 @@ export default function Logs() {
         return d || "Updated a user's account status.";
       }
       case "USER_DELETED": {
-        // details: "Name (email)"
         const pi = d.indexOf(" (");
         const name = pi !== -1 ? d.slice(0, pi) : d;
         return name
@@ -269,14 +242,12 @@ export default function Logs() {
           : "Deleted a user account.";
       }
       case "USER_PASSWORD_RESET": {
-        // details: "Password reset for Name"
         const match = d.match(/^Password reset for (.+)$/);
         return match
           ? `Reset the password of ${match[1]}.`
           : d || "Reset a user's password.";
       }
       case "REGISTRATION_APPROVED": {
-        // details: "Name as ROLE"
         const ai = d.lastIndexOf(" as ");
         if (ai !== -1) {
           const name = d.slice(0, ai);
@@ -288,7 +259,6 @@ export default function Logs() {
           : "Approved a registration request.";
       }
       case "REGISTRATION_REJECTED": {
-        // details: "Name" or "Name: reason"
         const ci = d.indexOf(": ");
         if (ci !== -1) {
           const name = d.slice(0, ci);
@@ -307,43 +277,40 @@ export default function Logs() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-6 sticky top-4 h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Activity Logs</h1>
+    <div className="w-full px-3 py-4">
+      <h1 className="text-lg font-bold text-gray-900 mb-4">Activity Logs</h1>
 
       {/* Filters */}
-      <div className="flex flex-col gap-4 mb-6">
-        {/* Search Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              placeholder="Search by name or action"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="text-gray-500 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            />
-          </div>
+      <div className="flex flex-col gap-2 mb-4">
+        {/* Search */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Search by name or action"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
           <button
             onClick={() => setCurrentPage(1)}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer"
           >
             Search
           </button>
         </div>
 
-        {/* Filter Row 1 */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          {/* Role Filter */}
+        {/* Filters 2×2 grid */}
+        <div className="grid grid-cols-2 gap-2">
           <select
             value={roleFilter}
             onChange={(e) => {
               setRoleFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
           >
             <option value="ALL">All Roles</option>
             <option value="SUPER_ADMIN">Super Admin</option>
@@ -351,14 +318,13 @@ export default function Logs() {
             <option value="DATA_ENCODER">Data Encoder</option>
           </select>
 
-          {/* Alphabet Filter */}
           <select
             value={letterFilter}
             onChange={(e) => {
               setLetterFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
           >
             <option value="ALL">All Letters</option>
             {alphabet.map((letter) => (
@@ -368,14 +334,13 @@ export default function Logs() {
             ))}
           </select>
 
-          {/* Sort */}
           <select
             value={sortMode}
             onChange={(e) => {
               setSortMode(e.target.value as typeof sortMode);
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
           >
             <option value="date-desc">Newest First</option>
             <option value="date-asc">Oldest First</option>
@@ -383,9 +348,26 @@ export default function Logs() {
             <option value="name-desc">Name Z → A</option>
           </select>
 
-          {/* Date Range Filter */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-500 whitespace-nowrap">
+          <select
+            value=""
+            onChange={(e) => {
+              if (e.target.value === "clear") {
+                setDateFrom("");
+                setDateTo("");
+                setCurrentPage(1);
+              }
+            }}
+            className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+          >
+            <option value="">Date Range</option>
+            <option value="clear">Clear Dates</option>
+          </select>
+        </div>
+
+        {/* Date inputs - stacked on mobile */}
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2 items-center">
+            <label className="text-xs text-gray-500 whitespace-nowrap">
               From
             </label>
             <input
@@ -394,9 +376,11 @@ export default function Logs() {
               min={twoWeeksAgoStr}
               max={todayStr}
               onChange={(e) => handleDateFrom(e.target.value)}
-              className="text-gray-500 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+              className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             />
-            <label className="text-sm text-gray-500 whitespace-nowrap">
+          </div>
+          <div className="flex gap-2 items-center">
+            <label className="text-xs text-gray-500 whitespace-nowrap">
               To
             </label>
             <input
@@ -405,160 +389,109 @@ export default function Logs() {
               min={dateFrom || twoWeeksAgoStr}
               max={maxDateTo}
               onChange={(e) => handleDateTo(e.target.value)}
-              className="text-gray-500 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+              className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             />
-            {(dateFrom || dateTo) && (
-              <button
-                onClick={() => {
-                  setDateFrom("");
-                  setDateTo("");
-                  setCurrentPage(1);
-                }}
-                className="text-xs text-gray-400 hover:text-gray-600 underline cursor-pointer whitespace-nowrap"
-              >
-                Clear
-              </button>
-            )}
           </div>
-
-          <span className="text-sm text-gray-400 sm:ml-auto">
-            {filteredLogs.length} record{filteredLogs.length !== 1 ? "s" : ""}
-          </span>
         </div>
+
+        <p className="text-xs text-gray-400">
+          {filteredLogs.length} record{filteredLogs.length !== 1 ? "s" : ""}
+        </p>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+      {/* Logs list */}
+      <div className="bg-white rounded-xl shadow-lg p-4 flex flex-col gap-4">
         {logsLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-gray-500">Loading logs...</p>
-          </div>
+          <p className="text-center text-sm text-gray-500 py-8">
+            Loading logs...
+          </p>
         ) : logsError ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-red-500">Error: {logsError}</p>
-          </div>
+          <p className="text-center text-sm text-red-500 py-8">
+            Error: {logsError}
+          </p>
+        ) : paginatedLogs.length === 0 ? (
+          <p className="text-center text-sm text-gray-500 py-8">
+            No logs found.
+          </p>
         ) : (
-          <table className="w-full">
-            <thead className="sticky top-0 z-10 bg-white">
-              <tr className="border-b-2 border-gray-200">
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
-                  Date &amp; Time
-                </th>
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
-                  Name
-                </th>
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
-                  Role
-                </th>
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
-                  Action Taken
-                </th>
-                <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+          <div className="flex flex-col gap-2">
+            {paginatedLogs.map((log) => (
+              <div
+                key={log.id}
+                className="flex items-start justify-between px-4 py-3 bg-gray-50 rounded-lg border border-gray-100"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-gray-400 truncate">
+                    {formatDateTime(log.createdAt)}
+                  </p>
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {log.firstName} {log.lastName}
+                  </p>
+                  <p className="text-xs text-gray-600 line-clamp-2">
+                    {formatAction(log.action, log.details)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedLog(log)}
+                  className="ml-3 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition cursor-pointer shrink-0"
+                >
                   View
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedLogs.length > 0 ? (
-                paginatedLogs.map((log) => (
-                  <tr
-                    key={log.id}
-                    className="border-b border-gray-100 hover:bg-gray-50 transition"
-                  >
-                    <td className="py-1 px-3 text-gray-500 text-sm whitespace-nowrap">
-                      {formatDateTime(log.createdAt)}
-                    </td>
-                    <td className="py-1 px-3 text-gray-900 text-sm font-medium">
-                      {log.firstName} {log.lastName}
-                    </td>
-                    <td className="py-1 px-3 text-gray-500 text-sm">
-                      {roleLabelMap[log.role] ?? log.role.replace(/_/g, " ")}
-                    </td>
-                    <td className="py-1 px-3 text-gray-500 text-sm">
-                      {formatAction(log.action, log.details)}
-                    </td>
-                    <td className="py-1 px-3 text-center">
-                      <button
-                        onClick={() => setSelectedLog(log)}
-                        className="p-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer"
-                        aria-label={`View log #${log.id}`}
-                        title="View details"
-                      >
-                        <Eye size={14} />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-gray-500">
-                    No logs found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between gap-2 mt-3">
+            <button
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+            >
+              <ChevronLeft size={15} />
+              Prev
+            </button>
+
+            <span className="text-sm text-gray-500">
+              Page{" "}
+              <span className="font-semibold text-gray-800">{currentPage}</span>{" "}
+              of{" "}
+              <span className="font-semibold text-gray-800">{totalPages}</span>
+            </span>
+
+            <button
+              onClick={() =>
+                setCurrentPage(Math.min(totalPages, currentPage + 1))
+              }
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+            >
+              Next
+              <ChevronRight size={15} />
+            </button>
+          </div>
         )}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-6">
-          <button
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-            aria-label="Previous page"
-          >
-            <ChevronLeft size={18} />
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <button
-              key={page}
-              onClick={() => setCurrentPage(page)}
-              className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
-                currentPage === page
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-500 hover:bg-gray-100"
-              }`}
-            >
-              {page}
-            </button>
-          ))}
-          <button
-            onClick={() =>
-              setCurrentPage(Math.min(totalPages, currentPage + 1))
-            }
-            disabled={currentPage === totalPages}
-            className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-            aria-label="Next page"
-          >
-            <ChevronRight size={18} />
-          </button>
-        </div>
+      {/* View logs modal */}
+      {selectedLog && (
+        <ViewLogsModal
+          visible={true}
+          log={{
+            name: `${selectedLog.firstName} ${selectedLog.lastName}`.trim(),
+            role:
+              roleLabelMap[selectedLog.role] ??
+              selectedLog.role.replace(/_/g, " "),
+            email: selectedLog.email,
+            school: selectedLog.schoolName,
+            dateTime: formatDateTime(selectedLog.createdAt),
+            actionTaken: formatAction(selectedLog.action, selectedLog.details),
+          }}
+          onClose={() => setSelectedLog(null)}
+        />
       )}
-
-      <ViewLogsModal
-        visible={!!selectedLog}
-        log={
-          selectedLog
-            ? {
-                name: `${selectedLog.firstName} ${selectedLog.lastName}`.trim(),
-                role:
-                  roleLabelMap[selectedLog.role] ??
-                  selectedLog.role.replace(/_/g, " "),
-                email: selectedLog.email,
-                school: selectedLog.schoolName,
-                dateTime: formatDateTime(selectedLog.createdAt),
-                actionTaken: formatAction(
-                  selectedLog.action,
-                  selectedLog.details,
-                ),
-              }
-            : null
-        }
-        onClose={() => setSelectedLog(null)}
-      />
     </div>
   );
 }
