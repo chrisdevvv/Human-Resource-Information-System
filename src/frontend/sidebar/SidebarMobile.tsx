@@ -4,15 +4,10 @@ import React, { useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
-  BarChart3,
-  CalendarDays,
-  ClipboardList,
-  FileText,
   LayoutDashboard,
   LogOut,
   Menu,
   X,
-  Settings,
   SettingsIcon,
   ShieldCheck,
   Users,
@@ -38,34 +33,10 @@ const SIDEBAR_TABS: SidebarTab[] = [
     roles: ALL_ROLES,
   },
   {
-    id: "leave-request",
-    label: "Leave Request",
-    icon: CalendarDays,
-    roles: ["data-encoder"],
-  },
-  {
-    id: "leave-history",
-    label: "Leave History",
-    icon: FileText,
-    roles: ["data-encoder"],
-  },
-  {
-    id: "leave-encoding",
-    label: "Leave Encoding",
-    icon: ClipboardList,
-    roles: ["data-encoder"],
-  },
-  {
     id: "employee-management",
     label: "Employee Management",
     icon: Users,
-    roles: ["admin", "super-admin"],
-  },
-  {
-    id: "reports",
-    label: "Reports",
-    icon: BarChart3,
-    roles: ["admin", "super-admin"],
+    roles: ALL_ROLES,
   },
   {
     id: "user-roles",
@@ -74,16 +45,10 @@ const SIDEBAR_TABS: SidebarTab[] = [
     roles: ["super-admin"],
   },
   {
-    id: "system-settings",
-    label: "System Settings",
-    icon: Settings,
-    roles: ["super-admin"],
-  },
-  {
     id: "logs",
     label: "Logs",
     icon: Activity,
-    roles: ["admin", "super-admin"],
+    roles: ["super-admin"],
   },
 ];
 
@@ -168,64 +133,69 @@ export default function SidebarMobile({
       </header>
 
       {/* Overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-30"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      <div
+        className={`fixed inset-0 bg-black/40 z-30 transition-opacity duration-200 ${
+          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setIsOpen(false)}
+      />
 
-      {/* Dropdown Menu */}
-      {isOpen && (
-        <nav className="fixed top-16 left-0 right-0 bg-blue-600 text-white border-b border-blue-700 z-30 max-h-[calc(100vh-64px)] overflow-y-auto">
-          <div className="p-3 space-y-1">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
+      {/* Dropdown Menu - comes from top */}
+      <nav
+        className={`fixed top-0 left-0 right-0 bg-blue-600 text-white border-b border-blue-700 z-40 transition-all duration-300 ease-out overflow-y-auto ${
+          isOpen
+            ? "opacity-100 visible translate-y-0"
+            : "opacity-0 invisible -translate-y-full"
+        }`}
+        style={{ paddingTop: "64px", maxHeight: "100vh" }}
+      >
+        <div className="p-3 space-y-1">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
 
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => handleTabClick(tab.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition ${
-                    isActive
-                      ? "bg-blue-800 text-white"
-                      : "text-blue-50 hover:bg-blue-700"
-                  }`}
-                >
-                  <Icon size={20} className="shrink-0" />
-                  <span className="text-sm font-medium">{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => handleTabClick(tab.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition ${
+                  isActive
+                    ? "bg-blue-800 text-white"
+                    : "text-blue-50 hover:bg-blue-700"
+                }`}
+              >
+                <Icon size={20} className="shrink-0" />
+                <span className="text-sm font-medium">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
-          {/* Logout and Settings */}
-          <div className="border-t border-blue-700 p-3 space-y-2">
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition text-blue-50 hover:bg-red-600"
-            >
-              <LogOut size={20} className="shrink-0" />
-              <span className="text-sm font-medium">Logout</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleOpenSettings}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition ${
-                activeTab === "profile-settings"
-                  ? "bg-blue-800 text-white"
-                  : "text-blue-50 hover:bg-blue-700"
-              }`}
-            >
-              <SettingsIcon size={20} className="shrink-0" />
-              <span className="text-sm font-medium">Settings</span>
-            </button>
-          </div>
-        </nav>
-      )}
+        {/* Logout and Settings */}
+        <div className="border-t border-blue-700 p-3 space-y-2">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition text-blue-50 hover:bg-red-600"
+          >
+            <LogOut size={20} className="shrink-0" />
+            <span className="text-sm font-medium">Logout</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenSettings}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition ${
+              activeTab === "profile-settings"
+                ? "bg-blue-800 text-white"
+                : "text-blue-50 hover:bg-blue-700"
+            }`}
+          >
+            <SettingsIcon size={20} className="shrink-0" />
+            <span className="text-sm font-medium">Settings</span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
 }

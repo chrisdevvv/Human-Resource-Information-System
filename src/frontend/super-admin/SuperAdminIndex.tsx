@@ -2,7 +2,9 @@
 
 import React, { useRef } from "react";
 import UserRoles from "./functions/UserRoles";
+import UserRolesMobile from "./functions/UserRolesMobile";
 import Logs from "./functions/Logs";
+import LogsMobile from "./functions/LogsMobile";
 import SuperAdminProfileSettings from "./functions/SuperAdminProfileSettings";
 import styles from "./styles.module.css";
 
@@ -29,9 +31,27 @@ export default function SuperAdmin({
   const renderContent = () => {
     switch (activeTab) {
       case "user-roles":
-        return <UserRoles key={tabKey} />;
+        return (
+          <>
+            <div className="hidden md:block">
+              <UserRoles key={tabKey} />
+            </div>
+            <div className="block md:hidden">
+              <UserRolesMobile key={tabKey} />
+            </div>
+          </>
+        );
       case "logs":
-        return <Logs key={tabKey} />;
+        return (
+          <>
+            <div className="hidden md:block">
+              <Logs key={tabKey} />
+            </div>
+            <div className="block md:hidden">
+              <LogsMobile key={tabKey} />
+            </div>
+          </>
+        );
       case "profile-settings":
         return <SuperAdminProfileSettings key={tabKey} />;
       default:
