@@ -228,6 +228,16 @@ export default function Logs() {
         return d
           ? `Deleted the leave request for ${d}.`
           : "Deleted a leave request.";
+      case "LEAVE_MONTHLY_CREDIT": {
+        // d: "Name — Period"
+        const sep = d.indexOf(" \u2014 ");
+        if (sep !== -1) {
+          const name = d.slice(0, sep);
+          const period = d.slice(sep + 3);
+          return `Applied monthly leave credit (+1.25 VL & SL) to ${name} for ${period}.`;
+        }
+        return d ? `Applied monthly leave credit \u2014 ${d}.` : "Applied monthly leave credit.";
+      }
       case "USER_ROLE_UPDATED": {
         // details: "Name: OLD_ROLE → NEW_ROLE"
         const ci = d.indexOf(": ");

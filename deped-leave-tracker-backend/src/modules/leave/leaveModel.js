@@ -82,7 +82,42 @@ const Leave = {
     delete: async (id) => {
         const [result] = await pool.promise().query('DELETE FROM leaves WHERE id = ?', [id]);
         return result;
-    }
+    },
+
+    // Returns the most recent leave entry for an employee (for balance carry-forward)
+    getLatestByEmployee: async (employee_id) => {
+        const [rows] = await pool.promise().query(
+            'SELECT * FROM leaves WHERE employee_id = ? ORDER BY id DESC LIMIT 1',
+            [employee_id]
+        );
+        return rows[0] || null;
+    },
+
+    // Returns the entry directly before the given id for the same employee (for update recalculation)
+    getPreviousEntry: async (id, employee_id) => {
+        const [rows] = await pool.promise().query(
+            'SELECT * FROM leaves WHERE employee_id = ? AND id < ? ORDER BY id DESC LIMIT 1',
+            [employee_id, id]
+        );
+        return rows[0] || null;
+    },
+
+    // Checks if an entry for a given period already exists (prevents double monthly credits)
+    hasEntryForPeriod: async (employee_id, period_of_leave) => {
+        const [rows] = await pool.promise().query(
+            'SELECT id FROM leaves WHERE employee_id = ? AND period_of_leave = ? LIMIT 1',
+            [employee_id, period_of_leave]
+        );
+        return rows.length > 0;
+    },
+
+    // Returns all non-teaching employees for batch monthly crediting
+    getAllNonTeachingEmployees: async () => {
+        const [rows] = await pool.promise().query(
+            "SELECT id, first_name, last_name FROM employees WHERE employee_type = 'non-teaching'"
+        );
+        return rows;
+    },
 };
 
 module.exports = Leave;
