@@ -1,4 +1,5 @@
 const Registration = require('./registrationModel');
+const Backlog = require('../backlog/backlogModel');
 const { sendRegistrationApproved, sendRegistrationRejected } = require('../../utils/mailer');
 
 const getAllRegistrations = async (req, res) => {
@@ -48,6 +49,14 @@ const approveRegistration = async (req, res) => {
 
         // Fire-and-forget — email failure must not block the response
         sendRegistrationApproved(registration.email, registration.first_name, finalRole);
+        Backlog.create({
+            user_id: req.user.id,
+            school_id: null,
+            employee_id: null,
+            leave_id: null,
+            action: 'REGISTRATION_APPROVED',
+            details: `${registration.first_name} ${registration.last_name} as ${finalRole}`,
+        });
 
         res.status(200).json({ message: 'Registration request approved successfully' });
     } catch (err) {
@@ -73,6 +82,14 @@ const rejectRegistration = async (req, res) => {
 
         // Fire-and-forget — email failure must not block the response
         sendRegistrationRejected(registration.email, registration.first_name, rejection_reason || null);
+        Backlog.create({
+            user_id: req.user.id,
+            school_id: null,
+            employee_id: null,
+            leave_id: null,
+            action: 'REGISTRATION_REJECTED',
+            details: `${registration.first_name} ${registration.last_name}${rejection_reason ? `: ${rejection_reason}` : ''}`,
+        });
 
         res.status(200).json({ message: 'Registration request rejected' });
     } catch (err) {
