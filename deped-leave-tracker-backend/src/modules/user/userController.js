@@ -1,5 +1,7 @@
+const bcrypt = require('bcryptjs');
+const pool = require('../../config/db');
 const User = require('./userModel');
-const { sendRoleChanged } = require('../../utils/mailer');
+const { sendRoleChanged, sendPasswordChanged } = require('../../utils/mailer');
 
 const VALID_ROLES = ['SUPER_ADMIN', 'ADMIN', 'DATA_ENCODER'];
 
@@ -111,4 +113,56 @@ const deleteUser = async (req, res) => {
     }
 };
 
-module.exports = { getAllUsers, getUserById, updateUserRole, updateUserStatus, deleteUser };
+const adminResetPassword = async (req, res) => {
+    try {
+        // Only SUPER_ADMIN can force-reset another user's password
+        if (req.user.role !== 'SUPER_ADMIN') {
+            return res.status(403).json({ message: 'Only SUPER_ADMIN users can reset passwords' });
+        }
+
+        // Prevent resetting own password through this endpoint (use change-password instead)
+        if (String(req.user.id) === String(req.params.id)) {
+            return res.status(403).json({ message: 'Use the change-password endpoint to update your own password' });
+        }
+
+        const { new_password, admin_password } = req.body;
+
+        if (!new_password || !admin_password) {
+            return res.status(400).json({ message: 'new_password and admin_password are required' });
+        }
+
+        if (new_password.length < 8) {
+            return res.status(400).json({ message: 'New password must be at least 8 characters' });
+        }
+
+        // Verify the super admin's own password before allowing the reset
+        const [adminRows] = await pool
+            .promise()
+            .query('SELECT password_hash FROM users WHERE id = ? AND is_active = 1', [req.user.id]);
+        if (!adminRows[0]) {
+            return res.status(404).json({ message: 'Admin account not found' });
+        }
+        const adminMatch = await bcrypt.compare(admin_password, adminRows[0].password_hash);
+        if (!adminMatch) {
+            return res.status(401).json({ message: 'Admin password is incorrect' });
+        }
+
+        // Fetch the target user
+        const user = await User.getById(req.params.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const hashedPassword = await bcrypt.hash(new_password, 10);
+        await pool
+            .promise()
+            .query('UPDATE users SET password_hash = ? WHERE id = ?', [hashedPassword, user.id]);
+
+        // Fire-and-forget
+        sendPasswordChanged(user.email, user.first_name);
+
+        res.status(200).json({ message: 'Password reset successfully' });
+    } catch (err) {
+        res.status(500).json({ message: 'Error resetting password', error: err.message });
+    }
+};
+
+module.exports = { getAllUsers, getUserById, updateUserRole, updateUserStatus, deleteUser, adminResetPassword };
