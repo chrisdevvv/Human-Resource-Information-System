@@ -188,8 +188,8 @@ export default function ForgotModal({ visible, onClose }: Props) {
           <div id="forgotStepSent" className="mt-3">
             <div className="p-4 bg-green-50 border border-green-200 rounded-md mb-4">
               <p className="text-green-700">
-                If an account matched that email, a reset link was sent. (Test
-                mode)
+                If an account matched that email, a reset link was sent. Please
+                check your email to proceed.
               </p>
             </div>
             <div className="flex flex-col gap-3 items-center">
