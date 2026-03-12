@@ -225,6 +225,50 @@ async function sendRegistrationRejected(to, firstName, reason) {
 }
 
 // ---------------------------------------------------------------------------
+// Email: Password reset link (sent to user on forgot-password request)
+// ---------------------------------------------------------------------------
+async function sendPasswordResetLink(to, firstName, resetLink) {
+    const html = baseTemplate(`
+        <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Hi ${firstName},</h2>
+        <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
+            We received a request to reset the password for your
+            <strong>DepEd Employee Leave Management System</strong> account.
+        </p>
+        <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">
+            Click the button below to reset your password. This link is valid for
+            <strong>30 minutes</strong>.
+        </p>
+        <div style="text-align:center;margin-bottom:24px;">
+            <a href="${resetLink}"
+               style="display:inline-block;background:#1d4ed8;color:#ffffff;
+                      padding:14px 36px;border-radius:6px;text-decoration:none;
+                      font-size:15px;font-weight:600;">
+                Reset My Password
+            </a>
+        </div>
+        <p style="margin:0 0 8px;font-size:13px;color:#6b7280;">
+            If the button doesn't work, copy and paste this link into your browser:
+        </p>
+        <p style="margin:0 0 24px;font-size:12px;color:#1d4ed8;word-break:break-all;">
+            ${resetLink}
+        </p>
+        <div style="background:#fef9c3;border-left:4px solid #ca8a04;padding:14px 18px;
+                    border-radius:4px;">
+            <p style="margin:0;font-size:14px;color:#854d0e;">
+                <strong>Didn't request this?</strong> You can safely ignore this email.
+                Your password will not be changed.
+            </p>
+        </div>
+    `);
+
+    await sendMail({
+        to,
+        subject: 'Reset Your Password \u2014 DepEd ELMS',
+        html,
+    });
+}
+
+// ---------------------------------------------------------------------------
 // Email: Password changed (sent to user whenever their password is updated)
 // ---------------------------------------------------------------------------
 async function sendPasswordChanged(to, firstName) {
@@ -315,6 +359,7 @@ module.exports = {
     sendRegistrationReceived,
     sendRegistrationApproved,
     sendRegistrationRejected,
+    sendPasswordResetLink,
     sendPasswordChanged,
     sendRoleChanged,
 };

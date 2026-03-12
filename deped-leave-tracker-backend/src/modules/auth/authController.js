@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const pool = require("../../config/db");
-const { sendRegistrationReceived, sendPasswordChanged } = require("../../utils/mailer");
+const { sendRegistrationReceived, sendPasswordChanged, sendPasswordResetLink } = require("../../utils/mailer");
 
 const register = async (req, res) => {
   const {
@@ -198,4 +198,181 @@ const changePassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, verifyPassword, changePassword };
+// ---------------------------------------------------------------------------
+// POST /api/auth/forgot-password
+// Public — accepts { email }, sends a reset link if the account exists.
+// Always returns success to avoid leaking whether an email is registered.
+// ---------------------------------------------------------------------------
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  try {
+    const [results] = await pool
+      .promise()
+      .query(
+        "SELECT id, first_name, email, password_hash FROM users WHERE email = ? AND is_active = 1",
+        [email],
+      );
+    const user = results[0];
+
+    // Always respond with success — never reveal if the email exists or not
+    if (user) {
+      // Sign reset token with JWT_SECRET + current password_hash so the token
+      // is automatically invalidated the moment the password changes.
+      const resetToken = jwt.sign(
+        { id: user.id, purpose: "password-reset" },
+        process.env.JWT_SECRET + user.password_hash,
+        { expiresIn: "30m" },
+      );
+
+      const resetLink = `${process.env.APP_URL || "http://localhost:3001"}/reset-password?token=${resetToken}`;
+
+      // Fire-and-forget
+      sendPasswordResetLink(user.email, user.first_name, resetLink);
+    }
+
+    res.status(200).json({
+      message: "If an account with that email exists, a reset link has been sent.",
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error processing request", error: error.message });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// POST /api/auth/verify-old-password
+// Protected (requires valid auth token stored in localStorage).
+// Verifies that the supplied password matches the user's current password.
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// POST /api/auth/verify-old-password
+// Public — accepts { token, password }.
+// Uses the reset token (from the forgot-password email link) to identify the
+// user without needing an active login session.
+// ---------------------------------------------------------------------------
+const verifyOldPassword = async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) {
+    return res.status(400).json({ message: "token and password are required" });
+  }
+
+  try {
+    // Decode without verifying first to extract the user id
+    const decoded = jwt.decode(token);
+    if (!decoded || !decoded.id || decoded.purpose !== "password-reset") {
+      return res.status(400).json({ message: "Invalid or malformed reset token" });
+    }
+
+    const [results] = await pool
+      .promise()
+      .query(
+        "SELECT id, password_hash FROM users WHERE id = ? AND is_active = 1",
+        [decoded.id],
+      );
+    const user = results[0];
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Fully verify the reset token is still valid and not expired
+    try {
+      jwt.verify(token, process.env.JWT_SECRET + user.password_hash);
+    } catch {
+      return res
+        .status(400)
+        .json({ message: "Reset link is invalid or has expired. Please request a new one." });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Incorrect password" });
+    }
+
+    res.status(200).json({ message: "Password verified" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error verifying password", error: error.message });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// POST /api/auth/reset-password
+// Public — accepts { token, newPassword }.
+// Verifies the reset token, updates the password, and sends confirmation.
+// ---------------------------------------------------------------------------
+const resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    return res
+      .status(400)
+      .json({ message: "token and newPassword are required" });
+  }
+
+  if (newPassword.length < 8) {
+    return res
+      .status(400)
+      .json({ message: "Password must be at least 8 characters" });
+  }
+
+  try {
+    // Decode without verifying first to extract the user id
+    const decoded = jwt.decode(token);
+    if (!decoded || !decoded.id || decoded.purpose !== "password-reset") {
+      return res.status(400).json({ message: "Invalid or malformed reset token" });
+    }
+
+    // Fetch the user — we need password_hash to complete verification
+    const [results] = await pool
+      .promise()
+      .query(
+        "SELECT id, first_name, email, password_hash FROM users WHERE id = ? AND is_active = 1",
+        [decoded.id],
+      );
+    const user = results[0];
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Verify the token fully — secret includes password_hash so it's one-time-use
+    try {
+      jwt.verify(token, process.env.JWT_SECRET + user.password_hash);
+    } catch {
+      return res
+        .status(400)
+        .json({ message: "Reset link is invalid or has expired. Please request a new one." });
+    }
+
+    // Prevent reusing the same password
+    if (await bcrypt.compare(newPassword, user.password_hash)) {
+      return res
+        .status(400)
+        .json({ message: "New password must be different from your current password" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await pool
+      .promise()
+      .query("UPDATE users SET password_hash = ? WHERE id = ?", [
+        hashedPassword,
+        user.id,
+      ]);
+
+    // Fire-and-forget
+    sendPasswordChanged(user.email, user.first_name);
+
+    res.status(200).json({ message: "Password reset successfully" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error resetting password", error: error.message });
+  }
+};
+
+module.exports = { register, login, verifyPassword, changePassword, forgotPassword, verifyOldPassword, resetPassword };
