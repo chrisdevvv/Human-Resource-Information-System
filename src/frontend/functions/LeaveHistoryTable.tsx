@@ -53,7 +53,7 @@ export default function LeaveHistoryTable({
     <div className="overflow-x-auto rounded-lg border border-gray-200">
       <table className="w-full min-w-full border-collapse text-sm">
         <thead className="bg-gray-50">
-          <tr className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-600">
+          <tr className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-600 whitespace-nowrap">
             <th className="px-3 py-2 text-left">Period of Leave</th>
             <th className="px-3 py-2 text-left">Particulars</th>
             <th className="px-3 py-2 text-right">Earned VL</th>

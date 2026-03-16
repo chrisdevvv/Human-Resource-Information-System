@@ -224,12 +224,12 @@ export default function EmployeeLeaveManagement() {
 
   return (
     <div className="w-full">
-      <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-6 sticky top-4 h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">
+      <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-3 sm:p-6 sticky top-0 sm:top-4 h-screen sm:h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-6">
           Leave Management
         </h1>
 
-        <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex-1 relative">
               <input
@@ -258,7 +258,7 @@ export default function EmployeeLeaveManagement() {
               Add Employee
             </button>
 
-            <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+            <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap items-center gap-3">
               <select
                 value={employeeTypeFilter}
                 onChange={(e) => {
@@ -267,7 +267,7 @@ export default function EmployeeLeaveManagement() {
                   );
                   setCurrentPage(1);
                 }}
-                className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
               >
                 <option value="ALL">All Employee Types</option>
                 <option value="teaching">Teaching</option>
@@ -280,7 +280,7 @@ export default function EmployeeLeaveManagement() {
                   setLetterFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
               >
                 <option value="ALL">All Letters</option>
                 {alphabet.map((letter) => (
@@ -294,7 +294,7 @@ export default function EmployeeLeaveManagement() {
                 onClick={() => {
                   setSortOrder(sortOrder === "asc" ? "desc" : "asc");
                 }}
-                className="text-gray-500 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
+                className="w-full sm:w-auto text-gray-500 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
               >
                 {sortOrder === "asc" ? (
                   <>

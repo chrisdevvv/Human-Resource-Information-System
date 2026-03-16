@@ -166,7 +166,7 @@ export default function LeaveManagementModal({
               Printable Leave Card
             </button>
 
-            <div className="ml-auto flex flex-wrap items-center gap-2">
+            <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setIsAddOpen(true)}
