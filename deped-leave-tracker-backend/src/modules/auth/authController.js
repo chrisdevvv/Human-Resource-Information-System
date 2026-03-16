@@ -47,6 +47,29 @@ const register = async (req, res) => {
         ]);
     }
 
+    // Block if a PENDING request already exists for this email
+    const [pendingRows] = await pool
+      .promise()
+      .query(
+        "SELECT id FROM registration_requests WHERE email = ? AND status = 'PENDING' LIMIT 1",
+        [email],
+      );
+    if (pendingRows.length > 0) {
+      return res.status(409).json({
+        message: "A pending registration request already exists for this email.",
+      });
+    }
+
+    // Block if the email is already an active user account
+    const [userRows] = await pool
+      .promise()
+      .query("SELECT id FROM users WHERE email = ? LIMIT 1", [email]);
+    if (userRows.length > 0) {
+      return res.status(409).json({
+        message: "An account with this email already exists.",
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const [result] = await pool
       .promise()
@@ -70,9 +93,6 @@ const register = async (req, res) => {
       requestId: result.insertId,
     });
   } catch (error) {
-    if (error.code === "ER_DUP_ENTRY") {
-      return res.status(409).json({ message: "Email is already registered" });
-    }
     res.status(500).json({
       message: "Error submitting registration request",
       error: error.message,
