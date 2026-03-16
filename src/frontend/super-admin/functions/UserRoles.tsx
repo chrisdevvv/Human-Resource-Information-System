@@ -500,13 +500,6 @@ function UserDetailsModalInline({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 cursor-pointer"
-          aria-label="Close details modal"
-        >
-          <X size={18} />
-        </button>
 
         <h2 className="text-xl font-bold text-gray-800 mb-5">User Details</h2>
 

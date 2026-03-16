@@ -6,6 +6,7 @@ import UserRolesMobile from "./functions/UserRolesMobile";
 import Logs from "./functions/Logs";
 import LogsMobile from "./functions/LogsMobile";
 import SuperAdminProfileSettings from "./functions/SuperAdminProfileSettings";
+import EmployeeLeaveManagement from "../functions/EmployeeLeaveManagement";
 import styles from "./styles.module.css";
 
 type SuperAdminProps = {
@@ -30,6 +31,8 @@ export default function SuperAdmin({
 
   const renderContent = () => {
     switch (activeTab) {
+      case "employee-management":
+        return <EmployeeLeaveManagement key={tabKey} />;
       case "user-roles":
         return (
           <>

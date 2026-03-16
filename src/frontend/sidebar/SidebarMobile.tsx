@@ -34,7 +34,7 @@ const SIDEBAR_TABS: SidebarTab[] = [
   },
   {
     id: "employee-management",
-    label: "Employee Management",
+    label: "Leave Management",
     icon: Users,
     roles: ALL_ROLES,
   },

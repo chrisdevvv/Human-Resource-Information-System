@@ -1,6 +1,7 @@
 import React from "react";
 import styles from "./styles.module.css";
 import DataEncoderProfileSettings from "./functions/DataEncoderProfileSettings";
+import EmployeeLeaveManagement from "../functions/EmployeeLeaveManagement";
 
 type DataEncoderProps = {
   activeTab?: string;
@@ -10,6 +11,8 @@ export default function DataEncoder({
   activeTab = "dashboard",
 }: DataEncoderProps) {
   switch (activeTab) {
+    case "employee-management":
+      return <EmployeeLeaveManagement />;
     case "profile-settings":
       return <DataEncoderProfileSettings />;
     default:

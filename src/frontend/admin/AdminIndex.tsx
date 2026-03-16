@@ -1,6 +1,7 @@
 import React from "react";
 import styles from "./styles.module.css";
 import AdminProfileSettings from "./functions/AdminProfileSettings";
+import EmployeeLeaveManagement from "../functions/EmployeeLeaveManagement";
 
 type AdminProps = {
   activeTab?: string;
@@ -8,6 +9,8 @@ type AdminProps = {
 
 export default function Admin({ activeTab = "dashboard" }: AdminProps) {
   switch (activeTab) {
+    case "employee-management":
+      return <EmployeeLeaveManagement />;
     case "profile-settings":
       return <AdminProfileSettings />;
     default:
