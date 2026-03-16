@@ -9,11 +9,13 @@ import {
   Eye,
   FileText,
   Plus,
-  Pencil,
 } from "lucide-react";
-import EditLeaveModal from "./EditLeaveModal";
-import LeaveCardPDFModal from "./LeaveCardPDFModal";
+import LeaveManagementModal from "@/frontend/functions/LeaveManagementModal";
+import AddLeaveModal, {
+  type AddLeaveFormValues,
+} from "@/frontend/functions/AddLeaveModal";
 import AddEmployeeModal from "./AddEmployeeModal";
+import { createLeave } from "@/frontend/functions/leaveApi";
 import type { LeaveModalRecord } from "@/frontend/functions/leaveTypes";
 
 type EmployeeRecordApi = {
@@ -72,9 +74,17 @@ export default function EmployeeLeaveManagement() {
   const [employeeLoading, setEmployeeLoading] = useState(true);
   const [employeeError, setEmployeeError] = useState<string | null>(null);
 
-  const [editTarget, setEditTarget] = useState<LeaveModalRecord | null>(null);
-  const [pdfTarget, setPdfTarget] = useState<LeaveModalRecord | null>(null);
+  const [leaveModalTarget, setLeaveModalTarget] =
+    useState<LeaveModalRecord | null>(null);
+  const [leaveModalInitialTab, setLeaveModalInitialTab] = useState<
+    "history" | "card"
+  >("history");
   const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
+
+  const [directAddTarget, setDirectAddTarget] = useState<EmployeeRecord | null>(
+    null,
+  );
+  const [isDirectAdding, setIsDirectAdding] = useState(false);
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -170,22 +180,38 @@ export default function EmployeeLeaveManagement() {
     setCurrentPage(1);
   };
 
-  const handleOpenEdit = (employee: EmployeeRecord) => {
-    setEditTarget({
-      id: employee.id,
-      fullName: employee.fullName,
-      employeeType: employee.employeeType,
-      periodOfLeave: employee.periodOfLeave,
-      particulars: employee.particulars,
-      balVl: employee.balVl,
-      balSl: employee.balSl,
-      dateOfAction: employee.dateOfAction,
-    });
+  const handleDirectCreate = async (payload: AddLeaveFormValues) => {
+    try {
+      setIsDirectAdding(true);
+      await createLeave({
+        employee_id: payload.employee_id,
+        period_of_leave: payload.period_of_leave,
+        particulars: payload.particulars,
+        earned_vl: payload.earned_vl,
+        abs_with_pay_vl: payload.abs_with_pay_vl,
+        abs_without_pay_vl: payload.abs_without_pay_vl,
+        earned_sl: payload.earned_sl,
+        abs_with_pay_sl: payload.abs_with_pay_sl,
+        abs_without_pay_sl: payload.abs_without_pay_sl,
+      });
+      setDirectAddTarget(null);
+    } catch (err) {
+      alert(
+        err instanceof Error ? err.message : "Failed to create leave entry.",
+      );
+    } finally {
+      setIsDirectAdding(false);
+    }
   };
 
-  const handleOpenPdf = (employee: EmployeeRecord) => {
-    setPdfTarget({
+  const openLeaveModal = (
+    employee: EmployeeRecord,
+    tab: "history" | "card",
+  ) => {
+    setLeaveModalInitialTab(tab);
+    setLeaveModalTarget({
       id: employee.id,
+      employeeId: employee.employeeId,
       fullName: employee.fullName,
       employeeType: employee.employeeType,
       periodOfLeave: employee.periodOfLeave,
@@ -327,26 +353,32 @@ export default function EmployeeLeaveManagement() {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             type="button"
+                            onClick={() => openLeaveModal(employee, "history")}
                             aria-label="View leave"
                             title="View"
-                            className="p-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-not-allowed"
+                            className="p-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer"
                           >
                             <Eye size={14} />
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleOpenEdit(employee)}
-                            aria-label="Edit leave"
-                            title="Edit"
+                            onClick={() => setDirectAddTarget(employee)}
+                            aria-label="Add leave"
+                            title="Add Leave"
                             className="p-2 bg-amber-100 text-amber-700 rounded hover:bg-amber-200 transition cursor-pointer"
                           >
-                            <Pencil size={14} />
+                            <Plus size={14} />
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleOpenPdf(employee)}
-                            aria-label="Open leave PDF"
-                            title="PDF"
+                            onClick={() =>
+                              window.open(
+                                `/leave-card/${employee.id}`,
+                                "_blank",
+                              )
+                            }
+                            aria-label="Preview leave PDF"
+                            title="Preview PDF"
                             className="p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition cursor-pointer"
                           >
                             <FileText size={14} />
@@ -406,15 +438,11 @@ export default function EmployeeLeaveManagement() {
         )}
       </div>
 
-      <EditLeaveModal
-        isOpen={Boolean(editTarget)}
-        leave={editTarget}
-        onClose={() => setEditTarget(null)}
-      />
-      <LeaveCardPDFModal
-        isOpen={Boolean(pdfTarget)}
-        leave={pdfTarget}
-        onClose={() => setPdfTarget(null)}
+      <LeaveManagementModal
+        isOpen={Boolean(leaveModalTarget)}
+        leave={leaveModalTarget}
+        initialTab={leaveModalInitialTab}
+        onClose={() => setLeaveModalTarget(null)}
       />
       <AddEmployeeModal
         isOpen={isAddEmployeeOpen}
@@ -423,6 +451,15 @@ export default function EmployeeLeaveManagement() {
           setIsAddEmployeeOpen(false);
           fetchEmployees(false);
         }}
+      />
+
+      <AddLeaveModal
+        isOpen={Boolean(directAddTarget)}
+        employeeId={directAddTarget?.id ?? null}
+        employeeName={directAddTarget?.fullName ?? ""}
+        onClose={() => setDirectAddTarget(null)}
+        onSave={handleDirectCreate}
+        isSaving={isDirectAdding}
       />
     </div>
   );

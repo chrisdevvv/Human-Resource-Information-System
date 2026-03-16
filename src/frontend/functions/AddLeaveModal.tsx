@@ -1,20 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import type { LeaveHistoryRecord, UpdateLeavePayload } from "./leaveApi";
 
-type EditLeaveModalProps = {
-  isOpen: boolean;
-  leave: LeaveHistoryRecord | null;
-  onClose: () => void;
-  onSave: (
-    leaveId: number,
-    payload: UpdateLeavePayload,
-  ) => Promise<void> | void;
-  isSaving?: boolean;
-};
-
-export type EditLeaveFormValues = {
+export type AddLeaveFormValues = {
+  employee_id: number;
   period_of_leave: string;
   particulars: string;
   isMonetization: boolean;
@@ -26,45 +15,48 @@ export type EditLeaveFormValues = {
   abs_without_pay_sl: number;
 };
 
-export default function EditLeaveModal({
+type AddLeaveModalProps = {
+  isOpen: boolean;
+  employeeId: number | null;
+  employeeName: string;
+  onClose: () => void;
+  onSave: (payload: AddLeaveFormValues) => Promise<void> | void;
+  isSaving?: boolean;
+};
+
+const defaultForm = {
+  period_of_leave: "",
+  particulars: "",
+  isMonetization: false,
+  earned_vl: 0,
+  abs_with_pay_vl: 0,
+  abs_without_pay_vl: 0,
+  earned_sl: 0,
+  abs_with_pay_sl: 0,
+  abs_without_pay_sl: 0,
+};
+
+export default function AddLeaveModal({
   isOpen,
-  leave,
+  employeeId,
+  employeeName,
   onClose,
   onSave,
   isSaving = false,
-}: EditLeaveModalProps) {
-  const [form, setForm] = useState<EditLeaveFormValues | null>(null);
+}: AddLeaveModalProps) {
+  const [form, setForm] = useState(defaultForm);
 
   useEffect(() => {
-    if (!leave) {
-      setForm(null);
-      return;
+    if (isOpen) {
+      setForm(defaultForm);
     }
+  }, [isOpen]);
 
-    const isMonetization =
-      (leave.particulars || "").trim().toLowerCase() === "monetization";
-
-    setForm({
-      period_of_leave: leave.periodOfLeave || "",
-      particulars: isMonetization ? "Monetization" : leave.particulars || "",
-      isMonetization,
-      earned_vl: Number(leave.earnedVl),
-      abs_with_pay_vl: Number(leave.absWithPayVl),
-      abs_without_pay_vl: Number(leave.absWithoutPayVl),
-      earned_sl: Number(leave.earnedSl),
-      abs_with_pay_sl: Number(leave.absWithPaySl),
-      abs_without_pay_sl: Number(leave.absWithoutPaySl),
-    });
-  }, [leave]);
-
-  if (!isOpen || !leave || !form) {
+  if (!isOpen || !employeeId) {
     return null;
   }
 
-  const currentLeave = leave;
-
-  const employeeTypeLabel =
-    currentLeave.employeeType === "non-teaching" ? "Non-Teaching" : "Teaching";
+  const resolvedEmployeeId = employeeId;
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -72,8 +64,6 @@ export default function EditLeaveModal({
     const { name, value, type } = e.target;
 
     setForm((prev) => {
-      if (!prev) return prev;
-
       if (type === "number") {
         return {
           ...prev,
@@ -91,20 +81,15 @@ export default function EditLeaveModal({
   function handleMonetizationToggle(e: React.ChangeEvent<HTMLInputElement>) {
     const checked = e.target.checked;
 
-    setForm((prev) => {
-      if (!prev) return prev;
-
-      return {
-        ...prev,
-        isMonetization: checked,
-        particulars: checked ? "Monetization" : "",
-      };
-    });
+    setForm((prev) => ({
+      ...prev,
+      isMonetization: checked,
+      particulars: checked ? "Monetization" : "",
+    }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form) return;
 
     if (!form.period_of_leave.trim()) {
       alert("Period of leave is required.");
@@ -116,11 +101,13 @@ export default function EditLeaveModal({
       return;
     }
 
-    void onSave(currentLeave.id, {
+    await onSave({
+      employee_id: resolvedEmployeeId,
       period_of_leave: form.period_of_leave.trim(),
       particulars: form.isMonetization
         ? "Monetization"
         : form.particulars.trim(),
+      isMonetization: form.isMonetization,
       earned_vl: Number(form.earned_vl || 0),
       abs_with_pay_vl: Number(form.abs_with_pay_vl || 0),
       abs_without_pay_vl: Number(form.abs_without_pay_vl || 0),
@@ -132,20 +119,13 @@ export default function EditLeaveModal({
 
   const inputClass =
     "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
-  const readOnlyClass =
-    "w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600";
   const labelClass = "mb-1 block text-sm font-medium text-gray-700";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl bg-white p-6 shadow-2xl">
-        <h2 className="text-xl font-bold text-gray-800">Edit Leave</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Employee: {currentLeave.fullName || "Employee"}
-        </p>
-        <p className="text-sm text-gray-500">
-          Employee Type: {employeeTypeLabel}
-        </p>
+        <h2 className="text-xl font-bold text-gray-800">Add Leave Entry</h2>
+        <p className="mt-1 text-sm text-gray-500">Employee: {employeeName}</p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-5">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -288,36 +268,12 @@ export default function EditLeaveModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label className={labelClass}>Bal VL (Backend value)</label>
-              <div className={readOnlyClass}>{leave.balVl.toFixed(2)}</div>
-            </div>
-            <div>
-              <label className={labelClass}>Bal SL (Backend value)</label>
-              <div className={readOnlyClass}>{leave.balSl.toFixed(2)}</div>
-            </div>
-            <div className="md:col-span-2">
-              <label className={labelClass}>
-                Date and Action Taken / Evaluation (Backend value)
-              </label>
-              <div className={readOnlyClass}>{leave.dateOfAction || "-"}</div>
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
-            <p className="text-sm text-gray-600">
-              Balances and date/action are read-only here. Backend recomputes
-              balances and sets the latest date of action on update.
-            </p>
-          </div>
-
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
+              className="cursor-pointer rounded-lg bg-gray-100 px-5 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
               disabled={isSaving}
-              className="cursor-pointer rounded-lg bg-gray-100 px-5 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
@@ -327,7 +283,7 @@ export default function EditLeaveModal({
               disabled={isSaving}
               className="cursor-pointer rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSaving ? "Saving..." : "Save Changes"}
+              {isSaving ? "Saving..." : "Save Leave"}
             </button>
           </div>
         </form>
