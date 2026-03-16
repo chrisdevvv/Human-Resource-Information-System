@@ -5,6 +5,23 @@ const MONTHLY_CREDIT = 1.25;
 const parseNum = (v) => parseFloat(v) || 0;
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
+const NUMERIC_LEAVE_FIELDS = [
+    'earned_vl', 'abs_with_pay_vl', 'abs_without_pay_vl',
+    'earned_sl', 'abs_with_pay_sl', 'abs_without_pay_sl',
+];
+
+// Returns an error message string if any numeric leave field is invalid, otherwise null.
+const validateLeaveFields = (data) => {
+    for (const field of NUMERIC_LEAVE_FIELDS) {
+        const raw = data[field];
+        if (raw === undefined || raw === null || raw === '') continue; // optional on update
+        const num = Number(raw);
+        if (isNaN(num)) return `${field} must be a valid number.`;
+        if (num < 0)    return `${field} must not be negative.`;
+    }
+    return null;
+};
+
 const computeBalance = (previous, earned, withPay, withoutPay) => {
     return parseFloat(
         Math.max(0, previous + parseNum(earned) - parseNum(withPay) - parseNum(withoutPay)).toFixed(2)
@@ -52,6 +69,9 @@ const createLeaveRequest = async (req, res) => {
         if (!employee_id || !period_of_leave) {
             return res.status(400).json({ message: 'employee_id and period_of_leave are required' });
         }
+
+        const validationError = validateLeaveFields(req.body);
+        if (validationError) return res.status(400).json({ message: validationError });
 
         // Carry forward the running balance from the latest entry
         const latest = await Leave.getLatestByEmployee(employee_id);
@@ -124,6 +144,9 @@ const updateLeaveRequest = async (req, res) => {
     try {
         const leave = await Leave.getById(req.params.id);
         if (!leave) return res.status(404).json({ message: 'Leave record not found' });
+
+        const validationError = validateLeaveFields(req.body);
+        if (validationError) return res.status(400).json({ message: validationError });
 
         const {
             period_of_leave = leave.period_of_leave,

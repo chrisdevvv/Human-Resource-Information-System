@@ -1,0 +1,152 @@
+I already have a leave module with routes, controller, and model.
+This is for an employee leave tracking system.
+Important business rules:
+1. Employee types
+- There are two employee types: teaching and non-teaching.
+- Non-teaching employees gain monthly leave credits.
+- Teaching employees do NOT gain monthly 1.25 leave credits every month.
+
+2. Monthly leave credit rule
+- Only non-teaching employees should receive monthly credits.
+- Monthly credit for non-teaching employees:
+  - +1.25 Vacation Leave (VL)
+  - +1.25 Sick Leave (SL)
+- Teaching employees must be excluded from monthly crediting.
+
+3. Leave balance formula
+- For every leave record, balances must be computed by the backend only.
+Formula:
+- bal_vl = max(0, prev_vl + earned_vl - abs_with_pay_vl - abs_without_pay_vl)
+- bal_sl = max(0, prev_sl + earned_sl - abs_with_pay_sl - abs_without_pay_sl)
+Meaning:
+- prev_vl / prev_sl = previous balance from the latest previous leave entry of the same employee
+- earned_vl / earned_sl = newly earned leave credits
+- abs_with_pay_* = leave used with pay
+- abs_without_pay_* = leave used without pay
+- balances must never go below 0
+- round balances to 2 decimal places
+
+4. Source of truth
+- Frontend must NOT be the source of truth for bal_vl and bal_sl.
+- Backend must always compute bal_vl and bal_sl before saving.
+- Even if frontend sends bal_vl or bal_sl, ignore them.
+
+5. Create leave behavior
+When creating a leave record:
+- employee_id is required
+- period_of_leave is required
+- get the latest leave record of that employee
+- if none exists, previous VL and SL balance start at 0
+- compute bal_vl and bal_sl using the formula
+- save date_of_action as server-generated current date
+- save the new row
+
+6. Update leave behavior
+When updating a leave record:
+- load the current leave row first
+- merge old values with incoming fields
+- get the previous entry of the same employee based on sequence before the current record
+- recompute bal_vl and bal_sl using that previous row
+- update date_of_action to current date
+- save the updated row
+
+7. Important correction needed for update/delete
+Required behavior:
+- If a leave record is updated, all later leave records of the same employee must be recomputed in sequence.
+- If a leave record is deleted, all later leave records of the same employee must also be recomputed in sequence.
+- Sequence is based on leave record order in the database.
+- If current system uses ID order, keep it for now unless you recommend a better safer ordering.
+
+8. Monthly credit endpoint
+I already have a monthly credit endpoint.
+Please fix/improve it so that:
+- only ADMIN or SUPER_ADMIN can run it
+- it accepts optional year and month
+- default is current year/month
+- builds a period string like "March 2026"
+- fetches only non-teaching employees
+- if employee already has a leave entry for the same period, skip that employee
+otherwise create a monthly credit row with:
+  - earned_vl = 1.25
+  - earned_sl = 1.25
+  - abs_with_pay_vl = 0
+  - abs_without_pay_vl = 0
+  - abs_with_pay_sl = 0
+  - abs_without_pay_sl = 0
+- compute balances using latest previous balances
+return a summary:
+  - period
+  - credited count
+  - skipped count
+  - optional skipped employees list
+
+9. Teaching employee rule
+- Please make sure teaching employees do not receive monthly 1.25 VL/SL credits.
+- If needed, prevent them from being included in the monthly credit batch logic entirely.
+
+10. Leave types / special entries
+Some entries may not deduct anything and may only serve as records.
+Examples:
+- Disapproved leave
+- Compensatory paid leave
+- Other special entries
+- So the backend should only deduct balances when the abs_with_pay or abs_without_pay values are actually greater than 0.
+- If earned values are 0 and abs values are 0, balance should remain unchanged.
+
+11. Monetization
+- Do NOT implement monetization yet unless needed.
+- But structure the code cleanly so monetization can be added later.
+- For now, only make sure leave balances are accurate and reliable.
+
+12. Validation
+Add or improve backend validation:
+- employee_id required
+- period_of_leave required
+- numeric leave fields must be valid numbers
+- numeric leave fields must not be negative
+- return proper 400 errors for invalid input
+
+13. API behavior
+Please keep backend responses consistent:
+- success responses should return message and data when possible
+- errors should return message and error details when helpful
+- 404 when leave record not found
+- 401 when token invalid/missing
+- 403 for unauthorized monthly credit action
+
+14. Logging / backlog
+- Check the logging/backlog action strings.
+- If current action strings do not match the database enum/schema, fix them so inserts will not fail.
+
+15. Code quality goals
+Please refactor the backend leave module for:
+- clean controller logic
+- reusable balance calculation function
+- reusable recomputation function for future rows
+- clear validation
+- maintainable code structure
+- safer SQL usage
+- readable error handling
+
+16. Deliverables I want from you
+Please provide:
+- updated route code if needed
+- updated controller code
+- updated model code
+- helper/util functions if needed
+- explanation of what changed
+- explanation of how recomputation works after update/delete
+- example request/response payloads for the main endpoints
+
+Important:
+Do backend only.
+Do not build frontend.
+Do not give only theory.
+I want actual code changes/refactor, ready to paste into my project.
+If you need to assume file names, use:
+leaveRoutes.js
+leaveController.js
+leaveModel.js
+optional helper like leaveUtils.js
+Please preserve my existing module structure as much as possible while fixing the business logic.
+
