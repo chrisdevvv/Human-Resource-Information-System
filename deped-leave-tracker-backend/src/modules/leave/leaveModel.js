@@ -93,6 +93,15 @@ const Leave = {
         return rows[0] || null;
     },
 
+    // Returns all leave entries for an employee in running-order
+    getByEmployeeOrdered: async (employee_id) => {
+        const [rows] = await pool.promise().query(
+            'SELECT * FROM leaves WHERE employee_id = ? ORDER BY id ASC',
+            [employee_id]
+        );
+        return rows;
+    },
+
     // Returns the entry directly before the given id for the same employee (for update recalculation)
     getPreviousEntry: async (id, employee_id) => {
         const [rows] = await pool.promise().query(
@@ -100,6 +109,15 @@ const Leave = {
             [employee_id, id]
         );
         return rows[0] || null;
+    },
+
+    // Updates only computed balances during cascading recompute
+    updateBalancesOnly: async (id, bal_vl, bal_sl) => {
+        const [result] = await pool.promise().query(
+            'UPDATE leaves SET bal_vl = ?, bal_sl = ? WHERE id = ?',
+            [bal_vl, bal_sl, id]
+        );
+        return result;
     },
 
     // Checks if an entry for a given period already exists (prevents double monthly credits)

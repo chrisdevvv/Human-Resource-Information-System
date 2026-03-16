@@ -5,6 +5,41 @@ const MONTHLY_CREDIT = 1.25;
 const parseNum = (v) => parseFloat(v) || 0;
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
+const computeBalance = (previous, earned, withPay, withoutPay) => {
+    return parseFloat(
+        Math.max(0, previous + parseNum(earned) - parseNum(withPay) - parseNum(withoutPay)).toFixed(2)
+    );
+};
+
+// Recomputes running VL/SL balances for all rows of one employee.
+const recomputeEmployeeBalances = async (employee_id) => {
+    const rows = await Leave.getByEmployeeOrdered(employee_id);
+    let runningVl = 0;
+    let runningSl = 0;
+
+    for (const row of rows) {
+        const nextVl = computeBalance(
+            runningVl,
+            row.earned_vl,
+            row.abs_with_pay_vl,
+            row.abs_without_pay_vl
+        );
+        const nextSl = computeBalance(
+            runningSl,
+            row.earned_sl,
+            row.abs_with_pay_sl,
+            row.abs_without_pay_sl
+        );
+
+        if (parseNum(row.bal_vl) !== nextVl || parseNum(row.bal_sl) !== nextSl) {
+            await Leave.updateBalancesOnly(row.id, nextVl, nextSl);
+        }
+
+        runningVl = nextVl;
+        runningSl = nextSl;
+    }
+};
+
 // POST /api/leave
 const createLeaveRequest = async (req, res) => {
     try {
@@ -23,8 +58,8 @@ const createLeaveRequest = async (req, res) => {
         const prev_bal_vl = latest ? parseNum(latest.bal_vl) : 0;
         const prev_bal_sl = latest ? parseNum(latest.bal_sl) : 0;
 
-        const bal_vl = parseFloat(Math.max(0, prev_bal_vl + parseNum(earned_vl) - parseNum(abs_with_pay_vl) - parseNum(abs_without_pay_vl)).toFixed(2));
-        const bal_sl = parseFloat(Math.max(0, prev_bal_sl + parseNum(earned_sl) - parseNum(abs_with_pay_sl) - parseNum(abs_without_pay_sl)).toFixed(2));
+        const bal_vl = computeBalance(prev_bal_vl, earned_vl, abs_with_pay_vl, abs_without_pay_vl);
+        const bal_sl = computeBalance(prev_bal_sl, earned_sl, abs_with_pay_sl, abs_without_pay_sl);
 
         const result = await Leave.create({
             employee_id,
@@ -106,8 +141,8 @@ const updateLeaveRequest = async (req, res) => {
         const prev_bal_vl = prev ? parseNum(prev.bal_vl) : 0;
         const prev_bal_sl = prev ? parseNum(prev.bal_sl) : 0;
 
-        const bal_vl = parseFloat(Math.max(0, prev_bal_vl + parseNum(earned_vl) - parseNum(abs_with_pay_vl) - parseNum(abs_without_pay_vl)).toFixed(2));
-        const bal_sl = parseFloat(Math.max(0, prev_bal_sl + parseNum(earned_sl) - parseNum(abs_with_pay_sl) - parseNum(abs_without_pay_sl)).toFixed(2));
+        const bal_vl = computeBalance(prev_bal_vl, earned_vl, abs_with_pay_vl, abs_without_pay_vl);
+        const bal_sl = computeBalance(prev_bal_sl, earned_sl, abs_with_pay_sl, abs_without_pay_sl);
 
         const result = await Leave.update(req.params.id, {
             period_of_leave, particulars,
@@ -121,6 +156,9 @@ const updateLeaveRequest = async (req, res) => {
             bal_sl,
             date_of_action: todayStr(),
         });
+
+        // Keep downstream rows consistent when editing historical entries
+        await recomputeEmployeeBalances(leave.employee_id);
 
         Backlog.create({
             user_id: req.user.id,
@@ -142,6 +180,10 @@ const deleteLeaveRequest = async (req, res) => {
         const leave = await Leave.getById(req.params.id);
         if (!leave) return res.status(404).json({ message: 'Leave record not found' });
         const result = await Leave.delete(req.params.id);
+
+        // Keep downstream rows consistent when deleting historical entries
+        await recomputeEmployeeBalances(leave.employee_id);
+
         Backlog.create({
             user_id: req.user.id,
             school_id: null,
