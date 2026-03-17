@@ -50,13 +50,20 @@ const PrintableLeaveCard = React.forwardRef<
       }}
     >
       <div
-        className="mb-4 border-b pb-3 text-center"
+        className="mb-4 border-b pb-3 text-center font-bold"
         style={{ borderColor: CARD_COLORS.black }}
       >
+        <p className="text-sm leading-tight">Republic of the Philippines</p>
         <p className="text-sm font-semibold uppercase tracking-wide">
           Department of Education
         </p>
-        <p className="text-base font-bold uppercase">Employee Leave Card</p>
+        <p className="text-sm">Region III</p>
+        <p className="text-sm uppercase">
+          Division of City of San Jose del Monte
+        </p>
+        <p className="mt-2 text-base font-bold uppercase tracking-wide">
+          Employee Leave Card
+        </p>
       </div>
 
       <div className="mb-4 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">

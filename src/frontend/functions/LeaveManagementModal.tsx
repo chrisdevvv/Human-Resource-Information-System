@@ -121,7 +121,7 @@ export default function LeaveManagementModal({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-xl font-bold text-gray-800">
-                Leave Management
+                Leave Management Details
               </h2>
               <p className="mt-1 text-sm text-gray-600">
                 Employee: {leave.fullName}
