@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
@@ -96,7 +96,22 @@ export default function SidebarMobile({
 }: SidebarMobileProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [firstName, setFirstName] = useState("");
   const tabs = useMemo(() => getSidebarTabsByRole(role), [role]);
+
+  useEffect(() => {
+    try {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        const name = user.fullName || user.firstName || "";
+        const firstNameOnly = name.split(" ")[0];
+        setFirstName(firstNameOnly);
+      }
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+    }
+  }, []);
 
   const handleTabClick = (tabId: string) => {
     onTabChange(tabId);
@@ -128,7 +143,14 @@ export default function SidebarMobile({
         >
           {isOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
-        <h1 className="text-lg font-semibold">{title}</h1>
+        <div className="flex items-center gap-2">
+          <img
+            src="/images/[DEPED] ELMS Logo.svg"
+            alt="ELMS Logo"
+            className="h-8 w-auto"
+          />
+          <h1 className="text-lg font-semibold">{title}</h1>
+        </div>
         <div className="w-10" />
       </header>
 
@@ -147,8 +169,21 @@ export default function SidebarMobile({
             ? "opacity-100 visible translate-y-0"
             : "opacity-0 invisible -translate-y-full"
         }`}
-        style={{ paddingTop: "64px", maxHeight: "100vh" }}
+        style={{ paddingTop: "12px", maxHeight: "100vh" }}
       >
+        {/* Logo and Title Header */}
+        <div className="border-b border-blue-700 p-2 flex flex-col items-center justify-center">
+          <img
+            src="/images/[DEPED] ELMS Logo.svg"
+            alt="ELMS Logo"
+            className="h-10 w-auto mb-1"
+          />
+          <p className="text-xs uppercase tracking-widest text-blue-100 text-center">
+            Welcome, {firstName}
+          </p>
+          <h2 className="text-lg font-semibold">{title}</h2>
+        </div>
+
         <div className="p-3 space-y-1">
           {tabs.map((tab) => {
             const Icon = tab.icon;

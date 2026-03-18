@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
@@ -102,8 +102,23 @@ export default function SidebarIndex({
 }: SidebarProps) {
   const router = useRouter();
   const [internalCollapsed, setInternalCollapsed] = useState(defaultCollapsed);
+  const [firstName, setFirstName] = useState("");
   const tabs = useMemo(() => getSidebarTabsByRole(role), [role]);
   const isCollapsed = collapsed ?? internalCollapsed;
+
+  useEffect(() => {
+    try {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        const name = user.fullName || user.firstName || "";
+        const firstNameOnly = name.split(" ")[0];
+        setFirstName(firstNameOnly);
+      }
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+    }
+  }, []);
 
   const handleToggle = () => {
     const next = !isCollapsed;
@@ -134,20 +149,29 @@ export default function SidebarIndex({
       } ${className}`}
     >
       <div className="h-full w-full flex flex-col">
-        <div className="h-20 px-4 border-b border-blue-800 flex items-center justify-between gap-2">
+        <div
+          className={`px-4 border-b border-blue-800 py-4 min-h-36 flex ${isCollapsed ? "flex-col items-center justify-center" : "flex-row items-center justify-between"}`}
+        >
           {!isCollapsed && (
-            <div>
-              <p className="text-xs uppercase tracking-widest text-blue-100">
-                Role
+            <div className="flex flex-col items-center justify-center flex-1">
+              <img
+                src="/images/[DEPED] ELMS Logo.svg"
+                alt="ELMS Logo"
+                className="h-24 w-auto mb-2"
+              />
+              <p className="text-xs uppercase tracking-widest text-blue-100 text-center">
+                Welcome, {firstName}
               </p>
-              <h2 className="text-lg font-semibold leading-tight">{title}</h2>
+              <h2 className="text-lg font-semibold leading-tight text-center">
+                {title}
+              </h2>
             </div>
           )}
 
           <button
             type="button"
             onClick={handleToggle}
-            className="cursor-pointer p-2 rounded-md hover:bg-blue-800 transition"
+            className="cursor-pointer p-2 rounded-md hover:bg-blue-800 transition shrink-0"
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {isCollapsed ? (
@@ -156,6 +180,14 @@ export default function SidebarIndex({
               <ChevronLeft size={18} />
             )}
           </button>
+
+          {isCollapsed && (
+            <img
+              src="/images/[DEPED] ELMS Logo.svg"
+              alt="ELMS Logo"
+              className="h-16 w-auto"
+            />
+          )}
         </div>
 
         <nav className="p-3 flex-1 space-y-1 overflow-y-auto">
