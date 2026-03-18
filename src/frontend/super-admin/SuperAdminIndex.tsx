@@ -7,14 +7,18 @@ import Logs from "./functions/Logs";
 import LogsMobile from "./functions/LogsMobile";
 import SuperAdminProfileSettings from "./functions/SuperAdminProfileSettings";
 import EmployeeLeaveManagement from "../functions/LeaveManagement/EmployeeLeaveManagement";
+import Dashboard from "../functions/Dashboard/Dashboard";
+import DashboardMobile from "../functions/Dashboard/DashboardMobile";
 import styles from "./styles.module.css";
 
 type SuperAdminProps = {
   activeTab?: string;
+  onTabChange?: (tab: string) => void;
 };
 
 export default function SuperAdmin({
   activeTab = "dashboard",
+  onTabChange,
 }: SuperAdminProps) {
   // Increase tab key only when the selected tab changes so that tab content
   // remounts and re-fetches fresh data on every tab re-entry.
@@ -59,10 +63,14 @@ export default function SuperAdmin({
         return <SuperAdminProfileSettings key={tabKey} />;
       default:
         return (
-          <div className={styles.container}>
-            <h1>Super Admin Dashboard</h1>
-            <p>Welcome to the Super Admin dashboard.</p>
-          </div>
+          <>
+            <div className="hidden md:block">
+              <Dashboard key={tabKey} onTabChange={onTabChange} />
+            </div>
+            <div className="block md:hidden">
+              <DashboardMobile key={tabKey} onTabChange={onTabChange} />
+            </div>
+          </>
         );
     }
   };

@@ -100,13 +100,13 @@ export default function Page() {
         <div className="flex-1 min-w-0">
           <StickyHeader onMenuClick={handleToggleSidebar} />
           <main className="p-6 bg-white min-h-[calc(100vh-88px)] w-full transition-all duration-300">
-            <SuperAdmin activeTab={activeTab} />
+            <SuperAdmin activeTab={activeTab} onTabChange={handleTabChange} />
           </main>
         </div>
       </div>
 
       <main className="md:hidden p-4 bg-white min-h-[calc(100vh-72px)] w-full">
-        <SuperAdmin activeTab={activeTab} />
+        <SuperAdmin activeTab={activeTab} onTabChange={handleTabChange} />
       </main>
     </div>
   );
