@@ -1,13 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-  Users,
-  Clock,
-  FileText,
-  Settings,
-  UserCheck,
-} from "lucide-react";
+import { Users, Clock, FileText, Settings, UserCheck } from "lucide-react";
 
 type StatCard = {
   title: string;
@@ -197,14 +191,15 @@ export default function DashboardMobile({ onTabChange }: DashboardMobileProps) {
           </h2>
           <div className="grid grid-cols-1 gap-2">
             {statCards.map((stat, index) => (
-              <div
-                key={index}
-                className={`${stat.color} border rounded p-3`}
-              >
+              <div key={index} className={`${stat.color} border rounded p-3`}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-gray-600 text-xs font-medium">{stat.title}</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                    <p className="text-gray-600 text-xs font-medium">
+                      {stat.title}
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">
+                      {stat.value}
+                    </p>
                   </div>
                   <div className="text-blue-700">{stat.icon}</div>
                 </div>
