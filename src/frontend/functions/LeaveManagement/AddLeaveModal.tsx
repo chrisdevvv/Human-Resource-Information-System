@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import ConfirmationAddLeave from "./ConfirmationAddLeave";
 
 export type AddLeaveFormValues = {
   employee_id: number;
@@ -45,10 +46,15 @@ export default function AddLeaveModal({
   isSaving = false,
 }: AddLeaveModalProps) {
   const [form, setForm] = useState(defaultForm);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [pendingPayload, setPendingPayload] =
+    useState<AddLeaveFormValues | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setForm(defaultForm);
+      setIsConfirmOpen(false);
+      setPendingPayload(null);
     }
   }, [isOpen]);
 
@@ -101,7 +107,7 @@ export default function AddLeaveModal({
       return;
     }
 
-    await onSave({
+    const payload: AddLeaveFormValues = {
       employee_id: resolvedEmployeeId,
       period_of_leave: form.period_of_leave.trim(),
       particulars: form.isMonetization
@@ -114,7 +120,28 @@ export default function AddLeaveModal({
       earned_sl: Number(form.earned_sl || 0),
       abs_with_pay_sl: Number(form.abs_with_pay_sl || 0),
       abs_without_pay_sl: Number(form.abs_without_pay_sl || 0),
-    });
+    };
+
+    setPendingPayload(payload);
+    setIsConfirmOpen(true);
+  }
+
+  async function handleConfirmSave() {
+    if (!pendingPayload) {
+      return;
+    }
+
+    await onSave(pendingPayload);
+    setIsConfirmOpen(false);
+    setPendingPayload(null);
+  }
+
+  function handleCancelConfirm() {
+    if (isSaving) {
+      return;
+    }
+
+    setIsConfirmOpen(false);
   }
 
   const inputClass =
@@ -273,20 +300,29 @@ export default function AddLeaveModal({
               type="button"
               onClick={onClose}
               className="cursor-pointer rounded-lg bg-gray-100 px-5 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
-              disabled={isSaving}
+              disabled={isSaving || isConfirmOpen}
             >
               Cancel
             </button>
 
             <button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || isConfirmOpen}
               className="cursor-pointer rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? "Saving..." : "Save Leave"}
             </button>
           </div>
         </form>
+
+        <ConfirmationAddLeave
+          isOpen={isConfirmOpen}
+          employeeName={employeeName}
+          values={pendingPayload}
+          loading={isSaving}
+          onConfirm={handleConfirmSave}
+          onCancel={handleCancelConfirm}
+        />
       </div>
     </div>
   );

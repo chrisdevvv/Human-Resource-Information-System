@@ -1,13 +1,73 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Users, Clock, FileText, Settings, UserCheck } from "lucide-react";
+import { Users, FileText, Settings, UserCheck } from "lucide-react";
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
+type ApiListResponse<T> = {
+  data?: T[];
+  message?: string;
+};
+
+type LeaveRecord = {
+  status?: string;
+  created_at?: string;
+  date_of_action?: string;
+};
+
+type BacklogRecord = {
+  id?: number;
+  action?: string;
+  details?: string;
+  created_at?: string;
+  first_name?: string;
+  last_name?: string;
+};
+
+const normalizeList = <T,>(payload: unknown): T[] => {
+  if (Array.isArray(payload)) {
+    return payload as T[];
+  }
+
+  if (payload && typeof payload === "object") {
+    const withData = payload as ApiListResponse<T>;
+    if (Array.isArray(withData.data)) {
+      return withData.data;
+    }
+  }
+
+  return [];
+};
+
+const fetchApiList = async <T,>(
+  endpoint: string,
+  token: string,
+): Promise<T[]> => {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as
+    | ApiListResponse<T>
+    | T[];
+
+  if (!response.ok) {
+    throw new Error(
+      (payload as ApiListResponse<T>)?.message ||
+        `Failed to fetch ${endpoint}.`,
+    );
+  }
+
+  return normalizeList<T>(payload);
+};
 
 type StatCard = {
   title: string;
   value: number | string;
   icon: React.ReactNode;
-  color: string;
+  textColor: string;
 };
 
 type Shortcut = {
@@ -30,6 +90,7 @@ export default function DashboardMobile({ onTabChange }: DashboardMobileProps) {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [recentLogs, setRecentLogs] = useState<BacklogRecord[]>([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -38,30 +99,25 @@ export default function DashboardMobile({ onTabChange }: DashboardMobileProps) {
 
         if (!token) {
           setError("Not authenticated");
+          setLoading(false);
           return;
         }
 
-        // Fetch employees
-        const employeeRes = await fetch("/api/employee", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const employeeData = employeeRes.ok
-          ? await employeeRes.json()
-          : { data: [] };
-        const totalEmployees = employeeData.data?.length || 0;
+        const [employees, users, leaves, pendingRegistrationsList, backlogs] =
+          await Promise.all([
+            fetchApiList<Record<string, unknown>>("/api/employees", token),
+            fetchApiList<Record<string, unknown>>("/api/users", token),
+            fetchApiList<LeaveRecord>("/api/leave", token),
+            fetchApiList<Record<string, unknown>>(
+              "/api/registrations/pending",
+              token,
+            ),
+            fetchApiList<BacklogRecord>("/api/backlogs", token),
+          ]);
 
-        // Fetch users
-        const userRes = await fetch("/api/user", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const userData = userRes.ok ? await userRes.json() : { data: [] };
-        const totalUsers = userData.data?.length || 0;
-
-        // Fetch leave requests
-        const leaveRes = await fetch("/api/leave", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const leaveData = leaveRes.ok ? await leaveRes.json() : { data: [] };
+        const totalEmployees = employees.length;
+        const totalUsers = users.length;
+        const pendingRegistrations = pendingRegistrationsList.length;
 
         // Filter pending and approved this month
         const now = new Date();
@@ -69,31 +125,32 @@ export default function DashboardMobile({ onTabChange }: DashboardMobileProps) {
         const currentYear = now.getFullYear();
 
         let pendingRequests = 0;
-        let approvedThisMonth = 0;
 
-        leaveData.data?.forEach((leave: any) => {
-          if (leave.status === "PENDING") {
+        leaves.forEach((leave) => {
+          const status = String(leave.status || "").toUpperCase();
+          if (status === "PENDING") {
             pendingRequests++;
           }
-          if (leave.status === "APPROVED") {
-            const leaveDate = new Date(leave.created_at);
+
+          if (status === "APPROVED") {
+            const dateSource = leave.created_at || leave.date_of_action;
+            if (!dateSource) {
+              return;
+            }
+
+            const leaveDate = new Date(dateSource);
+            if (Number.isNaN(leaveDate.getTime())) {
+              return;
+            }
+
             if (
               leaveDate.getMonth() === currentMonth &&
               leaveDate.getFullYear() === currentYear
             ) {
-              approvedThisMonth++;
+              // Reserved for possible future approved-this-month widget.
             }
           }
         });
-
-        // Fetch pending registrations
-        const registrationRes = await fetch("/api/registration/pending", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const registrationData = registrationRes.ok
-          ? await registrationRes.json()
-          : { data: [] };
-        const pendingRegistrations = registrationData.data?.length || 0;
 
         setStats({
           totalEmployees,
@@ -101,6 +158,7 @@ export default function DashboardMobile({ onTabChange }: DashboardMobileProps) {
           pendingRequests,
           pendingRegistrations,
         });
+        setRecentLogs(backlogs.slice(0, 3));
         setLoading(false);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
@@ -117,19 +175,19 @@ export default function DashboardMobile({ onTabChange }: DashboardMobileProps) {
       title: "Total Employees",
       value: stats.totalEmployees,
       icon: <Users className="w-5 h-5" />,
-      color: "bg-blue-50 border-blue-200",
+      textColor: "text-blue-700",
     },
     {
       title: "Total Users",
       value: stats.totalUsers,
       icon: <UserCheck className="w-5 h-5" />,
-      color: "bg-green-50 border-green-200",
+      textColor: "text-green-700",
     },
     {
       title: "Pending Registrations",
       value: stats.pendingRegistrations,
-      icon: <FileText className="w-5 h-5 text-purple-500" />,
-      color: "bg-purple-50 border-purple-200",
+      icon: <FileText className="w-5 h-5" />,
+      textColor: "text-purple-700",
     },
   ];
 
@@ -144,17 +202,42 @@ export default function DashboardMobile({ onTabChange }: DashboardMobileProps) {
       icon: <Settings className="w-5 h-5" />,
       tab: "user-roles",
     },
-    {
-      label: "Logs",
-      icon: <FileText className="w-5 h-5" />,
-      tab: "logs",
-    },
   ];
 
   const handleShortcutClick = (tab: string) => {
     if (onTabChange) {
       onTabChange(tab);
     }
+  };
+
+  const handleViewLogs = () => {
+    if (onTabChange) {
+      onTabChange("logs");
+    }
+  };
+
+  const formatLogDate = (value?: string) => {
+    if (!value) {
+      return "No date";
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return "No date";
+    }
+
+    return parsed.toLocaleString("en-PH", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  const getLogActor = (log: BacklogRecord) => {
+    const name = `${log.first_name || ""} ${log.last_name || ""}`.trim();
+    return name || "System";
   };
 
   if (loading) {
@@ -191,62 +274,62 @@ export default function DashboardMobile({ onTabChange }: DashboardMobileProps) {
           </h2>
           <div className="grid grid-cols-1 gap-2">
             {statCards.map((stat, index) => (
-              <div key={index} className={`${stat.color} border rounded p-3`}>
+              <div
+                key={index}
+                className="bg-white border border-gray-200 rounded p-3"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-gray-600 text-xs font-medium">
+                    <p className={`${stat.textColor} text-xs font-medium`}>
                       {stat.title}
                     </p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">
+                    <p className={`${stat.textColor} text-2xl font-bold mt-1`}>
                       {stat.value}
                     </p>
                   </div>
-                  <div className="text-blue-700">{stat.icon}</div>
+                  <div className={stat.textColor}>{stat.icon}</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Quick Highlights */}
+        {/* Recent Logs */}
         <div className="bg-white rounded border border-gray-200 p-3 mb-4">
-          <h2 className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide">
-            Quick Highlights
-          </h2>
-          <div className="flex flex-col gap-2">
-            <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-orange-500" />
-                <div>
-                  <p className="text-orange-900 font-semibold text-xs">
-                    Pending Approvals
-                  </p>
-                  <p className="text-xl font-bold text-orange-700">
-                    {stats.pendingRequests}
-                  </p>
-                  <p className="text-xs text-orange-600">
-                    Leave requests awaiting review
-                  </p>
-                </div>
-              </div>
-            </div>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="text-xs font-bold text-yellow-600 uppercase tracking-wide">
+              Recent Logs
+            </h2>
+            <button
+              type="button"
+              onClick={handleViewLogs}
+              className="cursor-pointer rounded-md bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-700 transition hover:bg-gray-200"
+            >
+              View Logs
+            </button>
+          </div>
 
-            <div className="bg-purple-50 border border-purple-200 rounded p-3">
-              <div className="flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-purple-500" />
-                <div>
-                  <p className="text-purple-900 font-semibold text-xs">
-                    New Registrations
+          <div className="space-y-2">
+            {recentLogs.length === 0 ? (
+              <p className="text-xs text-gray-500">No recent logs found.</p>
+            ) : (
+              recentLogs.map((log, index) => (
+                <div
+                  key={log.id || index}
+                  className="rounded border border-gray-200 p-2.5"
+                >
+                  <p className="text-xs font-semibold text-gray-900">
+                    {(log.action || "Activity").replaceAll("_", " ")}
                   </p>
-                  <p className="text-xl font-bold text-purple-700">
-                    {stats.pendingRegistrations}
+                  <p className="mt-1 text-xs text-gray-600">
+                    {log.details || "No details available."}
                   </p>
-                  <p className="text-xs text-purple-600">
-                    Pending account approvals
+                  <p className="mt-1 text-[10px] text-gray-500">
+                    {getLogActor(log)} • {formatLogDate(log.created_at)}
                   </p>
                 </div>
-              </div>
-            </div>
+              ))
+            )}
           </div>
         </div>
 

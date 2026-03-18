@@ -79,6 +79,58 @@ export function getSidebarTabsByRole(role: string): SidebarTab[] {
   return SIDEBAR_TABS.filter((tab) => tab.roles.includes(normalizedRole));
 }
 
+function safeValue(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function getFirstNameFromStoredUser(userStr: string | null): string {
+  if (!userStr) {
+    return "";
+  }
+
+  const parsed = JSON.parse(userStr) as unknown;
+  if (!parsed || typeof parsed !== "object") {
+    return "";
+  }
+
+  const root = parsed as Record<string, unknown>;
+  const nestedCandidates = [root, root.user, root.data, root.profile].filter(
+    (item): item is Record<string, unknown> =>
+      typeof item === "object" && item !== null,
+  );
+
+  for (const candidate of nestedCandidates) {
+    const fullName =
+      safeValue(candidate.fullName) ||
+      safeValue(candidate.full_name) ||
+      safeValue(candidate.name);
+    const firstName =
+      safeValue(candidate.firstName) || safeValue(candidate.first_name);
+    const lastName =
+      safeValue(candidate.lastName) || safeValue(candidate.last_name);
+    const email = safeValue(candidate.email);
+
+    const combinedName = [firstName, lastName].filter(Boolean).join(" ").trim();
+    const nameSource = fullName || combinedName || firstName;
+
+    if (nameSource) {
+      return nameSource.split(/\s+/)[0];
+    }
+
+    if (email.includes("@")) {
+      const emailName = email
+        .split("@")[0]
+        .replace(/[._-]+/g, " ")
+        .trim();
+      if (emailName) {
+        return emailName.split(/\s+/)[0];
+      }
+    }
+  }
+
+  return "";
+}
+
 type SidebarProps = {
   role: string;
   activeTab: string;
@@ -109,12 +161,7 @@ export default function SidebarIndex({
   useEffect(() => {
     try {
       const userStr = localStorage.getItem("user");
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        const name = user.fullName || user.firstName || "";
-        const firstNameOnly = name.split(" ")[0];
-        setFirstName(firstNameOnly);
-      }
+      setFirstName(getFirstNameFromStoredUser(userStr));
     } catch (error) {
       console.error("Error parsing user data:", error);
     }
