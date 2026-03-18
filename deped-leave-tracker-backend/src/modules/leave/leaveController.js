@@ -160,6 +160,9 @@ const createLeaveRequest = async (req, res) => {
         const validationError = validateLeaveFields(req.body);
         if (validationError) return res.status(400).json({ message: validationError });
 
+        // Heal any prior inconsistencies before using latest running balances.
+        await recomputeEmployeeBalances(employee_id);
+
         // Carry forward the running balance from the latest entry
         const latest = await Leave.getLatestByEmployee(employee_id);
         const prev_bal_vl = latest ? parseNum(latest.bal_vl) : 0;
@@ -182,6 +185,9 @@ const createLeaveRequest = async (req, res) => {
             bal_sl,
             date_of_action: todayStr(),
         });
+
+        // Keep the full chain consistent after adding a new entry.
+        await recomputeEmployeeBalances(employee_id);
 
         Backlog.create({
             user_id: req.user.id,
@@ -219,6 +225,7 @@ const getLeaveRequestById = async (req, res) => {
 
 const getLeavesByEmployee = async (req, res) => {
     try {
+        await recomputeEmployeeBalances(req.params.employee_id);
         const results = await Leave.getByEmployeeId(req.params.employee_id);
         res.status(200).json({ data: results });
     } catch (err) {

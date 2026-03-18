@@ -105,6 +105,7 @@ function baseTemplate(bodyContent) {
 // Role display helper
 // ---------------------------------------------------------------------------
 function roleLabel(role) {
+  if (role === "SUPER_ADMIN") return "Super Admin";
   if (role === "ADMIN") return "Admin";
   if (role === "DATA_ENCODER") return "Data Encoder";
   return role || "User";

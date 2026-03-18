@@ -8,6 +8,7 @@ const Leave = {
                    employees.employee_type
             FROM leaves
             JOIN employees ON leaves.employee_id = employees.id
+            ORDER BY leaves.employee_id ASC, leaves.id ASC
         `);
         return rows;
     },
@@ -26,7 +27,7 @@ const Leave = {
 
     getByEmployeeId: async (employee_id) => {
         const [rows] = await pool.promise().query(
-            'SELECT * FROM leaves WHERE employee_id = ?', [employee_id]
+            'SELECT * FROM leaves WHERE employee_id = ? ORDER BY id ASC', [employee_id]
         );
         return rows;
     },
@@ -123,7 +124,12 @@ const Leave = {
     // Checks if an entry for a given period already exists (prevents double monthly credits)
     hasEntryForPeriod: async (employee_id, period_of_leave) => {
         const [rows] = await pool.promise().query(
-            'SELECT id FROM leaves WHERE employee_id = ? AND period_of_leave = ? LIMIT 1',
+                        `SELECT id
+                         FROM leaves
+                         WHERE employee_id = ?
+                             AND period_of_leave = ?
+                             AND LOWER(COALESCE(particulars, '')) = 'monthly leave credit'
+                         LIMIT 1`,
             [employee_id, period_of_leave]
         );
         return rows.length > 0;
