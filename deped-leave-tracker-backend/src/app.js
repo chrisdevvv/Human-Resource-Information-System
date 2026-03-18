@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const cron = require('node-cron');
 const authRoutes = require('./modules/auth/authRoutes');
 const leaveRoutes = require('./modules/leave/leaveRoutes');
 const employeeRoutes = require('./modules/employee/employeeRoutes');
@@ -9,10 +10,12 @@ const schoolRoutes = require('./modules/school/schoolRoutes');
 const backlogRoutes = require('./modules/backlog/backlogRoutes');
 const registrationRoutes = require('./modules/registration/registrationRoutes');
 const userRoutes = require('./modules/user/userRoutes');
+const { autoCreditCurrentMonth } = require('./modules/leave/leaveController');
 const pool = require('./config/db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const AUTO_MONTHLY_CREDIT_ENABLED = process.env.AUTO_MONTHLY_CREDIT !== 'false';
 
 // Middleware
 app.use(cors());
@@ -35,6 +38,30 @@ app.listen(PORT, async () => {
     const conn = await pool.promise().getConnection();
     console.log('✔  MySQL database connected successfully');
     conn.release();
+
+    if (AUTO_MONTHLY_CREDIT_ENABLED) {
+      // Catch up on startup (safe because duplicate monthly entries are skipped).
+      const startupResult = await autoCreditCurrentMonth();
+      console.log(
+        `[Auto Credit] Startup run complete for ${startupResult.period}: credited=${startupResult.credited}, skipped=${startupResult.skipped}`,
+      );
+
+      // Run every month at 00:00 on day 1 (server local time).
+      cron.schedule('0 0 1 * *', async () => {
+        try {
+          const result = await autoCreditCurrentMonth();
+          console.log(
+            `[Auto Credit] Scheduled run complete for ${result.period}: credited=${result.credited}, skipped=${result.skipped}`,
+          );
+        } catch (error) {
+          console.error('[Auto Credit] Scheduled run failed:', error.message);
+        }
+      });
+
+      console.log('[Auto Credit] Scheduler enabled (runs monthly on day 1 at 00:00).');
+    } else {
+      console.log('[Auto Credit] Scheduler disabled via AUTO_MONTHLY_CREDIT=false.');
+    }
   } catch (err) {
     console.error('✘  MySQL connection failed:', err.message);
   }

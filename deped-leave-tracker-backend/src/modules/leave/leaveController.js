@@ -5,6 +5,29 @@ const MONTHLY_CREDIT = 1.25;
 const parseNum = (v) => parseFloat(v) || 0;
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
+const normalizePeriod = (yearInput, monthInput) => {
+    const now = new Date();
+    const year = yearInput !== undefined ? Number(yearInput) : now.getFullYear();
+    const month = monthInput !== undefined ? Number(monthInput) : (now.getMonth() + 1);
+
+    if (!Number.isInteger(year) || year < 1900 || year > 3000) {
+        const err = new Error('Invalid year. Please provide a valid year (e.g. 2026).');
+        err.statusCode = 400;
+        throw err;
+    }
+
+    if (!Number.isInteger(month) || month < 1 || month > 12) {
+        const err = new Error('Invalid month. Please provide a month from 1 to 12.');
+        err.statusCode = 400;
+        throw err;
+    }
+
+    const monthName = new Date(year, month - 1, 1).toLocaleString('en-PH', { month: 'long' });
+    const period = `${monthName} ${year}`;
+
+    return { year, month, period };
+};
+
 const NUMERIC_LEAVE_FIELDS = [
     'earned_vl', 'abs_with_pay_vl', 'abs_without_pay_vl',
     'earned_sl', 'abs_with_pay_sl', 'abs_without_pay_sl',
@@ -55,6 +78,70 @@ const recomputeEmployeeBalances = async (employee_id) => {
         runningVl = nextVl;
         runningSl = nextSl;
     }
+};
+
+const applyMonthlyCredit = async ({ year, month, actorUserId = null } = {}) => {
+    const { period } = normalizePeriod(year, month);
+    const today = todayStr();
+
+    const employees = await Leave.getAllNonTeachingEmployees();
+    let credited = 0;
+    let skipped = 0;
+    const skippedNames = [];
+
+    for (const emp of employees) {
+        const alreadyCredited = await Leave.hasEntryForPeriod(emp.id, period);
+        if (alreadyCredited) {
+            skipped++;
+            skippedNames.push(`${emp.first_name} ${emp.last_name}`);
+            continue;
+        }
+
+        const latest = await Leave.getLatestByEmployee(emp.id);
+        const prev_bal_vl = latest ? parseNum(latest.bal_vl) : 0;
+        const prev_bal_sl = latest ? parseNum(latest.bal_sl) : 0;
+
+        await Leave.create({
+            employee_id: emp.id,
+            period_of_leave: period,
+            particulars: 'Monthly leave credit',
+            earned_vl: MONTHLY_CREDIT,
+            abs_with_pay_vl: 0,
+            abs_without_pay_vl: 0,
+            bal_vl: parseFloat((prev_bal_vl + MONTHLY_CREDIT).toFixed(2)),
+            earned_sl: MONTHLY_CREDIT,
+            abs_with_pay_sl: 0,
+            abs_without_pay_sl: 0,
+            bal_sl: parseFloat((prev_bal_sl + MONTHLY_CREDIT).toFixed(2)),
+            date_of_action: today,
+        });
+
+        if (actorUserId) {
+            Backlog.create({
+                user_id: actorUserId,
+                school_id: null,
+                employee_id: emp.id,
+                leave_id: null,
+                action: 'LEAVE_MONTHLY_CREDIT',
+                details: `${emp.first_name} ${emp.last_name} — ${period}`,
+            });
+        }
+
+        credited++;
+    }
+
+    return {
+        message: `Monthly leave credit applied for ${period}.`,
+        period,
+        credited,
+        skipped,
+        ...(skippedNames.length > 0 && { skipped_employees: skippedNames }),
+    };
+};
+
+const autoCreditCurrentMonth = async () => {
+    const result = await applyMonthlyCredit();
+    return result;
 };
 
 // POST /api/leave
@@ -230,69 +317,17 @@ const creditMonthly = async (req, res) => {
             return res.status(403).json({ message: 'Only Admin or Super Admin can apply monthly leave credit' });
         }
 
-        const now = new Date();
-        const year  = req.body.year  ? parseInt(req.body.year)  : now.getFullYear();
-        const month = req.body.month ? parseInt(req.body.month) : now.getMonth() + 1;
-
-        const monthName = new Date(year, month - 1, 1)
-            .toLocaleString('en-PH', { month: 'long' });
-        const period = `${monthName} ${year}`;
-        const today  = todayStr();
-
-        const employees = await Leave.getAllNonTeachingEmployees();
-        let credited = 0;
-        let skipped  = 0;
-        const skippedNames = [];
-
-        for (const emp of employees) {
-            // Prevent double-crediting the same period
-            const alreadyCredited = await Leave.hasEntryForPeriod(emp.id, period);
-            if (alreadyCredited) {
-                skipped++;
-                skippedNames.push(`${emp.first_name} ${emp.last_name}`);
-                continue;
-            }
-
-            const latest = await Leave.getLatestByEmployee(emp.id);
-            const prev_bal_vl = latest ? parseNum(latest.bal_vl) : 0;
-            const prev_bal_sl = latest ? parseNum(latest.bal_sl) : 0;
-
-            await Leave.create({
-                employee_id: emp.id,
-                period_of_leave: period,
-                particulars: 'Monthly leave credit',
-                earned_vl: MONTHLY_CREDIT,
-                abs_with_pay_vl: 0,
-                abs_without_pay_vl: 0,
-                bal_vl: parseFloat((prev_bal_vl + MONTHLY_CREDIT).toFixed(2)),
-                earned_sl: MONTHLY_CREDIT,
-                abs_with_pay_sl: 0,
-                abs_without_pay_sl: 0,
-                bal_sl: parseFloat((prev_bal_sl + MONTHLY_CREDIT).toFixed(2)),
-                date_of_action: today,
-            });
-
-            Backlog.create({
-                user_id: req.user.id,
-                school_id: null,
-                employee_id: emp.id,
-                leave_id: null,
-                action: 'LEAVE_MONTHLY_CREDIT',
-                details: `${emp.first_name} ${emp.last_name} — ${period}`,
-            });
-
-            credited++;
-        }
-
-        res.status(200).json({
-            message: `Monthly leave credit applied for ${period}.`,
-            period,
-            credited,
-            skipped,
-            ...(skippedNames.length > 0 && { skipped_employees: skippedNames }),
+        const result = await applyMonthlyCredit({
+            year: req.body.year,
+            month: req.body.month,
+            actorUserId: req.user.id,
         });
+
+        res.status(200).json(result);
     } catch (err) {
-        res.status(500).json({ message: 'Error applying monthly credit', error: err.message });
+        const status = err.statusCode || 500;
+        const message = status === 500 ? 'Error applying monthly credit' : err.message;
+        res.status(status).json({ message, error: err.message });
     }
 };
 
@@ -304,4 +339,5 @@ module.exports = {
     updateLeaveRequest,
     deleteLeaveRequest,
     creditMonthly,
+    autoCreditCurrentMonth,
 };
