@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useRef } from "react";
-import UserRoles from "./functions/UserRoles";
-import UserRolesMobile from "./functions/UserRolesMobile";
-import Logs from "./functions/Logs";
-import LogsMobile from "./functions/LogsMobile";
+import UserRoles from "./functions/UserRoles/UserRoles";
+import UserRolesMobile from "./functions/UserRoles/UserRolesMobile";
+import Logs from "./functions/Logs/Logs";
+import LogsMobile from "./functions/Logs/LogsMobile";
 import SuperAdminProfileSettings from "./functions/SuperAdminProfileSettings";
 import EmployeeLeaveManagement from "../functions/LeaveManagement/EmployeeLeaveManagement";
 import Dashboard from "../functions/Dashboard/Dashboard";

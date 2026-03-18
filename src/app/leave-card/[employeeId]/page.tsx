@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Download, Printer } from "lucide-react";
 import PrintableLeaveCard, {
+  createLeaveCardFileName,
   downloadLeaveCardPdf,
 } from "@/frontend/functions/LeaveManagement/PrintableLeaveCard";
 import {
@@ -75,11 +76,12 @@ export default function LeaveCardPreviewPage() {
     if (!cardRef.current || !employee) return;
     try {
       setIsPdfLoading(true);
-      const safeName = `${employee.first_name} ${employee.last_name}`
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)/g, "");
-      await downloadLeaveCardPdf(cardRef.current, `${safeName}-leave-card.pdf`);
+      const employeeName =
+        `${employee.first_name} ${employee.last_name}`.trim() || "Employee";
+      await downloadLeaveCardPdf(
+        cardRef.current,
+        createLeaveCardFileName(employeeName),
+      );
     } catch {
       alert("Failed to generate PDF.");
     } finally {

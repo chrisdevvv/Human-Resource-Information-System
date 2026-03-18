@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import ConfirmationModal from "../../super-admin/components/ConfirmationModal";
+import ConfirmationAddEmployee from "./ConfirmationAddEmployee";
 
 type School = {
   id: number;
@@ -22,6 +24,15 @@ type CreateEmployeeResponse = {
   message?: string;
 };
 
+type PendingEmployeePayload = {
+  first_name: string;
+  last_name: string;
+  email: string;
+  employee_type: "teaching" | "non-teaching";
+  school_id: number;
+  school_name: string;
+};
+
 const NAME_PATTERN = /^[A-Za-z.\s]+$/;
 
 export default function AddEmployeeModal({
@@ -41,6 +52,14 @@ export default function AddEmployeeModal({
   const [schoolsLoading, setSchoolsLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [recentlyAddedName, setRecentlyAddedName] = useState("");
+  const [pendingPayload, setPendingPayload] =
+    useState<PendingEmployeePayload | null>(null);
+  const sortedSchools = [...schools].sort((a, b) =>
+    a.school_name.localeCompare(b.school_name),
+  );
 
   useEffect(() => {
     if (!isOpen) {
@@ -89,14 +108,31 @@ export default function AddEmployeeModal({
       setSchoolsLoading(false);
       setSubmitLoading(false);
       setErrorMessage(null);
+      setIsConfirmOpen(false);
+      setIsSuccessOpen(false);
+      setRecentlyAddedName("");
+      setPendingPayload(null);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isSuccessOpen) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      handleCloseSuccessModal();
+    }, 3000);
+
+    return () => window.clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuccessOpen]);
 
   if (!isOpen) {
     return null;
   }
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!firstName.trim() || !lastName.trim()) {
@@ -143,6 +179,23 @@ export default function AddEmployeeModal({
       return;
     }
 
+    setErrorMessage(null);
+    setPendingPayload({
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      email: email.trim(),
+      employee_type: employeeType,
+      school_id: selectedSchool.id,
+      school_name: selectedSchool.school_name,
+    });
+    setIsConfirmOpen(true);
+  };
+
+  const handleConfirmAddEmployee = async () => {
+    if (!pendingPayload) {
+      return;
+    }
+
     try {
       setSubmitLoading(true);
       setErrorMessage(null);
@@ -159,11 +212,11 @@ export default function AddEmployeeModal({
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          email: email.trim() || null,
-          employee_type: employeeType,
-          school_id: selectedSchool.id,
+          first_name: pendingPayload.first_name,
+          last_name: pendingPayload.last_name,
+          email: pendingPayload.email,
+          employee_type: pendingPayload.employee_type,
+          school_id: pendingPayload.school_id,
         }),
       });
 
@@ -172,11 +225,13 @@ export default function AddEmployeeModal({
         throw new Error(body.message || "Failed to create employee");
       }
 
-      if (onSuccess) {
-        onSuccess();
-      }
+      setRecentlyAddedName(
+        `${pendingPayload.first_name} ${pendingPayload.last_name}`.trim(),
+      );
 
-      onClose();
+      setIsConfirmOpen(false);
+      setPendingPayload(null);
+      setIsSuccessOpen(true);
     } catch (err) {
       setErrorMessage(
         err instanceof Error ? err.message : "Failed to create employee",
@@ -184,6 +239,26 @@ export default function AddEmployeeModal({
     } finally {
       setSubmitLoading(false);
     }
+  };
+
+  const handleCancelConfirmation = () => {
+    if (submitLoading) {
+      return;
+    }
+
+    setIsConfirmOpen(false);
+  };
+
+  const handleCloseSuccessModal = () => {
+    if (submitLoading) {
+      return;
+    }
+
+    setIsSuccessOpen(false);
+    if (onSuccess) {
+      onSuccess();
+    }
+    onClose();
   };
 
   return (
@@ -253,23 +328,27 @@ export default function AddEmployeeModal({
               <label className="block text-sm font-medium text-gray-600">
                 School
               </label>
-              <input
-                type="text"
+              <select
                 value={schoolName}
                 onChange={(e) => setSchoolName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder={
-                  schoolsLoading ? "Loading schools..." : "Type school name"
-                }
-                list="school-options"
-              />
-              <datalist id="school-options">
-                {schools.map((school) => (
-                  <option key={school.id} value={school.school_name} />
+                disabled={schoolsLoading || schools.length === 0}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+              >
+                <option value="" disabled>
+                  {schoolsLoading
+                    ? "Loading schools..."
+                    : schools.length === 0
+                      ? "No schools available"
+                      : "Select school"}
+                </option>
+                {sortedSchools.map((school) => (
+                  <option key={school.id} value={school.school_name}>
+                    {school.school_name}
+                  </option>
                 ))}
-              </datalist>
+              </select>
               <p className="mt-1 text-xs text-gray-500">
-                Enter school manually. It should match an existing school name.
+                Choose the school from the list.
               </p>
             </div>
           </div>
@@ -285,19 +364,66 @@ export default function AddEmployeeModal({
               type="button"
               onClick={onClose}
               className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer"
-              disabled={submitLoading}
+              disabled={submitLoading || isConfirmOpen || isSuccessOpen}
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={submitLoading || schoolsLoading || schools.length === 0}
+              disabled={
+                submitLoading ||
+                isConfirmOpen ||
+                isSuccessOpen ||
+                schoolsLoading ||
+                schools.length === 0
+              }
               className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition font-medium text-sm cursor-pointer"
             >
               {submitLoading ? "Saving..." : "Add Employee"}
             </button>
           </div>
         </form>
+
+        <ConfirmationModal
+          visible={isConfirmOpen}
+          title="Confirm Add Employee"
+          message="Are you sure you want to add this employee?"
+          confirmLabel="Yes"
+          loading={submitLoading}
+          onConfirm={handleConfirmAddEmployee}
+          onCancel={handleCancelConfirmation}
+        >
+          {pendingPayload && (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 space-y-1">
+              <p>
+                <span className="font-semibold text-gray-800">Name:</span>{" "}
+                {pendingPayload.first_name} {pendingPayload.last_name}
+              </p>
+              <p>
+                <span className="font-semibold text-gray-800">Email:</span>{" "}
+                {pendingPayload.email}
+              </p>
+              <p>
+                <span className="font-semibold text-gray-800">
+                  Employee Type:
+                </span>{" "}
+                {pendingPayload.employee_type === "teaching"
+                  ? "Teaching"
+                  : "Non-Teaching"}
+              </p>
+              <p>
+                <span className="font-semibold text-gray-800">School:</span>{" "}
+                {pendingPayload.school_name}
+              </p>
+            </div>
+          )}
+        </ConfirmationModal>
+
+        <ConfirmationAddEmployee
+          isOpen={isSuccessOpen}
+          employeeName={recentlyAddedName}
+          onClose={handleCloseSuccessModal}
+        />
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import ViewLogsModal from "../components/ViewLogsModal";
+import ViewLogsModal from "../../components/ViewLogsModal";
 
 type Log = {
   id: number;
@@ -129,15 +129,37 @@ export default function LogsMobile() {
 
   const filteredLogs = logsData
     .filter((log) => {
+      const query = searchQuery.trim().toLowerCase();
       const fullName = `${log.firstName} ${log.lastName}`.toLowerCase();
+      const logDate = new Date(log.createdAt);
+
+      const searchableDateParts = Number.isNaN(logDate.getTime())
+        ? []
+        : [
+            log.createdAt.toLowerCase(),
+            logDate.toISOString().slice(0, 10),
+            logDate.toLocaleDateString("en-PH"),
+            logDate.toLocaleString("en-PH", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            }),
+            logDate.toLocaleString("en-PH", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            }),
+          ].map((value) => value.toLowerCase());
+
       const matchesSearch =
-        fullName.includes(searchQuery.toLowerCase()) ||
-        log.action.toLowerCase().includes(searchQuery.toLowerCase());
+        !query ||
+        fullName.includes(query) ||
+        log.action.toLowerCase().includes(query) ||
+        searchableDateParts.some((datePart) => datePart.includes(query));
       const matchesRole = roleFilter === "ALL" || log.role === roleFilter;
       const matchesLetter =
         letterFilter === "ALL" ||
         log.firstName.charAt(0).toUpperCase() === letterFilter;
-      const logDate = new Date(log.createdAt);
       const afterFrom = !dateFrom || logDate >= new Date(dateFrom);
       const beforeTo = !dateTo
         ? true
@@ -286,7 +308,7 @@ export default function LogsMobile() {
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="Search by name or action"
+            placeholder="Search by name, action, or date"
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);

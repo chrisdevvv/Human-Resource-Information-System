@@ -255,6 +255,16 @@ const PrintableLeaveCard = React.forwardRef<
 
 export default PrintableLeaveCard;
 
+export function createLeaveCardFileName(employeeName?: string): string {
+  const sanitizedName = (employeeName || "Employee")
+    .replace(/[\\/:*?"<>|]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const displayName = sanitizedName || "Employee";
+  return `${displayName} - Leave Card.pdf`;
+}
+
 export async function downloadLeaveCardPdf(
   element: HTMLElement,
   fileName: string,

@@ -9,9 +9,9 @@ import {
 } from "lucide-react";
 import UserRolesDetailsModal, {
   type RegistrationDetail,
-} from "../components/UserRolesDetailsModal";
-import RoleAssignmentModal from "../components/RoleAssignmentModal";
-import RejectModal from "../components/RejectModal";
+} from "../../components/UserRolesDetailsModal";
+import RoleAssignmentModal from "../../components/RoleAssignmentModal";
+import RejectModal from "../../components/RejectModal";
 
 type RegistrationRequest = {
   id: number;

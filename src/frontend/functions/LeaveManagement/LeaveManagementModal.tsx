@@ -5,7 +5,10 @@ import { Download, Plus, RefreshCcw, X } from "lucide-react";
 import type { LeaveModalRecord } from "./leaveTypes";
 import AddLeaveModal, { type AddLeaveFormValues } from "./AddLeaveModal";
 import LeaveHistoryTable from "./LeaveHistoryTable";
-import PrintableLeaveCard, { downloadLeaveCardPdf } from "./PrintableLeaveCard";
+import PrintableLeaveCard, {
+  createLeaveCardFileName,
+  downloadLeaveCardPdf,
+} from "./PrintableLeaveCard";
 import {
   createLeave,
   getLeaveHistoryByEmployee,
@@ -40,11 +43,7 @@ export default function LeaveManagementModal({
     employeeType === "non-teaching" ? "Non-Teaching" : "Teaching";
 
   const pdfFileName = useMemo(() => {
-    const safeName = (leave?.fullName || "employee")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-    return `${safeName || "employee"}-leave-card.pdf`;
+    return createLeaveCardFileName(leave?.fullName);
   }, [leave?.fullName]);
 
   const fetchHistory = async (showSpinner = true) => {

@@ -9,7 +9,7 @@ import {
   Settings,
 } from "lucide-react";
 import PendingAccountsMobile from "./PendingAccountsMobile";
-import UserSettingModal from "../components/UserSettingModal";
+import UserSettingModal from "../../components/UserSettingModal";
 
 type User = {
   id: number;
