@@ -10,13 +10,13 @@ import {
   FileText,
   Plus,
 } from "lucide-react";
-import LeaveManagementModal from "@/frontend/functions/LeaveManagementModal";
+import LeaveManagementModal from "@/frontend/functions/LeaveManagement/LeaveManagementModal";
 import AddLeaveModal, {
   type AddLeaveFormValues,
-} from "@/frontend/functions/AddLeaveModal";
+} from "@/frontend/functions/LeaveManagement/AddLeaveModal";
 import AddEmployeeModal from "./AddEmployeeModal";
-import { createLeave } from "@/frontend/functions/leaveApi";
-import type { LeaveModalRecord } from "@/frontend/functions/leaveTypes";
+import { createLeave } from "@/frontend/functions/LeaveManagement/leaveApi";
+import type { LeaveModalRecord } from "@/frontend/functions/LeaveManagement/leaveTypes";
 
 type EmployeeRecordApi = {
   id: number;

@@ -1,7 +1,7 @@
 import React from "react";
 import styles from "./styles.module.css";
 import DataEncoderProfileSettings from "./functions/DataEncoderProfileSettings";
-import EmployeeLeaveManagement from "../functions/EmployeeLeaveManagement";
+import EmployeeLeaveManagement from "../functions/LeaveManagement/EmployeeLeaveManagement";
 
 type DataEncoderProps = {
   activeTab?: string;

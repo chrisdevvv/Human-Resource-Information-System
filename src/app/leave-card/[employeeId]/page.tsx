@@ -5,11 +5,11 @@ import { useParams } from "next/navigation";
 import { Download, Printer } from "lucide-react";
 import PrintableLeaveCard, {
   downloadLeaveCardPdf,
-} from "@/frontend/functions/PrintableLeaveCard";
+} from "@/frontend/functions/LeaveManagement/PrintableLeaveCard";
 import {
   getLeaveHistoryByEmployee,
   type LeaveHistoryRecord,
-} from "@/frontend/functions/leaveApi";
+} from "@/frontend/functions/LeaveManagement/leaveApi";
 
 type EmployeeInfo = {
   id: number;

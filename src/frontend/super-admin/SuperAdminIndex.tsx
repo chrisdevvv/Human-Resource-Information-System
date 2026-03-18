@@ -6,7 +6,7 @@ import UserRolesMobile from "./functions/UserRolesMobile";
 import Logs from "./functions/Logs";
 import LogsMobile from "./functions/LogsMobile";
 import SuperAdminProfileSettings from "./functions/SuperAdminProfileSettings";
-import EmployeeLeaveManagement from "../functions/EmployeeLeaveManagement";
+import EmployeeLeaveManagement from "../functions/LeaveManagement/EmployeeLeaveManagement";
 import styles from "./styles.module.css";
 
 type SuperAdminProps = {

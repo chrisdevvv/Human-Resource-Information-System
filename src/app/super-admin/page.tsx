@@ -6,6 +6,15 @@ import SidebarIndex from "../../frontend/sidebar/SidebarIndex";
 import SidebarMobile from "../../frontend/sidebar/SidebarMobile";
 import StickyHeader from "../../frontend/components/StickyHeader";
 
+const ACTIVE_TAB_STORAGE_KEY = "activeTab:super-admin";
+const ALLOWED_TABS = new Set([
+  "dashboard",
+  "employee-management",
+  "user-roles",
+  "logs",
+  "profile-settings",
+]);
+
 export default function Page() {
   const router = useRouter();
   const [role, setRole] = useState("super-admin");
@@ -32,7 +41,12 @@ export default function Page() {
           return;
         }
 
+        const savedTab = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+        const nextTab =
+          savedTab && ALLOWED_TABS.has(savedTab) ? savedTab : "dashboard";
+
         setRole(u.role);
+        setActiveTab(nextTab);
         setIsAuthorized(true);
       } catch (e) {
         setIsAuthorized(false);
@@ -55,7 +69,12 @@ export default function Page() {
   };
 
   const handleTabChange = (tab: string) => {
+    if (!ALLOWED_TABS.has(tab)) {
+      return;
+    }
+
     setActiveTab(tab);
+    localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, tab);
   };
 
   return (
