@@ -36,229 +36,256 @@ const CARD_COLORS = {
   emptyGray: "#374151",
 };
 
+const PAPER_MARGIN_CM = 1.27;
+const PAPER_MARGIN_MM = 12.7;
+
 const PrintableLeaveCard = React.forwardRef<
   HTMLDivElement,
   PrintableLeaveCardProps
 >(function PrintableLeaveCard({ employeeName, employeeType, rows }, ref) {
   return (
-    <div
-      ref={ref}
-      className="mx-auto w-full max-w-6xl p-6 text-[11px] print:max-w-none print:p-0"
-      style={{
-        backgroundColor: CARD_COLORS.white,
-        color: CARD_COLORS.black,
-        fontFamily: "'Bookman Old Style', Bookman, serif",
-      }}
-    >
+    <>
+      <style>{`
+        @page {
+          size: A4;
+          margin: ${PAPER_MARGIN_CM}cm;
+        }
+      `}</style>
       <div
-        className="mb-4 border-b pb-3 text-center font-bold"
-        style={{ borderColor: CARD_COLORS.black }}
+        ref={ref}
+        className="mx-auto w-full text-[9pt] print:max-w-none"
+        style={{
+          width: "210mm",
+          minHeight: "297mm",
+          backgroundColor: CARD_COLORS.white,
+          color: CARD_COLORS.black,
+          fontFamily: "'Bookman Old Style', Bookman, serif",
+        }}
       >
-        <p className="text-sm leading-tight">Republic of the Philippines</p>
-        <p className="text-sm font-semibold uppercase tracking-wide">
-          Department of Education
-        </p>
-        <p className="text-sm">Region III</p>
-        <p className="text-sm uppercase">
-          Division of City of San Jose del Monte
-        </p>
-        <p className="mt-2 text-base font-bold uppercase tracking-wide">
-          Employee Leave Card
-        </p>
-      </div>
+        <div
+          className="mb-4 border-b pb-3 text-center font-bold"
+          style={{ borderColor: CARD_COLORS.black }}
+        >
+          <p style={{ fontSize: "12pt", lineHeight: 1.2 }}>
+            Republic of the Philippines
+          </p>
+          <p
+            className="font-semibold uppercase tracking-wide"
+            style={{ fontSize: "12pt", lineHeight: 1.2 }}
+          >
+            Department of Education
+          </p>
+          <p style={{ fontSize: "12pt", lineHeight: 1.2 }}>Region III</p>
+          <p
+            className="uppercase"
+            style={{ fontSize: "12pt", lineHeight: 1.2 }}
+          >
+            Division of City of San Jose del Monte
+          </p>
+          <p
+            className="mt-2 font-bold uppercase tracking-wide"
+            style={{ fontSize: "14pt", lineHeight: 1.2 }}
+          >
+            EMPLOYEE LEAVE CARD
+          </p>
+        </div>
 
-      <div className="mb-4 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-        <p>
-          <span className="font-semibold">Name of Employee:</span>{" "}
-          <span style={{ fontWeight: "bold" }}>{employeeName}</span>
-        </p>
-        <p>
-          <span className="font-semibold">Type:</span>{" "}
-          <span style={{ fontWeight: "bold" }}>
-            {employeeType === "non-teaching" ? "Non-Teaching" : "Teaching"}
-          </span>
-        </p>
-      </div>
+        <div
+          className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2"
+          style={{ fontSize: "10pt" }}
+        >
+          <p>
+            <span className="font-semibold">Name of Employee:</span>{" "}
+            <span style={{ fontWeight: "bold" }}>{employeeName}</span>
+          </p>
+          <p>
+            <span className="font-semibold">Type:</span>{" "}
+            <span style={{ fontWeight: "bold" }}>
+              {employeeType === "non-teaching" ? "Non-Teaching" : "Teaching"}
+            </span>
+          </p>
+        </div>
 
-      <div
-        className="overflow-x-auto border"
-        style={{ borderColor: CARD_COLORS.black }}
-      >
-        <table className="w-full min-w-full border-collapse">
-          <thead>
-            <tr
-              className="text-[10px] uppercase tracking-wide"
-              style={{
-                backgroundColor: CARD_COLORS.headerGray,
-                fontWeight: "bold",
-              }}
-            >
-              <th
-                className="border px-2 py-2 text-left"
-                style={{ borderColor: CARD_COLORS.black }}
+        <div
+          className="overflow-x-auto border"
+          style={{ borderColor: CARD_COLORS.black }}
+        >
+          <table className="w-full min-w-full border-collapse">
+            <thead>
+              <tr
+                className="text-[10px] uppercase tracking-wide"
+                style={{
+                  backgroundColor: CARD_COLORS.headerGray,
+                  fontWeight: "bold",
+                }}
               >
-                Period of Leave
-              </th>
-              <th
-                className="border px-2 py-2 text-left"
-                style={{ borderColor: CARD_COLORS.black }}
-              >
-                Particulars
-              </th>
-              <th
-                className="border px-2 py-2 text-right"
-                style={{ borderColor: CARD_COLORS.black }}
-              >
-                Earned VL
-              </th>
-              <th
-                className="border px-2 py-2 text-right"
-                style={{ borderColor: CARD_COLORS.black }}
-              >
-                Abs With Pay VL
-              </th>
-              <th
-                className="border px-2 py-2 text-right"
-                style={{ borderColor: CARD_COLORS.black }}
-              >
-                Abs Without Pay VL
-              </th>
-              <th
-                className="border px-2 py-2 text-right"
-                style={{ borderColor: CARD_COLORS.black }}
-              >
-                Bal VL
-              </th>
-              <th
-                className="border px-2 py-2 text-right"
-                style={{ borderColor: CARD_COLORS.black }}
-              >
-                Earned SL
-              </th>
-              <th
-                className="border px-2 py-2 text-right"
-                style={{ borderColor: CARD_COLORS.black }}
-              >
-                Abs With Pay SL
-              </th>
-              <th
-                className="border px-2 py-2 text-right"
-                style={{ borderColor: CARD_COLORS.black }}
-              >
-                Abs Without Pay SL
-              </th>
-              <th
-                className="border px-2 py-2 text-right"
-                style={{ borderColor: CARD_COLORS.black }}
-              >
-                Bal SL
-              </th>
-              <th
-                className="border px-2 py-2 text-left"
-                style={{ borderColor: CARD_COLORS.black }}
-              >
-                Date and Action Taken / Evaluation
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length > 0 ? (
-              rows.map((row, index) => (
-                <tr
-                  key={row.id}
-                  style={{
-                    backgroundColor:
-                      index % 2 === 1
-                        ? CARD_COLORS.stripeBlue
-                        : CARD_COLORS.white,
-                  }}
+                <th
+                  className="border px-2 py-2 text-left"
+                  style={{ borderColor: CARD_COLORS.black }}
                 >
-                  <td
-                    className="border px-2 py-1.5 align-top"
-                    style={{ borderColor: CARD_COLORS.black }}
+                  Period of Leave
+                </th>
+                <th
+                  className="border px-2 py-2 text-left"
+                  style={{ borderColor: CARD_COLORS.black }}
+                >
+                  Particulars
+                </th>
+                <th
+                  className="border px-2 py-2 text-right"
+                  style={{ borderColor: CARD_COLORS.black }}
+                >
+                  Earned VL
+                </th>
+                <th
+                  className="border px-2 py-2 text-right"
+                  style={{ borderColor: CARD_COLORS.black }}
+                >
+                  Abs With Pay VL
+                </th>
+                <th
+                  className="border px-2 py-2 text-right"
+                  style={{ borderColor: CARD_COLORS.black }}
+                >
+                  Abs Without Pay VL
+                </th>
+                <th
+                  className="border px-2 py-2 text-right"
+                  style={{ borderColor: CARD_COLORS.black }}
+                >
+                  Bal VL
+                </th>
+                <th
+                  className="border px-2 py-2 text-right"
+                  style={{ borderColor: CARD_COLORS.black }}
+                >
+                  Earned SL
+                </th>
+                <th
+                  className="border px-2 py-2 text-right"
+                  style={{ borderColor: CARD_COLORS.black }}
+                >
+                  Abs With Pay SL
+                </th>
+                <th
+                  className="border px-2 py-2 text-right"
+                  style={{ borderColor: CARD_COLORS.black }}
+                >
+                  Abs Without Pay SL
+                </th>
+                <th
+                  className="border px-2 py-2 text-right"
+                  style={{ borderColor: CARD_COLORS.black }}
+                >
+                  Bal SL
+                </th>
+                <th
+                  className="border px-2 py-2 text-left"
+                  style={{ borderColor: CARD_COLORS.black }}
+                >
+                  Date and Action Taken / Evaluation
+                </th>
+              </tr>
+            </thead>
+            <tbody style={{ fontSize: "9pt" }}>
+              {rows.length > 0 ? (
+                rows.map((row, index) => (
+                  <tr
+                    key={row.id}
+                    style={{
+                      backgroundColor:
+                        index % 2 === 1
+                          ? CARD_COLORS.stripeBlue
+                          : CARD_COLORS.white,
+                    }}
                   >
-                    {row.periodOfLeave}
-                  </td>
+                    <td
+                      className="border px-2 py-1.5 align-top"
+                      style={{ borderColor: CARD_COLORS.black }}
+                    >
+                      {row.periodOfLeave}
+                    </td>
+                    <td
+                      className="border px-2 py-1.5 align-top"
+                      style={{ borderColor: CARD_COLORS.black }}
+                    >
+                      {row.particulars || "-"}
+                    </td>
+                    <td
+                      className="border px-2 py-1.5 text-right align-top"
+                      style={{ borderColor: CARD_COLORS.black }}
+                    >
+                      {formatNumber(row.earnedVl)}
+                    </td>
+                    <td
+                      className="border px-2 py-1.5 text-right align-top"
+                      style={{ borderColor: CARD_COLORS.black }}
+                    >
+                      {formatNumber(row.absWithPayVl)}
+                    </td>
+                    <td
+                      className="border px-2 py-1.5 text-right align-top"
+                      style={{ borderColor: CARD_COLORS.black }}
+                    >
+                      {formatNumber(row.absWithoutPayVl)}
+                    </td>
+                    <td
+                      className="border px-2 py-1.5 text-right align-top"
+                      style={{ borderColor: CARD_COLORS.black }}
+                    >
+                      {formatNumber(row.balVl)}
+                    </td>
+                    <td
+                      className="border px-2 py-1.5 text-right align-top"
+                      style={{ borderColor: CARD_COLORS.black }}
+                    >
+                      {formatNumber(row.earnedSl)}
+                    </td>
+                    <td
+                      className="border px-2 py-1.5 text-right align-top"
+                      style={{ borderColor: CARD_COLORS.black }}
+                    >
+                      {formatNumber(row.absWithPaySl)}
+                    </td>
+                    <td
+                      className="border px-2 py-1.5 text-right align-top"
+                      style={{ borderColor: CARD_COLORS.black }}
+                    >
+                      {formatNumber(row.absWithoutPaySl)}
+                    </td>
+                    <td
+                      className="border px-2 py-1.5 text-right align-top"
+                      style={{ borderColor: CARD_COLORS.black }}
+                    >
+                      {formatNumber(row.balSl)}
+                    </td>
+                    <td
+                      className="border px-2 py-1.5 align-top"
+                      style={{ borderColor: CARD_COLORS.black }}
+                    >
+                      {formatDateOnly(row.dateOfAction)}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
                   <td
-                    className="border px-2 py-1.5 align-top"
-                    style={{ borderColor: CARD_COLORS.black }}
+                    colSpan={11}
+                    className="border px-2 py-8 text-center"
+                    style={{
+                      borderColor: CARD_COLORS.black,
+                      color: CARD_COLORS.emptyGray,
+                    }}
                   >
-                    {row.particulars || "-"}
-                  </td>
-                  <td
-                    className="border px-2 py-1.5 text-right align-top"
-                    style={{ borderColor: CARD_COLORS.black }}
-                  >
-                    {formatNumber(row.earnedVl)}
-                  </td>
-                  <td
-                    className="border px-2 py-1.5 text-right align-top"
-                    style={{ borderColor: CARD_COLORS.black }}
-                  >
-                    {formatNumber(row.absWithPayVl)}
-                  </td>
-                  <td
-                    className="border px-2 py-1.5 text-right align-top"
-                    style={{ borderColor: CARD_COLORS.black }}
-                  >
-                    {formatNumber(row.absWithoutPayVl)}
-                  </td>
-                  <td
-                    className="border px-2 py-1.5 text-right align-top"
-                    style={{ borderColor: CARD_COLORS.black }}
-                  >
-                    {formatNumber(row.balVl)}
-                  </td>
-                  <td
-                    className="border px-2 py-1.5 text-right align-top"
-                    style={{ borderColor: CARD_COLORS.black }}
-                  >
-                    {formatNumber(row.earnedSl)}
-                  </td>
-                  <td
-                    className="border px-2 py-1.5 text-right align-top"
-                    style={{ borderColor: CARD_COLORS.black }}
-                  >
-                    {formatNumber(row.absWithPaySl)}
-                  </td>
-                  <td
-                    className="border px-2 py-1.5 text-right align-top"
-                    style={{ borderColor: CARD_COLORS.black }}
-                  >
-                    {formatNumber(row.absWithoutPaySl)}
-                  </td>
-                  <td
-                    className="border px-2 py-1.5 text-right align-top"
-                    style={{ borderColor: CARD_COLORS.black }}
-                  >
-                    {formatNumber(row.balSl)}
-                  </td>
-                  <td
-                    className="border px-2 py-1.5 align-top"
-                    style={{ borderColor: CARD_COLORS.black }}
-                  >
-                    {formatDateOnly(row.dateOfAction)}
+                    No leave entries available.
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={11}
-                  className="border px-2 py-8 text-center"
-                  style={{
-                    borderColor: CARD_COLORS.black,
-                    color: CARD_COLORS.emptyGray,
-                  }}
-                >
-                  No leave entries available.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </>
   );
 });
 
@@ -293,7 +320,7 @@ export async function downloadLeaveCardPdf(
   const imgData = canvas.toDataURL("image/png");
   const pdf = new jsPDF("p", "mm", "a4");
 
-  const MARGIN_MM = 17.2;
+  const MARGIN_MM = PAPER_MARGIN_MM;
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const contentWidth = pageWidth - MARGIN_MM * 2;
