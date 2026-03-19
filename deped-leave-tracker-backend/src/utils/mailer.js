@@ -356,6 +356,58 @@ async function sendRoleChanged(to, firstName, oldRole, newRole) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Email: Account created by admin/super admin (with initial credentials)
+// ---------------------------------------------------------------------------
+async function sendAccountCreatedCredentials(
+  to,
+  firstName,
+  role,
+  email,
+  temporaryPassword,
+) {
+  const html = baseTemplate(`
+        <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Hi ${firstName},</h2>
+        <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
+            Your account has been created in the
+            <strong>DepEd Employee Leave Management System</strong> by a system administrator.
+        </p>
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;padding:16px 20px;
+                    border-radius:6px;margin:16px 0 20px;">
+            <p style="margin:0 0 6px;font-size:12px;color:#1e40af;text-transform:uppercase;letter-spacing:1px;">
+                Assigned Role
+            </p>
+            <p style="margin:0;font-size:18px;font-weight:700;color:#1d4ed8;">${roleLabel(role)}</p>
+        </div>
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;padding:16px 20px;
+                    border-radius:6px;margin-bottom:24px;">
+            <p style="margin:0 0 8px;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;">Sign-in Credentials</p>
+            <p style="margin:0 0 6px;font-size:14px;color:#111827;"><strong>Email:</strong> ${email}</p>
+            <p style="margin:0;font-size:14px;color:#111827;"><strong>Temporary Password:</strong> ${temporaryPassword}</p>
+        </div>
+        <div style="background:#fef9c3;border-left:4px solid #ca8a04;padding:14px 18px;
+                    border-radius:4px;margin-bottom:24px;">
+            <p style="margin:0;font-size:14px;color:#854d0e;line-height:1.6;">
+                For your security, please sign in and <strong>change your password immediately</strong>.
+            </p>
+        </div>
+        <div style="text-align:center;">
+          <a href="${FRONTEND_URL}/login"
+               style="display:inline-block;background:#1d4ed8;color:#ffffff;
+                      padding:12px 32px;border-radius:6px;text-decoration:none;
+                      font-size:15px;font-weight:600;">
+                Sign In Now
+            </a>
+        </div>
+    `);
+
+  await sendMail({
+    to,
+    subject: "Your Account Credentials — DepEd ELMS",
+    html,
+  });
+}
+
 module.exports = {
   sendRegistrationReceived,
   sendRegistrationApproved,
@@ -363,4 +415,5 @@ module.exports = {
   sendPasswordResetLink,
   sendPasswordChanged,
   sendRoleChanged,
+  sendAccountCreatedCredentials,
 };

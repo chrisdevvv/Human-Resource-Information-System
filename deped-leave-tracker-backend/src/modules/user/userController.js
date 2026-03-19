@@ -2,7 +2,11 @@ const bcrypt = require("bcryptjs");
 const pool = require("../../config/db");
 const User = require("./userModel");
 const Backlog = require("../backlog/backlogModel");
-const { sendRoleChanged, sendPasswordChanged } = require("../../utils/mailer");
+const {
+  sendRoleChanged,
+  sendPasswordChanged,
+  sendAccountCreatedCredentials,
+} = require("../../utils/mailer");
 
 const VALID_ROLES = ["SUPER_ADMIN", "ADMIN", "DATA_ENCODER"];
 
@@ -257,10 +261,12 @@ const adminResetPassword = async (req, res) => {
 
 const createDataEncoderByAdmin = async (req, res) => {
   try {
-    if (req.user.role !== "ADMIN") {
+    if (!["ADMIN", "SUPER_ADMIN"].includes(req.user.role)) {
       return res
         .status(403)
-        .json({ message: "Only ADMIN users can add users via this endpoint" });
+        .json({
+          message: "Only ADMIN or SUPER_ADMIN users can add users via this endpoint",
+        });
     }
 
     const { first_name, last_name, email, password, school_name } = req.body;
@@ -338,6 +344,15 @@ const createDataEncoderByAdmin = async (req, res) => {
         action: "USER_CREATED",
         details: `${String(first_name).trim()} ${String(last_name).trim()} as DATA_ENCODER`,
       });
+
+      // Fire-and-forget credentials email.
+      sendAccountCreatedCredentials(
+        normalizedEmail,
+        String(first_name).trim(),
+        "DATA_ENCODER",
+        normalizedEmail,
+        password,
+      );
 
       return res.status(201).json({
         message: "User created successfully",

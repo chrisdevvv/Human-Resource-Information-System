@@ -3,6 +3,7 @@ const Backlog = require("../backlog/backlogModel");
 const {
   sendRegistrationApproved,
   sendRegistrationRejected,
+  sendAccountCreatedCredentials,
 } = require("../../utils/mailer");
 
 const getAllRegistrations = async (req, res) => {
@@ -70,7 +71,7 @@ const approveRegistration = async (req, res) => {
         .json({ message: "Registration request not found" });
     }
 
-    const { approved_role } = req.body;
+    const { approved_role, temporary_password, suppress_approved_email } = req.body;
 
     // Admin approvals are intentionally locked to DATA_ENCODER only.
     const isAdminApprover = req.user.role === "ADMIN";
@@ -87,11 +88,24 @@ const approveRegistration = async (req, res) => {
     await Registration.approve(req.params.id, finalRole, req.user.id);
 
     // Fire-and-forget — email failure must not block the response
-    sendRegistrationApproved(
-      registration.email,
-      registration.first_name,
-      finalRole,
-    );
+    const shouldSuppressApprovedEmail =
+      suppress_approved_email === true || suppress_approved_email === "true";
+
+    if (temporary_password) {
+      sendAccountCreatedCredentials(
+        registration.email,
+        registration.first_name,
+        finalRole,
+        registration.email,
+        String(temporary_password),
+      );
+    } else if (!shouldSuppressApprovedEmail) {
+      sendRegistrationApproved(
+        registration.email,
+        registration.first_name,
+        finalRole,
+      );
+    }
     Backlog.create({
       user_id: req.user.id,
       school_id: null,

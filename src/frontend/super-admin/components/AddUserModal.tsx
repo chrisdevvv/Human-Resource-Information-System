@@ -171,6 +171,7 @@ export default function AddUserModal({
             password,
             school_name: school.trim(),
             requested_role: "DATA_ENCODER",
+            suppress_pending_email: true,
           }),
         },
       );
@@ -203,7 +204,11 @@ export default function AddUserModal({
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ approved_role: "DATA_ENCODER" }),
+          body: JSON.stringify({
+            approved_role: "DATA_ENCODER",
+            temporary_password: password,
+            suppress_approved_email: true,
+          }),
         },
       );
 

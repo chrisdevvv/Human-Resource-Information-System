@@ -19,6 +19,7 @@ const register = async (req, res) => {
     password,
     school_name,
     requested_role,
+    suppress_pending_email,
   } = req.body;
 
   if (!first_name || !last_name || !email || !password || !school_name) {
@@ -86,7 +87,11 @@ const register = async (req, res) => {
         ],
       );
     // Fire-and-forget — email failure must not block the registration response
-    sendRegistrationReceived(email, first_name);
+    const shouldSuppressPendingEmail =
+      suppress_pending_email === true || suppress_pending_email === "true";
+    if (!shouldSuppressPendingEmail) {
+      sendRegistrationReceived(email, first_name);
+    }
 
     res.status(201).json({
       message:
