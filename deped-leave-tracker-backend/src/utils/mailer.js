@@ -105,10 +105,20 @@ function baseTemplate(bodyContent) {
 // Role display helper
 // ---------------------------------------------------------------------------
 function roleLabel(role) {
-  if (role === "SUPER_ADMIN") return "Super Admin";
-  if (role === "ADMIN") return "Admin";
-  if (role === "DATA_ENCODER") return "Data Encoder";
-  return role || "User";
+  const raw = String(role || "").trim();
+  const normalized = raw.toUpperCase().replace(/\s+/g, "_");
+
+  if (normalized === "SUPER_ADMIN") return "Super Admin";
+  if (normalized === "ADMIN") return "Admin";
+  if (normalized === "DATA_ENCODER") return "Data Encoder";
+
+  if (!raw) return "User";
+
+  // Fallback prettifier for unknown role strings.
+  return raw
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 // ---------------------------------------------------------------------------
