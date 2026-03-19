@@ -95,6 +95,7 @@ export default function LoginPage() {
 
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+        sessionStorage.setItem("authSessionActive", "1");
 
       setLoggedInUser(data.user);
       setShowLoginSuccess(true);

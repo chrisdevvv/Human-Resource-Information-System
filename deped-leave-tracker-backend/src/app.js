@@ -17,6 +17,22 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const AUTO_MONTHLY_CREDIT_ENABLED = process.env.AUTO_MONTHLY_CREDIT !== 'false';
 
+const ensureSecurityTables = async () => {
+  await pool.promise().query(`
+    CREATE TABLE IF NOT EXISTS revoked_tokens (
+      jti VARCHAR(64) NOT NULL,
+      user_id INT NULL,
+      expires_at DATETIME NOT NULL,
+      revoked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (jti),
+      INDEX idx_revoked_tokens_expires_at (expires_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
+  // Keep the table compact.
+  await pool.promise().query('DELETE FROM revoked_tokens WHERE expires_at <= NOW()');
+};
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
@@ -38,6 +54,9 @@ app.listen(PORT, async () => {
     const conn = await pool.promise().getConnection();
     console.log('✔  MySQL database connected successfully');
     conn.release();
+
+    await ensureSecurityTables();
+    console.log('✔  Security tables are ready');
 
     if (AUTO_MONTHLY_CREDIT_ENABLED) {
       // Catch up on startup (safe because duplicate monthly entries are skipped).

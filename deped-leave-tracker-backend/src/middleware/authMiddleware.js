@@ -1,14 +1,31 @@
 const jwt = require('jsonwebtoken');
-const { promisify } = require('util');
+const pool = require('../config/db');
 
 const authMiddleware = async (req, res, next) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const authHeader = req.headers.authorization || '';
+        const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
         if (!token) {
             return res.status(401).json({ message: 'No token provided' });
         }
 
-        const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        if (decoded.jti) {
+            const [rows] = await pool.promise().query(
+                `SELECT jti
+                 FROM revoked_tokens
+                 WHERE jti = ? AND expires_at > NOW()
+                 LIMIT 1`,
+                [decoded.jti]
+            );
+
+            if (rows.length > 0) {
+                return res.status(401).json({ message: 'Session has ended. Please log in again.' });
+            }
+        }
+
+        req.token = token;
         req.user = decoded;
         next();
     } catch (error) {

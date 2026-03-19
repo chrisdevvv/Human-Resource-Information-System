@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 10, 2026 at 08:23 AM
+-- Generation Time: Mar 18, 2026 at 07:00 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -112,6 +112,13 @@ CREATE TABLE `schools` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `schools`
+--
+
+INSERT INTO `schools` (`id`, `school_name`, `school_code`, `created_at`) VALUES
+(5, 'San Jose Del Monte National High School', 'SJDMNHS', '2026-03-18 05:55:14');
+
 -- --------------------------------------------------------
 
 --
@@ -141,6 +148,15 @@ CREATE TABLE `users` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`id`, `first_name`, `last_name`, `email`, `password_hash`, `role`, `school_id`, `is_active`, `created_at`, `updated_at`) VALUES
+(4, 'Super', 'Admin', 'superadmin@deped.gov.ph', '$2a$10$rX7GkyFuv4dWMIvFUKBHVuxlkfL5G.WFf58gAr.cy1NGoQDMgaQru', 'SUPER_ADMIN', NULL, 1, '2026-03-18 05:55:14', '2026-03-18 05:55:14'),
+(5, 'Test', 'Admin', 'testadmin@deped.gov.ph', '$2a$10$ZH0v/Mv9lUxMiZNskFiag.INs3AdZs1dNTBunN1qtiXgQf9lClFrK', 'ADMIN', 5, 1, '2026-03-18 05:55:15', '2026-03-18 05:55:15'),
+(6, 'Test', 'Encoder', 'testencoder@deped.gov.ph', '$2a$10$HMAokh6zxjHOiyqnBMs.QuUg0PBlYDOIG27SgOsMh5IkAwhCZR/WK', 'DATA_ENCODER', 5, 1, '2026-03-18 05:55:15', '2026-03-18 05:55:15');
 
 --
 -- Indexes for dumped tables
@@ -177,7 +193,6 @@ ALTER TABLE `leaves`
 --
 ALTER TABLE `registration_requests`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uk_regreq_email` (`email`),
   ADD KEY `idx_regreq_status` (`status`),
   ADD KEY `fk_regreq_reviewed_by` (`reviewed_by`);
 
@@ -235,13 +250,13 @@ ALTER TABLE `registration_requests`
 -- AUTO_INCREMENT for table `schools`
 --
 ALTER TABLE `schools`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- Constraints for dumped tables

@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { randomUUID } = require("crypto");
 const pool = require("../../config/db");
 const {
   sendRegistrationReceived,
@@ -121,9 +122,11 @@ const login = async (req, res) => {
       return res.status(403).json({ message: "Account is deactivated" });
     }
 
+    const jti = randomUUID();
     const token = jwt.sign(
       {
         id: user.id,
+        jti,
         first_name: user.first_name,
         last_name: user.last_name,
         email: user.email,
@@ -147,6 +150,32 @@ const login = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Error logging in", error: error.message });
+  }
+};
+
+const logout = async (req, res) => {
+  try {
+    const decoded = req.user;
+    if (!decoded || !decoded.jti) {
+      return res.status(200).json({ message: "Logged out" });
+    }
+
+    const expiry = decoded.exp
+      ? new Date(decoded.exp * 1000)
+      : new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await pool
+      .promise()
+      .query(
+        `INSERT INTO revoked_tokens (jti, user_id, expires_at)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE expires_at = VALUES(expires_at)`,
+        [decoded.jti, decoded.id || null, expiry],
+      );
+
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error logging out", error: error.message });
   }
 };
 
@@ -434,6 +463,7 @@ module.exports = {
   login,
   verifyPassword,
   changePassword,
+  logout,
   forgotPassword,
   verifyOldPassword,
   resetPassword,
