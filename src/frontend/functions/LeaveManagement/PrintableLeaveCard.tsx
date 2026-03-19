@@ -32,7 +32,7 @@ const CARD_COLORS = {
   white: "#ffffff",
   black: "#000000",
   headerGray: "#f3f4f6",
-  stripeBlue: "#dbeafe",
+  stripeGray: "#f3f4f6",
   emptyGray: "#374151",
 };
 
@@ -195,7 +195,7 @@ const PrintableLeaveCard = React.forwardRef<
                     style={{
                       backgroundColor:
                         index % 2 === 1
-                          ? CARD_COLORS.stripeBlue
+                          ? CARD_COLORS.stripeGray
                           : CARD_COLORS.white,
                     }}
                   >

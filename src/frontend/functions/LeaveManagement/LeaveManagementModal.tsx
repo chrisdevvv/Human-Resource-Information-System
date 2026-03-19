@@ -37,7 +37,9 @@ export default function LeaveManagementModal({
   const [error, setError] = useState<string | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [pdfCooldownRemaining, setPdfCooldownRemaining] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
+  const pdfCooldownIntervalRef = useRef<number | null>(null);
 
   const employeeTypeLabel =
     employeeType === "non-teaching" ? "Non-Teaching" : "Teaching";
@@ -73,6 +75,14 @@ export default function LeaveManagementModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, employeeId, initialTab]);
 
+  useEffect(() => {
+    return () => {
+      if (pdfCooldownIntervalRef.current !== null) {
+        window.clearInterval(pdfCooldownIntervalRef.current);
+      }
+    };
+  }, []);
+
   if (!isOpen || !leave || !employeeId) {
     return null;
   }
@@ -103,6 +113,25 @@ export default function LeaveManagementModal({
   };
 
   const handleDownloadPdf = async () => {
+    if (pdfCooldownRemaining > 0) return;
+
+    setPdfCooldownRemaining(4);
+    if (pdfCooldownIntervalRef.current !== null) {
+      window.clearInterval(pdfCooldownIntervalRef.current);
+    }
+    pdfCooldownIntervalRef.current = window.setInterval(() => {
+      setPdfCooldownRemaining((prev) => {
+        if (prev <= 1) {
+          if (pdfCooldownIntervalRef.current !== null) {
+            window.clearInterval(pdfCooldownIntervalRef.current);
+            pdfCooldownIntervalRef.current = null;
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
     try {
       setActiveTab("card");
       await new Promise((resolve) => window.setTimeout(resolve, 120));
@@ -187,11 +216,13 @@ export default function LeaveManagementModal({
               <button
                 type="button"
                 onClick={handleDownloadPdf}
-                disabled={isSaving}
+                disabled={isSaving || pdfCooldownRemaining > 0}
                 className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Download size={14} />
-                Download PDF
+                {pdfCooldownRemaining > 0
+                  ? `Download PDF (${pdfCooldownRemaining}s)`
+                  : "Download PDF"}
               </button>
             </div>
           </div>

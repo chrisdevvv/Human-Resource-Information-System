@@ -25,16 +25,53 @@ type AddLeaveModalProps = {
   isSaving?: boolean;
 };
 
-const defaultForm = {
+type NumericLeaveField =
+  | "earned_vl"
+  | "abs_with_pay_vl"
+  | "abs_without_pay_vl"
+  | "earned_sl"
+  | "abs_with_pay_sl"
+  | "abs_without_pay_sl";
+
+type AddLeaveFormState = {
+  period_of_leave: string;
+  particulars: string;
+  isMonetization: boolean;
+  earned_vl: string;
+  abs_with_pay_vl: string;
+  abs_without_pay_vl: string;
+  earned_sl: string;
+  abs_with_pay_sl: string;
+  abs_without_pay_sl: string;
+};
+
+const NUMERIC_FIELDS = new Set<NumericLeaveField>([
+  "earned_vl",
+  "abs_with_pay_vl",
+  "abs_without_pay_vl",
+  "earned_sl",
+  "abs_with_pay_sl",
+  "abs_without_pay_sl",
+]);
+
+const MAX_WHOLE_DIGITS = 6;
+const MAX_DECIMAL_DIGITS = 3;
+const DECIMAL_3_PATTERN = new RegExp(
+  `^\\d{0,${MAX_WHOLE_DIGITS}}(\\.\\d{0,${MAX_DECIMAL_DIGITS}})?$`,
+);
+const NUMERIC_INPUT_PATTERN = `^\\d{0,${MAX_WHOLE_DIGITS}}(\\.\\d{0,${MAX_DECIMAL_DIGITS}})?$`;
+const NUMERIC_MAX_LENGTH = MAX_WHOLE_DIGITS + 1 + MAX_DECIMAL_DIGITS;
+
+const defaultForm: AddLeaveFormState = {
   period_of_leave: "",
   particulars: "",
   isMonetization: false,
-  earned_vl: 0,
-  abs_with_pay_vl: 0,
-  abs_without_pay_vl: 0,
-  earned_sl: 0,
-  abs_with_pay_sl: 0,
-  abs_without_pay_sl: 0,
+  earned_vl: "",
+  abs_with_pay_vl: "",
+  abs_without_pay_vl: "",
+  earned_sl: "",
+  abs_with_pay_sl: "",
+  abs_without_pay_sl: "",
 };
 
 export default function AddLeaveModal({
@@ -67,13 +104,17 @@ export default function AddLeaveModal({
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
 
     setForm((prev) => {
-      if (type === "number") {
+      if (NUMERIC_FIELDS.has(name as NumericLeaveField)) {
+        if (value !== "" && !DECIMAL_3_PATTERN.test(value)) {
+          return prev;
+        }
+
         return {
           ...prev,
-          [name]: value === "" ? 0 : Number(value),
+          [name]: value,
         };
       }
 
@@ -211,8 +252,10 @@ export default function AddLeaveModal({
               <div>
                 <label className={labelClass}>Earned VL</label>
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
+                  pattern={NUMERIC_INPUT_PATTERN}
+                  maxLength={NUMERIC_MAX_LENGTH}
                   min="0"
                   name="earned_vl"
                   value={form.earned_vl}
@@ -224,8 +267,10 @@ export default function AddLeaveModal({
               <div>
                 <label className={labelClass}>Abs With Pay VL</label>
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
+                  pattern={NUMERIC_INPUT_PATTERN}
+                  maxLength={NUMERIC_MAX_LENGTH}
                   min="0"
                   name="abs_with_pay_vl"
                   value={form.abs_with_pay_vl}
@@ -237,8 +282,10 @@ export default function AddLeaveModal({
               <div>
                 <label className={labelClass}>Abs Without Pay VL</label>
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
+                  pattern={NUMERIC_INPUT_PATTERN}
+                  maxLength={NUMERIC_MAX_LENGTH}
                   min="0"
                   name="abs_without_pay_vl"
                   value={form.abs_without_pay_vl}
@@ -257,8 +304,10 @@ export default function AddLeaveModal({
               <div>
                 <label className={labelClass}>Earned SL</label>
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
+                  pattern={NUMERIC_INPUT_PATTERN}
+                  maxLength={NUMERIC_MAX_LENGTH}
                   min="0"
                   name="earned_sl"
                   value={form.earned_sl}
@@ -270,8 +319,10 @@ export default function AddLeaveModal({
               <div>
                 <label className={labelClass}>Abs With Pay SL</label>
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
+                  pattern={NUMERIC_INPUT_PATTERN}
+                  maxLength={NUMERIC_MAX_LENGTH}
                   min="0"
                   name="abs_with_pay_sl"
                   value={form.abs_with_pay_sl}
@@ -283,8 +334,10 @@ export default function AddLeaveModal({
               <div>
                 <label className={labelClass}>Abs Without Pay SL</label>
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
+                  pattern={NUMERIC_INPUT_PATTERN}
+                  maxLength={NUMERIC_MAX_LENGTH}
                   min="0"
                   name="abs_without_pay_sl"
                   value={form.abs_without_pay_sl}
