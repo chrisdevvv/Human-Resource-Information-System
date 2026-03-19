@@ -81,6 +81,7 @@ export default function LoginModal({
       // Store token in localStorage
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      sessionStorage.setItem("authSessionActive", "1");
 
       onSuccess(data.user);
       onClose();

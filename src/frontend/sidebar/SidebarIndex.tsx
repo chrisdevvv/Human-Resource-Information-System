@@ -13,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { logoutNow } from "@/frontend/auth/session";
 
 export type SidebarRole = "data-encoder" | "admin" | "super-admin";
 
@@ -177,10 +178,8 @@ export default function SidebarIndex({
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("user");
-    sessionStorage.clear();
+  const handleLogout = async () => {
+    await logoutNow();
     router.replace("/login");
     router.refresh();
   };
