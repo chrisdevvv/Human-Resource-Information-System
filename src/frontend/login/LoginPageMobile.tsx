@@ -16,6 +16,8 @@ const API_BASE_URL =
 const FORCE_PASSWORD_CHANGE_KEY = "forcePasswordChange:addedUsers";
 const PENDING_PASSWORD_KEY = "forcePasswordChange:pendingLoginPassword";
 const PENDING_EMAIL_KEY = "forcePasswordChange:pendingEmail";
+const ACTIVE_TAB_STORAGE_KEY_ADMIN = "activeTab:admin";
+const ACTIVE_TAB_STORAGE_KEY_SUPER_ADMIN = "activeTab:super-admin";
 
 function getForcedPasswordChangeEmails(): string[] {
   try {
@@ -29,6 +31,16 @@ function getForcedPasswordChangeEmails(): string[] {
       : [];
   } catch {
     return [];
+  }
+}
+
+function resetLandingTabOnLogin(role?: string) {
+  if (role === "ADMIN") {
+    localStorage.setItem(ACTIVE_TAB_STORAGE_KEY_ADMIN, "dashboard");
+  }
+
+  if (role === "SUPER_ADMIN") {
+    localStorage.setItem(ACTIVE_TAB_STORAGE_KEY_SUPER_ADMIN, "dashboard");
   }
 }
 
@@ -113,6 +125,7 @@ export default function LoginPageMobile() {
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       sessionStorage.setItem("authSessionActive", "1");
+      resetLandingTabOnLogin(data?.user?.role);
 
       const normalizedEmail = String(data?.user?.email || email)
         .trim()
