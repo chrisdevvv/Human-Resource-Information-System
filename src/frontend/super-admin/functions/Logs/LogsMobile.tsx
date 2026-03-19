@@ -212,12 +212,45 @@ export default function LogsMobile() {
       ADMIN: "Admin",
       DATA_ENCODER: "Data Encoder",
     };
-    return map[raw?.trim()] ?? raw?.trim() ?? raw;
+
+    const value = String(raw || "").trim();
+    const normalized = value.toUpperCase().replace(/\s+/g, "_");
+    if (map[normalized]) return map[normalized];
+
+    return value
+      ? value
+          .replace(/_/g, " ")
+          .toLowerCase()
+          .replace(/\b\w/g, (c) => c.toUpperCase())
+      : value;
   };
 
   const formatAction = (action: string, details: string): string => {
     const d = details?.trim() || "";
-    switch (action) {
+    const normalizedAction = String(action || "").trim().toUpperCase();
+
+    if (!normalizedAction || normalizedAction === "N/A") {
+      const roleChange = d.match(/^(.+?):\s*(.+?)\s*(?:→|->|to)\s*(.+)$/i);
+      if (roleChange) {
+        const [, name, from, to] = roleChange;
+        return `Changed ${name}'s role from ${toRoleLabel(from)} to ${toRoleLabel(to)}.`;
+      }
+
+      const assignedRole = d.match(/^(.+?)\s+as\s+(.+)$/i);
+      if (assignedRole) {
+        const [, name, role] = assignedRole;
+        return `Assigned ${name} as ${toRoleLabel(role)}.`;
+      }
+
+      const pwdReset = d.match(/^Password reset for (.+)$/i);
+      if (pwdReset) {
+        return `Reset the password of ${pwdReset[1]}.`;
+      }
+
+      return d || "No action details available.";
+    }
+
+    switch (normalizedAction) {
       case "EMPLOYEE_CREATED":
         return d ? `Added ${d} as a new employee.` : "Added a new employee.";
       case "EMPLOYEE_UPDATED":
@@ -237,10 +270,9 @@ export default function LogsMobile() {
           ? `Deleted the leave request for ${d}.`
           : "Deleted a leave request.";
       case "USER_ROLE_UPDATED": {
-        const ci = d.indexOf(": ");
-        if (ci !== -1 && d.includes(" \u2192 ")) {
-          const name = d.slice(0, ci);
-          const [from, to] = d.slice(ci + 2).split(" \u2192 ");
+        const match = d.match(/^(.+?):\s*(.+?)\s*(?:→|->|to)\s*(.+)$/i);
+        if (match) {
+          const [, name, from, to] = match;
           return `Changed ${name}'s role from ${toRoleLabel(from)} to ${toRoleLabel(to)}.`;
         }
         return d ? `Updated a user's role — ${d}.` : "Updated a user's role.";
@@ -293,8 +325,8 @@ export default function LogsMobile() {
       }
       default:
         return d
-          ? `${action.replace(/_/g, " ")}: ${d}.`
-          : action.replace(/_/g, " ");
+          ? `${normalizedAction.replace(/_/g, " ")}: ${d}.`
+          : normalizedAction.replace(/_/g, " ");
     }
   };
 
