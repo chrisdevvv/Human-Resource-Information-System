@@ -64,6 +64,7 @@ CREATE TABLE `leaves` (
   `id` int(11) NOT NULL,
   `employee_id` int(11) NOT NULL,
   `period_of_leave` text NOT NULL,
+  `entry_kind` enum('MANUAL','MONTHLY_CREDIT') NOT NULL DEFAULT 'MANUAL',
   `particulars` text DEFAULT NULL,
   `earned_vl` decimal(10,2) DEFAULT 0.00,
   `abs_with_pay_vl` decimal(10,2) DEFAULT 0.00,

@@ -32,6 +32,7 @@ const CARD_COLORS = {
   white: "#ffffff",
   black: "#000000",
   headerGray: "#f3f4f6",
+  stripeBlue: "#dbeafe",
   emptyGray: "#374151",
 };
 
@@ -162,8 +163,16 @@ const PrintableLeaveCard = React.forwardRef<
           </thead>
           <tbody>
             {rows.length > 0 ? (
-              rows.map((row) => (
-                <tr key={row.id}>
+              rows.map((row, index) => (
+                <tr
+                  key={row.id}
+                  style={{
+                    backgroundColor:
+                      index % 2 === 1
+                        ? CARD_COLORS.stripeBlue
+                        : CARD_COLORS.white,
+                  }}
+                >
                   <td
                     className="border px-2 py-1.5 align-top"
                     style={{ borderColor: CARD_COLORS.black }}
