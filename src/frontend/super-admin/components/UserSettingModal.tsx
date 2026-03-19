@@ -277,7 +277,7 @@ export default function UserSettingModal({
                   isActive && currentRole === "SUPER_ADMIN"
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : isActive
-                      ? "bg-red-600 text-white hover:bg-red-700"
+                      ? "bg-red-500 text-white hover:bg-red-800"
                       : "bg-green-600 text-white hover:bg-green-700"
                 }`}
               >

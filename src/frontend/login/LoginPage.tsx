@@ -145,7 +145,7 @@ export default function LoginPage() {
             <input
               id="loginEmail"
               type="email"
-              placeholder="you@email.com"
+              placeholder="you@deped.gov.ph"
               value={email}
               onChange={(e) => {
                 const v = e.target.value;

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import PendingAccountsMobile from "./PendingAccountsMobile";
 import UserSettingModal from "../../components/UserSettingModal";
+import AddUserModal from "./AddUserModal";
 
 type User = {
   id: number;
@@ -56,6 +57,7 @@ export default function UserRolesMobile() {
   const [userError, setUserError] = useState<string | null>(null);
   const [viewTarget, setViewTarget] = useState<User | null>(null);
   const [settingsTarget, setSettingsTarget] = useState<User | null>(null);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
   const itemsPerPage = 10;
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -184,71 +186,82 @@ export default function UserRolesMobile() {
               </button>
             </div>
 
-            {/* Dropdowns 2×2 grid */}
-            <div className="grid grid-cols-2 gap-2">
-              <select
-                value={roleFilter}
-                onChange={(e) => {
-                  setRoleFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-              >
-                <option value="ALL">All Roles</option>
-                <option value="SUPER_ADMIN">Super Admin</option>
-                <option value="ADMIN">Admin</option>
-                <option value="DATA_ENCODER">Data Encoder</option>
-              </select>
+            {/* Add + Filters layout */}
+            <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setShowAddUserModal(true)}
+                  className="px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition cursor-pointer"
+                >
+                  Add User
+                </button>
 
-              <select
-                value={accountStatusFilter}
-                onChange={(e) => {
-                  setAccountStatusFilter(
-                    e.target.value as "ACTIVE" | "INACTIVE" | "ALL",
-                  );
-                  setCurrentPage(1);
-                }}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-              >
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-                <option value="ALL">All Status</option>
-              </select>
+                <select
+                  value={roleFilter}
+                  onChange={(e) => {
+                    setRoleFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                >
+                  <option value="ALL">All Roles</option>
+                  <option value="SUPER_ADMIN">Super Admin</option>
+                  <option value="ADMIN">Admin</option>
+                  <option value="DATA_ENCODER">Data Encoder</option>
+                </select>
+              </div>
 
-              <select
-                value={letterFilter}
-                onChange={(e) => {
-                  setLetterFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-              >
-                <option value="ALL">All Letters</option>
-                {alphabet.map((letter) => (
-                  <option key={letter} value={letter}>
-                    {letter}
-                  </option>
-                ))}
-              </select>
+              <div className="grid grid-cols-3 gap-2">
+                <select
+                  value={accountStatusFilter}
+                  onChange={(e) => {
+                    setAccountStatusFilter(
+                      e.target.value as "ACTIVE" | "INACTIVE" | "ALL",
+                    );
+                    setCurrentPage(1);
+                  }}
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                >
+                  <option value="ACTIVE">Active</option>
+                  <option value="INACTIVE">Inactive</option>
+                  <option value="ALL">All Status</option>
+                </select>
 
-              <button
-                onClick={() =>
-                  setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                }
-                className="flex items-center justify-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 transition cursor-pointer"
-              >
-                {sortOrder === "asc" ? (
-                  <>
-                    <ArrowUpAZ size={15} />
-                    A–Z
-                  </>
-                ) : (
-                  <>
-                    <ArrowDownAZ size={15} />
-                    Z–A
-                  </>
-                )}
-              </button>
+                <select
+                  value={letterFilter}
+                  onChange={(e) => {
+                    setLetterFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                >
+                  <option value="ALL">All Letters</option>
+                  {alphabet.map((letter) => (
+                    <option key={letter} value={letter}>
+                      {letter}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={() =>
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                  }
+                  className="flex items-center justify-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 transition cursor-pointer"
+                >
+                  {sortOrder === "asc" ? (
+                    <>
+                      <ArrowUpAZ size={15} />
+                      A–Z
+                    </>
+                  ) : (
+                    <>
+                      <ArrowDownAZ size={15} />
+                      Z–A
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -357,6 +370,16 @@ export default function UserRolesMobile() {
           onClose={() => setSettingsTarget(null)}
           onSuccess={() => {
             setSettingsTarget(null);
+            fetchUsers(false);
+          }}
+        />
+      )}
+
+      {showAddUserModal && (
+        <AddUserModal
+          onClose={() => setShowAddUserModal(false)}
+          onSuccess={() => {
+            setShowAddUserModal(false);
             fetchUsers(false);
           }}
         />

@@ -10,6 +10,7 @@ const ACTIVE_TAB_STORAGE_KEY = "activeTab:admin";
 const ALLOWED_TABS = new Set([
   "dashboard",
   "employee-management",
+  "user-roles",
   "profile-settings",
 ]);
 
@@ -39,12 +40,9 @@ export default function Page() {
           return;
         }
 
-        const savedTab = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
-        const nextTab =
-          savedTab && ALLOWED_TABS.has(savedTab) ? savedTab : "dashboard";
-
         setRole(u.role);
-        setActiveTab(nextTab);
+        setActiveTab("dashboard");
+        localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, "dashboard");
         setIsAuthorized(true);
       } catch (e) {
         setIsAuthorized(false);
@@ -97,13 +95,13 @@ export default function Page() {
         <div className="flex-1 min-w-0">
           <StickyHeader onMenuClick={handleToggleSidebar} />
           <main className="p-6 min-h-[calc(100vh-88px)] w-full transition-all duration-300">
-            <Admin activeTab={activeTab} />
+            <Admin activeTab={activeTab} onTabChange={handleTabChange} />
           </main>
         </div>
       </div>
 
       <main className="md:hidden p-4 min-h-[calc(100vh-72px)] w-full">
-        <Admin activeTab={activeTab} />
+        <Admin activeTab={activeTab} onTabChange={handleTabChange} />
       </main>
     </div>
   );

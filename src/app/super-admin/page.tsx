@@ -41,12 +41,9 @@ export default function Page() {
           return;
         }
 
-        const savedTab = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
-        const nextTab =
-          savedTab && ALLOWED_TABS.has(savedTab) ? savedTab : "dashboard";
-
         setRole(u.role);
-        setActiveTab(nextTab);
+        setActiveTab("dashboard");
+        localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, "dashboard");
         setIsAuthorized(true);
       } catch (e) {
         setIsAuthorized(false);
