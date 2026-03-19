@@ -7,6 +7,8 @@ import ConfirmationModal from "../../components/ConfirmationModal";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
+const FORCE_PASSWORD_CHANGE_KEY = "forcePasswordChange:addedUsers";
+
 type AddUserModalProps = {
   onClose: () => void;
   onSuccess: () => void;
@@ -62,6 +64,27 @@ function validatePassword(value: string) {
     };
   }
   return { valid: true, message: "" };
+}
+
+function addForcedPasswordChangeEmail(email: string) {
+  try {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) return;
+
+    const existingRaw = localStorage.getItem(FORCE_PASSWORD_CHANGE_KEY);
+    const existing = Array.isArray(JSON.parse(existingRaw || "[]"))
+      ? (JSON.parse(existingRaw || "[]") as string[])
+      : [];
+
+    if (!existing.includes(normalizedEmail)) {
+      localStorage.setItem(
+        FORCE_PASSWORD_CHANGE_KEY,
+        JSON.stringify([...existing, normalizedEmail]),
+      );
+    }
+  } catch {
+    // Ignore storage parsing issues; user creation should still proceed.
+  }
 }
 
 export default function AddUserModal({
@@ -295,6 +318,8 @@ export default function AddUserModal({
           approvePayload.message || "Failed to approve new user.",
         );
       }
+
+      addForcedPasswordChangeEmail(email);
 
       setShowConfirm(false);
       setShowSuccess(true);

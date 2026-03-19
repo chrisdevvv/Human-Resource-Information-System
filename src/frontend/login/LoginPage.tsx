@@ -15,6 +15,25 @@ import {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
+const FORCE_PASSWORD_CHANGE_KEY = "forcePasswordChange:addedUsers";
+const PENDING_PASSWORD_KEY = "forcePasswordChange:pendingLoginPassword";
+const PENDING_EMAIL_KEY = "forcePasswordChange:pendingEmail";
+
+function getForcedPasswordChangeEmails(): string[] {
+  try {
+    const parsed = JSON.parse(
+      localStorage.getItem(FORCE_PASSWORD_CHANGE_KEY) || "[]",
+    );
+    return Array.isArray(parsed)
+      ? parsed
+          .filter((item): item is string => typeof item === "string")
+          .map((item) => item.trim().toLowerCase())
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -95,7 +114,20 @@ export default function LoginPage() {
 
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-        sessionStorage.setItem("authSessionActive", "1");
+      sessionStorage.setItem("authSessionActive", "1");
+
+      const normalizedEmail = String(data?.user?.email || email)
+        .trim()
+        .toLowerCase();
+      const shouldForcePasswordChange =
+        getForcedPasswordChangeEmails().includes(normalizedEmail);
+
+      if (shouldForcePasswordChange) {
+        sessionStorage.setItem(PENDING_PASSWORD_KEY, password);
+        sessionStorage.setItem(PENDING_EMAIL_KEY, normalizedEmail);
+        router.push("/new-user");
+        return;
+      }
 
       setLoggedInUser(data.user);
       setShowLoginSuccess(true);
