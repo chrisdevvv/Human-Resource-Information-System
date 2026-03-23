@@ -2,7 +2,7 @@
 // Component: LoginModal
 // Filename: LoginModal.tsx
 // Purpose: Modal UI for signing in; performs basic validation and reports errors to parent
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Mail, Lock, Eye, EyeOff } from "../../assets/icons";
 
 const API_BASE_URL =
@@ -33,6 +33,19 @@ export default function LoginModal({
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [visible]);
 
   function validateEmail(value: string) {
     // Simple, pragmatic email validation
@@ -97,10 +110,10 @@ export default function LoginModal({
 
   return (
     <div
-      className={`${visible ? "flex" : "hidden"} fixed inset-0 items-center justify-center bg-black/40 z-50`}
+      className={`${visible ? "flex" : "hidden"} fixed inset-0 items-center justify-center bg-black/40 z-50 px-4`}
       aria-hidden={!visible}
     >
-      <div className="relative bg-white p-8 rounded-lg w-full max-w-2xl border-2 border-blue-600 shadow-lg">
+      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg border-2 border-blue-600 bg-white p-6 shadow-lg sm:p-8">
         <h3 className="text-center text-lg font-semibold text-blue-600">
           Sign In
         </h3>

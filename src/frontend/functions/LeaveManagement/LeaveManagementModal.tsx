@@ -228,7 +228,7 @@ export default function LeaveManagementModal({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 sm:p-6">
           {activeTab === "history" ? (
             <LeaveHistoryTable
               rows={historyRows}

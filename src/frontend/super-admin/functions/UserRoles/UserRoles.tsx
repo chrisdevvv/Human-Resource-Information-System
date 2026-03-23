@@ -26,6 +26,8 @@ const normalizeIsActive = (value: unknown): boolean => {
   return value === true || value === 1 || value === "1" || value === "true";
 };
 
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+
 export default function UserRoles() {
   const [activeTab, setActiveTab] = useState<"users" | "pending">("users");
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,14 +38,14 @@ export default function UserRoles() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [letterFilter, setLetterFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [pageJumpInput, setPageJumpInput] = useState("1");
   const [userData, setUserData] = useState<User[]>([]);
   const [userLoading, setUserLoading] = useState(true);
   const [userError, setUserError] = useState<string | null>(null);
   const [detailsTargetId, setDetailsTargetId] = useState<number | null>(null);
   const [settingsTarget, setSettingsTarget] = useState<User | null>(null);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
-  const itemsPerPage = 10;
-
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
   const fetchUsers = async (showSpinner = true) => {
@@ -123,12 +125,54 @@ export default function UserRoles() {
       return b.firstName.localeCompare(a.firstName);
     });
 
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredUsers.length / itemsPerPage),
+  );
   const startIdx = (currentPage - 1) * itemsPerPage;
   const paginatedUsers = filteredUsers.slice(startIdx, startIdx + itemsPerPage);
+  const PAGE_WINDOW_SIZE = 5;
+  const pageGroupStart =
+    Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
+  const pageGroupEnd = Math.min(
+    totalPages,
+    pageGroupStart + PAGE_WINDOW_SIZE - 1,
+  );
+  const pageNumberItems: Array<number | "ellipsis"> = Array.from(
+    { length: pageGroupEnd - pageGroupStart + 1 },
+    (_, i) => pageGroupStart + i,
+  );
+  if (pageGroupEnd < totalPages) {
+    if (totalPages - pageGroupEnd > 1) {
+      pageNumberItems.push("ellipsis");
+    }
+    pageNumberItems.push(totalPages);
+  }
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+      return;
+    }
+
+    setPageJumpInput(String(currentPage));
+  }, [currentPage, totalPages]);
 
   const handleSearch = () => {
     setCurrentPage(1);
+    setPageJumpInput("1");
+  };
+
+  const handleJumpToPage = () => {
+    const parsed = Number.parseInt(pageJumpInput, 10);
+    if (Number.isNaN(parsed)) {
+      setPageJumpInput(String(currentPage));
+      return;
+    }
+
+    const nextPage = Math.min(totalPages, Math.max(1, parsed));
+    setCurrentPage(nextPage);
+    setPageJumpInput(String(nextPage));
   };
 
   return (
@@ -358,41 +402,96 @@ export default function UserRoles() {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-6">
-              <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-                aria-label="Previous page"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (page) => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
-                      currentPage === page
-                        ? "bg-blue-600 text-white"
-                        : "text-gray-500 hover:bg-gray-100"
-                    }`}
+          {filteredUsers.length > 0 && (
+            <div className="mt-6 space-y-3">
+              <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+                <label className="flex items-center gap-2 text-sm text-gray-600">
+                  Show
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                      setPageJumpInput("1");
+                    }}
+                    className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
                   >
-                    {page}
+                    {PAGE_SIZE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                  entries
+                </label>
+
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>Jump to</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    value={pageJumpInput}
+                    onChange={(e) => setPageJumpInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleJumpToPage();
+                      }
+                    }}
+                    className="w-16 rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+                  />
+                  <button
+                    onClick={handleJumpToPage}
+                    className="rounded bg-gray-100 px-2 py-1 text-sm text-gray-700 hover:bg-gray-200"
+                  >
+                    Go
                   </button>
-                ),
-              )}
-              <button
-                onClick={() =>
-                  setCurrentPage(Math.min(totalPages, currentPage + 1))
-                }
-                disabled={currentPage === totalPages}
-                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-                aria-label="Next page"
-              >
-                <ChevronRight size={18} />
-              </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                {pageNumberItems.map((item, index) =>
+                  item === "ellipsis" ? (
+                    <span
+                      key={`ellipsis-${index}`}
+                      className="px-2 text-sm text-gray-400 select-none"
+                    >
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={item}
+                      onClick={() => setCurrentPage(item)}
+                      className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
+                        currentPage === item
+                          ? "bg-blue-600 text-white"
+                          : "text-gray-500 hover:bg-gray-100"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  ),
+                )}
+                <button
+                  onClick={() =>
+                    setCurrentPage(Math.min(totalPages, currentPage + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                  aria-label="Next page"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -17,6 +17,8 @@ type Log = {
   createdAt: string;
 };
 
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+
 export default function Logs() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
@@ -25,6 +27,8 @@ export default function Logs() {
     "date-desc" | "date-asc" | "name-asc" | "name-desc"
   >("date-desc");
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [pageJumpInput, setPageJumpInput] = useState("1");
 
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -82,7 +86,6 @@ export default function Logs() {
   const [selectedLog, setSelectedLog] = useState<Log | null>(null);
   const [logsLoading, setLogsLoading] = useState(true);
   const [logsError, setLogsError] = useState<string | null>(null);
-  const itemsPerPage = 10;
 
   const fetchLogs = async (showSpinner = true) => {
     try {
@@ -196,9 +199,47 @@ export default function Logs() {
       return sortMode === "date-desc" ? dateB - dateA : dateA - dateB;
     });
 
-  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / itemsPerPage));
   const startIdx = (currentPage - 1) * itemsPerPage;
   const paginatedLogs = filteredLogs.slice(startIdx, startIdx + itemsPerPage);
+  const PAGE_WINDOW_SIZE = 5;
+  const pageGroupStart =
+    Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
+  const pageGroupEnd = Math.min(
+    totalPages,
+    pageGroupStart + PAGE_WINDOW_SIZE - 1,
+  );
+  const pageNumberItems: Array<number | "ellipsis"> = Array.from(
+    { length: pageGroupEnd - pageGroupStart + 1 },
+    (_, i) => pageGroupStart + i,
+  );
+  if (pageGroupEnd < totalPages) {
+    if (totalPages - pageGroupEnd > 1) {
+      pageNumberItems.push("ellipsis");
+    }
+    pageNumberItems.push(totalPages);
+  }
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+      return;
+    }
+
+    setPageJumpInput(String(currentPage));
+  }, [currentPage, totalPages]);
+
+  const handleJumpToPage = () => {
+    const parsed = Number.parseInt(pageJumpInput, 10);
+    if (Number.isNaN(parsed)) {
+      setPageJumpInput(String(currentPage));
+      return;
+    }
+
+    const nextPage = Math.min(totalPages, Math.max(1, parsed));
+    setCurrentPage(nextPage);
+    setPageJumpInput(String(nextPage));
+  };
 
   const formatDateTime = (isoString: string) => {
     if (!isoString) return "N/A";
@@ -241,7 +282,9 @@ export default function Logs() {
 
   const formatAction = (action: string, details: string): string => {
     const d = details?.trim() || "";
-    const normalizedAction = String(action || "").trim().toUpperCase();
+    const normalizedAction = String(action || "")
+      .trim()
+      .toUpperCase();
 
     if (!normalizedAction || normalizedAction === "N/A") {
       const roleChange = d.match(/^(.+?):\s*(.+?)\s*(?:→|->|to)\s*(.+)$/i);
@@ -472,6 +515,7 @@ export default function Logs() {
                   setDateFrom("");
                   setDateTo("");
                   setCurrentPage(1);
+                  setPageJumpInput("1");
                 }}
                 className="text-xs text-gray-400 hover:text-gray-600 underline cursor-pointer whitespace-nowrap"
               >
@@ -561,39 +605,96 @@ export default function Logs() {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-6">
-          <button
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-            aria-label="Previous page"
-          >
-            <ChevronLeft size={18} />
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+      {filteredLogs.length > 0 && (
+        <div className="mt-6 space-y-3">
+          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              Show
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                  setPageJumpInput("1");
+                }}
+                className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+              >
+                {PAGE_SIZE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+              entries
+            </label>
+
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span>Jump to</span>
+              <input
+                type="number"
+                min={1}
+                max={totalPages}
+                value={pageJumpInput}
+                onChange={(e) => setPageJumpInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleJumpToPage();
+                  }
+                }}
+                className="w-16 rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+              />
+              <button
+                onClick={handleJumpToPage}
+                className="rounded bg-gray-100 px-2 py-1 text-sm text-gray-700 hover:bg-gray-200"
+              >
+                Go
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center gap-2">
             <button
-              key={page}
-              onClick={() => setCurrentPage(page)}
-              className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
-                currentPage === page
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-500 hover:bg-gray-100"
-              }`}
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+              aria-label="Previous page"
             >
-              {page}
+              <ChevronLeft size={18} />
             </button>
-          ))}
-          <button
-            onClick={() =>
-              setCurrentPage(Math.min(totalPages, currentPage + 1))
-            }
-            disabled={currentPage === totalPages}
-            className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-            aria-label="Next page"
-          >
-            <ChevronRight size={18} />
-          </button>
+            {pageNumberItems.map((item, index) =>
+              item === "ellipsis" ? (
+                <span
+                  key={`ellipsis-${index}`}
+                  className="px-2 text-sm text-gray-400 select-none"
+                >
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={item}
+                  onClick={() => setCurrentPage(item)}
+                  className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
+                    currentPage === item
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-500 hover:bg-gray-100"
+                  }`}
+                >
+                  {item}
+                </button>
+              ),
+            )}
+            <button
+              onClick={() =>
+                setCurrentPage(Math.min(totalPages, currentPage + 1))
+              }
+              disabled={currentPage === totalPages}
+              className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+              aria-label="Next page"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
         </div>
       )}
 
