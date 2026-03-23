@@ -39,10 +39,33 @@ const ensureSecurityTables = async () => {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
 
+  await pool.promise().query(`
+    CREATE TABLE IF NOT EXISTS login_attempts (
+      identifier VARCHAR(320) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      source_ip VARCHAR(64) NOT NULL,
+      failed_attempts INT NOT NULL DEFAULT 0,
+      last_failed_at DATETIME NULL,
+      locked_until DATETIME NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (identifier),
+      INDEX idx_login_attempts_email (email),
+      INDEX idx_login_attempts_locked_until (locked_until)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
   // Keep the table compact.
   await pool
     .promise()
     .query("DELETE FROM revoked_tokens WHERE expires_at <= NOW()");
+
+  await pool.promise().query(
+    `DELETE FROM login_attempts
+     WHERE locked_until IS NOT NULL
+       AND locked_until <= NOW()
+       AND failed_attempts = 0`,
+  );
 };
 
 const ensureLeaveLedgerSchema = async () => {

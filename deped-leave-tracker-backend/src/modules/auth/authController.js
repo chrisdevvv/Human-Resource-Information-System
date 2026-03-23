@@ -10,6 +10,89 @@ const {
 
 const FRONTEND_URL =
   process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3001";
+const LOGIN_MAX_ATTEMPTS = Math.max(
+  1,
+  Number(process.env.LOGIN_MAX_ATTEMPTS || 3),
+);
+const LOGIN_LOCK_SECONDS = Math.max(
+  1,
+  Number(process.env.LOGIN_LOCK_SECONDS || 60),
+);
+const LOGIN_ATTEMPT_WINDOW_SECONDS = Math.max(
+  LOGIN_LOCK_SECONDS,
+  Number(process.env.LOGIN_ATTEMPT_WINDOW_SECONDS || LOGIN_LOCK_SECONDS),
+);
+
+const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
+
+const getSourceIp = (req) => {
+  const forwarded = req.headers["x-forwarded-for"];
+  const rawIp =
+    typeof forwarded === "string"
+      ? forwarded.split(",")[0].trim()
+      : req.ip || req.connection?.remoteAddress || "unknown";
+  return String(rawIp).replace(/^::ffff:/, "");
+};
+
+const getLoginAttemptIdentifier = (email, ip) => `${normalizeEmail(email)}|${ip}`;
+
+const getActiveLoginAttempt = async (identifier) => {
+  const [rows] = await pool
+    .promise()
+    .query(
+      "SELECT failed_attempts, last_failed_at, locked_until FROM login_attempts WHERE identifier = ? LIMIT 1",
+      [identifier],
+    );
+  return rows[0] || null;
+};
+
+const getRemainingLockSeconds = (lockedUntil) => {
+  if (!lockedUntil) return 0;
+  const remainingMs = new Date(lockedUntil).getTime() - Date.now();
+  return remainingMs > 0 ? Math.ceil(remainingMs / 1000) : 0;
+};
+
+const clearLoginAttempts = async (identifier) => {
+  await pool
+    .promise()
+    .query("DELETE FROM login_attempts WHERE identifier = ?", [identifier]);
+};
+
+const recordFailedLoginAttempt = async ({ identifier, email, ip, current }) => {
+  const now = Date.now();
+  const windowMs = LOGIN_ATTEMPT_WINDOW_SECONDS * 1000;
+  const previousFailedAt = current?.last_failed_at
+    ? new Date(current.last_failed_at).getTime()
+    : 0;
+  const withinWindow =
+    Number.isFinite(previousFailedAt) && now - previousFailedAt <= windowMs;
+  const attempts = withinWindow ? Number(current?.failed_attempts || 0) + 1 : 1;
+  const lockTriggered = attempts >= LOGIN_MAX_ATTEMPTS;
+  const lockedUntil = lockTriggered
+    ? new Date(now + LOGIN_LOCK_SECONDS * 1000)
+    : null;
+
+  await pool.promise().query(
+    `INSERT INTO login_attempts (
+       identifier, email, source_ip, failed_attempts, last_failed_at, locked_until
+     ) VALUES (?, ?, ?, ?, NOW(), ?)
+     ON DUPLICATE KEY UPDATE
+       email = VALUES(email),
+       source_ip = VALUES(source_ip),
+       failed_attempts = VALUES(failed_attempts),
+       last_failed_at = VALUES(last_failed_at),
+       locked_until = VALUES(locked_until)`,
+    [
+      identifier,
+      normalizeEmail(email),
+      ip,
+      lockTriggered ? 0 : attempts,
+      lockedUntil,
+    ],
+  );
+
+  return lockTriggered ? LOGIN_LOCK_SECONDS : 0;
+};
 
 const invalidateUserSessions = async (userId) => {
   if (!userId) {
@@ -128,18 +211,45 @@ const login = async (req, res) => {
   }
 
   try {
+    const normalizedEmail = normalizeEmail(email);
+    const sourceIp = getSourceIp(req);
+    const loginAttemptId = getLoginAttemptIdentifier(normalizedEmail, sourceIp);
+    const attempt = await getActiveLoginAttempt(loginAttemptId);
+    const remainingLock = getRemainingLockSeconds(attempt?.locked_until);
+
+    if (remainingLock > 0) {
+      return res.status(429).json({
+        message: `Too many failed login attempts. Please try again in ${remainingLock} second${remainingLock !== 1 ? "s" : ""}.`,
+        retry_after_seconds: remainingLock,
+      });
+    }
+
     const [results] = await pool
       .promise()
-      .query("SELECT * FROM users WHERE email = ?", [email]);
+      .query("SELECT * FROM users WHERE email = ?", [normalizedEmail]);
     const user = results[0];
 
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+      const lockSeconds = await recordFailedLoginAttempt({
+        identifier: loginAttemptId,
+        email: normalizedEmail,
+        ip: sourceIp,
+        current: attempt,
+      });
+      if (lockSeconds > 0) {
+        return res.status(429).json({
+          message: `Too many failed login attempts. Please try again in ${lockSeconds} second${lockSeconds !== 1 ? "s" : ""}.`,
+          retry_after_seconds: lockSeconds,
+        });
+      }
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
     if (!user.is_active) {
       return res.status(403).json({ message: "Account is deactivated" });
     }
+
+    await clearLoginAttempts(loginAttemptId);
 
     const jti = randomUUID();
     const token = jwt.sign(
