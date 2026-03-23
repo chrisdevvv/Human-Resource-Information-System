@@ -16,14 +16,12 @@ const invalidateUserSessions = async (userId) => {
     return;
   }
 
-  await pool
-    .promise()
-    .query(
-      `INSERT INTO user_token_invalidations (user_id, invalid_after)
+  await pool.promise().query(
+    `INSERT INTO user_token_invalidations (user_id, invalid_after)
        VALUES (?, NOW())
        ON DUPLICATE KEY UPDATE invalid_after = NOW()`,
-      [userId],
-    );
+    [userId],
+  );
 };
 
 const register = async (req, res) => {
@@ -73,7 +71,8 @@ const register = async (req, res) => {
       );
     if (pendingRows.length > 0) {
       return res.status(409).json({
-        message: "A pending registration request already exists for this email.",
+        message:
+          "A pending registration request already exists for this email.",
       });
     }
 
@@ -184,18 +183,18 @@ const logout = async (req, res) => {
       ? new Date(decoded.exp * 1000)
       : new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    await pool
-      .promise()
-      .query(
-        `INSERT INTO revoked_tokens (jti, user_id, expires_at)
+    await pool.promise().query(
+      `INSERT INTO revoked_tokens (jti, user_id, expires_at)
          VALUES (?, ?, ?)
          ON DUPLICATE KEY UPDATE expires_at = VALUES(expires_at)`,
-        [decoded.jti, decoded.id || null, expiry],
-      );
+      [decoded.jti, decoded.id || null, expiry],
+    );
 
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Error logging out", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error logging out", error: error.message });
   }
 };
 
@@ -262,11 +261,9 @@ const changePassword = async (req, res) => {
     }
 
     if (await bcrypt.compare(new_password, user.password_hash)) {
-      return res
-        .status(400)
-        .json({
-          message: "New password must be different from current password",
-        });
+      return res.status(400).json({
+        message: "New password must be different from current password",
+      });
     }
 
     const hashedPassword = await bcrypt.hash(new_password, 10);
@@ -378,12 +375,10 @@ const verifyOldPassword = async (req, res) => {
     try {
       jwt.verify(token, process.env.JWT_SECRET + user.password_hash);
     } catch {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Reset link is invalid or has expired. Please request a new one.",
-        });
+      return res.status(400).json({
+        message:
+          "Reset link is invalid or has expired. Please request a new one.",
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
@@ -444,21 +439,17 @@ const resetPassword = async (req, res) => {
     try {
       jwt.verify(token, process.env.JWT_SECRET + user.password_hash);
     } catch {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Reset link is invalid or has expired. Please request a new one.",
-        });
+      return res.status(400).json({
+        message:
+          "Reset link is invalid or has expired. Please request a new one.",
+      });
     }
 
     // Prevent reusing the same password
     if (await bcrypt.compare(newPassword, user.password_hash)) {
-      return res
-        .status(400)
-        .json({
-          message: "New password must be different from your current password",
-        });
+      return res.status(400).json({
+        message: "New password must be different from your current password",
+      });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);

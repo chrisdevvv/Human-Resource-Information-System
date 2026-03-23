@@ -137,11 +137,9 @@ const updateUserStatus = async (req, res) => {
       action: "USER_STATUS_UPDATED",
       details: `${user.first_name} ${user.last_name}: ${is_active ? "Activated" : "Deactivated"}`,
     });
-    res
-      .status(200)
-      .json({
-        message: `User ${is_active ? "activated" : "deactivated"} successfully`,
-      });
+    res.status(200).json({
+      message: `User ${is_active ? "activated" : "deactivated"} successfully`,
+    });
   } catch (err) {
     res
       .status(500)
@@ -189,12 +187,9 @@ const adminResetPassword = async (req, res) => {
 
     // Prevent resetting own password through this endpoint (use change-password instead)
     if (String(req.user.id) === String(req.params.id)) {
-      return res
-        .status(403)
-        .json({
-          message:
-            "Use the change-password endpoint to update your own password",
-        });
+      return res.status(403).json({
+        message: "Use the change-password endpoint to update your own password",
+      });
     }
 
     const { new_password, admin_password } = req.body;
@@ -240,14 +235,12 @@ const adminResetPassword = async (req, res) => {
         user.id,
       ]);
 
-    await pool
-      .promise()
-      .query(
-        `INSERT INTO user_token_invalidations (user_id, invalid_after)
+    await pool.promise().query(
+      `INSERT INTO user_token_invalidations (user_id, invalid_after)
          VALUES (?, NOW())
          ON DUPLICATE KEY UPDATE invalid_after = NOW()`,
-        [user.id],
-      );
+      [user.id],
+    );
 
     // Fire-and-forget
     sendPasswordChanged(user.email, user.first_name);
@@ -271,11 +264,10 @@ const adminResetPassword = async (req, res) => {
 const createDataEncoderByAdmin = async (req, res) => {
   try {
     if (!["ADMIN", "SUPER_ADMIN"].includes(req.user.role)) {
-      return res
-        .status(403)
-        .json({
-          message: "Only ADMIN or SUPER_ADMIN users can add users via this endpoint",
-        });
+      return res.status(403).json({
+        message:
+          "Only ADMIN or SUPER_ADMIN users can add users via this endpoint",
+      });
     }
 
     const { first_name, last_name, email, password, school_name } = req.body;
