@@ -37,6 +37,8 @@ type AddLeaveFormState = {
   period_of_leave: string;
   particulars: string;
   isMonetization: boolean;
+  hasVacationLeave: boolean;
+  hasSickLeave: boolean;
   earned_vl: string;
   abs_with_pay_vl: string;
   abs_without_pay_vl: string;
@@ -66,6 +68,8 @@ const defaultForm: AddLeaveFormState = {
   period_of_leave: "",
   particulars: "",
   isMonetization: false,
+  hasVacationLeave: false,
+  hasSickLeave: false,
   earned_vl: "",
   abs_with_pay_vl: "",
   abs_without_pay_vl: "",
@@ -132,6 +136,34 @@ export default function AddLeaveModal({
       ...prev,
       isMonetization: checked,
       particulars: checked ? "Monetization" : "",
+      hasVacationLeave: checked ? false : prev.hasVacationLeave,
+      hasSickLeave: checked ? false : prev.hasSickLeave,
+    }));
+  }
+
+  function handleVacationLeaveToggle(e: React.ChangeEvent<HTMLInputElement>) {
+    const checked = e.target.checked;
+
+    setForm((prev) => ({
+      ...prev,
+      hasVacationLeave: checked,
+      hasSickLeave: checked ? false : prev.hasSickLeave,
+      earned_sl: checked ? "" : prev.earned_sl,
+      abs_with_pay_sl: checked ? "" : prev.abs_with_pay_sl,
+      abs_without_pay_sl: checked ? "" : prev.abs_without_pay_sl,
+    }));
+  }
+
+  function handleSickLeaveToggle(e: React.ChangeEvent<HTMLInputElement>) {
+    const checked = e.target.checked;
+
+    setForm((prev) => ({
+      ...prev,
+      hasSickLeave: checked,
+      hasVacationLeave: checked ? false : prev.hasVacationLeave,
+      earned_vl: checked ? "" : prev.earned_vl,
+      abs_with_pay_vl: checked ? "" : prev.abs_with_pay_vl,
+      abs_without_pay_vl: checked ? "" : prev.abs_without_pay_vl,
     }));
   }
 
@@ -188,6 +220,22 @@ export default function AddLeaveModal({
   const inputClass =
     "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
   const labelClass = "mb-1 block text-sm font-medium text-gray-700";
+  const disableVacationOption = form.isMonetization || form.hasSickLeave;
+  const disableSickOption = form.isMonetization || form.hasVacationLeave;
+  const hasEarnedVl = form.earned_vl !== "";
+  const hasAbsWithPayVl = form.abs_with_pay_vl !== "";
+  const hasAbsWithoutPayVl = form.abs_without_pay_vl !== "";
+  const hasEarnedSl = form.earned_sl !== "";
+  const hasAbsWithPaySl = form.abs_with_pay_sl !== "";
+  const hasAbsWithoutPaySl = form.abs_without_pay_sl !== "";
+
+  const disableEarnedVl = hasAbsWithPayVl || hasAbsWithoutPayVl;
+  const disableAbsWithPayVl = hasEarnedVl || hasAbsWithoutPayVl;
+  const disableAbsWithoutPayVl = hasEarnedVl || hasAbsWithPayVl;
+
+  const disableEarnedSl = hasAbsWithPaySl || hasAbsWithoutPaySl;
+  const disableAbsWithPaySl = hasEarnedSl || hasAbsWithoutPaySl;
+  const disableAbsWithoutPaySl = hasEarnedSl || hasAbsWithPaySl;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -244,109 +292,188 @@ export default function AddLeaveModal({
             )}
           </div>
 
-          <div>
-            <h3 className="mb-3 text-sm font-semibold text-gray-800">
-              Vacation Leave (VL)
-            </h3>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div>
-                <label className={labelClass}>Earned VL</label>
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-gray-800">Leave Type</h3>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <label
+                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                  disableVacationOption
+                    ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                    : "cursor-pointer border-gray-300 bg-white text-gray-700"
+                }`}
+              >
                 <input
-                  type="text"
-                  inputMode="decimal"
-                  pattern={NUMERIC_INPUT_PATTERN}
-                  maxLength={NUMERIC_MAX_LENGTH}
-                  min="0"
-                  name="earned_vl"
-                  value={form.earned_vl}
-                  onChange={handleChange}
-                  className={inputClass}
+                  type="checkbox"
+                  checked={form.hasVacationLeave}
+                  onChange={handleVacationLeaveToggle}
+                  disabled={disableVacationOption}
+                  className="h-4 w-4"
                 />
-              </div>
+                Vacation Leave
+              </label>
 
-              <div>
-                <label className={labelClass}>Abs With Pay VL</label>
+              <label
+                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                  disableSickOption
+                    ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                    : "cursor-pointer border-gray-300 bg-white text-gray-700"
+                }`}
+              >
                 <input
-                  type="text"
-                  inputMode="decimal"
-                  pattern={NUMERIC_INPUT_PATTERN}
-                  maxLength={NUMERIC_MAX_LENGTH}
-                  min="0"
-                  name="abs_with_pay_vl"
-                  value={form.abs_with_pay_vl}
-                  onChange={handleChange}
-                  className={inputClass}
+                  type="checkbox"
+                  checked={form.hasSickLeave}
+                  onChange={handleSickLeaveToggle}
+                  disabled={disableSickOption}
+                  className="h-4 w-4"
                 />
-              </div>
-
-              <div>
-                <label className={labelClass}>Abs Without Pay VL</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  pattern={NUMERIC_INPUT_PATTERN}
-                  maxLength={NUMERIC_MAX_LENGTH}
-                  min="0"
-                  name="abs_without_pay_vl"
-                  value={form.abs_without_pay_vl}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
-              </div>
+                Sick Leave
+              </label>
             </div>
+
+            {form.isMonetization && (
+              <p className="text-xs text-blue-600">
+                Leave type options are disabled while Monetization is checked.
+              </p>
+            )}
           </div>
 
-          <div>
-            <h3 className="mb-3 text-sm font-semibold text-gray-800">
-              Sick Leave (SL)
-            </h3>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div>
-                <label className={labelClass}>Earned SL</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  pattern={NUMERIC_INPUT_PATTERN}
-                  maxLength={NUMERIC_MAX_LENGTH}
-                  min="0"
-                  name="earned_sl"
-                  value={form.earned_sl}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
-              </div>
+          {form.hasVacationLeave && (
+            <div>
+              <h3 className="mb-3 text-sm font-semibold text-gray-800">
+                Vacation Leave (VL)
+              </h3>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div>
+                  <label className={labelClass}>Earned VL</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    pattern={NUMERIC_INPUT_PATTERN}
+                    maxLength={NUMERIC_MAX_LENGTH}
+                    min="0"
+                    name="earned_vl"
+                    value={form.earned_vl}
+                    onChange={handleChange}
+                    disabled={disableEarnedVl}
+                    className={`${inputClass} ${
+                      disableEarnedVl
+                        ? "cursor-not-allowed bg-gray-100 text-gray-500"
+                        : ""
+                    }`}
+                  />
+                </div>
 
-              <div>
-                <label className={labelClass}>Abs With Pay SL</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  pattern={NUMERIC_INPUT_PATTERN}
-                  maxLength={NUMERIC_MAX_LENGTH}
-                  min="0"
-                  name="abs_with_pay_sl"
-                  value={form.abs_with_pay_sl}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
-              </div>
+                <div>
+                  <label className={labelClass}>Abs With Pay VL</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    pattern={NUMERIC_INPUT_PATTERN}
+                    maxLength={NUMERIC_MAX_LENGTH}
+                    min="0"
+                    name="abs_with_pay_vl"
+                    value={form.abs_with_pay_vl}
+                    onChange={handleChange}
+                    disabled={disableAbsWithPayVl}
+                    className={`${inputClass} ${
+                      disableAbsWithPayVl
+                        ? "cursor-not-allowed bg-gray-100 text-gray-500"
+                        : ""
+                    }`}
+                  />
+                </div>
 
-              <div>
-                <label className={labelClass}>Abs Without Pay SL</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  pattern={NUMERIC_INPUT_PATTERN}
-                  maxLength={NUMERIC_MAX_LENGTH}
-                  min="0"
-                  name="abs_without_pay_sl"
-                  value={form.abs_without_pay_sl}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
+                <div>
+                  <label className={labelClass}>Abs Without Pay VL</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    pattern={NUMERIC_INPUT_PATTERN}
+                    maxLength={NUMERIC_MAX_LENGTH}
+                    min="0"
+                    name="abs_without_pay_vl"
+                    value={form.abs_without_pay_vl}
+                    onChange={handleChange}
+                    disabled={disableAbsWithoutPayVl}
+                    className={`${inputClass} ${
+                      disableAbsWithoutPayVl
+                        ? "cursor-not-allowed bg-gray-100 text-gray-500"
+                        : ""
+                    }`}
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {form.hasSickLeave && (
+            <div>
+              <h3 className="mb-3 text-sm font-semibold text-gray-800">
+                Sick Leave (SL)
+              </h3>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div>
+                  <label className={labelClass}>Earned SL</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    pattern={NUMERIC_INPUT_PATTERN}
+                    maxLength={NUMERIC_MAX_LENGTH}
+                    min="0"
+                    name="earned_sl"
+                    value={form.earned_sl}
+                    onChange={handleChange}
+                    disabled={disableEarnedSl}
+                    className={`${inputClass} ${
+                      disableEarnedSl
+                        ? "cursor-not-allowed bg-gray-100 text-gray-500"
+                        : ""
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Abs With Pay SL</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    pattern={NUMERIC_INPUT_PATTERN}
+                    maxLength={NUMERIC_MAX_LENGTH}
+                    min="0"
+                    name="abs_with_pay_sl"
+                    value={form.abs_with_pay_sl}
+                    onChange={handleChange}
+                    disabled={disableAbsWithPaySl}
+                    className={`${inputClass} ${
+                      disableAbsWithPaySl
+                        ? "cursor-not-allowed bg-gray-100 text-gray-500"
+                        : ""
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Abs Without Pay SL</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    pattern={NUMERIC_INPUT_PATTERN}
+                    maxLength={NUMERIC_MAX_LENGTH}
+                    min="0"
+                    name="abs_without_pay_sl"
+                    value={form.abs_without_pay_sl}
+                    onChange={handleChange}
+                    disabled={disableAbsWithoutPaySl}
+                    className={`${inputClass} ${
+                      disableAbsWithoutPaySl
+                        ? "cursor-not-allowed bg-gray-100 text-gray-500"
+                        : ""
+                    }`}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-2">
             <button
