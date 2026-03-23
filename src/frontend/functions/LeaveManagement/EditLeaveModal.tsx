@@ -35,6 +35,15 @@ export default function EditLeaveModal({
 }: EditLeaveModalProps) {
   const [form, setForm] = useState<EditLeaveFormValues | null>(null);
 
+  const formatNumber = (value: number) => {
+    const safeValue = Number.isFinite(value) ? value : 0;
+    return safeValue.toLocaleString("en-US", {
+      useGrouping: false,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 3,
+    });
+  };
+
   useEffect(() => {
     if (!leave) {
       setForm(null);
@@ -291,11 +300,11 @@ export default function EditLeaveModal({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label className={labelClass}>Bal VL (Backend value)</label>
-              <div className={readOnlyClass}>{leave.balVl.toFixed(2)}</div>
+              <div className={readOnlyClass}>{formatNumber(leave.balVl)}</div>
             </div>
             <div>
               <label className={labelClass}>Bal SL (Backend value)</label>
-              <div className={readOnlyClass}>{leave.balSl.toFixed(2)}</div>
+              <div className={readOnlyClass}>{formatNumber(leave.balSl)}</div>
             </div>
             <div className="md:col-span-2">
               <label className={labelClass}>

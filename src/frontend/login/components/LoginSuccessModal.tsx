@@ -45,6 +45,19 @@ export default function LoginSuccessModal({ visible, user, onClose }: Props) {
   }, [visible]);
 
   useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [visible]);
+
+  useEffect(() => {
     if (!visible || countdown !== 0 || hasRedirected.current) return;
     hasRedirected.current = true;
     onClose();
@@ -61,10 +74,10 @@ export default function LoginSuccessModal({ visible, user, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center bg-black/40 z-50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
       aria-hidden={!visible}
     >
-      <div className="relative bg-white p-7 rounded-lg w-full max-w-md border-2 border-green-500 shadow-lg">
+      <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border-2 border-green-500 bg-white p-6 shadow-lg sm:p-7">
         <button
           type="button"
           onClick={onClose}

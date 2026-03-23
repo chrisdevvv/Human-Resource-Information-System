@@ -9,7 +9,14 @@ type LeaveHistoryTableProps = {
   error?: string | null;
 };
 
-const formatNumber = (value: number) => value.toFixed(2);
+const formatNumber = (value: number) => {
+  const safeValue = Number.isFinite(value) ? value : 0;
+  return safeValue.toLocaleString("en-US", {
+    useGrouping: false,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 3,
+  });
+};
 
 const formatDateOnly = (dateStr: string): string => {
   if (!dateStr) return "-";

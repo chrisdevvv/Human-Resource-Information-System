@@ -30,6 +30,8 @@ type PendingAccountsMobileProps = {
   onRefreshUsers?: () => void;
 };
 
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+
 export default function PendingAccountsMobile({
   onRefreshUsers,
 }: PendingAccountsMobileProps) {
@@ -41,6 +43,8 @@ export default function PendingAccountsMobile({
   );
   const [letterFilter, setLetterFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [pageJumpInput, setPageJumpInput] = useState("1");
   const [data, setData] = useState<RegistrationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +58,6 @@ export default function PendingAccountsMobile({
     name: string;
   } | null>(null);
 
-  const itemsPerPage = 10;
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
   const fetchData = async (status: string, showSpinner = true) => {
@@ -144,9 +147,47 @@ export default function PendingAccountsMobile({
       }
     });
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
   const startIdx = (currentPage - 1) * itemsPerPage;
   const paginatedData = filteredData.slice(startIdx, startIdx + itemsPerPage);
+  const PAGE_WINDOW_SIZE = 5;
+  const pageGroupStart =
+    Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
+  const pageGroupEnd = Math.min(
+    totalPages,
+    pageGroupStart + PAGE_WINDOW_SIZE - 1,
+  );
+  const pageNumberItems: Array<number | "ellipsis"> = Array.from(
+    { length: pageGroupEnd - pageGroupStart + 1 },
+    (_, i) => pageGroupStart + i,
+  );
+  if (pageGroupEnd < totalPages) {
+    if (totalPages - pageGroupEnd > 1) {
+      pageNumberItems.push("ellipsis");
+    }
+    pageNumberItems.push(totalPages);
+  }
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+      return;
+    }
+
+    setPageJumpInput(String(currentPage));
+  }, [currentPage, totalPages]);
+
+  const handleJumpToPage = () => {
+    const parsed = Number.parseInt(pageJumpInput, 10);
+    if (Number.isNaN(parsed)) {
+      setPageJumpInput(String(currentPage));
+      return;
+    }
+
+    const nextPage = Math.min(totalPages, Math.max(1, parsed));
+    setCurrentPage(nextPage);
+    setPageJumpInput(String(nextPage));
+  };
 
   return (
     <div className="w-full px-3 py-4">
@@ -286,34 +327,111 @@ export default function PendingAccountsMobile({
         )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between gap-2 mt-3">
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
-            >
-              <ChevronLeft size={15} />
-              Prev
-            </button>
+        {filteredData.length > 0 && (
+          <div className="mt-3 space-y-3">
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-2 text-xs text-gray-600">
+                Show
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                    setPageJumpInput("1");
+                  }}
+                  className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700"
+                >
+                  {PAGE_SIZE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                entries
+              </label>
 
-            <span className="text-sm text-gray-500">
-              Page{" "}
-              <span className="font-semibold text-gray-800">{currentPage}</span>{" "}
-              of{" "}
-              <span className="font-semibold text-gray-800">{totalPages}</span>
-            </span>
+              <div className="flex items-center gap-2 text-xs text-gray-600">
+                <span>Jump to</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={totalPages}
+                  value={pageJumpInput}
+                  onChange={(e) => setPageJumpInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleJumpToPage();
+                    }
+                  }}
+                  className="w-14 rounded border border-gray-300 px-2 py-1 text-xs text-gray-700"
+                />
+                <button
+                  onClick={handleJumpToPage}
+                  className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200"
+                >
+                  Go
+                </button>
+              </div>
+            </div>
 
-            <button
-              onClick={() =>
-                setCurrentPage(Math.min(totalPages, currentPage + 1))
-              }
-              disabled={currentPage === totalPages}
-              className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
-            >
-              Next
-              <ChevronRight size={15} />
-            </button>
+            <div className="flex items-center justify-between gap-2">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+              >
+                <ChevronLeft size={15} />
+                Prev
+              </button>
+
+              <span className="text-sm text-gray-500">
+                Page{" "}
+                <span className="font-semibold text-gray-800">
+                  {currentPage}
+                </span>{" "}
+                of{" "}
+                <span className="font-semibold text-gray-800">
+                  {totalPages}
+                </span>
+              </span>
+
+              <button
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+              >
+                Next
+                <ChevronRight size={15} />
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-1">
+              {pageNumberItems.map((item, index) =>
+                item === "ellipsis" ? (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="px-2 text-xs text-gray-400 select-none"
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    onClick={() => setCurrentPage(item)}
+                    className={`h-8 min-w-8 rounded px-2 text-xs font-medium transition cursor-pointer ${
+                      currentPage === item
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ),
+              )}
+            </div>
           </div>
         )}
       </div>

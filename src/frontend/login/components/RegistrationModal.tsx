@@ -2,7 +2,7 @@
 // Component: RegistrationModal
 // Filename: RegistrationModal.tsx
 // Purpose: Registration request form — submits to registration_requests table for admin approval
-import React, { useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Mail, Key, User, X, Building2, Eye, EyeOff } from "../../assets/icons";
 import { RegistrationSuccessModal } from "../../registration";
 
@@ -37,6 +37,19 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   } | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const submitInProgressRef = useRef(false);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [visible]);
 
   // Individual field errors
   const [firstNameError, setFirstNameError] = useState("");
@@ -322,10 +335,10 @@ export default function RegistrationModal({ visible, onClose }: Props) {
 
   return (
     <div
-      className={`${visible ? "flex" : "hidden"} fixed inset-0 items-center justify-center bg-black/40 z-50`}
+      className={`${visible ? "flex" : "hidden"} fixed inset-0 items-center justify-center bg-black/40 z-50 px-4`}
       aria-hidden={!visible}
     >
-      <div className="relative bg-white p-10 rounded-lg w-full max-w-3xl shadow">
+      <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white p-5 shadow sm:p-8 md:p-10">
         <div className="flex items-center justify-center mb-6">
           <h2 className="text-3xl font-bold text-sky-800">Registration Form</h2>
           <X size={18} />
@@ -350,7 +363,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                 }}
                 className="space-y-4"
               >
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div>
                     <label className="flex items-center gap-2 text-sm text-gray-700">
                       <User className="text-blue-600" size={18} />

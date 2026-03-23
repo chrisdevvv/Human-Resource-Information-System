@@ -2,7 +2,7 @@
 // Component: ForgotModal
 // Filename: ForgotModal.tsx
 // Purpose: Send password reset email
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Mail } from "../../assets/icons";
 
 const API_BASE_URL =
@@ -15,6 +15,19 @@ export default function ForgotModal({ visible, onClose }: Props) {
   const [emailError, setEmailError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [visible]);
 
   function validateEmail(email: string) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -73,10 +86,10 @@ export default function ForgotModal({ visible, onClose }: Props) {
 
   return (
     <div
-      className={`${visible ? "flex" : "hidden"} fixed inset-0 items-center justify-center bg-black/40 z-50`}
+      className={`${visible ? "flex" : "hidden"} fixed inset-0 items-center justify-center bg-black/40 z-50 px-4`}
       aria-hidden={!visible}
     >
-      <div className="relative bg-white p-8 rounded-lg w-full max-w-2xl shadow-lg">
+      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6 shadow-lg sm:p-8">
         <button
           className="absolute right-2 top-2 text-xl hover:bg-red-500 hover:text-white rounded p-1 transition"
           id="forgotClose"

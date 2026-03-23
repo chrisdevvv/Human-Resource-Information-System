@@ -4,7 +4,8 @@
     "**/deped_leave_tracker (2).sql": "mysql",
     "**/deped_leave_tracker*.sql": "mysql",
     "**/migrations/*.sql": "mysql",
-    "**/*_table.sql": "mysql"
+    "**/*_table.sql": "mysql",
+    "**/node_modules/html2canvas/tsconfig.json": "plaintext"
   },
   "mssql.enableDiagnostics": false,
   "[sql]": {
