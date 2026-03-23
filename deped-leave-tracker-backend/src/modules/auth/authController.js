@@ -314,7 +314,7 @@ const forgotPassword = async (req, res) => {
       const resetToken = jwt.sign(
         { id: user.id, purpose: "password-reset" },
         process.env.JWT_SECRET + user.password_hash,
-        { expiresIn: "30m" },
+        { expiresIn: "2h" },
       );
 
       const resetLink = `${FRONTEND_URL}/reset-password?token=${resetToken}`;

@@ -246,8 +246,8 @@ async function sendPasswordResetLink(to, firstName, resetLink) {
             <strong>DepEd Employee Leave Management System</strong> account.
         </p>
         <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">
-            Click the button below to reset your password. This link is valid for
-            <strong>30 minutes</strong>.
+          Click the button below to reset your password. This link is valid for
+          <strong>2 hours</strong>.
         </p>
         <div style="text-align:center;margin-bottom:24px;">
             <a href="${resetLink}"
