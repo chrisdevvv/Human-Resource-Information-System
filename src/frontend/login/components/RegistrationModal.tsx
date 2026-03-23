@@ -47,6 +47,10 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     return re.test(name.trim());
   }
 
+  function startsWithCapital(name: string) {
+    return /^[A-Z]/.test(name.trim());
+  }
+
   function validatePassword(password: string) {
     if (password.length < 8)
       return {
@@ -86,6 +90,8 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       setFirstNameError("First name is required");
     } else if (!validateName(firstName)) {
       setFirstNameError("First name must be at least 2 letters");
+    } else if (!startsWithCapital(firstName)) {
+      setFirstNameError("First name must start with a capital letter");
     } else {
       setFirstNameError("");
     }
@@ -96,6 +102,8 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       setLastNameError("Last name is required");
     } else if (!validateName(lastName)) {
       setLastNameError("Last name must be at least 2 letters");
+    } else if (!startsWithCapital(lastName)) {
+      setLastNameError("Last name must start with a capital letter");
     } else {
       setLastNameError("");
     }
@@ -142,6 +150,9 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     } else if (!validateName(firstName)) {
       setFirstNameError("First name must be at least 2 letters");
       hasError = true;
+    } else if (!startsWithCapital(firstName)) {
+      setFirstNameError("First name must start with a capital letter");
+      hasError = true;
     }
 
     if (!lastName.trim()) {
@@ -149,6 +160,9 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       hasError = true;
     } else if (!validateName(lastName)) {
       setLastNameError("Last name must be at least 2 letters");
+      hasError = true;
+    } else if (!startsWithCapital(lastName)) {
+      setLastNameError("Last name must start with a capital letter");
       hasError = true;
     }
 
@@ -255,7 +269,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       <div className="relative bg-white p-10 rounded-lg w-full max-w-3xl shadow">
         <div className="flex items-center justify-center mb-6">
           <h2 className="text-3xl font-bold text-sky-800">Registration Form</h2>
-            <X size={18} />
+          <X size={18} />
         </div>
 
         {/* Success screen */}
@@ -404,7 +418,9 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 cursor-pointer"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -433,9 +449,17 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                     type="button"
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 cursor-pointer"
-                    aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                    aria-label={
+                      showConfirmPassword
+                        ? "Hide confirm password"
+                        : "Show confirm password"
+                    }
                   >
-                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showConfirmPassword ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
                   </button>
                 </div>
                 {confirmPasswordError && (

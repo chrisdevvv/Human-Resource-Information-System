@@ -240,6 +240,15 @@ const adminResetPassword = async (req, res) => {
         user.id,
       ]);
 
+    await pool
+      .promise()
+      .query(
+        `INSERT INTO user_token_invalidations (user_id, invalid_after)
+         VALUES (?, NOW())
+         ON DUPLICATE KEY UPDATE invalid_after = NOW()`,
+        [user.id],
+      );
+
     // Fire-and-forget
     sendPasswordChanged(user.email, user.first_name);
     Backlog.create({

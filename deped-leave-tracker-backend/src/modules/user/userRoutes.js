@@ -10,15 +10,52 @@ const {
 } = require("./userController");
 const authMiddleware = require("../../middleware/authMiddleware");
 
+const { roleAuthMiddleware } = require("../../middleware/roleAuthMiddleware");
+
 const router = express.Router();
 
-// All routes require authentication (super-admin only)
-router.post("/admin-create", authMiddleware, createDataEncoderByAdmin);
-router.get("/", authMiddleware, getAllUsers);
-router.get("/:id", authMiddleware, getUserById);
-router.patch("/:id/role", authMiddleware, updateUserRole);
-router.patch("/:id/status", authMiddleware, updateUserStatus);
-router.patch("/:id/password", authMiddleware, adminResetPassword);
-router.delete("/:id", authMiddleware, deleteUser);
+// User & Roles management - Admin and Super Admin only
+router.post(
+  "/admin-create",
+  authMiddleware,
+  roleAuthMiddleware(["admin", "super-admin"]),
+  createDataEncoderByAdmin,
+);
+router.get(
+  "/",
+  authMiddleware,
+  roleAuthMiddleware(["admin", "super-admin"]),
+  getAllUsers,
+);
+router.get(
+  "/:id",
+  authMiddleware,
+  roleAuthMiddleware(["admin", "super-admin"]),
+  getUserById,
+);
+router.patch(
+  "/:id/role",
+  authMiddleware,
+  roleAuthMiddleware(["admin", "super-admin"]),
+  updateUserRole,
+);
+router.patch(
+  "/:id/status",
+  authMiddleware,
+  roleAuthMiddleware(["admin", "super-admin"]),
+  updateUserStatus,
+);
+router.patch(
+  "/:id/password",
+  authMiddleware,
+  roleAuthMiddleware(["admin", "super-admin"]),
+  adminResetPassword,
+);
+router.delete(
+  "/:id",
+  authMiddleware,
+  roleAuthMiddleware(["admin", "super-admin"]),
+  deleteUser,
+);
 
 module.exports = router;

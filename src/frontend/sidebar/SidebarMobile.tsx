@@ -12,7 +12,6 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { logoutNow } from "@/frontend/auth/session";
 
 export type SidebarRole = "data-encoder" | "admin" | "super-admin";
@@ -147,7 +146,6 @@ export default function SidebarMobile({
   title = "ELMS",
   className = "",
 }: SidebarMobileProps) {
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [firstName, setFirstName] = useState("");
   const tabs = useMemo(() => getSidebarTabsByRole(role), [role]);
@@ -168,8 +166,7 @@ export default function SidebarMobile({
 
   const handleLogout = async () => {
     await logoutNow();
-    router.replace("/login");
-    router.refresh();
+    window.location.replace("/login");
   };
 
   const handleOpenSettings = () => {

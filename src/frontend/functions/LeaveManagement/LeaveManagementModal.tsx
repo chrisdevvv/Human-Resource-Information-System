@@ -102,11 +102,11 @@ export default function LeaveManagementModal({
         abs_without_pay_sl: payload.abs_without_pay_sl,
       });
       await fetchHistory(false);
-      setIsAddOpen(false);
     } catch (err) {
       alert(
         err instanceof Error ? err.message : "Failed to create leave entry.",
       );
+      throw err;
     } finally {
       setIsSaving(false);
     }

@@ -43,6 +43,10 @@ export default function RegistrationMobile() {
     return re.test(name.trim());
   }
 
+  function startsWithCapital(name: string) {
+    return /^[A-Z]/.test(name.trim());
+  }
+
   function validatePassword(value: string) {
     if (value.length < 8) {
       return {
@@ -102,6 +106,9 @@ export default function RegistrationMobile() {
     } else if (!validateName(firstName)) {
       setFirstNameError("First name must be at least 2 letters");
       hasError = true;
+    } else if (!startsWithCapital(firstName)) {
+      setFirstNameError("First name must start with a capital letter");
+      hasError = true;
     }
 
     if (!lastName.trim()) {
@@ -109,6 +116,9 @@ export default function RegistrationMobile() {
       hasError = true;
     } else if (!validateName(lastName)) {
       setLastNameError("Last name must be at least 2 letters");
+      hasError = true;
+    } else if (!startsWithCapital(lastName)) {
+      setLastNameError("Last name must start with a capital letter");
       hasError = true;
     }
 

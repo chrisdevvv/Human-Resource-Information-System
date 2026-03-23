@@ -11,6 +11,28 @@ const authMiddleware = async (req, res, next) => {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+        if (decoded.id && decoded.iat) {
+            const [invalidations] = await pool.promise().query(
+                `SELECT invalid_after
+                 FROM user_token_invalidations
+                 WHERE user_id = ?
+                 LIMIT 1`,
+                [decoded.id]
+            );
+
+            if (invalidations.length > 0) {
+                const issuedAtSeconds = Number(decoded.iat);
+                const invalidAfterMs = new Date(invalidations[0].invalid_after).getTime();
+
+                if (Number.isFinite(issuedAtSeconds) && Number.isFinite(invalidAfterMs)) {
+                    const issuedAtMs = issuedAtSeconds * 1000;
+                    if (issuedAtMs <= invalidAfterMs) {
+                        return res.status(401).json({ message: 'Session has ended. Please log in again.' });
+                    }
+                }
+            }
+        }
+
         if (decoded.jti) {
             const [rows] = await pool.promise().query(
                 `SELECT jti

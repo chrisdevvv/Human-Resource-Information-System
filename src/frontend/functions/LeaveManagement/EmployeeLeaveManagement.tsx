@@ -194,11 +194,12 @@ export default function EmployeeLeaveManagement() {
         abs_with_pay_sl: payload.abs_with_pay_sl,
         abs_without_pay_sl: payload.abs_without_pay_sl,
       });
-      setDirectAddTarget(null);
+      fetchEmployees(false);
     } catch (err) {
       alert(
         err instanceof Error ? err.message : "Failed to create leave entry.",
       );
+      throw err;
     } finally {
       setIsDirectAdding(false);
     }

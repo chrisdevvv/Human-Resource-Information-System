@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import ConfirmationModal from "../../super-admin/components/ConfirmationModal";
+import { logoutNow } from "@/frontend/auth/session";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -155,10 +156,14 @@ export default function DataEncoderProfileSettings() {
         return;
       }
 
-      setPasswordSuccess("Password updated successfully.");
+      setPasswordSuccess("Password updated. Please log in again.");
       setCurrentPassword("");
       setNewPassword("");
       setRetypePassword("");
+      await logoutNow();
+      window.setTimeout(() => {
+        window.location.replace("/login");
+      }, 900);
     } catch {
       setPasswordError("Failed to change password.");
     } finally {

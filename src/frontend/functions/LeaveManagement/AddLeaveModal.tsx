@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import ConfirmationAddLeave from "./ConfirmationAddLeave";
+import AddLeaveSuccess from "./AddLeaveSuccess";
 
 export type AddLeaveFormValues = {
   employee_id: number;
@@ -90,12 +91,21 @@ export default function AddLeaveModal({
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [pendingPayload, setPendingPayload] =
     useState<AddLeaveFormValues | null>(null);
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [successData, setSuccessData] = useState<{
+    employeeName: string;
+    period_of_leave: string;
+    particulars: string;
+    isMonetization: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setForm(defaultForm);
       setIsConfirmOpen(false);
       setPendingPayload(null);
+      setIsSuccessOpen(false);
+      setSuccessData(null);
     }
   }, [isOpen]);
 
@@ -204,9 +214,27 @@ export default function AddLeaveModal({
       return;
     }
 
-    await onSave(pendingPayload);
-    setIsConfirmOpen(false);
-    setPendingPayload(null);
+    try {
+      await onSave(pendingPayload);
+
+      // Close confirmation modal
+      setIsConfirmOpen(false);
+
+      // Show success message
+      setSuccessData({
+        employeeName,
+        period_of_leave: pendingPayload.period_of_leave,
+        particulars: pendingPayload.particulars,
+        isMonetization: pendingPayload.isMonetization,
+      });
+      setIsSuccessOpen(true);
+      setPendingPayload(null);
+    } catch (error) {
+      console.error("Error saving leave:", error);
+      alert("Failed to save leave entry. Please try again.");
+      setIsConfirmOpen(false);
+      setPendingPayload(null);
+    }
   }
 
   function handleCancelConfirm() {
@@ -504,6 +532,17 @@ export default function AddLeaveModal({
           onCancel={handleCancelConfirm}
         />
       </div>
+
+      <AddLeaveSuccess
+        isOpen={isSuccessOpen}
+        values={successData}
+        onClose={() => {
+          setIsSuccessOpen(false);
+          setSuccessData(null);
+          setForm(defaultForm);
+          onClose();
+        }}
+      />
     </div>
   );
 }

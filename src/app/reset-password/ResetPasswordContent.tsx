@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Lock, ArrowLeft } from "../../frontend/assets/icons";
+import { clearClientSession } from "../../frontend/auth/session";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -136,6 +137,7 @@ export default function ResetPasswordContent() {
         return;
       }
 
+      clearClientSession();
       setStep("success");
       setTimeout(() => {
         router.push("/login");

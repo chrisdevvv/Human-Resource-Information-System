@@ -2,8 +2,15 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
 const LOGOUT_URL = `${API_BASE_URL}/api/auth/logout`;
+export const LOGOUT_BROADCAST_KEY = "auth:logout-event";
+
+function broadcastLogoutEvent() {
+  // Triggers the `storage` event on other tabs so they can logout immediately.
+  localStorage.setItem(LOGOUT_BROADCAST_KEY, String(Date.now()));
+}
 
 export const clearClientSession = () => {
+  broadcastLogoutEvent();
   localStorage.removeItem("authToken");
   localStorage.removeItem("user");
   sessionStorage.clear();

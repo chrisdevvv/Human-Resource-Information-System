@@ -5,6 +5,7 @@ import DataEncoder from "../../frontend/data-encoder/EncoderIndex";
 import SidebarIndex from "../../frontend/sidebar/SidebarIndex";
 import SidebarMobile from "../../frontend/sidebar/SidebarMobile";
 import StickyHeader from "../../frontend/components/StickyHeader";
+import { hasAccessToFeature } from "../../frontend/auth/roleAccess";
 
 const ACTIVE_TAB_STORAGE_KEY = "activeTab:data-encoder";
 const ALLOWED_TABS = new Set([
@@ -33,15 +34,40 @@ export default function Page() {
         }
 
         const u = JSON.parse(raw);
-        if (u?.role !== "DATA_ENCODER") {
+        // Check if user's role is data-encoder (not admin or super-admin)
+        const normalizedRole = String(u?.role || "").toLowerCase();
+        if (
+          !normalizedRole.includes("data") ||
+          normalizedRole.includes("admin")
+        ) {
+          // Not data-encoder, redirect to appropriate dashboard
+          if (normalizedRole.includes("super")) {
+            router.replace("/super-admin");
+          } else if (normalizedRole.includes("admin")) {
+            router.replace("/admin");
+          } else {
+            setIsAuthorized(false);
+            router.replace("/login");
+          }
           setIsAuthorized(false);
           router.replace("/login");
           return;
         }
 
         const savedTab = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+        // Validate that the saved tab is allowed for this role
         const nextTab =
-          savedTab && ALLOWED_TABS.has(savedTab) ? savedTab : "dashboard";
+          savedTab &&
+          ALLOWED_TABS.has(savedTab) &&
+          hasAccessToFeature(u.role, savedTab)
+            ? savedTab
+            : "employee-management";
+        // Verify default tab is accessible
+        if (!hasAccessToFeature(u.role, nextTab)) {
+          setIsAuthorized(false);
+          router.replace("/login");
+          return;
+        }
 
         setRole(u.role);
         setActiveTab(nextTab);
@@ -67,6 +93,9 @@ export default function Page() {
 
   const handleTabChange = (tab: string) => {
     if (!ALLOWED_TABS.has(tab)) {
+      return;
+    }
+    if (!hasAccessToFeature(role, tab)) {
       return;
     }
 

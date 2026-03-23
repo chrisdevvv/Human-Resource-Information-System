@@ -11,6 +11,21 @@ const {
 const FRONTEND_URL =
   process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3001";
 
+const invalidateUserSessions = async (userId) => {
+  if (!userId) {
+    return;
+  }
+
+  await pool
+    .promise()
+    .query(
+      `INSERT INTO user_token_invalidations (user_id, invalid_after)
+       VALUES (?, NOW())
+       ON DUPLICATE KEY UPDATE invalid_after = NOW()`,
+      [userId],
+    );
+};
+
 const register = async (req, res) => {
   const {
     first_name,
@@ -262,6 +277,8 @@ const changePassword = async (req, res) => {
         user.id,
       ]);
 
+    await invalidateUserSessions(user.id);
+
     // Fire-and-forget
     sendPasswordChanged(user.email, user.first_name);
 
@@ -451,6 +468,8 @@ const resetPassword = async (req, res) => {
         hashedPassword,
         user.id,
       ]);
+
+    await invalidateUserSessions(user.id);
 
     // Fire-and-forget
     sendPasswordChanged(user.email, user.first_name);

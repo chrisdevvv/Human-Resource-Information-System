@@ -29,6 +29,16 @@ const ensureSecurityTables = async () => {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
 
+  await pool.promise().query(`
+    CREATE TABLE IF NOT EXISTS user_token_invalidations (
+      user_id INT NOT NULL,
+      invalid_after DATETIME NOT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id),
+      INDEX idx_user_token_invalidations_invalid_after (invalid_after)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
   // Keep the table compact.
   await pool
     .promise()

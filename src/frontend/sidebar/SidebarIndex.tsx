@@ -12,7 +12,6 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { logoutNow } from "@/frontend/auth/session";
 
 export type SidebarRole = "data-encoder" | "admin" | "super-admin";
@@ -153,7 +152,6 @@ export default function SidebarIndex({
   onToggleCollapse,
   className = "",
 }: SidebarProps) {
-  const router = useRouter();
   const [internalCollapsed, setInternalCollapsed] = useState(defaultCollapsed);
   const [firstName, setFirstName] = useState("");
   const tabs = useMemo(() => getSidebarTabsByRole(role), [role]);
@@ -180,8 +178,7 @@ export default function SidebarIndex({
 
   const handleLogout = async () => {
     await logoutNow();
-    router.replace("/login");
-    router.refresh();
+    window.location.replace("/login");
   };
 
   const handleOpenSettings = () => {
