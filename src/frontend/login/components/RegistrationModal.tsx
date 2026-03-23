@@ -2,7 +2,7 @@
 // Component: RegistrationModal
 // Filename: RegistrationModal.tsx
 // Purpose: Registration request form — submits to registration_requests table for admin approval
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Mail, Key, User, X, Building2, Eye, EyeOff } from "../../assets/icons";
 import { RegistrationSuccessModal } from "../../registration";
 
@@ -27,6 +27,16 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    school: string;
+    password: string;
+  } | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const submitInProgressRef = useRef(false);
 
   // Individual field errors
   const [firstNameError, setFirstNameError] = useState("");
@@ -35,6 +45,13 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   const [schoolError, setSchoolError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
+
+  // Track unsaved changes
+  const trackChange = (newValue: string, currentValue: string) => {
+    if (newValue !== currentValue) {
+      setHasUnsavedChanges(true);
+    }
+  };
 
   function validateEmail(value: string) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -213,17 +230,34 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       return;
     }
 
+    // Store form data and show confirmation modal
+    setPendingFormData({
+      firstName,
+      lastName,
+      email,
+      school,
+      password,
+    });
+    setIsConfirmOpen(true);
+  }
+
+  async function handleConfirmSubmit() {
+    if (!pendingFormData || submitInProgressRef.current) {
+      return;
+    }
+
+    submitInProgressRef.current = true;
     setIsLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          first_name: firstName,
-          last_name: lastName,
-          email,
-          password,
-          school_name: school,
+          first_name: pendingFormData.firstName,
+          last_name: pendingFormData.lastName,
+          email: pendingFormData.email,
+          password: pendingFormData.password,
+          school_name: pendingFormData.school,
         }),
       });
 
@@ -231,18 +265,39 @@ export default function RegistrationModal({ visible, onClose }: Props) {
 
       if (!response.ok) {
         setError(data.message || "Failed to submit registration request");
+        setIsConfirmOpen(false);
+        submitInProgressRef.current = false;
         return;
       }
 
       setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
+      setIsConfirmOpen(false);
+      submitInProgressRef.current = false;
     } finally {
       setIsLoading(false);
     }
   }
 
+  function handleCancelConfirm() {
+    if (isLoading) {
+      return;
+    }
+    setIsConfirmOpen(false);
+    submitInProgressRef.current = false;
+  }
+
   function handleReset() {
+    if (
+      hasUnsavedChanges &&
+      !window.confirm(
+        "You have unsaved changes. Are you sure you want to cancel?",
+      )
+    ) {
+      return;
+    }
+
     setStep(1);
     setFirstName("");
     setLastName("");
@@ -258,6 +313,10 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     setSchoolError("");
     setPasswordError("");
     setConfirmPasswordError("");
+    setHasUnsavedChanges(false);
+    setPendingFormData(null);
+    setIsConfirmOpen(false);
+    submitInProgressRef.current = false;
     onClose();
   }
 
@@ -284,7 +343,13 @@ export default function RegistrationModal({ visible, onClose }: Props) {
             )}
 
             {step === 1 ? (
-              <>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleStep1Submit();
+                }}
+                className="space-y-4"
+              >
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="flex items-center gap-2 text-sm text-gray-700">
@@ -294,6 +359,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                     <input
                       value={firstName}
                       onChange={(e) => {
+                        trackChange(e.target.value, firstName);
                         setFirstName(e.target.value);
                         if (firstNameError) setFirstNameError("");
                       }}
@@ -315,6 +381,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                     <input
                       value={lastName}
                       onChange={(e) => {
+                        trackChange(e.target.value, lastName);
                         setLastName(e.target.value);
                         if (lastNameError) setLastNameError("");
                       }}
@@ -337,6 +404,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                 <input
                   value={email}
                   onChange={(e) => {
+                    trackChange(e.target.value, email);
                     setEmail(e.target.value);
                     if (emailError) setEmailError("");
                   }}
@@ -356,6 +424,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   <input
                     value={school}
                     onChange={(e) => {
+                      trackChange(e.target.value, school);
                       setSchool(e.target.value);
                       if (schoolError) setSchoolError("");
                     }}
@@ -369,21 +438,28 @@ export default function RegistrationModal({ visible, onClose }: Props) {
 
                 <div className="flex flex-col gap-3 items-center mt-6">
                   <button
-                    onClick={handleStep1Submit}
+                    type="submit"
                     className="hover:cursor-pointer px-6 py-2 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition"
                   >
                     Continue
                   </button>
                   <button
+                    type="button"
                     onClick={handleReset}
                     className="text-gray-700 cursor-pointer px-6 py-2 border rounded-md w-full hover:bg-gray-100 transition"
                   >
                     Cancel
                   </button>
                 </div>
-              </>
+              </form>
             ) : (
-              <>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleStep2Submit();
+                }}
+                className="space-y-4"
+              >
                 <div className="mb-4 p-3 bg-blue-50 text-blue-800 rounded-md text-sm">
                   <p className="font-semibold mb-1">Password requirements:</p>
                   <ul className="list-disc list-inside space-y-1">
@@ -404,6 +480,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   <input
                     value={password}
                     onChange={(e) => {
+                      trackChange(e.target.value, password);
                       setPassword(e.target.value);
                       if (passwordError) setPasswordError("");
                       if (confirmPassword && e.target.value === confirmPassword)
@@ -437,6 +514,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   <input
                     value={confirmPassword}
                     onChange={(e) => {
+                      trackChange(e.target.value, confirmPassword);
                       setConfirmPassword(e.target.value);
                       if (confirmPasswordError) setConfirmPasswordError("");
                     }}
@@ -470,26 +548,70 @@ export default function RegistrationModal({ visible, onClose }: Props) {
 
                 <div className="flex flex-col gap-3 items-center mt-6">
                   <button
-                    onClick={handleStep2Submit}
-                    disabled={isLoading}
+                    type="submit"
+                    disabled={isLoading || isConfirmOpen}
                     className="hover:cursor-pointer px-6 py-2 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? "Submitting..." : "Submit Request"}
                   </button>
                   <button
+                    type="button"
                     onClick={() => {
                       setStep(1);
                       setError("");
                     }}
-                    disabled={isLoading}
+                    disabled={isLoading || isConfirmOpen}
                     className="text-gray-700 cursor-pointer px-6 py-2 border rounded-md w-full hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Back
                   </button>
                 </div>
-              </>
+              </form>
             )}
           </>
+        )}
+
+        {/* Confirmation Modal */}
+        {isConfirmOpen && pendingFormData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm mx-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Confirm Registration
+              </h3>
+              <div className="space-y-3 mb-6">
+                <p className="text-sm text-gray-600">
+                  <strong>Name:</strong> {pendingFormData.firstName}{" "}
+                  {pendingFormData.lastName}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Email:</strong> {pendingFormData.email}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>School:</strong> {pendingFormData.school}
+                </p>
+              </div>
+              <p className="text-sm text-gray-700 mb-6">
+                Please review your information before submitting. Once
+                submitted, your registration request will be pending approval.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCancelConfirm}
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmSubmit}
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? "Submitting..." : "Confirm & Submit"}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

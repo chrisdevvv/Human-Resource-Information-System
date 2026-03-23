@@ -1,6 +1,8 @@
 {
   "files.associations": {
-    "**/deped_leave_tracker.sql": "plaintext",
+    "**/deped_leave_tracker.sql": "mysql",
+    "**/deped_leave_tracker (2).sql": "mysql",
+    "**/deped_leave_tracker*.sql": "mysql",
     "**/migrations/*.sql": "mysql",
     "**/*_table.sql": "mysql"
   },
