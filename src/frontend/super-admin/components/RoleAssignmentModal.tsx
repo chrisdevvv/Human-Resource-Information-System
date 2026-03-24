@@ -16,6 +16,8 @@ export default function RoleAssignmentModal({
   onClose,
   onSuccess,
 }: Props) {
+  const API_BASE =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
   const [selectedRole, setSelectedRole] = useState<"ADMIN" | "DATA_ENCODER">(
     "DATA_ENCODER",
   );
@@ -45,17 +47,14 @@ export default function RoleAssignmentModal({
       if (!token) throw new Error("No authentication token found.");
 
       // Verify super-admin password first
-      const verifyRes = await fetch(
-        "http://localhost:3000/api/auth/verify-password",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ password }),
+      const verifyRes = await fetch(`${API_BASE}/api/auth/verify-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({ password }),
+      });
 
       if (!verifyRes.ok) {
         const body = await verifyRes.json();
@@ -64,7 +63,7 @@ export default function RoleAssignmentModal({
 
       // Approve the registration with the selected role
       const approveRes = await fetch(
-        `http://localhost:3000/api/registrations/${accountId}/approve`,
+        `${API_BASE}/api/registrations/${accountId}/approve`,
         {
           method: "POST",
           headers: {

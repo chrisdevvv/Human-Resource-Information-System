@@ -3,6 +3,9 @@
 import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
 type Props = {
   accountId: number;
   accountName: string;
@@ -39,17 +42,14 @@ export default function AdminRoleAssignmentModal({
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
 
-      const verifyRes = await fetch(
-        "http://localhost:3000/api/auth/verify-password",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ password }),
+      const verifyRes = await fetch(`${API_BASE}/api/auth/verify-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({ password }),
+      });
 
       if (!verifyRes.ok) {
         const body = await verifyRes.json();
@@ -57,7 +57,7 @@ export default function AdminRoleAssignmentModal({
       }
 
       const approveRes = await fetch(
-        `http://localhost:3000/api/registrations/${accountId}/approve`,
+        `${API_BASE}/api/registrations/${accountId}/approve`,
         {
           method: "POST",
           headers: {

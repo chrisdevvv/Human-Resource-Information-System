@@ -562,8 +562,25 @@ const createLeaveRequest = async (req, res) => {
 
 const getAllLeaveRequests = async (req, res) => {
   try {
-    const results = await Leave.getAll();
-    res.status(200).json({ data: results });
+    const { employee_id, page, pageSize } = req.query;
+    const filters = {};
+    if (employee_id) filters.employee_id = employee_id;
+
+    const pagination = page
+      ? { page: Number(page), pageSize: Number(pageSize || 50) }
+      : undefined;
+
+    const results = await Leave.getAll(filters, pagination);
+
+    if (!pagination) return res.status(200).json({ data: results });
+    return res
+      .status(200)
+      .json({
+        data: results.data,
+        total: results.total,
+        page: results.page,
+        pageSize: results.pageSize,
+      });
   } catch (err) {
     res
       .status(500)
@@ -587,8 +604,28 @@ const getLeaveRequestById = async (req, res) => {
 const getLeavesByEmployee = async (req, res) => {
   try {
     await recomputeEmployeeLeaveLedger(req.params.employee_id);
-    const results = await Leave.getByEmployeeId(req.params.employee_id);
-    res.status(200).json({ data: results });
+    const { page, pageSize } = req.query;
+    const pagination = page
+      ? { page: Number(page), pageSize: Number(pageSize || 50) }
+      : undefined;
+
+    if (!pagination) {
+      const results = await Leave.getByEmployeeId(req.params.employee_id);
+      return res.status(200).json({ data: results });
+    }
+
+    const results = await Leave.getAll(
+      { employee_id: req.params.employee_id },
+      pagination,
+    );
+    return res
+      .status(200)
+      .json({
+        data: results.data,
+        total: results.total,
+        page: results.page,
+        pageSize: results.pageSize,
+      });
   } catch (err) {
     res
       .status(500)
@@ -712,11 +749,9 @@ const deleteLeaveRequest = async (req, res) => {
 const creditMonthly = async (req, res) => {
   try {
     if (!["SUPER_ADMIN", "ADMIN"].includes(req.user.role)) {
-      return res
-        .status(403)
-        .json({
-          message: "Only Admin or Super Admin can apply monthly leave credit",
-        });
+      return res.status(403).json({
+        message: "Only Admin or Super Admin can apply monthly leave credit",
+      });
     }
 
     const result = await applyMonthlyCredit({

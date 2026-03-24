@@ -24,7 +24,8 @@ type FormattedLeaveHistoryRecord = LeaveHistoryRecord & {
 };
 
 const formatNumber = (value: number | null | undefined): string =>
-  Number(value ?? 0).toFixed(2);
+  // Always show three decimal places for leave amounts
+  Number(value ?? 0).toFixed(3);
 
 const formatDateOnly = (dateStr: string): string => {
   if (!dateStr) return "-";

@@ -1,16 +1,44 @@
 const pool = require("../../config/db");
 
 const Leave = {
-  getAll: async () => {
-    const [rows] = await pool.promise().query(`
-            SELECT leaves.*,
-                   CONCAT(employees.first_name, ' ', employees.last_name) AS full_name,
-                   employees.employee_type
-            FROM leaves
-            JOIN employees ON leaves.employee_id = employees.id
-            ORDER BY leaves.employee_id ASC, leaves.id ASC
-        `);
-    return rows;
+  // Supports optional filtering by employee_id and pagination. If pagination not provided, returns full rows for compatibility.
+  getAll: async ({ employee_id } = {}, pagination) => {
+    let baseQuery = `FROM leaves JOIN employees ON leaves.employee_id = employees.id WHERE 1=1`;
+    const params = [];
+
+    if (employee_id) {
+      baseQuery += ` AND leaves.employee_id = ?`;
+      params.push(employee_id);
+    }
+
+    const orderClause = ` ORDER BY leaves.employee_id ASC, leaves.id ASC`;
+
+    if (!pagination || !pagination.page) {
+      const [rows] = await pool
+        .promise()
+        .query(
+          `SELECT leaves.*, CONCAT(employees.first_name, ' ', employees.last_name) AS full_name, employees.employee_type ${baseQuery} ${orderClause}`,
+          params,
+        );
+      return rows;
+    }
+
+    const page = Number(pagination.page) || 1;
+    const pageSize = Math.min(Number(pagination.pageSize) || 50, 500);
+    const offset = (page - 1) * pageSize;
+
+    const [[{ total }]] = await pool
+      .promise()
+      .query(`SELECT COUNT(1) as total ${baseQuery}`, params);
+
+    const [rows] = await pool
+      .promise()
+      .query(
+        `SELECT leaves.*, CONCAT(employees.first_name, ' ', employees.last_name) AS full_name, employees.employee_type ${baseQuery} ${orderClause} LIMIT ? OFFSET ?`,
+        [...params, pageSize, offset],
+      );
+
+    return { data: rows, total: Number(total), page, pageSize };
   },
 
   getById: async (id) => {

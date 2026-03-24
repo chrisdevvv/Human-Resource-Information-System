@@ -59,6 +59,29 @@ const ensureLeaveLedgerSchema = async () => {
   `);
 };
 
+const ensureIndexes = async () => {
+  // Create helpful indexes for common filters/sorts. Errors ignored if index already exists.
+  const stmts = [
+    `CREATE INDEX idx_leaves_employee_id ON leaves (employee_id)`,
+    `CREATE INDEX idx_leaves_date_of_action ON leaves (date_of_action)`,
+    `CREATE INDEX idx_users_first_last_email ON users (first_name, last_name, email)`,
+    `CREATE INDEX idx_users_email ON users (email)`,
+    `CREATE INDEX idx_employees_school_id ON employees (school_id)`,
+    `CREATE INDEX idx_backlogs_created_at ON backlogs (created_at)`,
+  ];
+
+  for (const sql of stmts) {
+    try {
+      await pool.promise().query(sql);
+    } catch (err) {
+      // Ignore duplicate index errors and log others
+      if (!/Duplicate|exists/i.test(err.message)) {
+        console.warn("Index creation warning:", err.message);
+      }
+    }
+  }
+};
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
@@ -86,6 +109,9 @@ app.listen(PORT, async () => {
 
     await ensureLeaveLedgerSchema();
     console.log("✔  Leave ledger schema is ready");
+
+    await ensureIndexes();
+    console.log("✔  Database indexes ensured (best-effort)");
 
     if (AUTO_MONTHLY_CREDIT_ENABLED) {
       // Catch up on startup (safe because duplicate monthly entries are skipped).

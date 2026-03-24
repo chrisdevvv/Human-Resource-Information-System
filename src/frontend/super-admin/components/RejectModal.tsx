@@ -16,6 +16,8 @@ export default function RejectModal({
   onClose,
   onSuccess,
 }: Props) {
+  const API_BASE =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export default function RejectModal({
       if (!token) throw new Error("No authentication token found.");
 
       const res = await fetch(
-        `http://localhost:3000/api/registrations/${accountId}/reject`,
+        `${API_BASE}/api/registrations/${accountId}/reject`,
         {
           method: "POST",
           headers: {

@@ -19,6 +19,9 @@ type Log = {
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
 export default function LogsMobile() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
@@ -88,7 +91,7 @@ export default function LogsMobile() {
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
 
-      const response = await fetch("http://localhost:3000/api/backlogs", {
+      const response = await fetch(`${API_BASE}/api/backlogs`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",

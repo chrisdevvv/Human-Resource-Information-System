@@ -32,6 +32,9 @@ type AdminPendingAccountsProps = {
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
 export default function AdminPendingAccounts({
   onRefreshUsers,
 }: AdminPendingAccountsProps) {
@@ -44,6 +47,7 @@ export default function AdminPendingAccounts({
   const [letterFilter, setLetterFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [pageJumpInput, setPageJumpInput] = useState("1");
   const [data, setData] = useState<RegistrationRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +67,12 @@ export default function AdminPendingAccounts({
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-  const fetchData = async (status: string, showSpinner = true) => {
+  const fetchData = async (
+    status: string,
+    page = currentPage,
+    pageSize = itemsPerPage,
+    showSpinner = true,
+  ) => {
     try {
       if (showSpinner) {
         setLoading(true);
@@ -74,10 +83,13 @@ export default function AdminPendingAccounts({
         throw new Error("No authentication token found. Please login first.");
       }
 
-      const url =
-        status === "ALL"
-          ? "http://localhost:3000/api/registrations/"
-          : `http://localhost:3000/api/registrations/?status=${status}`;
+      const params = new URLSearchParams();
+      if (status && status !== "ALL") params.set("status", status);
+      if (searchQuery) params.set("search", searchQuery);
+      params.set("page", String(page));
+      params.set("pageSize", String(pageSize));
+
+      const url = `${API_BASE}/api/registrations/?${params.toString()}`;
 
       const response = await fetch(url, {
         method: "GET",
@@ -92,7 +104,8 @@ export default function AdminPendingAccounts({
       }
 
       const result = await response.json();
-      const formattedData = (result.data || []).map((item: any) => ({
+      const rows = result.data || [];
+      const formattedData = (rows as any[]).map((item: any) => ({
         id: item.id,
         firstName: item.first_name,
         lastName: item.last_name,
@@ -105,6 +118,9 @@ export default function AdminPendingAccounts({
         created_at: item.created_at,
       }));
       setData(formattedData);
+      setTotalItems(
+        typeof result.total === "number" ? result.total : formattedData.length,
+      );
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -119,26 +135,40 @@ export default function AdminPendingAccounts({
   };
 
   useEffect(() => {
+    // initial load
     fetchData(statusFilter);
 
     const intervalId = window.setInterval(() => {
-      fetchData(statusFilter, false);
+      fetchData(statusFilter, currentPage, itemsPerPage, false);
     }, 5000);
 
     return () => window.clearInterval(intervalId);
-  }, [statusFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  useEffect(() => {
+    // refetch when pagination or status changes
+    fetchData(statusFilter, currentPage, itemsPerPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, itemsPerPage, statusFilter]);
+
+  // debounce search
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setCurrentPage(1);
+      fetchData(statusFilter, 1, itemsPerPage);
+    }, 350);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
+
+  // data is server-paginated. Apply only letter filter and sorting locally on the current page
   const filteredData = data
     .filter((item) => {
-      const matchesSearch =
-        item.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.school.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesLetter =
         letterFilter === "ALL" ||
         item.firstName.charAt(0).toUpperCase() === letterFilter;
-      return matchesSearch && matchesLetter;
+      return matchesLetter;
     })
     .sort((a, b) => {
       const dateA = new Date(a.created_at).getTime();
@@ -156,9 +186,8 @@ export default function AdminPendingAccounts({
       return b.firstName.localeCompare(a.firstName);
     });
 
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredData.slice(startIdx, startIdx + itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const paginatedData = filteredData; // server already paginated
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
     Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;

@@ -36,6 +36,9 @@ type EmployeeRecord = LeaveModalRecord & {
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
 const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
   const firstName = item.first_name?.trim() || "Unknown";
   const lastName = item.last_name?.trim() || "Employee";
@@ -101,7 +104,7 @@ export default function EmployeeLeaveManagement() {
         throw new Error("No authentication token found.");
       }
 
-      const response = await fetch("http://localhost:3000/api/employees/", {
+      const response = await fetch(`${API_BASE}/api/employees/`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
