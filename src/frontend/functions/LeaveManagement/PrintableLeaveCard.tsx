@@ -9,22 +9,43 @@ type PrintableLeaveCardProps = {
   rows: LeaveHistoryRecord[];
 };
 
-const formatNumber = (value: number) => value.toFixed(2);
+type FormattedLeaveHistoryRecord = LeaveHistoryRecord & {
+  periodOfLeaveDisplay: string;
+  particularsDisplay: string;
+  earnedVlDisplay: string;
+  absWithPayVlDisplay: string;
+  absWithoutPayVlDisplay: string;
+  balVlDisplay: string;
+  earnedSlDisplay: string;
+  absWithPaySlDisplay: string;
+  absWithoutPaySlDisplay: string;
+  balSlDisplay: string;
+  dateOfActionDisplay: string;
+};
+
+const formatNumber = (value: number | null | undefined): string =>
+  Number(value ?? 0).toFixed(2);
 
 const formatDateOnly = (dateStr: string): string => {
   if (!dateStr) return "-";
+
   const datePart = dateStr.split("T")[0].split(" ")[0];
   if (!datePart) return "-";
+
   const parts = datePart.split("-");
   if (parts.length === 3) {
     const [year, month, day] = parts;
     const d = new Date(Number(year), Number(month) - 1, Number(day));
-    return d.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+
+    if (!Number.isNaN(d.getTime())) {
+      return d.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    }
   }
+
   return datePart;
 };
 
@@ -36,11 +57,13 @@ const CARD_COLORS = {
   emptyGray: "#374151",
 };
 
-const PAPER_MARGIN_CM = 1.27;
-const PAPER_MARGIN_MM = 12.7;
+const PAPER_MARGIN_CM = 1;
+const PAPER_MARGIN_MM = 10;
 const PAGE_HEIGHT_PX_AT_96_DPI = Math.round((297 / 25.4) * 96);
+const PAGE_WIDTH_MM = "210mm";
+const PAGE_HEIGHT_MM = "297mm";
 
-function LeaveTableHeader() {
+const LeaveTableHeader = React.memo(function LeaveTableHeader() {
   return (
     <thead>
       <tr
@@ -52,7 +75,7 @@ function LeaveTableHeader() {
       >
         <th
           className="border px-2 py-2 text-left"
-          style={{ borderColor: CARD_COLORS.black }}
+          style={{ borderColor: CARD_COLORS.black, width: "100px" }}
         >
           Period of Leave
         </th>
@@ -119,14 +142,14 @@ function LeaveTableHeader() {
       </tr>
     </thead>
   );
-}
+});
 
-function LeaveDataRow({
+const LeaveDataRow = React.memo(function LeaveDataRow({
   row,
   index,
   rowRef,
 }: {
-  row: LeaveHistoryRecord;
+  row: FormattedLeaveHistoryRecord;
   index: number;
   rowRef?: (node: HTMLTableRowElement | null) => void;
 }) {
@@ -139,76 +162,76 @@ function LeaveDataRow({
       }}
     >
       <td
-        className="border px-1 py-0.5 align-top"
+        className="border px-1.5 py-0.5 align-top"
         style={{ borderColor: CARD_COLORS.black }}
       >
-        {row.periodOfLeave}
+        {row.periodOfLeaveDisplay}
       </td>
       <td
-        className="border px-1 py-0.5 align-top"
+        className="border px-1.5 py-1 align-top"
         style={{ borderColor: CARD_COLORS.black }}
       >
-        {row.particulars || "-"}
+        {row.particularsDisplay}
       </td>
       <td
-        className="border px-1 py-0.5 text-right align-top"
+        className="border px-1.5 py-0.5 text-right align-top"
         style={{ borderColor: CARD_COLORS.black }}
       >
-        {formatNumber(row.earnedVl)}
+        {row.earnedVlDisplay}
       </td>
       <td
-        className="border px-1 py-0.5 text-right align-top"
+        className="border px-1.5 py-1 text-right align-top"
         style={{ borderColor: CARD_COLORS.black }}
       >
-        {formatNumber(row.absWithPayVl)}
+        {row.absWithPayVlDisplay}
       </td>
       <td
-        className="border px-1 py-0.5 text-right align-top"
+        className="border px-1.5 py-1 text-right align-top"
         style={{ borderColor: CARD_COLORS.black }}
       >
-        {formatNumber(row.absWithoutPayVl)}
+        {row.absWithoutPayVlDisplay}
       </td>
       <td
-        className="border px-1 py-0.5 text-right align-top"
+        className="border px-1.5 py-1 text-right align-top"
         style={{ borderColor: CARD_COLORS.black }}
       >
-        {formatNumber(row.balVl)}
+        {row.balVlDisplay}
       </td>
       <td
-        className="border px-1 py-0.5 text-right align-top"
+        className="border px-1.5 py-1 text-right align-top"
         style={{ borderColor: CARD_COLORS.black }}
       >
-        {formatNumber(row.earnedSl)}
+        {row.earnedSlDisplay}
       </td>
       <td
-        className="border px-1 py-0.5 text-right align-top"
+        className="border px-1.5 py-1 text-right align-top"
         style={{ borderColor: CARD_COLORS.black }}
       >
-        {formatNumber(row.absWithPaySl)}
+        {row.absWithPaySlDisplay}
       </td>
       <td
-        className="border px-1 py-0.5 text-right align-top"
+        className="border px-1.5 py-1 text-right align-top"
         style={{ borderColor: CARD_COLORS.black }}
       >
-        {formatNumber(row.absWithoutPaySl)}
+        {row.absWithoutPaySlDisplay}
       </td>
       <td
-        className="border px-1 py-0.5 text-right align-top"
+        className="border px-1.5 py-1 text-right align-top"
         style={{ borderColor: CARD_COLORS.black }}
       >
-        {formatNumber(row.balSl)}
+        {row.balSlDisplay}
       </td>
       <td
-        className="border px-1 py-0.5 align-top"
+        className="border px-1.5 py-1 align-top"
         style={{ borderColor: CARD_COLORS.black }}
       >
-        {formatDateOnly(row.dateOfAction)}
+        {row.dateOfActionDisplay}
       </td>
     </tr>
   );
-}
+});
 
-function DocumentHeader({
+const DocumentHeader = React.memo(function DocumentHeader({
   employeeName,
   employeeType,
 }: {
@@ -259,26 +282,26 @@ function DocumentHeader({
       </div>
     </>
   );
-}
+});
 
-function EmptyStateRow() {
+const EmptyStateRow = React.memo(function EmptyStateRow() {
   return (
     <tr>
       <td
         colSpan={11}
-        className="border px-1 text-center"
+        className="border px-1.5 text-center"
         style={{
           borderColor: CARD_COLORS.black,
           color: CARD_COLORS.emptyGray,
-          paddingTop: "calc(2rem - 4px)",
-          paddingBottom: "calc(2rem - 4px)",
+          paddingTop: "calc(2rem - 2px)",
+          paddingBottom: "calc(2rem - 2px)",
         }}
       >
         No leave entries available.
       </td>
     </tr>
   );
-}
+});
 
 const PrintableLeaveCard = React.forwardRef<
   HTMLDivElement,
@@ -287,72 +310,109 @@ const PrintableLeaveCard = React.forwardRef<
   const firstPageStaticRef = React.useRef<HTMLDivElement | null>(null);
   const nextPageStaticRef = React.useRef<HTMLDivElement | null>(null);
   const rowMeasureRefs = React.useRef<(HTMLTableRowElement | null)[]>([]);
-  const [pageChunks, setPageChunks] = React.useState<LeaveHistoryRecord[][]>(
-    rows.length ? [rows] : [[]],
-  );
+  const [pageChunks, setPageChunks] = React.useState<
+    FormattedLeaveHistoryRecord[][]
+  >([]);
   const [isMeasured, setIsMeasured] = React.useState(false);
 
-  React.useLayoutEffect(() => {
-    rowMeasureRefs.current = rowMeasureRefs.current.slice(0, rows.length);
+  const formattedRows = React.useMemo<FormattedLeaveHistoryRecord[]>(() => {
+    return rows.map((row) => ({
+      ...row,
+      periodOfLeaveDisplay: row.periodOfLeave || "-",
+      particularsDisplay: row.particulars || "-",
+      earnedVlDisplay: formatNumber(row.earnedVl),
+      absWithPayVlDisplay: formatNumber(row.absWithPayVl),
+      absWithoutPayVlDisplay: formatNumber(row.absWithoutPayVl),
+      balVlDisplay: formatNumber(row.balVl),
+      earnedSlDisplay: formatNumber(row.earnedSl),
+      absWithPaySlDisplay: formatNumber(row.absWithPaySl),
+      absWithoutPaySlDisplay: formatNumber(row.absWithoutPaySl),
+      balSlDisplay: formatNumber(row.balSl),
+      dateOfActionDisplay: formatDateOnly(row.dateOfAction),
+    }));
   }, [rows]);
 
   React.useLayoutEffect(() => {
-    if (!firstPageStaticRef.current || !nextPageStaticRef.current) return;
+    rowMeasureRefs.current = rowMeasureRefs.current.slice(
+      0,
+      formattedRows.length,
+    );
+  }, [formattedRows]);
 
-    if (rows.length === 0) {
+  React.useLayoutEffect(() => {
+    setIsMeasured(false);
+
+    if (!firstPageStaticRef.current || !nextPageStaticRef.current) {
+      return;
+    }
+
+    if (formattedRows.length === 0) {
       setPageChunks([[]]);
       setIsMeasured(true);
       return;
     }
 
-    const firstStaticHeight = firstPageStaticRef.current.offsetHeight;
-    const nextStaticHeight = nextPageStaticRef.current.offsetHeight;
+    const measure = () => {
+      if (!firstPageStaticRef.current || !nextPageStaticRef.current) {
+        return;
+      }
 
-    const firstAvailable = Math.max(
-      PAGE_HEIGHT_PX_AT_96_DPI - firstStaticHeight,
-      100,
-    );
-    const nextAvailable = Math.max(
-      PAGE_HEIGHT_PX_AT_96_DPI - nextStaticHeight,
-      100,
-    );
+      const firstStaticHeight = firstPageStaticRef.current.offsetHeight;
+      const nextStaticHeight = nextPageStaticRef.current.offsetHeight;
 
-    const rowHeights = rows.map((_, index) => {
-      const rowEl = rowMeasureRefs.current[index];
-      return rowEl?.offsetHeight ?? 0;
-    });
+      const firstAvailable = Math.max(
+        PAGE_HEIGHT_PX_AT_96_DPI - firstStaticHeight,
+        100,
+      );
+      const nextAvailable = Math.max(
+        PAGE_HEIGHT_PX_AT_96_DPI - nextStaticHeight,
+        100,
+      );
 
-    if (rowHeights.some((height) => height === 0)) return;
+      const rowHeights = formattedRows.map((_, index) => {
+        const rowEl = rowMeasureRefs.current[index];
+        return rowEl?.offsetHeight ?? 0;
+      });
 
-    const chunks: LeaveHistoryRecord[][] = [];
-    let currentChunk: LeaveHistoryRecord[] = [];
-    let currentHeight = 0;
-    let availableHeight = firstAvailable;
+      if (rowHeights.some((height) => height <= 0)) {
+        requestAnimationFrame(measure);
+        return;
+      }
 
-    rows.forEach((row, index) => {
-      const rowHeight = Math.max(rowHeights[index], 1);
+      const chunks: FormattedLeaveHistoryRecord[][] = [];
+      let currentChunk: FormattedLeaveHistoryRecord[] = [];
+      let currentHeight = 0;
+      let availableHeight = firstAvailable;
 
-      if (
-        currentChunk.length > 0 &&
-        currentHeight + rowHeight > availableHeight
-      ) {
-        chunks.push(currentChunk);
-        currentChunk = [row];
-        currentHeight = rowHeight;
-        availableHeight = nextAvailable;
-      } else {
+      formattedRows.forEach((row, index) => {
+        const rowHeight = Math.max(rowHeights[index], 1);
+
+        if (
+          currentChunk.length > 0 &&
+          currentHeight + rowHeight > availableHeight
+        ) {
+          chunks.push(currentChunk);
+          currentChunk = [row];
+          currentHeight = rowHeight;
+          availableHeight = nextAvailable;
+          return;
+        }
+
         currentChunk.push(row);
         currentHeight += rowHeight;
+      });
+
+      if (currentChunk.length > 0) {
+        chunks.push(currentChunk);
       }
-    });
 
-    if (currentChunk.length > 0) {
-      chunks.push(currentChunk);
-    }
+      setPageChunks(chunks.length > 0 ? chunks : [[]]);
+      setIsMeasured(true);
+    };
 
-    setPageChunks(chunks.length ? chunks : [[]]);
-    setIsMeasured(true);
-  }, [rows, employeeName, employeeType]);
+    const rafId = requestAnimationFrame(measure);
+    return () => cancelAnimationFrame(rafId);
+  }, [formattedRows, employeeName, employeeType]);
 
   return (
     <>
@@ -408,7 +468,7 @@ const PrintableLeaveCard = React.forwardRef<
           visibility: "hidden",
           pointerEvents: "none",
           zIndex: -1,
-          width: "210mm",
+          width: PAGE_WIDTH_MM,
           backgroundColor: CARD_COLORS.white,
           color: CARD_COLORS.black,
           fontFamily: "'Bookman Old Style', Bookman, serif",
@@ -417,7 +477,7 @@ const PrintableLeaveCard = React.forwardRef<
         <div
           ref={firstPageStaticRef}
           style={{
-            width: "210mm",
+            width: PAGE_WIDTH_MM,
             boxSizing: "border-box",
             backgroundColor: CARD_COLORS.white,
           }}
@@ -437,7 +497,7 @@ const PrintableLeaveCard = React.forwardRef<
         <div
           ref={nextPageStaticRef}
           style={{
-            width: "210mm",
+            width: PAGE_WIDTH_MM,
             boxSizing: "border-box",
             backgroundColor: CARD_COLORS.white,
           }}
@@ -452,7 +512,7 @@ const PrintableLeaveCard = React.forwardRef<
 
         <div
           style={{
-            width: "210mm",
+            width: PAGE_WIDTH_MM,
             boxSizing: "border-box",
             backgroundColor: CARD_COLORS.white,
           }}
@@ -461,9 +521,9 @@ const PrintableLeaveCard = React.forwardRef<
             <table className="w-full border-collapse">
               <LeaveTableHeader />
               <tbody style={{ fontSize: "11px" }}>
-                {rows.map((row, index) => (
+                {formattedRows.map((row, index) => (
                   <LeaveDataRow
-                    key={`measure-${row.id}-${index}`}
+                    key={`measure-${row.id ?? index}-${index}`}
                     row={row}
                     index={index}
                     rowRef={(node) => {
@@ -481,7 +541,7 @@ const PrintableLeaveCard = React.forwardRef<
         ref={ref}
         className="leave-card-root mx-auto w-full text-[9pt] print:max-w-none"
         style={{
-          width: "210mm",
+          width: PAGE_WIDTH_MM,
           backgroundColor: CARD_COLORS.white,
           color: CARD_COLORS.black,
           fontFamily: "'Bookman Old Style', Bookman, serif",
@@ -497,8 +557,8 @@ const PrintableLeaveCard = React.forwardRef<
               data-leave-card-page="true"
               className="leave-card-page"
               style={{
-                width: "210mm",
-                minHeight: "297mm",
+                width: PAGE_WIDTH_MM,
+                minHeight: PAGE_HEIGHT_MM,
                 padding: 0,
                 boxSizing: "border-box",
                 backgroundColor: CARD_COLORS.white,
@@ -521,7 +581,7 @@ const PrintableLeaveCard = React.forwardRef<
                     {pageRows.length > 0 ? (
                       pageRows.map((row, index) => (
                         <LeaveDataRow
-                          key={`${row.id}-${pageIndex}-${index}`}
+                          key={`${row.id ?? index}-${pageIndex}-${index}`}
                           row={row}
                           index={index}
                         />
@@ -580,13 +640,14 @@ export async function downloadLeaveCardPdf(
     const pageEl = pageElements[i];
 
     const canvas = await html2canvas(pageEl, {
-      scale: 2,
+      scale: 1.25,
       useCORS: true,
       backgroundColor: "#ffffff",
       logging: false,
+      removeContainer: true,
     });
 
-    const imgData = canvas.toDataURL("image/png");
+    const imgData = canvas.toDataURL("image/jpeg", 0.86);
 
     if (i > 0) {
       pdf.addPage();
@@ -594,12 +655,15 @@ export async function downloadLeaveCardPdf(
 
     pdf.addImage(
       imgData,
-      "PNG",
+      "JPEG",
       marginMm,
       marginMm,
       contentWidth,
       contentHeight,
     );
+
+    canvas.width = 0;
+    canvas.height = 0;
   }
 
   pdf.save(fileName);
