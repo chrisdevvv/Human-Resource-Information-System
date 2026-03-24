@@ -4,6 +4,19 @@
       path: require("path").join(__dirname, "../../.env"),
     });
     const fetch = globalThis.fetch || (await import("node-fetch")).default;
+    const adminPassword =
+      process.env.TEST_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD;
+    const tempPassword = process.env.TEMP_PASSWORD;
+    if (!adminPassword) {
+      console.error(
+        "Missing TEST_ADMIN_PASSWORD or ADMIN_PASSWORD in environment",
+      );
+      process.exit(1);
+    }
+    if (!tempPassword) {
+      console.error("Missing TEMP_PASSWORD in environment");
+      process.exit(1);
+    }
 
     // Login as Super Admin
     let res = await fetch("http://localhost:3000/api/auth/login", {
@@ -11,7 +24,7 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: "superadmin@deped.gov.ph",
-        password: "Admin@1234",
+        password: adminPassword,
       }),
     });
     const admin = await res.json();
@@ -48,7 +61,7 @@
         },
         body: JSON.stringify({
           approved_role: "DATA_ENCODER",
-          temporary_password: "TempPass@123",
+          temporary_password: tempPassword,
         }),
       },
     );
@@ -63,7 +76,7 @@
     res = await fetch("http://localhost:3000/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: target.email, password: "TempPass@123" }),
+      body: JSON.stringify({ email: target.email, password: tempPassword }),
     });
     const loginJson = await res.json();
     console.log(

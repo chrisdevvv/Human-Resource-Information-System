@@ -5,17 +5,36 @@
     });
     const fetch = globalThis.fetch || (await import("node-fetch")).default;
 
+    const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL;
+    const API_BASE_URL = process.env.API_BASE_URL;
+    const adminPassword =
+      process.env.TEST_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD;
+
+    if (!FRONTEND_BASE_URL || !API_BASE_URL) {
+      console.error(
+        "Missing env: FRONTEND_BASE_URL and/or API_BASE_URL. Please set them in .env",
+      );
+      process.exit(2);
+    }
+
+    if (!adminPassword) {
+      console.error(
+        "Missing env: TEST_ADMIN_PASSWORD or ADMIN_PASSWORD required for UI checks",
+      );
+      process.exit(2);
+    }
+
     console.log("1) Fetching frontend root /");
-    let res = await fetch("http://localhost:3001/");
+    let res = await fetch(`${FRONTEND_BASE_URL}/`);
     console.log("/ ->", res.status);
 
     console.log("\n2) Login as Super Admin");
-    res = await fetch("http://localhost:3000/api/auth/login", {
+    res = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: "superadmin@deped.gov.ph",
-        password: "Admin@1234",
+        password: adminPassword,
       }),
     });
     const login = await res.json();
@@ -30,7 +49,7 @@
     console.log(
       "\n3) Fetch pending registrations page (UI uses /api/registrations/pending)",
     );
-    res = await fetch("http://localhost:3000/api/registrations/pending", {
+    res = await fetch(`${API_BASE_URL}/api/registrations/pending`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -47,7 +66,7 @@
     console.log(
       "\n4) Load printable leave card for employee id 8 (server-rendered page)",
     );
-    res = await fetch("http://localhost:3001/leave-card/8");
+    res = await fetch(`${FRONTEND_BASE_URL}/leave-card/8`);
     const html = await res.text();
     console.log("/leave-card/8 ->", res.status);
 

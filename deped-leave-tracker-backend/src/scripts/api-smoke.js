@@ -1,12 +1,20 @@
 (async () => {
   try {
     const fetch = globalThis.fetch || (await import("node-fetch")).default;
+    const adminPassword =
+      process.env.TEST_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD;
+    if (!adminPassword) {
+      console.error(
+        "Missing TEST_ADMIN_PASSWORD or ADMIN_PASSWORD in environment",
+      );
+      process.exit(1);
+    }
     const loginRes = await fetch("http://localhost:3000/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: "superadmin@deped.gov.ph",
-        password: "Admin@1234",
+        password: adminPassword,
       }),
     });
     const loginJson = await loginRes.json();
@@ -39,7 +47,7 @@
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ password: "Admin@1234" }),
+        body: JSON.stringify({ password: adminPassword }),
       },
     );
     const verifyJson = await verifyRes.json();

@@ -1,12 +1,18 @@
 (async () => {
   try {
     const fetch = globalThis.fetch || (await import("node-fetch")).default;
+    const adminPassword =
+      process.env.TEST_ADMIN_PASSWORD ||
+      process.env.ADMIN_PASSWORD ||
+      "Admin@1234";
+    const tmpPassword =
+      process.env.TMP_PASSWORD || process.env.TEMP_PASSWORD || "TmpPass@123";
     const loginRes = await fetch("http://localhost:3000/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: "testadmin@deped.gov.ph",
-        password: "Admin@1234",
+        password: adminPassword,
       }),
     });
     const loginJson = await loginRes.json();
@@ -27,7 +33,7 @@
           first_name: "Tmp",
           last_name: "Encoder",
           email: tmpEmail,
-          password: "TmpPass@123",
+          password: tmpPassword,
           school_name: "Tmp School",
         }),
       },

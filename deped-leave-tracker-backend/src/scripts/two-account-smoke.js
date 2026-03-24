@@ -2,15 +2,19 @@
   try {
     const fetch = globalThis.fetch || (await import("node-fetch")).default;
 
+    const adminPassword =
+      process.env.TEST_ADMIN_PASSWORD ||
+      process.env.ADMIN_PASSWORD ||
+      "Admin@1234";
     const accounts = [
       {
         email: "superadmin@deped.gov.ph",
-        password: "Admin@1234",
+        password: adminPassword,
         name: "Super Admin",
       },
       {
         email: "testadmin@deped.gov.ph",
-        password: "Admin@1234",
+        password: adminPassword,
         name: "Test Admin",
       },
     ];
