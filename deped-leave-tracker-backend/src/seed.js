@@ -21,7 +21,6 @@ if (process.env.TEST_ACCOUNTS) {
   }
 } else if (process.argv.includes("--force")) {
   // Explicit force: allow built-in defaults when the operator passes --force
-
 } else {
   console.error(
     "TEST_ACCOUNTS is required. Set TEST_ACCOUNTS in your .env (JSON array) or run with --force to use built-in defaults.",
