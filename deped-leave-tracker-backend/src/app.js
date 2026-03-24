@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const helmet = require("helmet");
 const cron = require("node-cron");
 const authRoutes = require("./modules/auth/authRoutes");
 const leaveRoutes = require("./modules/leave/leaveRoutes");
@@ -16,6 +17,40 @@ const pool = require("./config/db");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const AUTO_MONTHLY_CREDIT_ENABLED = process.env.AUTO_MONTHLY_CREDIT !== "false";
+const MAX_JSON_BODY_SIZE = process.env.MAX_JSON_BODY_SIZE || "100kb";
+const MAX_FORM_BODY_SIZE = process.env.MAX_FORM_BODY_SIZE || "100kb";
+
+const DEFAULT_CORS_ALLOWLIST = [
+  "http://localhost:3001",
+  "http://127.0.0.1:3001",
+];
+
+const allowedOrigins = (
+  process.env.CORS_ORIGIN_ALLOWLIST || process.env.CORS_ALLOWED_ORIGINS || ""
+)
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const corsAllowlist = allowedOrigins.length > 0 ? allowedOrigins : DEFAULT_CORS_ALLOWLIST;
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow server-to-server calls and local scripts without browser origin.
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (corsAllowlist.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("CORS blocked: origin not allowed"));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
 
 const ensureSecurityTables = async () => {
   await pool.promise().query(`
@@ -83,9 +118,15 @@ const ensureLeaveLedgerSchema = async () => {
 };
 
 // Middleware
-app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+app.use(bodyParser.json({ limit: MAX_JSON_BODY_SIZE }));
+app.use(bodyParser.urlencoded({ extended: true, limit: MAX_FORM_BODY_SIZE }));
 
 // Routes
 app.use("/api/auth", authRoutes);

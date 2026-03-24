@@ -10,6 +10,7 @@ const {
 
 const FRONTEND_URL =
   process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3001";
+const RESET_TOKEN_TTL = process.env.RESET_PASSWORD_TOKEN_TTL || "2h";
 const LOGIN_MAX_ATTEMPTS = Math.max(
   1,
   Number(process.env.LOGIN_MAX_ATTEMPTS || 3),
@@ -56,6 +57,27 @@ const clearLoginAttempts = async (identifier) => {
   await pool
     .promise()
     .query("DELETE FROM login_attempts WHERE identifier = ?", [identifier]);
+};
+
+const verifyPasswordResetToken = (token, passwordHash) => {
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET + passwordHash, {
+      maxAge: RESET_TOKEN_TTL,
+      clockTolerance: 0,
+    });
+  } catch (error) {
+    const isExpired =
+      error?.name === "TokenExpiredError" ||
+      error?.message?.toLowerCase().includes("maxage exceeded");
+
+    const normalized = new Error(
+      isExpired
+        ? "Reset link has expired. Please request a new one."
+        : "Reset link is invalid. Please request a new one.",
+    );
+    normalized.statusCode = 400;
+    throw normalized;
+  }
 };
 
 const recordFailedLoginAttempt = async ({ identifier, email, ip, current }) => {
@@ -424,7 +446,7 @@ const forgotPassword = async (req, res) => {
       const resetToken = jwt.sign(
         { id: user.id, purpose: "password-reset" },
         process.env.JWT_SECRET + user.password_hash,
-        { expiresIn: "2h" },
+        { expiresIn: RESET_TOKEN_TTL },
       );
 
       const resetLink = `${FRONTEND_URL}/reset-password?token=${resetToken}`;
@@ -481,14 +503,13 @@ const verifyOldPassword = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Fully verify the reset token is still valid and not expired
+    // Fully verify reset token with strict max age enforcement.
     try {
-      jwt.verify(token, process.env.JWT_SECRET + user.password_hash);
-    } catch {
-      return res.status(400).json({
-        message:
-          "Reset link is invalid or has expired. Please request a new one.",
-      });
+      verifyPasswordResetToken(token, user.password_hash);
+    } catch (verifyError) {
+      return res
+        .status(verifyError.statusCode || 400)
+        .json({ message: verifyError.message });
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
@@ -545,14 +566,13 @@ const resetPassword = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Verify the token fully — secret includes password_hash so it's one-time-use
+    // Verify token fully with strict max age enforcement.
     try {
-      jwt.verify(token, process.env.JWT_SECRET + user.password_hash);
-    } catch {
-      return res.status(400).json({
-        message:
-          "Reset link is invalid or has expired. Please request a new one.",
-      });
+      verifyPasswordResetToken(token, user.password_hash);
+    } catch (verifyError) {
+      return res
+        .status(verifyError.statusCode || 400)
+        .json({ message: verifyError.message });
     }
 
     // Prevent reusing the same password

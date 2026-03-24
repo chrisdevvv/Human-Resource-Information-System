@@ -78,7 +78,7 @@ const updateUserRole = async (req, res) => {
       sendRoleChanged(user.email, user.first_name, previousRole, role);
     }
 
-    Backlog.create({
+    await Backlog.record({
       user_id: req.user.id,
       school_id: null,
       employee_id: null,
@@ -129,7 +129,7 @@ const updateUserStatus = async (req, res) => {
     }
 
     await User.updateStatus(req.params.id, is_active);
-    Backlog.create({
+    await Backlog.record({
       user_id: req.user.id,
       school_id: null,
       employee_id: null,
@@ -160,7 +160,7 @@ const deleteUser = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     await User.deleteUser(req.params.id);
-    Backlog.create({
+    await Backlog.record({
       user_id: req.user.id,
       school_id: null,
       employee_id: null,
@@ -244,7 +244,7 @@ const adminResetPassword = async (req, res) => {
 
     // Fire-and-forget
     sendPasswordChanged(user.email, user.first_name);
-    Backlog.create({
+    await Backlog.record({
       user_id: req.user.id,
       school_id: null,
       employee_id: null,
@@ -337,7 +337,7 @@ const createDataEncoderByAdmin = async (req, res) => {
 
       await conn.commit();
 
-      Backlog.create({
+      await Backlog.record({
         user_id: req.user.id,
         school_id: schoolId,
         employee_id: null,

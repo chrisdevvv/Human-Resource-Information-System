@@ -33,7 +33,7 @@ const createEmployee = async (req, res) => {
     try {
         const result = await Employee.create(req.body);
         const { first_name, last_name, employee_type, school_id } = req.body;
-        Backlog.create({
+        await Backlog.record({
             user_id: req.user.id,
             school_id: school_id || null,
             employee_id: result.insertId,
@@ -51,7 +51,7 @@ const updateEmployee = async (req, res) => {
     try {
         const result = await Employee.update(req.params.id, req.body);
         const { first_name, last_name, employee_type, school_id } = req.body;
-        Backlog.create({
+        await Backlog.record({
             user_id: req.user.id,
             school_id: school_id || null,
             employee_id: Number(req.params.id),
@@ -70,7 +70,7 @@ const deleteEmployee = async (req, res) => {
         const employee = await Employee.getById(req.params.id);
         if (!employee) return res.status(404).json({ message: 'Employee not found' });
         const result = await Employee.delete(req.params.id);
-        Backlog.create({
+        await Backlog.record({
             user_id: req.user.id,
             school_id: employee.school_id || null,
             employee_id: Number(req.params.id),

@@ -106,7 +106,7 @@ const approveRegistration = async (req, res) => {
         finalRole,
       );
     }
-    Backlog.create({
+    await Backlog.record({
       user_id: req.user.id,
       school_id: null,
       employee_id: null,
@@ -158,7 +158,7 @@ const rejectRegistration = async (req, res) => {
       registration.first_name,
       rejection_reason || null,
     );
-    Backlog.create({
+    await Backlog.record({
       user_id: req.user.id,
       school_id: null,
       employee_id: null,

@@ -37,6 +37,21 @@ const Backlog = {
     return result;
   },
 
+  record: async (data) => {
+    if (!data || !data.action) {
+      throw new Error("Backlog action is required");
+    }
+
+    return Backlog.create({
+      user_id: data.user_id || null,
+      school_id: data.school_id || null,
+      employee_id: data.employee_id || null,
+      leave_id: data.leave_id || null,
+      action: String(data.action).trim(),
+      details: data.details ? String(data.details).trim() : null,
+    });
+  },
+
   getByUser: async (user_id) => {
     const [rows] = await pool
       .promise()

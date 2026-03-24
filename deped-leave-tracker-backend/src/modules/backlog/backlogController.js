@@ -39,7 +39,7 @@ const getBacklogsBySchool = async (req, res) => {
 
 const createBacklog = async (req, res) => {
     try {
-        const result = await Backlog.create(req.body);
+        const result = await Backlog.record(req.body);
         res.status(201).json({ message: 'Backlog created successfully', data: result });
     } catch (err) {
         res.status(500).json({ message: 'Error creating backlog', error: err.message });

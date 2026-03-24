@@ -541,7 +541,7 @@ const createLeaveRequest = async (req, res) => {
     // Keep the full chain consistent after adding a new entry.
     await recomputeEmployeeLeaveLedger(employee_id);
 
-    Backlog.create({
+    await Backlog.record({
       user_id: req.user.id,
       school_id: null,
       employee_id: employee_id || null,
@@ -659,7 +659,7 @@ const updateLeaveRequest = async (req, res) => {
     // Keep downstream rows consistent when editing historical entries
     await recomputeEmployeeLeaveLedger(leave.employee_id);
 
-    Backlog.create({
+    await Backlog.record({
       user_id: req.user.id,
       school_id: null,
       employee_id: leave.employee_id || null,
@@ -688,7 +688,7 @@ const deleteLeaveRequest = async (req, res) => {
     // Keep downstream rows consistent when deleting historical entries
     await recomputeEmployeeLeaveLedger(leave.employee_id);
 
-    Backlog.create({
+    await Backlog.record({
       user_id: req.user.id,
       school_id: null,
       employee_id: leave.employee_id || null,

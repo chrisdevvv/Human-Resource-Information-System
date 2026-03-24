@@ -17,6 +17,7 @@ const transporter = nodemailer.createTransport({
 const FROM = process.env.SMTP_FROM || "DepEd ELMS <noreply@deped.gov.ph>";
 const FRONTEND_URL =
   process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3001";
+const RESET_LINK_LABEL = process.env.RESET_PASSWORD_TOKEN_TTL_LABEL || "2 hours";
 
 // Only attempt to send if all SMTP vars are present
 const SMTP_READY = !!(
@@ -247,7 +248,7 @@ async function sendPasswordResetLink(to, firstName, resetLink) {
         </p>
         <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">
           Click the button below to reset your password. This link is valid for
-          <strong>2 hours</strong>.
+          <strong>${RESET_LINK_LABEL}</strong>.
         </p>
         <div style="text-align:center;margin-bottom:24px;">
             <a href="${resetLink}"
