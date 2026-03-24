@@ -50,37 +50,70 @@ function LeaveTableHeader() {
           fontWeight: "bold",
         }}
       >
-        <th className="border px-2 py-2 text-left" style={{ borderColor: CARD_COLORS.black }}>
+        <th
+          className="border px-2 py-2 text-left"
+          style={{ borderColor: CARD_COLORS.black }}
+        >
           Period of Leave
         </th>
-        <th className="border px-2 py-2 text-left" style={{ borderColor: CARD_COLORS.black }}>
+        <th
+          className="border px-2 py-2 text-left"
+          style={{ borderColor: CARD_COLORS.black }}
+        >
           Particulars
         </th>
-        <th className="border px-2 py-2 text-right" style={{ borderColor: CARD_COLORS.black }}>
+        <th
+          className="border px-2 py-2 text-right"
+          style={{ borderColor: CARD_COLORS.black }}
+        >
           Earned VL
         </th>
-        <th className="border px-2 py-2 text-right" style={{ borderColor: CARD_COLORS.black }}>
+        <th
+          className="border px-2 py-2 text-right"
+          style={{ borderColor: CARD_COLORS.black }}
+        >
           Abs With Pay VL
         </th>
-        <th className="border px-2 py-2 text-right" style={{ borderColor: CARD_COLORS.black }}>
+        <th
+          className="border px-2 py-2 text-right"
+          style={{ borderColor: CARD_COLORS.black }}
+        >
           Abs Without Pay VL
         </th>
-        <th className="border px-2 py-2 text-right" style={{ borderColor: CARD_COLORS.black }}>
+        <th
+          className="border px-2 py-2 text-right"
+          style={{ borderColor: CARD_COLORS.black }}
+        >
           Bal VL
         </th>
-        <th className="border px-2 py-2 text-right" style={{ borderColor: CARD_COLORS.black }}>
+        <th
+          className="border px-2 py-2 text-right"
+          style={{ borderColor: CARD_COLORS.black }}
+        >
           Earned SL
         </th>
-        <th className="border px-2 py-2 text-right" style={{ borderColor: CARD_COLORS.black }}>
+        <th
+          className="border px-2 py-2 text-right"
+          style={{ borderColor: CARD_COLORS.black }}
+        >
           Abs With Pay SL
         </th>
-        <th className="border px-2 py-2 text-right" style={{ borderColor: CARD_COLORS.black }}>
+        <th
+          className="border px-2 py-2 text-right"
+          style={{ borderColor: CARD_COLORS.black }}
+        >
           Abs Without Pay SL
         </th>
-        <th className="border px-2 py-2 text-right" style={{ borderColor: CARD_COLORS.black }}>
+        <th
+          className="border px-2 py-2 text-right"
+          style={{ borderColor: CARD_COLORS.black }}
+        >
           Bal SL
         </th>
-        <th className="border px-2 py-2 text-left" style={{ borderColor: CARD_COLORS.black }}>
+        <th
+          className="border px-2 py-2 text-left"
+          style={{ borderColor: CARD_COLORS.black }}
+        >
           Date and Action Taken / Evaluation
         </th>
       </tr>
@@ -105,37 +138,70 @@ function LeaveDataRow({
           index % 2 === 1 ? CARD_COLORS.stripeGray : CARD_COLORS.white,
       }}
     >
-      <td className="border px-2 py-1.5 align-top" style={{ borderColor: CARD_COLORS.black }}>
+      <td
+        className="border px-1 py-0.5 align-top"
+        style={{ borderColor: CARD_COLORS.black }}
+      >
         {row.periodOfLeave}
       </td>
-      <td className="border px-2 py-1.5 align-top" style={{ borderColor: CARD_COLORS.black }}>
+      <td
+        className="border px-1 py-0.5 align-top"
+        style={{ borderColor: CARD_COLORS.black }}
+      >
         {row.particulars || "-"}
       </td>
-      <td className="border px-2 py-1.5 text-right align-top" style={{ borderColor: CARD_COLORS.black }}>
+      <td
+        className="border px-1 py-0.5 text-right align-top"
+        style={{ borderColor: CARD_COLORS.black }}
+      >
         {formatNumber(row.earnedVl)}
       </td>
-      <td className="border px-2 py-1.5 text-right align-top" style={{ borderColor: CARD_COLORS.black }}>
+      <td
+        className="border px-1 py-0.5 text-right align-top"
+        style={{ borderColor: CARD_COLORS.black }}
+      >
         {formatNumber(row.absWithPayVl)}
       </td>
-      <td className="border px-2 py-1.5 text-right align-top" style={{ borderColor: CARD_COLORS.black }}>
+      <td
+        className="border px-1 py-0.5 text-right align-top"
+        style={{ borderColor: CARD_COLORS.black }}
+      >
         {formatNumber(row.absWithoutPayVl)}
       </td>
-      <td className="border px-2 py-1.5 text-right align-top" style={{ borderColor: CARD_COLORS.black }}>
+      <td
+        className="border px-1 py-0.5 text-right align-top"
+        style={{ borderColor: CARD_COLORS.black }}
+      >
         {formatNumber(row.balVl)}
       </td>
-      <td className="border px-2 py-1.5 text-right align-top" style={{ borderColor: CARD_COLORS.black }}>
+      <td
+        className="border px-1 py-0.5 text-right align-top"
+        style={{ borderColor: CARD_COLORS.black }}
+      >
         {formatNumber(row.earnedSl)}
       </td>
-      <td className="border px-2 py-1.5 text-right align-top" style={{ borderColor: CARD_COLORS.black }}>
+      <td
+        className="border px-1 py-0.5 text-right align-top"
+        style={{ borderColor: CARD_COLORS.black }}
+      >
         {formatNumber(row.absWithPaySl)}
       </td>
-      <td className="border px-2 py-1.5 text-right align-top" style={{ borderColor: CARD_COLORS.black }}>
+      <td
+        className="border px-1 py-0.5 text-right align-top"
+        style={{ borderColor: CARD_COLORS.black }}
+      >
         {formatNumber(row.absWithoutPaySl)}
       </td>
-      <td className="border px-2 py-1.5 text-right align-top" style={{ borderColor: CARD_COLORS.black }}>
+      <td
+        className="border px-1 py-0.5 text-right align-top"
+        style={{ borderColor: CARD_COLORS.black }}
+      >
         {formatNumber(row.balSl)}
       </td>
-      <td className="border px-2 py-1.5 align-top" style={{ borderColor: CARD_COLORS.black }}>
+      <td
+        className="border px-1 py-0.5 align-top"
+        style={{ borderColor: CARD_COLORS.black }}
+      >
         {formatDateOnly(row.dateOfAction)}
       </td>
     </tr>
@@ -165,10 +231,7 @@ function DocumentHeader({
           Department of Education
         </p>
         <p style={{ fontSize: "12pt", lineHeight: 1.2 }}>Region III</p>
-        <p
-          className="uppercase"
-          style={{ fontSize: "12pt", lineHeight: 1.2 }}
-        >
+        <p className="uppercase" style={{ fontSize: "12pt", lineHeight: 1.2 }}>
           Division of City of San Jose del Monte
         </p>
         <p
@@ -203,10 +266,12 @@ function EmptyStateRow() {
     <tr>
       <td
         colSpan={11}
-        className="border px-2 py-8 text-center"
+        className="border px-1 text-center"
         style={{
           borderColor: CARD_COLORS.black,
           color: CARD_COLORS.emptyGray,
+          paddingTop: "calc(2rem - 4px)",
+          paddingBottom: "calc(2rem - 4px)",
         }}
       >
         No leave entries available.
@@ -243,8 +308,14 @@ const PrintableLeaveCard = React.forwardRef<
     const firstStaticHeight = firstPageStaticRef.current.offsetHeight;
     const nextStaticHeight = nextPageStaticRef.current.offsetHeight;
 
-    const firstAvailable = Math.max(PAGE_HEIGHT_PX_AT_96_DPI - firstStaticHeight, 100);
-    const nextAvailable = Math.max(PAGE_HEIGHT_PX_AT_96_DPI - nextStaticHeight, 100);
+    const firstAvailable = Math.max(
+      PAGE_HEIGHT_PX_AT_96_DPI - firstStaticHeight,
+      100,
+    );
+    const nextAvailable = Math.max(
+      PAGE_HEIGHT_PX_AT_96_DPI - nextStaticHeight,
+      100,
+    );
 
     const rowHeights = rows.map((_, index) => {
       const rowEl = rowMeasureRefs.current[index];
@@ -261,7 +332,10 @@ const PrintableLeaveCard = React.forwardRef<
     rows.forEach((row, index) => {
       const rowHeight = Math.max(rowHeights[index], 1);
 
-      if (currentChunk.length > 0 && currentHeight + rowHeight > availableHeight) {
+      if (
+        currentChunk.length > 0 &&
+        currentHeight + rowHeight > availableHeight
+      ) {
         chunks.push(currentChunk);
         currentChunk = [row];
         currentHeight = rowHeight;
@@ -348,7 +422,10 @@ const PrintableLeaveCard = React.forwardRef<
             backgroundColor: CARD_COLORS.white,
           }}
         >
-          <DocumentHeader employeeName={employeeName} employeeType={employeeType} />
+          <DocumentHeader
+            employeeName={employeeName}
+            employeeType={employeeType}
+          />
           <div className="border" style={{ borderColor: CARD_COLORS.black }}>
             <table className="w-full border-collapse">
               <LeaveTableHeader />
@@ -434,7 +511,10 @@ const PrintableLeaveCard = React.forwardRef<
                 />
               )}
 
-              <div className="border" style={{ borderColor: CARD_COLORS.black }}>
+              <div
+                className="border"
+                style={{ borderColor: CARD_COLORS.black }}
+              >
                 <table className="w-full border-collapse">
                   <LeaveTableHeader />
                   <tbody style={{ fontSize: "11px" }}>
