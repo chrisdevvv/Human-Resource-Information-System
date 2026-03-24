@@ -1,16 +1,35 @@
 const pool = require("../../config/db");
 
 const Backlog = {
-  getAll: async () => {
-    const [rows] = await pool.promise().query(`
-            SELECT backlogs.*, users.first_name, users.last_name, users.role, users.email,
-                   schools.school_name
-            FROM backlogs
-            LEFT JOIN users ON backlogs.user_id = users.id
-            LEFT JOIN schools ON users.school_id = schools.id
-            ORDER BY backlogs.created_at DESC
-        `);
-    return rows;
+  // Supports optional pagination. If pagination not provided, returns all rows (backwards compatible).
+  getAll: async (pagination) => {
+    const baseQuery = `FROM backlogs LEFT JOIN users ON backlogs.user_id = users.id LEFT JOIN schools ON users.school_id = schools.id`;
+
+    if (!pagination || !pagination.page) {
+      const [rows] = await pool
+        .promise()
+        .query(
+          `SELECT backlogs.*, users.first_name, users.last_name, users.role, users.email, schools.school_name ${baseQuery} ORDER BY backlogs.created_at DESC`,
+        );
+      return rows;
+    }
+
+    const page = Number(pagination.page) || 1;
+    const pageSize = Math.min(Number(pagination.pageSize) || 25, 200);
+    const offset = (page - 1) * pageSize;
+
+    const [[{ total }]] = await pool
+      .promise()
+      .query(`SELECT COUNT(1) as total ${baseQuery}`);
+
+    const [rows] = await pool
+      .promise()
+      .query(
+        `SELECT backlogs.*, users.first_name, users.last_name, users.role, users.email, schools.school_name ${baseQuery} ORDER BY backlogs.created_at DESC LIMIT ? OFFSET ?`,
+        [pageSize, offset],
+      );
+
+    return { data: rows, total: Number(total), page, pageSize };
   },
 
   getById: async (id) => {

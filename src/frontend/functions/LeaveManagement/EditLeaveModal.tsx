@@ -39,7 +39,7 @@ export default function EditLeaveModal({
     const safeValue = Number.isFinite(value) ? value : 0;
     return safeValue.toLocaleString("en-US", {
       useGrouping: false,
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 3,
       maximumFractionDigits: 3,
     });
   };

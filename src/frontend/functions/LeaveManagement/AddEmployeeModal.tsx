@@ -29,11 +29,14 @@ type PendingEmployeePayload = {
   last_name: string;
   email: string;
   employee_type: "teaching" | "non-teaching";
-  school_id: number;
+  school_id?: number | null;
   school_name: string;
 };
 
 const NAME_PATTERN = /^[A-Za-z.\s]+$/;
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
 export default function AddEmployeeModal({
   isOpen,
@@ -71,7 +74,7 @@ export default function AddEmployeeModal({
         setSchoolsLoading(true);
         setErrorMessage(null);
 
-        const response = await fetch("http://localhost:3000/api/schools/", {
+        const response = await fetch(`${API_BASE}/api/schools/`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -172,22 +175,16 @@ export default function AddEmployeeModal({
         schoolName.trim().toLowerCase(),
     );
 
-    if (!selectedSchool) {
-      setErrorMessage(
-        "School not found. Please enter an existing school name exactly.",
-      );
-      return;
-    }
-
+    // Allow manual input: if school not found, proceed and create on confirmation.
     setErrorMessage(null);
     setPendingPayload({
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       email: email.trim(),
       employee_type: employeeType,
-      school_id: selectedSchool.id,
-      school_name: selectedSchool.school_name,
-    });
+      school_id: selectedSchool ? selectedSchool.id : null,
+      school_name: schoolName.trim(),
+    } as PendingEmployeePayload);
     setIsConfirmOpen(true);
   };
 
@@ -205,7 +202,59 @@ export default function AddEmployeeModal({
         throw new Error("No authentication token found.");
       }
 
-      const response = await fetch("http://localhost:3000/api/employees/", {
+      // Ensure school exists: if no school_id in pending payload, create the school first
+      let schoolId = pendingPayload.school_id ?? null;
+      if (!schoolId) {
+        const createSchoolRes = await fetch(`${API_BASE}/api/schools/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            school_name: pendingPayload.school_name,
+            school_code: null,
+          }),
+        });
+
+        const createdSchoolBody = await createSchoolRes
+          .json()
+          .catch(() => ({}));
+        if (!createSchoolRes.ok) {
+          throw new Error(
+            createdSchoolBody.message || "Failed to create school",
+          );
+        }
+
+        const newId =
+          createdSchoolBody?.data?.insertId ||
+          createdSchoolBody?.data?.insert_id ||
+          null;
+        if (newId) {
+          schoolId = Number(newId);
+        } else {
+          // Fallback: reload schools and find by name
+          const reloadRes = await fetch(`${API_BASE}/api/schools/`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          });
+          const reloadBody = await reloadRes.json().catch(() => ({}));
+          const options = Array.isArray(reloadBody.data) ? reloadBody.data : [];
+          setSchools(options);
+          const found = options.find(
+            (s: any) =>
+              s.school_name.trim().toLowerCase() ===
+              pendingPayload.school_name.trim().toLowerCase(),
+          );
+          if (found) schoolId = found.id;
+        }
+
+        if (!schoolId) {
+          throw new Error("Unable to resolve or create school.");
+        }
+      }
+
+      const response = await fetch(`${API_BASE}/api/employees/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -216,7 +265,7 @@ export default function AddEmployeeModal({
           last_name: pendingPayload.last_name,
           email: pendingPayload.email,
           employee_type: pendingPayload.employee_type,
-          school_id: pendingPayload.school_id,
+          school_id: schoolId,
         }),
       });
 
@@ -228,6 +277,22 @@ export default function AddEmployeeModal({
       setRecentlyAddedName(
         `${pendingPayload.first_name} ${pendingPayload.last_name}`.trim(),
       );
+
+      // Add created school to local list if it wasn't present
+      if (schoolId) {
+        const exists = schools.some(
+          (s) =>
+            s.id === schoolId ||
+            s.school_name.trim().toLowerCase() ===
+              pendingPayload.school_name.trim().toLowerCase(),
+        );
+        if (!exists) {
+          setSchools((prev) => [
+            ...prev,
+            { id: schoolId as number, school_name: pendingPayload.school_name },
+          ]);
+        }
+      }
 
       setIsConfirmOpen(false);
       setPendingPayload(null);
@@ -328,27 +393,21 @@ export default function AddEmployeeModal({
               <label className="block text-sm font-medium text-gray-600">
                 School
               </label>
-              <select
+              <input
+                type="text"
                 value={schoolName}
                 onChange={(e) => setSchoolName(e.target.value)}
-                disabled={schoolsLoading || schools.length === 0}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
-              >
-                <option value="" disabled>
-                  {schoolsLoading
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={
+                  schoolsLoading
                     ? "Loading schools..."
-                    : schools.length === 0
-                      ? "No schools available"
-                      : "Select school"}
-                </option>
-                {sortedSchools.map((school) => (
-                  <option key={school.id} value={school.school_name}>
-                    {school.school_name}
-                  </option>
-                ))}
-              </select>
+                    : "Type or paste school name"
+                }
+                disabled={schoolsLoading}
+              />
               <p className="mt-1 text-xs text-gray-500">
-                Choose the school from the list.
+                Type the school name manually. New names will be created and
+                added.
               </p>
             </div>
           </div>
@@ -374,8 +433,7 @@ export default function AddEmployeeModal({
                 submitLoading ||
                 isConfirmOpen ||
                 isSuccessOpen ||
-                schoolsLoading ||
-                schools.length === 0
+                schoolsLoading
               }
               className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition font-medium text-sm cursor-pointer"
             >

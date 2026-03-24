@@ -4,6 +4,9 @@ import React, { useEffect, useState } from "react";
 import { X, Eye, EyeOff } from "lucide-react";
 import ConfirmationModal from "./ConfirmationModal";
 
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
 type UserRole = "SUPER_ADMIN" | "ADMIN" | "DATA_ENCODER";
 
 type UserSettingModalProps = {
@@ -54,16 +57,13 @@ export default function UserSettingModal({
         const token = localStorage.getItem("authToken");
         if (!token) throw new Error("No authentication token found.");
 
-        const response = await fetch(
-          `http://localhost:3000/api/users/${userId}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
+        const response = await fetch(`${API_BASE}/api/users/${userId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-        );
+        });
 
         if (!response.ok) {
           const body = await response.json();
@@ -110,17 +110,14 @@ export default function UserSettingModal({
       if (!token) throw new Error("No authentication token found.");
 
       if (selectedRole === "SUPER_ADMIN") {
-        const verifyRes = await fetch(
-          "http://localhost:3000/api/auth/verify-password",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ password: superAdminPassword }),
+        const verifyRes = await fetch(`${API_BASE}/api/auth/verify-password`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-        );
+          body: JSON.stringify({ password: superAdminPassword }),
+        });
 
         if (!verifyRes.ok) {
           const body = await verifyRes.json();
@@ -128,17 +125,14 @@ export default function UserSettingModal({
         }
       }
 
-      const response = await fetch(
-        `http://localhost:3000/api/users/${userId}/role`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ role: selectedRole }),
+      const response = await fetch(`${API_BASE}/api/users/${userId}/role`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({ role: selectedRole }),
+      });
 
       if (!response.ok) {
         const body = await response.json();
@@ -171,17 +165,14 @@ export default function UserSettingModal({
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
 
-      const response = await fetch(
-        `http://localhost:3000/api/users/${userId}/status`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ is_active: nextStatus ? 1 : 0 }),
+      const response = await fetch(`${API_BASE}/api/users/${userId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({ is_active: nextStatus ? 1 : 0 }),
+      });
 
       if (!response.ok) {
         const body = await response.json();

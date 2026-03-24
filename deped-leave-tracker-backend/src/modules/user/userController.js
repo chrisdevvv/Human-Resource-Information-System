@@ -12,7 +12,7 @@ const VALID_ROLES = ["SUPER_ADMIN", "ADMIN", "DATA_ENCODER"];
 
 const getAllUsers = async (req, res) => {
   try {
-    const { search, role, is_active } = req.query;
+    const { search, role, is_active, page, pageSize } = req.query;
 
     const filters = {
       search: search || null,
@@ -20,8 +20,25 @@ const getAllUsers = async (req, res) => {
       is_active: is_active !== undefined ? Number(is_active) : null,
     };
 
-    const results = await User.getAll(filters);
-    res.status(200).json({ data: results });
+    const pagination = page
+      ? { page: Number(page), pageSize: Number(pageSize || 25) }
+      : undefined;
+
+    const results = await User.getAll(filters, pagination);
+
+    // Preserve existing response shape when no pagination requested
+    if (!pagination) {
+      return res.status(200).json({ data: results });
+    }
+
+    res
+      .status(200)
+      .json({
+        data: results.data,
+        total: results.total,
+        page: results.page,
+        pageSize: results.pageSize,
+      });
   } catch (err) {
     res
       .status(500)

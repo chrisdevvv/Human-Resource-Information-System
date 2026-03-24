@@ -31,8 +31,8 @@ type LeaveAmountRow = {
 function renderAmount(value: number) {
   const safeValue = Number.isFinite(value) ? value : 0;
   return safeValue.toLocaleString("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
   });
 }
 

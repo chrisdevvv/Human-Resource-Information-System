@@ -13,6 +13,9 @@ import UserRolesDetailsModal, {
 import RoleAssignmentModal from "../../components/RoleAssignmentModal";
 import RejectModal from "../../components/RejectModal";
 
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
 type RegistrationRequest = {
   id: number;
   firstName: string;
@@ -69,8 +72,8 @@ export default function PendingAccountsMobile({
 
       const url =
         status === "ALL"
-          ? "http://localhost:3000/api/registrations/"
-          : `http://localhost:3000/api/registrations/?status=${status}`;
+          ? `${API_BASE}/api/registrations/`
+          : `${API_BASE}/api/registrations/?status=${status}`;
 
       const response = await fetch(url, {
         method: "GET",

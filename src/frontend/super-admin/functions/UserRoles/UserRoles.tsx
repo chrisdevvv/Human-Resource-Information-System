@@ -12,6 +12,9 @@ import PendingAccounts from "./PendingAccounts";
 import UserSettingModal from "../../components/UserSettingModal";
 import AddUserModal from "./AddUserModal";
 
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
 type User = {
   id: number;
   firstName: string;
@@ -57,7 +60,7 @@ export default function UserRoles() {
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
 
-      const response = await fetch("http://localhost:3000/api/users/", {
+      const response = await fetch(`${API_BASE}/api/users/`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -571,16 +574,13 @@ function UserDetailsModalInline({
         const token = localStorage.getItem("authToken");
         if (!token) throw new Error("No authentication token found.");
 
-        const response = await fetch(
-          `http://localhost:3000/api/users/${userId}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
+        const response = await fetch(`${API_BASE}/api/users/${userId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-        );
+        });
 
         if (!response.ok) {
           const body = await response.json();

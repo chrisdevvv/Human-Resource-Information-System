@@ -30,6 +30,9 @@ const normalizeIsActive = (value: unknown): boolean => {
   return value === true || value === 1 || value === "1" || value === "true";
 };
 
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 export default function AdminUserRoles() {
@@ -43,6 +46,7 @@ export default function AdminUserRoles() {
   const [letterFilter, setLetterFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [pageJumpInput, setPageJumpInput] = useState("1");
   const [userData, setUserData] = useState<User[]>([]);
   const [userLoading, setUserLoading] = useState(true);
@@ -62,18 +66,32 @@ export default function AdminUserRoles() {
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
 
-      const response = await fetch("http://localhost:3000/api/users/", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const params = new URLSearchParams();
+      if (searchQuery) params.set("search", searchQuery);
+      if (roleFilter && roleFilter !== "ALL") params.set("role", roleFilter);
+      if (accountStatusFilter && accountStatusFilter !== "ALL")
+        params.set("is_active", accountStatusFilter === "ACTIVE" ? "1" : "0");
+      params.set("page", String(currentPage));
+      params.set("pageSize", String(itemsPerPage));
+
+      const response = await fetch(
+        `${API_BASE}/api/users/?${params.toString()}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       if (!response.ok) throw new Error("Failed to fetch users");
 
       const result = await response.json();
-      const formatted = (result.data || []).map((item: any) => ({
+
+      // When pagination is used backend returns { data, total, page, pageSize }
+      const rows = result.data || [];
+      const formatted = (rows as any[]).map((item: any) => ({
         id: item.id,
         firstName: item.first_name,
         lastName: item.last_name,
@@ -82,12 +100,17 @@ export default function AdminUserRoles() {
         role: item.role,
         isActive: normalizeIsActive(item.is_active),
       }));
+
       setUserData(formatted);
+      setTotalItems(
+        typeof result.total === "number" ? result.total : formatted.length,
+      );
       setUserError(null);
     } catch (err) {
       setUserError(err instanceof Error ? err.message : "An error occurred");
       if (showSpinner) {
         setUserData([]);
+        setTotalItems(0);
       }
     } finally {
       if (showSpinner) {
@@ -97,6 +120,7 @@ export default function AdminUserRoles() {
   };
 
   useEffect(() => {
+    // initial load
     fetchUsers();
 
     const intervalId = window.setInterval(() => {
@@ -104,37 +128,40 @@ export default function AdminUserRoles() {
     }, 5000);
 
     return () => window.clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Refetch when page, pageSize, role, or account status change
+  useEffect(() => {
+    fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, itemsPerPage, roleFilter, accountStatusFilter]);
+
+  // Debounce search input
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setCurrentPage(1);
+      fetchUsers();
+    }, 350);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
+
+  // userData is already server-paginated. Apply only letter filter and sorting locally.
   const filteredUsers = userData
     .filter((user) => {
-      const matchesSearch =
-        user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.schoolName.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
-      const matchesAccountStatus =
-        accountStatusFilter === "ALL" ||
-        (accountStatusFilter === "ACTIVE" ? user.isActive : !user.isActive);
       const matchesLetter =
         letterFilter === "ALL" ||
         user.firstName.charAt(0).toUpperCase() === letterFilter;
-      return (
-        matchesSearch && matchesRole && matchesAccountStatus && matchesLetter
-      );
+      return matchesLetter;
     })
     .sort((a, b) => {
       if (sortOrder === "asc") return a.firstName.localeCompare(b.firstName);
       return b.firstName.localeCompare(a.firstName);
     });
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredUsers.length / itemsPerPage),
-  );
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIdx, startIdx + itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const paginatedUsers = filteredUsers; // already paginated by server
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
     Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
@@ -597,16 +624,13 @@ function AdminUserSettingModal({
         const token = localStorage.getItem("authToken");
         if (!token) throw new Error("No authentication token found.");
 
-        const response = await fetch(
-          `http://localhost:3000/api/users/${userId}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
+        const response = await fetch(`${API_BASE}/api/users/${userId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-        );
+        });
 
         if (!response.ok) {
           const body = await response.json();
@@ -642,17 +666,14 @@ function AdminUserSettingModal({
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
 
-      const response = await fetch(
-        `http://localhost:3000/api/users/${userId}/role`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ role: selectedRole }),
+      const response = await fetch(`${API_BASE}/api/users/${userId}/role`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({ role: selectedRole }),
+      });
 
       if (!response.ok) {
         const body = await response.json();

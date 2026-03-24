@@ -13,7 +13,7 @@ const formatNumber = (value: number) => {
   const safeValue = Number.isFinite(value) ? value : 0;
   return safeValue.toLocaleString("en-US", {
     useGrouping: false,
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 3,
     maximumFractionDigits: 3,
   });
 };
@@ -91,7 +91,10 @@ export default function LeaveHistoryTable({
                     isMonthlyCredit ? "bg-emerald-50/40" : "bg-white"
                   }`}
                 >
-                  <td className="px-3 py-2 font-medium text-gray-900">
+                  <td
+                    className="px-3 py-2 font-medium text-gray-900"
+                    style={{ paddingTop: "7px", paddingBottom: "10px" }}
+                  >
                     {row.periodOfLeave}
                   </td>
                   <td className="px-3 py-2 text-gray-700">
