@@ -1,15 +1,38 @@
 const Employee = require("./employeeModel");
 const Backlog = require("../backlog/backlogModel");
 
+const toBoolean = (value) => {
+  if (value === true || value === 1 || value === "1") return true;
+  if (typeof value === "string") return value.trim().toLowerCase() === "true";
+  return false;
+};
+
+const isAdminLevel = (role) => {
+  const normalized = String(role || "").toUpperCase();
+  return normalized === "ADMIN" || normalized === "SUPER_ADMIN";
+};
+
 const getAllEmployees = async (req, res) => {
   try {
-    const { page, pageSize } = req.query;
-    const pagination = page
-      ? { page: Number(page), pageSize: Number(pageSize || 25) }
-      : undefined;
-    const results = await Employee.getAll(pagination);
+    const { page, pageSize, include_archived, on_leave } = req.query;
+    const includeArchivedRequested = toBoolean(include_archived);
+    const includeArchived =
+      includeArchivedRequested && isAdminLevel(req.user?.role);
 
-    if (!pagination) return res.status(200).json({ data: results });
+    const onLeave =
+      on_leave === undefined || on_leave === null || on_leave === ""
+        ? undefined
+        : toBoolean(on_leave);
+
+    const filters = {
+      page: page ? Number(page) : undefined,
+      pageSize: pageSize ? Number(pageSize) : undefined,
+      includeArchived,
+      onLeave,
+    };
+    const results = await Employee.getAll(filters);
+
+    if (!filters.page) return res.status(200).json({ data: results });
     return res
       .status(200)
       .json({
@@ -39,7 +62,19 @@ const getEmployeeById = async (req, res) => {
 
 const getEmployeesBySchool = async (req, res) => {
   try {
-    const results = await Employee.getBySchool(req.params.school_id);
+    const includeArchived =
+      toBoolean(req.query?.include_archived) && isAdminLevel(req.user?.role);
+    const onLeave =
+      req.query?.on_leave === undefined ||
+      req.query?.on_leave === null ||
+      req.query?.on_leave === ""
+        ? undefined
+        : toBoolean(req.query?.on_leave);
+
+    const results = await Employee.getBySchool(req.params.school_id, {
+      includeArchived,
+      onLeave,
+    });
     res.status(200).json({ data: results });
   } catch (err) {
     res
@@ -48,11 +83,44 @@ const getEmployeesBySchool = async (req, res) => {
   }
 };
 
+const getEmployeeStatusCounts = async (req, res) => {
+  try {
+    const includeArchivedRequested = toBoolean(req.query?.include_archived);
+    const includeArchived =
+      includeArchivedRequested && isAdminLevel(req.user?.role);
+    const schoolId = req.query?.school_id ? Number(req.query.school_id) : null;
+
+    const counts = await Employee.getStatusCounts({ schoolId });
+    const totalAll = Number(counts.total_all || 0);
+    const archived = Number(counts.archived || 0);
+    const activeTotal = Number(counts.active_total || 0);
+    const onLeave = Number(counts.on_leave || 0);
+    const available = Number(counts.available || 0);
+
+    return res.status(200).json({
+      data: {
+        total: includeArchived ? totalAll : activeTotal,
+        active_total: activeTotal,
+        on_leave: onLeave,
+        available,
+        archived: includeArchived ? archived : 0,
+        include_archived: includeArchived,
+        school_id: schoolId,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error retrieving employee status counts",
+      error: err.message,
+    });
+  }
+};
+
 const createEmployee = async (req, res) => {
   try {
     const result = await Employee.create(req.body);
     const { first_name, last_name, employee_type, school_id } = req.body;
-    Backlog.create({
+    await Backlog.record({
       user_id: req.user.id,
       school_id: school_id || null,
       employee_id: result.insertId,
@@ -73,8 +141,11 @@ const createEmployee = async (req, res) => {
 const updateEmployee = async (req, res) => {
   try {
     const result = await Employee.update(req.params.id, req.body);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
     const { first_name, last_name, employee_type, school_id } = req.body;
-    Backlog.create({
+    await Backlog.record({
       user_id: req.user.id,
       school_id: school_id || null,
       employee_id: Number(req.params.id),
@@ -94,11 +165,13 @@ const updateEmployee = async (req, res) => {
 
 const deleteEmployee = async (req, res) => {
   try {
-    const employee = await Employee.getById(req.params.id);
+    const employee = await Employee.getById(req.params.id, {
+      includeArchived: true,
+    });
     if (!employee)
       return res.status(404).json({ message: "Employee not found" });
     const result = await Employee.delete(req.params.id);
-    Backlog.create({
+    await Backlog.record({
       user_id: req.user.id,
       school_id: employee.school_id || null,
       employee_id: Number(req.params.id),
@@ -116,11 +189,176 @@ const deleteEmployee = async (req, res) => {
   }
 };
 
+const archiveEmployee = async (req, res) => {
+  try {
+    const employee = await Employee.getById(req.params.id, {
+      includeArchived: true,
+    });
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    if (employee.is_archived) {
+      return res.status(409).json({ message: "Employee is already archived" });
+    }
+
+    const result = await Employee.archive(req.params.id, req.user.id);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    await Backlog.record({
+      user_id: req.user.id,
+      school_id: employee.school_id || null,
+      employee_id: Number(req.params.id),
+      leave_id: null,
+      action: "EMPLOYEE_ARCHIVED",
+      details: `${employee.first_name} ${employee.last_name} (${employee.employee_type})`,
+    });
+
+    return res.status(200).json({ message: "Employee archived successfully" });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Error archiving employee", error: err.message });
+  }
+};
+
+const unarchiveEmployee = async (req, res) => {
+  try {
+    const employee = await Employee.getById(req.params.id, {
+      includeArchived: true,
+    });
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    if (!employee.is_archived) {
+      return res.status(409).json({ message: "Employee is not archived" });
+    }
+
+    const result = await Employee.unarchive(req.params.id);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    await Backlog.record({
+      user_id: req.user.id,
+      school_id: employee.school_id || null,
+      employee_id: Number(req.params.id),
+      leave_id: null,
+      action: "EMPLOYEE_UNARCHIVED",
+      details: `${employee.first_name} ${employee.last_name} (${employee.employee_type})`,
+    });
+
+    return res
+      .status(200)
+      .json({ message: "Employee restored successfully" });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Error restoring employee", error: err.message });
+  }
+};
+
+const markEmployeeOnLeave = async (req, res) => {
+  try {
+    const employee = await Employee.getById(req.params.id, {
+      includeArchived: true,
+    });
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    if (employee.is_archived) {
+      return res
+        .status(409)
+        .json({ message: "Archived employees cannot be marked on leave" });
+    }
+
+    if (employee.on_leave) {
+      return res.status(409).json({ message: "Employee is already marked on leave" });
+    }
+
+    const { on_leave_from, on_leave_until, reason } = req.body || {};
+    const result = await Employee.markOnLeave(req.params.id, {
+      on_leave_from,
+      on_leave_until,
+      reason,
+    });
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    await Backlog.record({
+      user_id: req.user.id,
+      school_id: employee.school_id || null,
+      employee_id: Number(req.params.id),
+      leave_id: null,
+      action: "EMPLOYEE_MARKED_ON_LEAVE",
+      details: `${employee.first_name} ${employee.last_name}${reason ? `: ${reason}` : ""}`,
+    });
+
+    return res.status(200).json({ message: "Employee marked as on leave" });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Error marking employee on leave", error: err.message });
+  }
+};
+
+const markEmployeeAvailable = async (req, res) => {
+  try {
+    const employee = await Employee.getById(req.params.id, {
+      includeArchived: true,
+    });
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    if (employee.is_archived) {
+      return res
+        .status(409)
+        .json({ message: "Archived employees cannot be marked available" });
+    }
+
+    if (!employee.on_leave) {
+      return res.status(409).json({ message: "Employee is already available" });
+    }
+
+    const result = await Employee.markAvailable(req.params.id);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    await Backlog.record({
+      user_id: req.user.id,
+      school_id: employee.school_id || null,
+      employee_id: Number(req.params.id),
+      leave_id: null,
+      action: "EMPLOYEE_MARKED_AVAILABLE",
+      details: `${employee.first_name} ${employee.last_name}`,
+    });
+
+    return res.status(200).json({ message: "Employee marked as available" });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Error marking employee available", error: err.message });
+  }
+};
+
 module.exports = {
   getAllEmployees,
   getEmployeeById,
   getEmployeesBySchool,
+  getEmployeeStatusCounts,
   createEmployee,
   updateEmployee,
   deleteEmployee,
+  archiveEmployee,
+  unarchiveEmployee,
+  markEmployeeOnLeave,
+  markEmployeeAvailable,
 };

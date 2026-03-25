@@ -3,9 +3,14 @@ const {
   getAllEmployees,
   getEmployeeById,
   getEmployeesBySchool,
+  getEmployeeStatusCounts,
   createEmployee,
   updateEmployee,
   deleteEmployee,
+  archiveEmployee,
+  unarchiveEmployee,
+  markEmployeeOnLeave,
+  markEmployeeAvailable,
 } = require("./employeeController");
 const authMiddleware = require("../../middleware/authMiddleware");
 const { roleAuthMiddleware } = require("../../middleware/roleAuthMiddleware");
@@ -14,6 +19,9 @@ const {
   idParamSchema,
   schoolIdParamSchema,
   employeeBodySchema,
+  employeeListQuerySchema,
+  employeeMarkOnLeaveBodySchema,
+  employeeStatusCountsQuerySchema,
 } = require("../../validation/schemas");
 
 const router = express.Router();
@@ -23,6 +31,7 @@ router.get(
   "/",
   authMiddleware,
   roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  validateRequest({ query: employeeListQuerySchema }),
   getAllEmployees,
 );
 router.get(
@@ -31,6 +40,13 @@ router.get(
   roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
   validateRequest({ params: schoolIdParamSchema }),
   getEmployeesBySchool,
+);
+router.get(
+  "/status-counts",
+  authMiddleware,
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  validateRequest({ query: employeeStatusCountsQuerySchema }),
+  getEmployeeStatusCounts,
 );
 router.get(
   "/:id",
@@ -61,6 +77,34 @@ router.delete(
   roleAuthMiddleware(["admin", "super-admin"]),
   validateRequest({ params: idParamSchema }),
   deleteEmployee,
+);
+router.patch(
+  "/:id/archive",
+  authMiddleware,
+  roleAuthMiddleware(["admin", "super-admin"]),
+  validateRequest({ params: idParamSchema }),
+  archiveEmployee,
+);
+router.patch(
+  "/:id/unarchive",
+  authMiddleware,
+  roleAuthMiddleware(["admin", "super-admin"]),
+  validateRequest({ params: idParamSchema }),
+  unarchiveEmployee,
+);
+router.patch(
+  "/:id/mark-on-leave",
+  authMiddleware,
+  roleAuthMiddleware(["admin", "super-admin"]),
+  validateRequest({ params: idParamSchema, body: employeeMarkOnLeaveBodySchema }),
+  markEmployeeOnLeave,
+);
+router.patch(
+  "/:id/mark-available",
+  authMiddleware,
+  roleAuthMiddleware(["admin", "super-admin"]),
+  validateRequest({ params: idParamSchema }),
+  markEmployeeAvailable,
 );
 
 module.exports = router;
