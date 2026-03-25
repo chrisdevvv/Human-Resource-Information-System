@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import ConfirmationAddLeave from "./ConfirmationAddLeave";
-import AddLeaveSuccess from "./AddLeaveSuccess";
+import ConfirmationAddLeave from "../ConfirmationAddLeave";
+import AddLeaveSuccess from "../AddLeaveSuccess";
 
 export type AddLeaveFormValues = {
   employee_id: number;

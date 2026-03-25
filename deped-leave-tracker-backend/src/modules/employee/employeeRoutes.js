@@ -90,7 +90,7 @@ router.patch(
   "/:id/unarchive",
   authMiddleware,
   roleAuthMiddleware(["admin", "super-admin"]),
-  validateRequest({ params: idParamSchema }),
+  validateRequest({ params: idParamSchema, body: employeeArchiveBodySchema }),
   unarchiveEmployee,
 );
 router.patch(

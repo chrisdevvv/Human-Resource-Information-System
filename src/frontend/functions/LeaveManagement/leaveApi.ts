@@ -187,3 +187,17 @@ export async function archiveEmployee(
 
   await parseResponse<ApiResponse>(response);
 }
+
+export async function unarchiveEmployee(
+  employeeId: number,
+  password: string,
+): Promise<void> {
+  const EMPLOYEE_ENDPOINT = `${API_BASE_URL}/api/employees`;
+  const response = await fetch(`${EMPLOYEE_ENDPOINT}/${employeeId}/unarchive`, {
+    method: "PATCH",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ password }),
+  });
+
+  await parseResponse<ApiResponse>(response);
+}

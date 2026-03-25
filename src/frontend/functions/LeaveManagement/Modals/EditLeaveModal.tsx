@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import type { LeaveHistoryRecord, UpdateLeavePayload } from "./leaveApi";
+import type { LeaveHistoryRecord, UpdateLeavePayload } from "../leaveApi";
 
 type EditLeaveModalProps = {
   isOpen: boolean;

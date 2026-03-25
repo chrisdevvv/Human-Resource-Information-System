@@ -11,11 +11,11 @@ import {
   FileText,
   Plus,
 } from "lucide-react";
-import LeaveManagementModal from "@/frontend/functions/LeaveManagement/LeaveManagementModal";
+import LeaveManagementModal from "@/frontend/functions/LeaveManagement/Modals/LeaveManagementModal";
 import AddLeaveModal, {
   type AddLeaveFormValues,
-} from "@/frontend/functions/LeaveManagement/AddLeaveModal";
-import AddEmployeeModal from "./AddEmployeeModal";
+} from "@/frontend/functions/LeaveManagement/Modals/AddLeaveModal";
+import AddEmployeeModal from "./Modals/AddEmployeeModal";
 import { createLeave } from "@/frontend/functions/LeaveManagement/leaveApi";
 import type { LeaveModalRecord } from "@/frontend/functions/LeaveManagement/leaveTypes";
 
@@ -27,18 +27,28 @@ type EmployeeRecordApi = {
   school_name?: string | null;
   employee_type?: "teaching" | "non-teaching";
   created_at?: string | null;
+  on_leave?: boolean | number | string | null;
 };
 
 type EmployeeRecord = LeaveModalRecord & {
   employeeId: number;
   email: string;
   schoolName: string;
+  onLeave: boolean;
 };
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
+const toBoolean = (value: unknown) => {
+  if (value === true || value === 1 || value === "1") return true;
+  if (typeof value === "string") {
+    return value.trim().toLowerCase() === "true";
+  }
+  return false;
+};
 
 const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
   const firstName = item.first_name?.trim() || "Unknown";
@@ -57,6 +67,7 @@ const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
     dateOfAction: "",
     email: item.email?.trim() || "",
     schoolName: item.school_name?.trim() || "",
+    onLeave: toBoolean(item.on_leave),
   };
 };
 
@@ -416,10 +427,7 @@ export default function EmployeeLeaveManagement() {
                 <tbody>
                   {paginatedEmployees.length > 0 ? (
                     paginatedEmployees.map((employee) => {
-                      const isOnLeave = Boolean(
-                        employee.periodOfLeave &&
-                        employee.periodOfLeave !== "Not on leave",
-                      );
+                      const isOnLeave = employee.onLeave;
 
                       return (
                         <tr
@@ -432,16 +440,16 @@ export default function EmployeeLeaveManagement() {
                           <td className="py-2 px-3 text-gray-500 text-sm capitalize">
                             {employee.employeeType}
                           </td>
-                          <td
-                            className={`py-2 px-3 text-sm ${
-                              isOnLeave
-                                ? "bg-red-100 text-red-700 rounded"
-                                : "text-gray-600"
-                            }`}
-                          >
-                            {isOnLeave
-                              ? "On leave"
-                              : employee.periodOfLeave || "Not on leave"}
+                          <td className="py-2 px-3 text-sm">
+                            <span
+                              className={`inline-flex rounded-full px-3 py-1 font-bold ${
+                                isOnLeave
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-green-100 text-green-700"
+                              }`}
+                            >
+                              {isOnLeave ? "On leave" : "Not on leave"}
+                            </span>
                           </td>
                           <td className="py-2 px-3">
                             <div className="flex items-center justify-end gap-2">
@@ -608,6 +616,7 @@ export default function EmployeeLeaveManagement() {
         isOpen={Boolean(leaveModalTarget)}
         leave={leaveModalTarget}
         initialTab={leaveModalInitialTab}
+        onLeaveStatusChanged={() => fetchEmployees(false)}
         onClose={() => setLeaveModalTarget(null)}
       />
       <AddEmployeeModal

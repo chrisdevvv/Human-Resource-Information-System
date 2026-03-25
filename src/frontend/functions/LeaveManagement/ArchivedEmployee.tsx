@@ -7,6 +7,8 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import UnarchiveConfirmationModal from "./Modals/UnarchiveConfirmationModal";
+import { unarchiveEmployee } from "./leaveApi";
 
 type EmployeeRecordApi = {
   id: number;
@@ -66,7 +68,118 @@ export default function ArchivedEmployee() {
   const [employeeLoading, setEmployeeLoading] = useState(true);
   const [employeeError, setEmployeeError] = useState<string | null>(null);
 
+  const [isUnarchiveOpen, setIsUnarchiveOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Set<number>>(
+    new Set(),
+  );
+  const [pendingUnarchiveIds, setPendingUnarchiveIds] = useState<number[]>([]);
+  const [lastUnarchivedCount, setLastUnarchivedCount] = useState(0);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(
+    null,
+  );
+  const [selectedEmployeeName, setSelectedEmployeeName] = useState<string>("");
+  const [isUnarchiving, setIsUnarchiving] = useState(false);
+  const [unarchiveError, setUnarchiveError] = useState<string | null>(null);
+  const [showUnarchiveSuccess, setShowUnarchiveSuccess] = useState(false);
+
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+  const handleUnarchiveClick = (id: number, fullName: string) => {
+    setPendingUnarchiveIds([id]);
+    setSelectedEmployeeId(id);
+    setSelectedEmployeeName(fullName);
+    setIsUnarchiveOpen(true);
+    setUnarchiveError(null);
+  };
+
+  const handleEditToggle = () => {
+    if (isEditMode) {
+      setSelectedEmployeeIds(new Set());
+    }
+    setIsEditMode((prev) => !prev);
+    setUnarchiveError(null);
+  };
+
+  const handleSelectEmployee = (id: number) => {
+    setSelectedEmployeeIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllFiltered = () => {
+    const filteredIds = filteredEmployees.map((employee) => employee.id);
+    const areAllSelected =
+      filteredIds.length > 0 &&
+      filteredIds.every((id) => selectedEmployeeIds.has(id));
+
+    setSelectedEmployeeIds(() => {
+      if (areAllSelected) {
+        return new Set();
+      }
+      return new Set(filteredIds);
+    });
+  };
+
+  const handleBulkUnarchiveClick = () => {
+    const ids = Array.from(selectedEmployeeIds);
+    if (ids.length === 0) {
+      setUnarchiveError("Please select at least one employee to unarchive.");
+      return;
+    }
+
+    setPendingUnarchiveIds(ids);
+    setSelectedEmployeeId(null);
+    setSelectedEmployeeName(
+      `${ids.length} employee${ids.length > 1 ? "s" : ""}`,
+    );
+    setIsUnarchiveOpen(true);
+    setUnarchiveError(null);
+  };
+
+  const handleUnarchiveConfirm = async (password: string) => {
+    const targetIds =
+      pendingUnarchiveIds.length > 0
+        ? pendingUnarchiveIds
+        : selectedEmployeeId
+          ? [selectedEmployeeId]
+          : [];
+    if (targetIds.length === 0) return;
+
+    setIsUnarchiving(true);
+    setUnarchiveError(null);
+    try {
+      for (const employeeId of targetIds) {
+        await unarchiveEmployee(employeeId, password);
+      }
+
+      setLastUnarchivedCount(targetIds.length);
+      setShowUnarchiveSuccess(true);
+      setIsUnarchiveOpen(false);
+      setSelectedEmployeeIds(new Set());
+      setPendingUnarchiveIds([]);
+      setIsEditMode(false);
+      // Refresh the list after a short delay
+      setTimeout(() => {
+        setShowUnarchiveSuccess(false);
+        fetchArchivedEmployees(false);
+      }, 2000);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Failed to restore employee. Please try again.";
+      setUnarchiveError(errorMessage);
+    } finally {
+      setIsUnarchiving(false);
+    }
+  };
 
   const fetchArchivedEmployees = async (showSpinner = true) => {
     try {
@@ -110,6 +223,20 @@ export default function ArchivedEmployee() {
     return () => window.clearInterval(intervalId);
   }, []);
 
+  useEffect(() => {
+    // Keep selection valid when data refreshes.
+    const currentIds = new Set(employeeData.map((employee) => employee.id));
+    setSelectedEmployeeIds((prev) => {
+      const next = new Set<number>();
+      prev.forEach((id) => {
+        if (currentIds.has(id)) {
+          next.add(id);
+        }
+      });
+      return next;
+    });
+  }, [employeeData]);
+
   const filteredEmployees = useMemo(() => {
     return employeeData
       .filter((employee) => {
@@ -134,6 +261,10 @@ export default function ArchivedEmployee() {
         return b.fullName.localeCompare(a.fullName);
       });
   }, [employeeData, searchQuery, employeeTypeFilter, letterFilter, sortOrder]);
+
+  const areAllFilteredSelected =
+    filteredEmployees.length > 0 &&
+    filteredEmployees.every((employee) => selectedEmployeeIds.has(employee.id));
 
   const totalPages = Math.max(
     1,
@@ -211,8 +342,30 @@ export default function ArchivedEmployee() {
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleEditToggle}
+              className={`px-4 py-2 rounded-lg transition font-medium text-sm cursor-pointer ${
+                isEditMode
+                  ? "bg-gray-700 text-white hover:bg-gray-800"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
+            >
+              {isEditMode ? "Cancel" : "Edit"}
+            </button>
+            {isEditMode && (
+              <button
+                onClick={handleBulkUnarchiveClick}
+                disabled={selectedEmployeeIds.size === 0 || isUnarchiving}
+                className="px-4 py-2 rounded-lg transition font-medium text-sm cursor-pointer bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                Unarchive Selected ({selectedEmployeeIds.size})
+              </button>
+            )}
+          </div>
+
+          <div className="w-full sm:w-auto flex flex-wrap items-center gap-3">
             <select
               value={employeeTypeFilter}
               onChange={(e) => {
@@ -279,6 +432,19 @@ export default function ArchivedEmployee() {
           <table className="w-full">
             <thead className="sticky top-0 z-10 bg-white">
               <tr className="border-b-2 border-gray-200">
+                {isEditMode && (
+                  <th className="text-center py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
+                    <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={areAllFilteredSelected}
+                        onChange={handleSelectAllFiltered}
+                        className="h-4 w-4 cursor-pointer rounded border-gray-300"
+                      />
+                      <span>Select All</span>
+                    </label>
+                  </th>
+                )}
                 <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
                   Name
                 </th>
@@ -291,6 +457,9 @@ export default function ArchivedEmployee() {
                 <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
                   School
                 </th>
+                <th className="text-center py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -300,6 +469,16 @@ export default function ArchivedEmployee() {
                     key={employee.id}
                     className="border-b border-gray-100 hover:bg-gray-50 transition"
                   >
+                    {isEditMode && (
+                      <td className="py-2 px-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedEmployeeIds.has(employee.id)}
+                          onChange={() => handleSelectEmployee(employee.id)}
+                          className="h-4 w-4 cursor-pointer rounded border-gray-300"
+                        />
+                      </td>
+                    )}
                     <td className="py-2 px-3 text-gray-900 text-sm font-medium">
                       {employee.fullName}
                     </td>
@@ -312,11 +491,27 @@ export default function ArchivedEmployee() {
                     <td className="py-2 px-3 text-gray-500 text-sm">
                       {employee.schoolName}
                     </td>
+                    <td className="py-2 px-3 text-center">
+                      <button
+                        onClick={() =>
+                          handleUnarchiveClick(employee.id, employee.fullName)
+                        }
+                        disabled={
+                          isUnarchiving || showUnarchiveSuccess || isEditMode
+                        }
+                        className="cursor-pointer rounded px-3 py-1 text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        Unarchive
+                      </button>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-gray-500">
+                  <td
+                    colSpan={isEditMode ? 6 : 5}
+                    className="py-8 text-center text-gray-500"
+                  >
                     No archived employees found.
                   </td>
                 </tr>
@@ -420,6 +615,62 @@ export default function ArchivedEmployee() {
             >
               <ChevronRight size={18} />
             </button>
+          </div>
+        </div>
+      )}
+
+      <UnarchiveConfirmationModal
+        isOpen={isUnarchiveOpen}
+        onClose={() => setIsUnarchiveOpen(false)}
+        onConfirm={handleUnarchiveConfirm}
+        isLoading={isUnarchiving}
+        error={unarchiveError}
+        employeeName={selectedEmployeeName}
+      />
+
+      {showUnarchiveSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 sm:px-4">
+          <div className="relative w-full max-w-md rounded-xl bg-white shadow-2xl p-8">
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 animate-pulse">
+                <svg
+                  className="h-10 w-10 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Restore Successful!
+              </h2>
+              <p className="text-gray-700 leading-relaxed">
+                {lastUnarchivedCount > 1 ? (
+                  <>
+                    <span className="font-semibold text-gray-900">
+                      {lastUnarchivedCount} employees
+                    </span>{" "}
+                    have been successfully restored and are now active again.
+                  </>
+                ) : selectedEmployeeName ? (
+                  <>
+                    <span className="font-semibold text-gray-900">
+                      {selectedEmployeeName}
+                    </span>{" "}
+                    has been successfully restored. The employee is now active
+                    again and will appear in the active employee list.
+                  </>
+                ) : (
+                  "The employee has been successfully restored."
+                )}
+              </p>
+            </div>
           </div>
         </div>
       )}

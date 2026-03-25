@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Users, FileText, Settings, UserCheck } from "lucide-react";
+import {
+  Users,
+  FileText,
+  Settings,
+  UserCheck,
+  UserMinus,
+  Archive,
+} from "lucide-react";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -24,6 +31,14 @@ type BacklogRecord = {
   created_at?: string;
   first_name?: string;
   last_name?: string;
+};
+
+type EmployeeStatusCountsResponse = {
+  data?: {
+    on_leave?: number;
+    archived?: number;
+  };
+  message?: string;
 };
 
 const normalizeList = <T,>(payload: unknown): T[] => {
@@ -86,6 +101,8 @@ export default function DashboardMobile({ onTabChange }: DashboardMobileProps) {
     totalUsers: 0,
     pendingRequests: 0,
     pendingRegistrations: 0,
+    employeesOnLeave: 0,
+    archivedEmployees: 0,
   });
 
   const [loading, setLoading] = useState(true);
@@ -103,21 +120,49 @@ export default function DashboardMobile({ onTabChange }: DashboardMobileProps) {
           return;
         }
 
-        const [employees, users, leaves, pendingRegistrationsList, backlogs] =
-          await Promise.all([
-            fetchApiList<Record<string, unknown>>("/api/employees", token),
-            fetchApiList<Record<string, unknown>>("/api/users", token),
-            fetchApiList<LeaveRecord>("/api/leave", token),
-            fetchApiList<Record<string, unknown>>(
-              "/api/registrations/pending",
-              token,
-            ),
-            fetchApiList<BacklogRecord>("/api/backlogs", token),
-          ]);
+        const [
+          employees,
+          users,
+          leaves,
+          pendingRegistrationsList,
+          backlogs,
+          employeeStatusCountsResponse,
+        ] = await Promise.all([
+          fetchApiList<Record<string, unknown>>("/api/employees", token),
+          fetchApiList<Record<string, unknown>>("/api/users", token),
+          fetchApiList<LeaveRecord>("/api/leave", token),
+          fetchApiList<Record<string, unknown>>(
+            "/api/registrations/pending",
+            token,
+          ),
+          fetchApiList<BacklogRecord>("/api/backlogs", token),
+          fetch(
+            `${API_BASE_URL}/api/employees/status-counts?include_archived=true`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            },
+          ).then(async (response) => {
+            const payload = (await response
+              .json()
+              .catch(() => ({}))) as EmployeeStatusCountsResponse;
+
+            if (!response.ok) {
+              throw new Error(
+                payload?.message || "Failed to fetch employee status counts.",
+              );
+            }
+
+            return payload;
+          }),
+        ]);
 
         const totalEmployees = employees.length;
         const totalUsers = users.length;
         const pendingRegistrations = pendingRegistrationsList.length;
+        const employeesOnLeave =
+          Number(employeeStatusCountsResponse?.data?.on_leave) || 0;
+        const archivedEmployees =
+          Number(employeeStatusCountsResponse?.data?.archived) || 0;
 
         // Filter pending and approved this month
         const now = new Date();
@@ -157,6 +202,8 @@ export default function DashboardMobile({ onTabChange }: DashboardMobileProps) {
           totalUsers,
           pendingRequests,
           pendingRegistrations,
+          employeesOnLeave,
+          archivedEmployees,
         });
         setRecentLogs(backlogs.slice(0, 3));
         setLoading(false);
@@ -182,6 +229,18 @@ export default function DashboardMobile({ onTabChange }: DashboardMobileProps) {
       value: stats.totalUsers,
       icon: <UserCheck className="w-5 h-5" />,
       textColor: "text-green-700",
+    },
+    {
+      title: "Employees on Leave",
+      value: stats.employeesOnLeave,
+      icon: <UserMinus className="w-5 h-5" />,
+      textColor: "text-amber-700",
+    },
+    {
+      title: "Archived Employees",
+      value: stats.archivedEmployees,
+      icon: <Archive className="w-5 h-5" />,
+      textColor: "text-rose-700",
     },
     {
       title: "Pending Registrations",

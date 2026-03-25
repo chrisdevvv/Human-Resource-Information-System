@@ -264,6 +264,31 @@ const unarchiveEmployee = async (req, res) => {
       return res.status(409).json({ message: "Employee is not archived" });
     }
 
+    // Verify password before allowing unarchive
+    const { password } = req.body;
+    if (!password) {
+      return res
+        .status(400)
+        .json({ message: "Password is required to restore employee" });
+    }
+
+    const [userRows] = await pool
+      .promise()
+      .query("SELECT password_hash FROM users WHERE id = ? AND is_active = 1", [
+        req.user.id,
+      ]);
+    if (!userRows[0]) {
+      return res.status(404).json({ message: "User account not found" });
+    }
+
+    const passwordMatch = await bcrypt.compare(
+      password,
+      userRows[0].password_hash,
+    );
+    if (!passwordMatch) {
+      return res.status(401).json({ message: "Password is incorrect" });
+    }
+
     const result = await Employee.unarchive(req.params.id);
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Employee not found" });
@@ -370,12 +395,10 @@ const markEmployeeAvailable = async (req, res) => {
 
     return res.status(200).json({ message: "Employee marked as available" });
   } catch (err) {
-    return res
-      .status(500)
-      .json({
-        message: "Error marking employee available",
-        error: err.message,
-      });
+    return res.status(500).json({
+      message: "Error marking employee available",
+      error: err.message,
+    });
   }
 };
 

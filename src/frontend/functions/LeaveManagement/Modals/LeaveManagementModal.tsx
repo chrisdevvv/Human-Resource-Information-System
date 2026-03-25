@@ -2,28 +2,29 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Download, Plus, RefreshCcw, X } from "lucide-react";
-import ArchiveConfirmationModal from "./Modals/ArchiveConfirmationModal";
-import MarkLeaveConfirmationModal from "./Modals/MarkLeaveConfirmationModal";
-import ArchiveSuccessMessage from "./ArchiveSuccessMessage";
-import type { LeaveModalRecord } from "./leaveTypes";
-import AddLeaveModal, { type AddLeaveFormValues } from "./Modals/AddLeaveModal";
-import LeaveHistoryTable from "./LeaveHistoryTable";
+import ArchiveConfirmationModal from "./ArchiveConfirmationModal";
+import MarkLeaveConfirmationModal from "./MarkLeaveConfirmationModal";
+import ArchiveSuccessMessage from "../ArchiveSuccessMessage";
+import type { LeaveModalRecord } from "../leaveTypes";
+import AddLeaveModal, { type AddLeaveFormValues } from "./AddLeaveModal";
+import LeaveHistoryTable from "../LeaveHistoryTable";
 import PrintableLeaveCard, {
   createLeaveCardFileName,
   downloadLeaveCardPdf,
-} from "./PrintableLeaveCard";
+} from "../PrintableLeaveCard";
 import {
   createLeave,
   getLeaveHistoryByEmployee,
   type LeaveHistoryRecord,
   archiveEmployee,
-} from "./leaveApi";
+} from "../leaveApi";
 
 type LeaveManagementModalProps = {
   isOpen: boolean;
   leave: LeaveModalRecord | null;
   onClose: () => void;
   initialTab?: "history" | "card";
+  onLeaveStatusChanged?: () => void;
 };
 
 type EmployeeDetailResponse = {
@@ -38,6 +39,7 @@ export default function LeaveManagementModal({
   leave,
   onClose,
   initialTab = "history",
+  onLeaveStatusChanged,
 }: LeaveManagementModalProps) {
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
@@ -178,6 +180,7 @@ export default function LeaveManagementModal({
       }
 
       setIsMarkedOnLeave(nextChecked);
+      onLeaveStatusChanged?.();
     } catch (err) {
       setIsMarkedOnLeave(previousChecked);
       setLeaveStatusError(
@@ -201,7 +204,7 @@ export default function LeaveManagementModal({
   const handleLeaveStatusToggle = (
     event: React.MouseEvent<HTMLInputElement>,
   ) => {
-    // Keep checkbox visual state unchanged until user confirms in modal.
+    // Prevent immediate visual toggle; wait for confirmation modal.
     event.preventDefault();
     requestLeaveStatusChange();
   };
@@ -338,7 +341,7 @@ export default function LeaveManagementModal({
                   checked={isMarkedOnLeave}
                   onClick={handleLeaveStatusToggle}
                   onChange={() => {
-                    // Controlled input: change is handled by confirmation flow.
+                    // Controlled via confirmation modal flow.
                   }}
                   disabled={isLeaveStatusLoading || isLeaveStatusUpdating}
                   className="mt-1 h-7 w-7 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"

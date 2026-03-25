@@ -6,7 +6,6 @@ type ArchiveConfirmationModalProps = {
   onConfirm: (password: string) => void;
   isLoading?: boolean;
   error?: string | null;
-  success?: boolean;
   employeeName?: string;
 };
 
@@ -16,7 +15,6 @@ function ArchiveConfirmationModal({
   onConfirm,
   isLoading = false,
   error,
-  success = false,
   employeeName,
 }: ArchiveConfirmationModalProps) {
   const [password, setPassword] = useState("");
@@ -30,46 +28,6 @@ function ArchiveConfirmationModal({
   };
 
   if (!isOpen) return null;
-
-  // Show success message
-  if (success) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 sm:px-4">
-        <div className="relative w-full max-w-md rounded-xl bg-white shadow-2xl p-6">
-          <div className="flex flex-col items-center justify-center text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-              <svg
-                className="h-8 w-8 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <h2 className="text-lg font-bold text-gray-800 mb-2">
-              Archive Successful
-            </h2>
-            <p className="text-gray-700 mb-6">
-              {employeeName ? (
-                <>
-                  <span className="font-semibold">{employeeName}</span> has been
-                  archived successfully.
-                </>
-              ) : (
-                "The employee has been archived successfully."
-              )}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 sm:px-4">

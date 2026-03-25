@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import ConfirmationModal from "../../super-admin/components/ConfirmationModal";
-import ConfirmationAddEmployee from "./ConfirmationAddEmployee";
+import ConfirmationModal from "../../../super-admin/components/ConfirmationModal";
+import ConfirmationAddEmployee from "../ConfirmationAddEmployee";
 
 type School = {
   id: number;
@@ -76,7 +76,9 @@ export default function AddEmployeeModal({
 
         const token = localStorage.getItem("authToken");
         if (!token) {
-          throw new Error("No authentication token found. Please log in again.");
+          throw new Error(
+            "No authentication token found. Please log in again.",
+          );
         }
 
         const response = await fetch(`${API_BASE}/api/schools/`, {
@@ -205,11 +207,16 @@ export default function AddEmployeeModal({
 
       // Try to get token from localStorage with a small delay to ensure it's available
       let token = localStorage.getItem("authToken");
-      
+
       if (!token) {
         // Check if localStorage is accessible at all
-        if (typeof window !== "undefined" && typeof window.localStorage === "undefined") {
-          throw new Error("Browser storage is not available. Please use a non-private browsing window and ensure cookies/storage are enabled.");
+        if (
+          typeof window !== "undefined" &&
+          typeof window.localStorage === "undefined"
+        ) {
+          throw new Error(
+            "Browser storage is not available. Please use a non-private browsing window and ensure cookies/storage are enabled.",
+          );
         }
         throw new Error("No authentication token found. Please log in again.");
       }
@@ -222,13 +229,17 @@ export default function AddEmployeeModal({
           // Use first letters of each word, uppercased
           const words = name.trim().split(/\s+/);
           if (words.length === 0) return "SCH";
-          
+
           // Take first letter of each word up to 4 letters, or the full first word if short
           if (words.length === 1) {
             return words[0].slice(0, 4).toUpperCase();
           }
-          
-          const code = words.slice(0, 3).map(w => w[0]).join("").toUpperCase();
+
+          const code = words
+            .slice(0, 3)
+            .map((w) => w[0])
+            .join("")
+            .toUpperCase();
           return code || "SCH";
         };
 

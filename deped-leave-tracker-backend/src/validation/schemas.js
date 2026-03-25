@@ -114,6 +114,29 @@ const employeeArchiveBodySchema = Joi.object({
   password: Joi.string().min(1).max(128).required(),
 });
 
+const leaveBodySchema = Joi.object({
+  employee_id: Joi.number().integer().positive().required(),
+  period_of_leave: Joi.string().trim().min(1).max(255).required(),
+  particulars: Joi.string().trim().max(500).allow(null, ""),
+  earned_vl: Joi.number().min(0).allow(null),
+  abs_with_pay_vl: Joi.number().min(0).allow(null),
+  abs_without_pay_vl: Joi.number().min(0).allow(null),
+  earned_sl: Joi.number().min(0).allow(null),
+  abs_with_pay_sl: Joi.number().min(0).allow(null),
+  abs_without_pay_sl: Joi.number().min(0).allow(null),
+});
+
+const leaveUpdateBodySchema = Joi.object({
+  period_of_leave: Joi.string().trim().min(1).max(255),
+  particulars: Joi.string().trim().max(500).allow(null, ""),
+  earned_vl: Joi.number().min(0).allow(null),
+  abs_with_pay_vl: Joi.number().min(0).allow(null),
+  abs_without_pay_vl: Joi.number().min(0).allow(null),
+  earned_sl: Joi.number().min(0).allow(null),
+  abs_with_pay_sl: Joi.number().min(0).allow(null),
+  abs_without_pay_sl: Joi.number().min(0).allow(null),
+});
+
 module.exports = {
   idParamSchema,
   schoolIdParamSchema,
