@@ -74,10 +74,16 @@ export default function AddEmployeeModal({
         setSchoolsLoading(true);
         setErrorMessage(null);
 
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          throw new Error("No authentication token found. Please log in again.");
+        }
+
         const response = await fetch(`${API_BASE}/api/schools/`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
         });
 
@@ -197,14 +203,37 @@ export default function AddEmployeeModal({
       setSubmitLoading(true);
       setErrorMessage(null);
 
-      const token = localStorage.getItem("authToken");
+      // Try to get token from localStorage with a small delay to ensure it's available
+      let token = localStorage.getItem("authToken");
+      
       if (!token) {
-        throw new Error("No authentication token found.");
+        // Check if localStorage is accessible at all
+        if (typeof window !== "undefined" && typeof window.localStorage === "undefined") {
+          throw new Error("Browser storage is not available. Please use a non-private browsing window and ensure cookies/storage are enabled.");
+        }
+        throw new Error("No authentication token found. Please log in again.");
       }
 
       // Ensure school exists: if no school_id in pending payload, create the school first
       let schoolId = pendingPayload.school_id ?? null;
       if (!schoolId) {
+        // Generate a school code from the school name
+        const generateSchoolCode = (name: string): string => {
+          // Use first letters of each word, uppercased
+          const words = name.trim().split(/\s+/);
+          if (words.length === 0) return "SCH";
+          
+          // Take first letter of each word up to 4 letters, or the full first word if short
+          if (words.length === 1) {
+            return words[0].slice(0, 4).toUpperCase();
+          }
+          
+          const code = words.slice(0, 3).map(w => w[0]).join("").toUpperCase();
+          return code || "SCH";
+        };
+
+        const schoolCode = generateSchoolCode(pendingPayload.school_name);
+
         const createSchoolRes = await fetch(`${API_BASE}/api/schools/`, {
           method: "POST",
           headers: {
@@ -213,7 +242,7 @@ export default function AddEmployeeModal({
           },
           body: JSON.stringify({
             school_name: pendingPayload.school_name,
-            school_code: null,
+            school_code: schoolCode,
           }),
         });
 

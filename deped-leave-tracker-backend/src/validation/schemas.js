@@ -104,6 +104,71 @@ const registrationRejectBodySchema = Joi.object({
   rejection_reason: Joi.string().trim().max(500).allow(null, ""),
 });
 
+const leaveBodySchema = Joi.object({
+  employee_id: Joi.number().integer().positive().required(),
+  period_of_leave: Joi.string().trim().min(1).max(255).required(),
+  particulars: Joi.string().trim().max(500).allow(null, ""),
+  isMonetization: Joi.alternatives().try(
+    Joi.boolean(),
+    Joi.string().valid("true", "false", "1", "0"),
+    Joi.number().valid(0, 1),
+  ),
+  earned_vl: Joi.alternatives().try(
+    Joi.number().min(0),
+    Joi.string().trim().allow(""),
+  ),
+  abs_with_pay_vl: Joi.alternatives().try(
+    Joi.number().min(0),
+    Joi.string().trim().allow(""),
+  ),
+  abs_without_pay_vl: Joi.alternatives().try(
+    Joi.number().min(0),
+    Joi.string().trim().allow(""),
+  ),
+  earned_sl: Joi.alternatives().try(
+    Joi.number().min(0),
+    Joi.string().trim().allow(""),
+  ),
+  abs_with_pay_sl: Joi.alternatives().try(
+    Joi.number().min(0),
+    Joi.string().trim().allow(""),
+  ),
+  abs_without_pay_sl: Joi.alternatives().try(
+    Joi.number().min(0),
+    Joi.string().trim().allow(""),
+  ),
+  entry_kind: Joi.string().trim().max(50),
+}).unknown(true); // Allow extra fields for flexibility
+
+const leaveUpdateBodySchema = Joi.object({
+  period_of_leave: Joi.string().trim().min(1).max(255),
+  particulars: Joi.string().trim().max(500).allow(null, ""),
+  earned_vl: Joi.alternatives().try(
+    Joi.number().min(0),
+    Joi.string().trim().allow(""),
+  ),
+  abs_with_pay_vl: Joi.alternatives().try(
+    Joi.number().min(0),
+    Joi.string().trim().allow(""),
+  ),
+  abs_without_pay_vl: Joi.alternatives().try(
+    Joi.number().min(0),
+    Joi.string().trim().allow(""),
+  ),
+  earned_sl: Joi.alternatives().try(
+    Joi.number().min(0),
+    Joi.string().trim().allow(""),
+  ),
+  abs_with_pay_sl: Joi.alternatives().try(
+    Joi.number().min(0),
+    Joi.string().trim().allow(""),
+  ),
+  abs_without_pay_sl: Joi.alternatives().try(
+    Joi.number().min(0),
+    Joi.string().trim().allow(""),
+  ),
+}).unknown(true); // Allow extra fields for flexibility
+
 module.exports = {
   idParamSchema,
   schoolIdParamSchema,
@@ -120,4 +185,6 @@ module.exports = {
   registrationStatusQuerySchema,
   registrationApproveBodySchema,
   registrationRejectBodySchema,
+  leaveBodySchema,
+  leaveUpdateBodySchema,
 };
