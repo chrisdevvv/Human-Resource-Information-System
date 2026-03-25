@@ -30,6 +30,7 @@ type LeaveManagementModalProps = {
 type EmployeeDetailResponse = {
   data?: {
     on_leave?: boolean | number | string | null;
+    email?: string | null;
   };
   message?: string;
 };
@@ -46,6 +47,7 @@ export default function LeaveManagementModal({
   const [archiveError, setArchiveError] = useState<string | null>(null);
   const [showArchiveSuccess, setShowArchiveSuccess] = useState(false);
   const [isMarkedOnLeave, setIsMarkedOnLeave] = useState(false);
+  const [employeeEmail, setEmployeeEmail] = useState("");
   const [isLeaveStatusLoading, setIsLeaveStatusLoading] = useState(false);
   const [isLeaveStatusUpdating, setIsLeaveStatusUpdating] = useState(false);
   const [leaveStatusError, setLeaveStatusError] = useState<string | null>(null);
@@ -130,6 +132,7 @@ export default function LeaveManagementModal({
       }
 
       setIsMarkedOnLeave(toBool(body.data?.on_leave));
+      setEmployeeEmail(String(body.data?.email || "").trim());
       setLeaveStatusError(null);
     } catch (err) {
       setLeaveStatusError(
@@ -331,6 +334,7 @@ export default function LeaveManagementModal({
               <p className="mt-1 text-sm text-gray-600">
                 Employee: {leave.fullName}
               </p>
+              <p className="text-sm text-gray-500">Email: {employeeEmail}</p>
               <p className="text-sm text-gray-500">
                 Employee Type: {employeeTypeLabel}
               </p>
