@@ -220,6 +220,16 @@ const validatePaidAbsenceAgainstBalance = ({
   return errors;
 };
 
+const validateParticularAllowed = async (particulars) => {
+  const value = typeof particulars === "string" ? particulars.trim() : "";
+  if (!value) return null;
+
+  const allowed = await Leave.isParticularAllowed(value);
+  if (allowed) return null;
+
+  return `particulars must be one of the configured options. Received: ${value}`;
+};
+
 const computeEntryEffect = (entryLike, { employeeType } = {}) => {
   const context = getStructuredContext(entryLike);
 
@@ -555,6 +565,118 @@ const autoCreditCurrentMonth = async () => {
   return result;
 };
 
+const getLeaveParticulars = async (_req, res) => {
+  try {
+    const data = await Leave.getParticulars();
+    return res.status(200).json({ data, total: data.length });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Error retrieving leave particulars", error: err.message });
+  }
+};
+
+const createLeaveParticular = async (req, res) => {
+  try {
+    const particular = String(req.body?.particular || "").trim();
+    if (!particular) {
+      return res.status(400).json({ message: "particular is required" });
+    }
+
+    const result = await Leave.addParticular(particular);
+
+    await Backlog.record({
+      user_id: req.user?.id || null,
+      school_id: null,
+      employee_id: null,
+      leave_id: null,
+      action: result.created ? "LEAVE_PARTICULAR_CREATED" : "LEAVE_PARTICULAR_EXISTS",
+      details: particular,
+    });
+
+    return res.status(result.created ? 201 : 200).json({
+      message: result.created
+        ? "Leave particular created successfully"
+        : "Leave particular already exists",
+      data: {
+        particular,
+        created: result.created,
+        total: result.options.length,
+        options: result.options,
+      },
+    });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Error creating leave particular", error: err.message });
+  }
+};
+
+const updateLeaveParticular = async (req, res) => {
+  try {
+    const oldParticular = String(req.body?.old_particular || "").trim();
+    const newParticular = String(req.body?.new_particular || "").trim();
+
+    const result = await Leave.updateParticular(oldParticular, newParticular);
+
+    await Backlog.record({
+      user_id: req.user?.id || null,
+      school_id: null,
+      employee_id: null,
+      leave_id: null,
+      action: "LEAVE_PARTICULAR_UPDATED",
+      details: `${oldParticular} -> ${newParticular}`,
+    });
+
+    return res.status(result.updated ? 200 : 200).json({
+      message: result.updated
+        ? "Leave particular updated successfully"
+        : "No changes made",
+      data: {
+        old_particular: oldParticular,
+        new_particular: newParticular,
+        updated: result.updated,
+        options: result.options,
+      },
+    });
+  } catch (err) {
+    const status = err.statusCode || 500;
+    return res
+      .status(status)
+      .json({ message: "Error updating leave particular", error: err.message });
+  }
+};
+
+const deleteLeaveParticular = async (req, res) => {
+  try {
+    const particular = String(req.body?.particular || "").trim();
+    const result = await Leave.deleteParticular(particular);
+
+    await Backlog.record({
+      user_id: req.user?.id || null,
+      school_id: null,
+      employee_id: null,
+      leave_id: null,
+      action: "LEAVE_PARTICULAR_DELETED",
+      details: particular,
+    });
+
+    return res.status(200).json({
+      message: "Leave particular deleted successfully",
+      data: {
+        particular,
+        deleted: result.deleted,
+        options: result.options,
+      },
+    });
+  } catch (err) {
+    const status = err.statusCode || 500;
+    return res
+      .status(status)
+      .json({ message: "Error deleting leave particular", error: err.message });
+  }
+};
+
 // POST /api/leave
 const createLeaveRequest = async (req, res) => {
   try {
@@ -569,6 +691,20 @@ const createLeaveRequest = async (req, res) => {
     const validationError = validateLeaveFields(req.body);
     if (validationError)
       return res.status(400).json({ message: validationError });
+
+    const particularValidationError = await validateParticularAllowed(particulars);
+    if (particularValidationError) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: [
+          {
+            field: "particulars",
+            message: particularValidationError,
+            source: "body",
+          },
+        ],
+      });
+    }
 
     const employeeType = await Leave.getEmployeeTypeById(employee_id);
     if (!employeeType) {
@@ -730,6 +866,22 @@ const updateLeaveRequest = async (req, res) => {
     if (validationError)
       return res.status(400).json({ message: validationError });
 
+    const particularsInput =
+      req.body?.particulars !== undefined ? req.body.particulars : leave.particulars;
+    const particularValidationError = await validateParticularAllowed(particularsInput);
+    if (particularValidationError) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: [
+          {
+            field: "particulars",
+            message: particularValidationError,
+            source: "body",
+          },
+        ],
+      });
+    }
+
     const {
       period_of_leave = leave.period_of_leave,
       particulars = leave.particulars,
@@ -881,4 +1033,8 @@ module.exports = {
   deleteLeaveRequest,
   creditMonthly,
   autoCreditCurrentMonth,
+  getLeaveParticulars,
+  createLeaveParticular,
+  updateLeaveParticular,
+  deleteLeaveParticular,
 };

@@ -7,6 +7,10 @@ const {
   updateLeaveRequest,
   deleteLeaveRequest,
   creditMonthly,
+  getLeaveParticulars,
+  createLeaveParticular,
+  updateLeaveParticular,
+  deleteLeaveParticular,
 } = require("./leaveController");
 const authMiddleware = require("../../middleware/authMiddleware");
 const { roleAuthMiddleware } = require("../../middleware/roleAuthMiddleware");
@@ -15,6 +19,9 @@ const {
   idParamSchema,
   leaveBodySchema,
   leaveUpdateBodySchema,
+  leaveParticularBodySchema,
+  leaveParticularUpdateBodySchema,
+  leaveParticularDeleteBodySchema,
 } = require("../../validation/schemas");
 
 const router = express.Router();
@@ -31,6 +38,33 @@ router.get(
   authMiddleware,
   roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
   getLeavesByEmployee,
+);
+router.get(
+  "/particulars",
+  authMiddleware,
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  getLeaveParticulars,
+);
+router.post(
+  "/particulars",
+  authMiddleware,
+  roleAuthMiddleware(["super-admin"]),
+  validateRequest({ body: leaveParticularBodySchema }),
+  createLeaveParticular,
+);
+router.put(
+  "/particulars",
+  authMiddleware,
+  roleAuthMiddleware(["super-admin"]),
+  validateRequest({ body: leaveParticularUpdateBodySchema }),
+  updateLeaveParticular,
+);
+router.delete(
+  "/particulars",
+  authMiddleware,
+  roleAuthMiddleware(["super-admin"]),
+  validateRequest({ body: leaveParticularDeleteBodySchema }),
+  deleteLeaveParticular,
 );
 router.get(
   "/:id",
