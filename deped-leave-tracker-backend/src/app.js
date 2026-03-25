@@ -104,7 +104,7 @@ const ensureSecurityTables = async () => {
 };
 
 const ensureLeaveLedgerSchema = async () => {
-  const leaveParticularsOptions = [
+  const leaveParticularsDefaults = [
     "Adoption Leave",
     "Compensatory Paid Leave",
     "Forced Leave (Disapproved)",
@@ -135,9 +135,18 @@ const ensureLeaveLedgerSchema = async () => {
     "Wellness Leave",
     "Others",
   ];
-  const enumSql = leaveParticularsOptions
-    .map((v) => `'${String(v).replace(/'/g, "''")}'`)
-    .join(",");
+  const toEnumSql = (values) =>
+    values.map((v) => `'${String(v).replace(/'/g, "''")}'`).join(",");
+
+  const parseEnumValues = (columnType) => {
+    if (!columnType || !/^enum\(/i.test(columnType)) return [];
+    const inner = columnType.slice(
+      columnType.indexOf("(") + 1,
+      columnType.lastIndexOf(")"),
+    );
+    const matches = inner.match(/'((?:[^'\\]|\\.)*)'/g) || [];
+    return matches.map((token) => token.slice(1, -1).replace(/\\'/g, "'"));
+  };
 
   // Keep leave entry categorization structured and backend-driven.
   await pool.promise().query(`
@@ -150,6 +159,23 @@ const ensureLeaveLedgerSchema = async () => {
     SET entry_kind = 'MANUAL'
     WHERE entry_kind IS NULL OR entry_kind = '';
   `);
+
+  const [typeRows] = await pool.promise().query(
+    `SELECT COLUMN_TYPE AS column_type
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'leaves'
+       AND COLUMN_NAME = 'particulars'
+     LIMIT 1`,
+  );
+
+  const currentEnumValues = parseEnumValues(typeRows?.[0]?.column_type || "");
+  const mergedEnumValues = Array.from(
+    new Set([...currentEnumValues, ...leaveParticularsDefaults]),
+  );
+  const enumSql = toEnumSql(
+    mergedEnumValues.length > 0 ? mergedEnumValues : leaveParticularsDefaults,
+  );
 
   // Normalize legacy free-text particulars before converting to ENUM.
   await pool.promise().query(`

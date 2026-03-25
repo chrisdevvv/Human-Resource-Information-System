@@ -114,42 +114,23 @@ const employeeArchiveBodySchema = Joi.object({
   password: Joi.string().min(1).max(128).required(),
 });
 
-const LEAVE_PARTICULARS_OPTIONS = [
-  "Adoption Leave",
-  "Compensatory Paid Leave",
-  "Forced Leave (Disapproved)",
-  "Forced Leave",
-  "Late/Undertime",
-  "Leave Credit",
-  "Maternity Leave",
-  "Monetization",
-  "Paternity Leave",
-  "Rehabilitation Leave",
-  "Special Emergency Leave",
-  "Sick Leave",
-  "Solo Parent",
-  "Special Privilege Leave",
-  "Special Leave for Women",
-  "Study Leave",
-  "Terminal Leave",
-  "VAWC Leave",
-  "Vacation Leave",
-  "Balance Forwarded",
-  "Service Credit",
-  "Training/Seminar",
-  "Brigada Eskwela",
-  "Early Registration/Enrollment",
-  "Election",
-  "Remediation/Enrichment Classes/NLC",
-  "Checking of Forms",
-  "Wellness Leave",
-  "Others",
-];
+const leaveParticularBodySchema = Joi.object({
+  particular: Joi.string().trim().min(1).max(255).required(),
+});
+
+const leaveParticularUpdateBodySchema = Joi.object({
+  old_particular: Joi.string().trim().min(1).max(255).required(),
+  new_particular: Joi.string().trim().min(1).max(255).required(),
+});
+
+const leaveParticularDeleteBodySchema = Joi.object({
+  particular: Joi.string().trim().min(1).max(255).required(),
+});
 
 const leaveBodySchema = Joi.object({
   employee_id: Joi.number().integer().positive().required(),
   period_of_leave: Joi.string().trim().min(1).max(255).required(),
-  particulars: Joi.string().trim().valid(...LEAVE_PARTICULARS_OPTIONS).allow(null, ""),
+  particulars: Joi.string().trim().max(255).allow(null, ""),
   earned_vl: Joi.number().min(0).allow(null),
   abs_with_pay_vl: Joi.number().min(0).allow(null),
   abs_without_pay_vl: Joi.number().min(0).allow(null),
@@ -160,7 +141,7 @@ const leaveBodySchema = Joi.object({
 
 const leaveUpdateBodySchema = Joi.object({
   period_of_leave: Joi.string().trim().min(1).max(255),
-  particulars: Joi.string().trim().valid(...LEAVE_PARTICULARS_OPTIONS).allow(null, ""),
+  particulars: Joi.string().trim().max(255).allow(null, ""),
   earned_vl: Joi.number().min(0).allow(null),
   abs_with_pay_vl: Joi.number().min(0).allow(null),
   abs_without_pay_vl: Joi.number().min(0).allow(null),
@@ -202,6 +183,9 @@ module.exports = {
   registrationStatusQuerySchema,
   registrationApproveBodySchema,
   registrationRejectBodySchema,
+  leaveParticularBodySchema,
+  leaveParticularUpdateBodySchema,
+  leaveParticularDeleteBodySchema,
   leaveBodySchema,
   leaveUpdateBodySchema,
   backlogReportQuerySchema,

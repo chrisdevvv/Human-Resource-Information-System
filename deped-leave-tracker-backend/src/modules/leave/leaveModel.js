@@ -1,5 +1,46 @@
 const pool = require("../../config/db");
 
+const SYSTEM_PARTICULARS = new Set([
+  "Adoption Leave",
+  "Compensatory Paid Leave",
+  "Forced Leave (Disapproved)",
+  "Forced Leave",
+  "Late/Undertime",
+  "Leave Credit",
+  "Maternity Leave",
+  "Monetization",
+  "Paternity Leave",
+  "Rehabilitation Leave",
+  "Special Emergency Leave",
+  "Sick Leave",
+  "Solo Parent",
+  "Special Privilege Leave",
+  "Special Leave for Women",
+  "Study Leave",
+  "Terminal Leave",
+  "VAWC Leave",
+  "Vacation Leave",
+  "Balance Forwarded",
+  "Service Credit",
+  "Training/Seminar",
+  "Brigada Eskwela",
+  "Early Registration/Enrollment",
+  "Election",
+  "Remediation/Enrichment Classes/NLC",
+  "Checking of Forms",
+  "Wellness Leave",
+  "Others",
+]);
+
+const parseEnumValues = (columnType) => {
+  if (!columnType || !/^enum\(/i.test(columnType)) return [];
+  const inner = columnType.slice(columnType.indexOf("(") + 1, columnType.lastIndexOf(")"));
+  const matches = inner.match(/'((?:[^'\\]|\\.)*)'/g) || [];
+  return matches.map((token) => token.slice(1, -1).replace(/\\'/g, "'"));
+};
+
+const toEnumSql = (values) => values.map((v) => `'${String(v).replace(/'/g, "''")}'`).join(",");
+
 const Leave = {
   // Supports optional filtering by employee_id and pagination. If pagination not provided, returns full rows for compatibility.
   getAll: async ({ employee_id } = {}, pagination) => {
@@ -283,6 +324,132 @@ const Leave = {
         employee_id,
       ]);
     return rows[0]?.employee_type || null;
+  },
+
+  getParticulars: async () => {
+    const [rows] = await pool.promise().query(
+      `SELECT COLUMN_TYPE AS column_type
+       FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = 'leaves'
+         AND COLUMN_NAME = 'particulars'
+       LIMIT 1`,
+    );
+
+    const columnType = rows[0]?.column_type || "";
+    return parseEnumValues(columnType);
+  },
+
+  isParticularAllowed: async (particular) => {
+    const options = await Leave.getParticulars();
+    return options.includes(String(particular || "").trim());
+  },
+
+  addParticular: async (particular) => {
+    const normalized = String(particular || "").trim();
+    const current = await Leave.getParticulars();
+
+    if (current.includes(normalized)) {
+      return { created: false, options: current };
+    }
+
+    const next = [...current, normalized];
+    const enumSql = toEnumSql(next);
+
+    await pool.promise().query(
+      `ALTER TABLE leaves
+       MODIFY COLUMN particulars ENUM(${enumSql}) NULL`,
+    );
+
+    return { created: true, options: next };
+  },
+
+  updateParticular: async (oldParticular, newParticular) => {
+    const oldValue = String(oldParticular || "").trim();
+    const newValue = String(newParticular || "").trim();
+
+    if (!oldValue || !newValue) {
+      const err = new Error("old_particular and new_particular are required");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    if (oldValue === newValue) {
+      return { updated: false, reason: "same-value" };
+    }
+
+    if (SYSTEM_PARTICULARS.has(oldValue)) {
+      const err = new Error("System particulars cannot be updated");
+      err.statusCode = 403;
+      throw err;
+    }
+
+    const current = await Leave.getParticulars();
+    if (!current.includes(oldValue)) {
+      const err = new Error("Particular not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    if (current.includes(newValue)) {
+      const err = new Error("The new particular already exists");
+      err.statusCode = 409;
+      throw err;
+    }
+
+    await pool.promise().query(
+      `UPDATE leaves
+       SET particulars = ?
+       WHERE particulars = ?`,
+      [newValue, oldValue],
+    );
+
+    const next = current.map((v) => (v === oldValue ? newValue : v));
+    const enumSql = toEnumSql(next);
+    await pool.promise().query(
+      `ALTER TABLE leaves
+       MODIFY COLUMN particulars ENUM(${enumSql}) NULL`,
+    );
+
+    return { updated: true, options: next };
+  },
+
+  deleteParticular: async (particular) => {
+    const value = String(particular || "").trim();
+    if (!value) {
+      const err = new Error("particular is required");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    if (SYSTEM_PARTICULARS.has(value)) {
+      const err = new Error("System particulars cannot be deleted");
+      err.statusCode = 403;
+      throw err;
+    }
+
+    const current = await Leave.getParticulars();
+    if (!current.includes(value)) {
+      const err = new Error("Particular not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    await pool.promise().query(
+      `UPDATE leaves
+       SET particulars = 'Others'
+       WHERE particulars = ?`,
+      [value],
+    );
+
+    const next = current.filter((v) => v !== value);
+    const enumSql = toEnumSql(next);
+    await pool.promise().query(
+      `ALTER TABLE leaves
+       MODIFY COLUMN particulars ENUM(${enumSql}) NULL`,
+    );
+
+    return { deleted: true, options: next };
   },
 };
 

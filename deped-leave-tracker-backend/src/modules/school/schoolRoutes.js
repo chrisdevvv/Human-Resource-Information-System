@@ -35,21 +35,21 @@ router.get(
 router.post(
 	"/",
 	authMiddleware,
-	roleAuthMiddleware(["admin", "super-admin"]),
+	roleAuthMiddleware(["super-admin"]),
 	validateRequest({ body: schoolBodySchema }),
 	createSchool,
 );
 router.put(
 	"/:id",
 	authMiddleware,
-	roleAuthMiddleware(["admin", "super-admin"]),
+	roleAuthMiddleware(["super-admin"]),
 	validateRequest({ params: idParamSchema, body: schoolBodySchema }),
 	updateSchool,
 );
 router.delete(
 	"/:id",
 	authMiddleware,
-	roleAuthMiddleware(["admin", "super-admin"]),
+	roleAuthMiddleware(["super-admin"]),
 	validateRequest({ params: idParamSchema }),
 	deleteSchool,
 );
