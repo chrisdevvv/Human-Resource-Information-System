@@ -1,15 +1,17 @@
 const pool = require("../../config/db");
 
 const Backlog = {
-  // Supports optional pagination. If pagination not provided, returns all rows (backwards compatible).
-  getAll: async (pagination) => {
+  // Supports optional pagination and filtering. If pagination not provided, returns all rows (backwards compatible).
+  getAll: async (pagination, options = {}) => {
+    const includeArchived = options.includeArchived !== false; // Default to including archived
     const baseQuery = `FROM backlogs LEFT JOIN users ON backlogs.user_id = users.id LEFT JOIN schools ON users.school_id = schools.id`;
+    const whereClause = includeArchived ? "" : "WHERE backlogs.is_archived = 0";
 
     if (!pagination || !pagination.page) {
       const [rows] = await pool
         .promise()
         .query(
-          `SELECT backlogs.*, users.first_name, users.last_name, users.role, users.email, schools.school_name ${baseQuery} ORDER BY backlogs.created_at DESC`,
+          `SELECT backlogs.*, users.first_name, users.last_name, users.role, users.email, schools.school_name ${baseQuery} ${whereClause} ORDER BY backlogs.created_at DESC`,
         );
       return rows;
     }
@@ -20,12 +22,12 @@ const Backlog = {
 
     const [[{ total }]] = await pool
       .promise()
-      .query(`SELECT COUNT(1) as total ${baseQuery}`);
+      .query(`SELECT COUNT(1) as total ${baseQuery} ${whereClause}`);
 
     const [rows] = await pool
       .promise()
       .query(
-        `SELECT backlogs.*, users.first_name, users.last_name, users.role, users.email, schools.school_name ${baseQuery} ORDER BY backlogs.created_at DESC LIMIT ? OFFSET ?`,
+        `SELECT backlogs.*, users.first_name, users.last_name, users.role, users.email, schools.school_name ${baseQuery} ${whereClause} ORDER BY backlogs.created_at DESC LIMIT ? OFFSET ?`,
         [pageSize, offset],
       );
 
@@ -88,6 +90,72 @@ const Backlog = {
         "SELECT * FROM backlogs WHERE school_id = ? ORDER BY created_at DESC",
         [school_id],
       );
+    return rows;
+  },
+
+  getReport: async (filters = {}) => {
+    const whereParts = [];
+    const params = [];
+
+    if (!filters.includeArchived) {
+      whereParts.push("backlogs.is_archived = 0");
+    }
+
+    if (filters.from) {
+      whereParts.push("backlogs.created_at >= ?");
+      params.push(filters.from);
+    }
+
+    if (filters.to) {
+      whereParts.push("backlogs.created_at <= ?");
+      params.push(filters.to);
+    }
+
+    if (filters.action) {
+      whereParts.push("backlogs.action = ?");
+      params.push(filters.action);
+    }
+
+    if (filters.userId) {
+      whereParts.push("backlogs.user_id = ?");
+      params.push(filters.userId);
+    }
+
+    if (filters.schoolId) {
+      whereParts.push("backlogs.school_id = ?");
+      params.push(filters.schoolId);
+    }
+
+    if (filters.employeeId) {
+      whereParts.push("backlogs.employee_id = ?");
+      params.push(filters.employeeId);
+    }
+
+    if (filters.leaveId) {
+      whereParts.push("backlogs.leave_id = ?");
+      params.push(filters.leaveId);
+    }
+
+    const whereClause = whereParts.length
+      ? `WHERE ${whereParts.join(" AND ")}`
+      : "";
+
+    const [rows] = await pool.promise().query(
+      `SELECT
+         backlogs.*,
+         users.first_name,
+         users.last_name,
+         users.role,
+         users.email,
+         schools.school_name
+       FROM backlogs
+       LEFT JOIN users ON backlogs.user_id = users.id
+       LEFT JOIN schools ON users.school_id = schools.id
+       ${whereClause}
+       ORDER BY backlogs.created_at DESC`,
+      params,
+    );
+
     return rows;
   },
 };

@@ -1,4 +1,175 @@
 const Backlog = require("./backlogModel");
+const PDFDocument = require("pdfkit");
+
+const toBoolean = (v) => {
+  if (typeof v === "boolean") return v;
+  if (typeof v === "number") return v === 1;
+  if (typeof v !== "string") return false;
+  const normalized = v.trim().toLowerCase();
+  return ["1", "true", "yes", "y", "on"].includes(normalized);
+};
+
+const toCsvCell = (value) => {
+  if (value === null || value === undefined) return "";
+  const text = String(value);
+  if (/[",\n\r]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  return text;
+};
+
+const buildCsv = (rows) => {
+  const headers = [
+    "id",
+    "created_at",
+    "action",
+    "details",
+    "user_id",
+    "user_name",
+    "user_role",
+    "email",
+    "school_id",
+    "school_name",
+    "employee_id",
+    "leave_id",
+    "is_archived",
+  ];
+
+  const lines = [headers.join(",")];
+
+  for (const row of rows) {
+    const userName = [row.first_name, row.last_name].filter(Boolean).join(" ");
+    const values = [
+      row.id,
+      row.created_at,
+      row.action,
+      row.details,
+      row.user_id,
+      userName,
+      row.role,
+      row.email,
+      row.school_id,
+      row.school_name,
+      row.employee_id,
+      row.leave_id,
+      row.is_archived,
+    ];
+
+    lines.push(values.map(toCsvCell).join(","));
+  }
+
+  return `${lines.join("\n")}\n`;
+};
+
+const drawPdfPageHeader = (doc, filters = {}) => {
+  doc
+    .fontSize(16)
+    .text("Backlog Report", { align: "left" })
+    .moveDown(0.3)
+    .fontSize(9)
+    .fillColor("#555");
+
+  const filterText = [
+    `From: ${filters.from || "-"}`,
+    `To: ${filters.to || "-"}`,
+    `Action: ${filters.action || "-"}`,
+    `Include Archived: ${filters.include_archived ? "Yes" : "No"}`,
+  ].join(" | ");
+
+  doc.text(filterText).moveDown(0.7).fillColor("black");
+};
+
+const ensurePdfRowSpace = (doc, minY = 740) => {
+  if (doc.y > minY) {
+    doc.addPage();
+  }
+};
+
+const buildPdfBuffer = (rows, filters = {}) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ margin: 40, size: "A4" });
+      const chunks = [];
+
+      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      drawPdfPageHeader(doc, filters);
+
+      doc
+        .fontSize(9)
+        .text("ID", 40)
+        .text("Date", 75)
+        .text("Action", 180)
+        .text("User", 320)
+        .text("School", 430)
+        .text("Archived", 530)
+        .moveDown(0.4);
+
+      doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor("#aaa").stroke();
+      doc.moveDown(0.4).strokeColor("black");
+
+      if (rows.length === 0) {
+        doc.fontSize(10).text("No logs found for the selected filters.");
+      } else {
+        for (const row of rows) {
+          ensurePdfRowSpace(doc);
+
+          const userName = [row.first_name, row.last_name]
+            .filter(Boolean)
+            .join(" ") || "-";
+          const createdAt = row.created_at
+            ? String(row.created_at).slice(0, 19).replace("T", " ")
+            : "-";
+
+          doc
+            .fontSize(8)
+            .text(String(row.id || "-"), 40)
+            .text(createdAt, 75)
+            .text(String(row.action || "-"), 180, doc.y - 12, {
+              width: 130,
+              ellipsis: true,
+            })
+            .text(userName, 320, doc.y - 12, {
+              width: 100,
+              ellipsis: true,
+            })
+            .text(String(row.school_name || "-"), 430, doc.y - 12, {
+              width: 90,
+              ellipsis: true,
+            })
+            .text(row.is_archived ? "Yes" : "No", 530, doc.y - 12)
+            .moveDown(0.2);
+
+          if (row.details) {
+            ensurePdfRowSpace(doc);
+            doc
+              .fontSize(7)
+              .fillColor("#555")
+              .text(`Details: ${String(row.details)}`, 75, doc.y, {
+                width: 450,
+              })
+              .fillColor("black")
+              .moveDown(0.5);
+          }
+
+          doc
+            .moveTo(40, doc.y)
+            .lineTo(555, doc.y)
+            .strokeColor("#eee")
+            .stroke()
+            .moveDown(0.3)
+            .strokeColor("black");
+        }
+      }
+
+      doc.end();
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
 
 const getAllBacklogs = async (req, res) => {
   try {
@@ -71,10 +242,83 @@ const createBacklog = async (req, res) => {
   }
 };
 
+const generateBacklogReport = async (req, res) => {
+  try {
+    const format = (req.query.format || "json").toLowerCase();
+    const includeArchived = toBoolean(req.query.include_archived);
+
+    const from = req.query.from
+      ? `${String(req.query.from).slice(0, 10)} 00:00:00`
+      : null;
+    const to = req.query.to
+      ? `${String(req.query.to).slice(0, 10)} 23:59:59`
+      : null;
+
+    const rows = await Backlog.getReport({
+      from,
+      to,
+      action: req.query.action || null,
+      userId: req.query.user_id ? Number(req.query.user_id) : null,
+      schoolId: req.query.school_id ? Number(req.query.school_id) : null,
+      employeeId: req.query.employee_id ? Number(req.query.employee_id) : null,
+      leaveId: req.query.leave_id ? Number(req.query.leave_id) : null,
+      includeArchived,
+    });
+
+    if (format === "csv") {
+      const csvContent = buildCsv(rows);
+      const dateSuffix = new Date().toISOString().slice(0, 10);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=backlog-report-${dateSuffix}.csv`,
+      );
+      return res.status(200).send(csvContent);
+    }
+
+    if (format === "pdf") {
+      const dateSuffix = new Date().toISOString().slice(0, 10);
+      const pdfBuffer = await buildPdfBuffer(rows, {
+        from: req.query.from || null,
+        to: req.query.to || null,
+        action: req.query.action || null,
+        include_archived: includeArchived,
+      });
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=backlog-report-${dateSuffix}.pdf`,
+      );
+      return res.status(200).send(pdfBuffer);
+    }
+
+    return res.status(200).json({
+      data: rows,
+      total: rows.length,
+      filters: {
+        from: req.query.from || null,
+        to: req.query.to || null,
+        action: req.query.action || null,
+        user_id: req.query.user_id || null,
+        school_id: req.query.school_id || null,
+        employee_id: req.query.employee_id || null,
+        leave_id: req.query.leave_id || null,
+        include_archived: includeArchived,
+      },
+    });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Error generating backlog report", error: err.message });
+  }
+};
+
 module.exports = {
   getAllBacklogs,
   getBacklogById,
   getBacklogsByUser,
   getBacklogsBySchool,
   createBacklog,
+  generateBacklogReport,
 };

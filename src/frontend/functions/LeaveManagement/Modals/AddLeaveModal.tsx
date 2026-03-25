@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import ConfirmationAddLeave from "../ConfirmationAddLeave";
 import AddLeaveSuccess from "../AddLeaveSuccess";
+import { getLeaveHistoryByEmployee } from "../leaveApi";
 
 export type AddLeaveFormValues = {
   employee_id: number;
@@ -88,6 +89,8 @@ export default function AddLeaveModal({
   isSaving = false,
 }: AddLeaveModalProps) {
   const [form, setForm] = useState(defaultForm);
+  const [currentBalVl, setCurrentBalVl] = useState<number | null>(null);
+  const [currentBalSl, setCurrentBalSl] = useState<number | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [pendingPayload, setPendingPayload] =
     useState<AddLeaveFormValues | null>(null);
@@ -102,12 +105,39 @@ export default function AddLeaveModal({
   useEffect(() => {
     if (isOpen) {
       setForm(defaultForm);
+      setCurrentBalVl(null);
+      setCurrentBalSl(null);
       setIsConfirmOpen(false);
       setPendingPayload(null);
       setIsSuccessOpen(false);
       setSuccessData(null);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const loadCurrentBalance = async () => {
+      if (!isOpen || !employeeId) return;
+
+      try {
+        const rows = await getLeaveHistoryByEmployee(employeeId);
+        if (!rows || rows.length === 0) {
+          setCurrentBalVl(0);
+          setCurrentBalSl(0);
+          return;
+        }
+
+        const latest = rows[rows.length - 1];
+        setCurrentBalVl(Number(latest.balVl || 0));
+        setCurrentBalSl(Number(latest.balSl || 0));
+      } catch {
+        // Keep form usable even if balance fetch fails.
+        setCurrentBalVl(null);
+        setCurrentBalSl(null);
+      }
+    };
+
+    loadCurrentBalance();
+  }, [isOpen, employeeId]);
 
   if (!isOpen || !employeeId) {
     return null;
@@ -258,11 +288,17 @@ export default function AddLeaveModal({
   const hasAbsWithoutPaySl = form.abs_without_pay_sl !== "";
 
   const disableEarnedVl = hasAbsWithPayVl || hasAbsWithoutPayVl;
-  const disableAbsWithPayVl = hasEarnedVl || hasAbsWithoutPayVl;
+  const disableAbsWithPayVlByBalance =
+    currentBalVl !== null && Number(currentBalVl) <= 0;
+  const disableAbsWithPayVl =
+    hasEarnedVl || hasAbsWithoutPayVl || disableAbsWithPayVlByBalance;
   const disableAbsWithoutPayVl = hasEarnedVl || hasAbsWithPayVl;
 
   const disableEarnedSl = hasAbsWithPaySl || hasAbsWithoutPaySl;
-  const disableAbsWithPaySl = hasEarnedSl || hasAbsWithoutPaySl;
+  const disableAbsWithPaySlByBalance =
+    currentBalSl !== null && Number(currentBalSl) <= 0;
+  const disableAbsWithPaySl =
+    hasEarnedSl || hasAbsWithoutPaySl || disableAbsWithPaySlByBalance;
   const disableAbsWithoutPaySl = hasEarnedSl || hasAbsWithPaySl;
 
   return (
@@ -409,6 +445,11 @@ export default function AddLeaveModal({
                         : ""
                     }`}
                   />
+                  {disableAbsWithPayVlByBalance && (
+                    <p className="mt-1 text-xs text-blue-600">
+                      Disabled because current VL balance is 0.
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -478,6 +519,11 @@ export default function AddLeaveModal({
                         : ""
                     }`}
                   />
+                  {disableAbsWithPaySlByBalance && (
+                    <p className="mt-1 text-xs text-blue-600">
+                      Disabled because current SL balance is 0.
+                    </p>
+                  )}
                 </div>
 
                 <div>

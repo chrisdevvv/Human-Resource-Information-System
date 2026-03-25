@@ -114,10 +114,42 @@ const employeeArchiveBodySchema = Joi.object({
   password: Joi.string().min(1).max(128).required(),
 });
 
+const LEAVE_PARTICULARS_OPTIONS = [
+  "Adoption Leave",
+  "Compensatory Paid Leave",
+  "Forced Leave (Disapproved)",
+  "Forced Leave",
+  "Late/Undertime",
+  "Leave Credit",
+  "Maternity Leave",
+  "Monetization",
+  "Paternity Leave",
+  "Rehabilitation Leave",
+  "Special Emergency Leave",
+  "Sick Leave",
+  "Solo Parent",
+  "Special Privilege Leave",
+  "Special Leave for Women",
+  "Study Leave",
+  "Terminal Leave",
+  "VAWC Leave",
+  "Vacation Leave",
+  "Balance Forwarded",
+  "Service Credit",
+  "Training/Seminar",
+  "Brigada Eskwela",
+  "Early Registration/Enrollment",
+  "Election",
+  "Remediation/Enrichment Classes/NLC",
+  "Checking of Forms",
+  "Wellness Leave",
+  "Others",
+];
+
 const leaveBodySchema = Joi.object({
   employee_id: Joi.number().integer().positive().required(),
   period_of_leave: Joi.string().trim().min(1).max(255).required(),
-  particulars: Joi.string().trim().max(500).allow(null, ""),
+  particulars: Joi.string().trim().valid(...LEAVE_PARTICULARS_OPTIONS).allow(null, ""),
   earned_vl: Joi.number().min(0).allow(null),
   abs_with_pay_vl: Joi.number().min(0).allow(null),
   abs_without_pay_vl: Joi.number().min(0).allow(null),
@@ -128,13 +160,29 @@ const leaveBodySchema = Joi.object({
 
 const leaveUpdateBodySchema = Joi.object({
   period_of_leave: Joi.string().trim().min(1).max(255),
-  particulars: Joi.string().trim().max(500).allow(null, ""),
+  particulars: Joi.string().trim().valid(...LEAVE_PARTICULARS_OPTIONS).allow(null, ""),
   earned_vl: Joi.number().min(0).allow(null),
   abs_with_pay_vl: Joi.number().min(0).allow(null),
   abs_without_pay_vl: Joi.number().min(0).allow(null),
   earned_sl: Joi.number().min(0).allow(null),
   abs_with_pay_sl: Joi.number().min(0).allow(null),
   abs_without_pay_sl: Joi.number().min(0).allow(null),
+});
+
+const backlogReportQuerySchema = Joi.object({
+  format: Joi.string().valid("json", "csv", "pdf").default("json"),
+  from: Joi.date().iso(),
+  to: Joi.date().iso(),
+  action: Joi.string().trim().max(100),
+  user_id: Joi.number().integer().positive(),
+  school_id: Joi.number().integer().positive(),
+  employee_id: Joi.number().integer().positive(),
+  leave_id: Joi.number().integer().positive(),
+  include_archived: Joi.alternatives().try(
+    Joi.boolean(),
+    Joi.string().valid("true", "false", "1", "0"),
+    Joi.number().valid(0, 1),
+  ),
 });
 
 module.exports = {
@@ -156,4 +204,5 @@ module.exports = {
   registrationRejectBodySchema,
   leaveBodySchema,
   leaveUpdateBodySchema,
+  backlogReportQuerySchema,
 };

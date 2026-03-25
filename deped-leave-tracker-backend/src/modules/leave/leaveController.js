@@ -198,6 +198,28 @@ const validateLeaveFields = (data) => {
   return null;
 };
 
+const validatePaidAbsenceAgainstBalance = ({
+  prev_bal_vl,
+  prev_bal_sl,
+  effect,
+}) => {
+  const errors = [];
+
+  if (effect.abs_with_pay_vl > parseNum(prev_bal_vl)) {
+    errors.push(
+      `Abs With Pay VL (${effect.abs_with_pay_vl}) exceeds available VL balance (${round2(prev_bal_vl)}).`,
+    );
+  }
+
+  if (effect.abs_with_pay_sl > parseNum(prev_bal_sl)) {
+    errors.push(
+      `Abs With Pay SL (${effect.abs_with_pay_sl}) exceeds available SL balance (${round2(prev_bal_sl)}).`,
+    );
+  }
+
+  return errors;
+};
+
 const computeEntryEffect = (entryLike, { employeeType } = {}) => {
   const context = getStructuredContext(entryLike);
 
@@ -563,6 +585,22 @@ const createLeaveRequest = async (req, res) => {
 
     const effect = computeEntryEffect(req.body, { employeeType });
 
+    const paidLeaveBalanceErrors = validatePaidAbsenceAgainstBalance({
+      prev_bal_vl,
+      prev_bal_sl,
+      effect,
+    });
+    if (paidLeaveBalanceErrors.length > 0) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: paidLeaveBalanceErrors.map((msg) => ({
+          field: "abs_with_pay",
+          message: msg,
+          source: "body",
+        })),
+      });
+    }
+
     const { bal_vl, bal_sl } = computeRunningBalance(
       { bal_vl: prev_bal_vl, bal_sl: prev_bal_sl },
       effect,
@@ -716,6 +754,22 @@ const updateLeaveRequest = async (req, res) => {
       { bal_vl: prev_bal_vl, bal_sl: prev_bal_sl },
       effect,
     );
+
+    const paidLeaveBalanceErrors = validatePaidAbsenceAgainstBalance({
+      prev_bal_vl,
+      prev_bal_sl,
+      effect,
+    });
+    if (paidLeaveBalanceErrors.length > 0) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: paidLeaveBalanceErrors.map((msg) => ({
+          field: "abs_with_pay",
+          message: msg,
+          source: "body",
+        })),
+      });
+    }
 
     const resolvedParticulars = resolveParticulars(particulars, {
       isMonetization: effect.context.isMonetization,
