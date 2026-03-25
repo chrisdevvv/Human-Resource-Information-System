@@ -104,6 +104,41 @@ const ensureSecurityTables = async () => {
 };
 
 const ensureLeaveLedgerSchema = async () => {
+  const leaveParticularsOptions = [
+    "Adoption Leave",
+    "Compensatory Paid Leave",
+    "Forced Leave (Disapproved)",
+    "Forced Leave",
+    "Late/Undertime",
+    "Leave Credit",
+    "Maternity Leave",
+    "Monetization",
+    "Paternity Leave",
+    "Rehabilitation Leave",
+    "Special Emergency Leave",
+    "Sick Leave",
+    "Solo Parent",
+    "Special Privilege Leave",
+    "Special Leave for Women",
+    "Study Leave",
+    "Terminal Leave",
+    "VAWC Leave",
+    "Vacation Leave",
+    "Balance Forwarded",
+    "Service Credit",
+    "Training/Seminar",
+    "Brigada Eskwela",
+    "Early Registration/Enrollment",
+    "Election",
+    "Remediation/Enrichment Classes/NLC",
+    "Checking of Forms",
+    "Wellness Leave",
+    "Others",
+  ];
+  const enumSql = leaveParticularsOptions
+    .map((v) => `'${String(v).replace(/'/g, "''")}'`)
+    .join(",");
+
   // Keep leave entry categorization structured and backend-driven.
   await pool.promise().query(`
     ALTER TABLE leaves
@@ -114,6 +149,20 @@ const ensureLeaveLedgerSchema = async () => {
     UPDATE leaves
     SET entry_kind = 'MANUAL'
     WHERE entry_kind IS NULL OR entry_kind = '';
+  `);
+
+  // Normalize legacy free-text particulars before converting to ENUM.
+  await pool.promise().query(`
+    UPDATE leaves
+    SET particulars = 'Others'
+    WHERE particulars IS NOT NULL
+      AND particulars <> ''
+      AND particulars NOT IN (${enumSql});
+  `);
+
+  await pool.promise().query(`
+    ALTER TABLE leaves
+    MODIFY COLUMN particulars ENUM(${enumSql}) NULL;
   `);
 };
 
@@ -171,6 +220,48 @@ const ensureEmployeeLeaveStatusSchema = async () => {
     if (!/Duplicate|exists/i.test(err.message)) {
       console.warn("Employee leave status index warning:", err.message);
     }
+  }
+};
+
+const ensureBacklogArchiveSchema = async () => {
+  await pool.promise().query(`
+    ALTER TABLE backlogs
+    ADD COLUMN IF NOT EXISTS is_archived TINYINT(1) NOT NULL DEFAULT 0 AFTER details;
+  `);
+
+  await pool.promise().query(`
+    UPDATE backlogs
+    SET is_archived = 0
+    WHERE is_archived IS NULL;
+  `);
+
+  try {
+    await pool.promise().query(`CREATE INDEX idx_backlogs_is_archived ON backlogs (is_archived)`);
+  } catch (err) {
+    if (!/Duplicate|exists/i.test(err.message)) {
+      console.warn("Backlog archive index warning:", err.message);
+    }
+  }
+};
+
+const archiveOldBacklogs = async () => {
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+  const cutoffDate = oneMonthAgo.toISOString().slice(0, 19).replace('T', ' ');
+
+  try {
+    const [result] = await pool.promise().query(
+      `UPDATE backlogs
+       SET is_archived = 1
+       WHERE is_archived = 0 AND created_at < ?`,
+      [cutoffDate]
+    );
+    
+    if (result.changedRows > 0) {
+      console.log(`[Backlog Archive] Archived ${result.changedRows} backlogs older than ${cutoffDate}`);
+    }
+  } catch (err) {
+    console.error("[Backlog Archive] Error archiving old backlogs:", err.message);
   }
 };
 
@@ -237,8 +328,14 @@ app.listen(PORT, async () => {
     await ensureEmployeeLeaveStatusSchema();
     console.log("✔  Employee leave status schema is ready");
 
+    await ensureBacklogArchiveSchema();
+    console.log("✔  Backlog archive schema is ready");
+
     await ensureIndexes();
     console.log("✔  Database indexes ensured (best-effort)");
+
+    // Archive old backlogs on startup
+    await archiveOldBacklogs();
 
     if (AUTO_MONTHLY_CREDIT_ENABLED) {
       // Catch up on startup (safe because duplicate monthly entries are skipped).
@@ -267,6 +364,20 @@ app.listen(PORT, async () => {
         "[Auto Credit] Scheduler disabled via AUTO_MONTHLY_CREDIT=false.",
       );
     }
+
+    // Run backlog archiving daily at 01:00 AM
+    cron.schedule("0 1 * * *", async () => {
+      try {
+        await archiveOldBacklogs();
+      } catch (error) {
+        console.error("[Backlog Archive] Scheduled run failed:", error.message);
+      }
+    });
+
+    console.log(
+      "[Backlog Archive] Scheduler enabled (runs daily at 01:00 AM).",
+    );
+
   } catch (err) {
     console.error("✘  MySQL connection failed:", err.message);
   }

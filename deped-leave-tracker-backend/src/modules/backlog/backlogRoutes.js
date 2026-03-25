@@ -5,9 +5,12 @@ const {
   getBacklogsByUser,
   getBacklogsBySchool,
   createBacklog,
+  generateBacklogReport,
 } = require("./backlogController");
 const authMiddleware = require("../../middleware/authMiddleware");
 const { roleAuthMiddleware } = require("../../middleware/roleAuthMiddleware");
+const { validateRequest } = require("../../middleware/validateRequest");
+const { idParamSchema, backlogReportQuerySchema } = require("../../validation/schemas");
 
 const router = express.Router();
 
@@ -17,6 +20,13 @@ router.get(
   authMiddleware,
   roleAuthMiddleware(["admin", "super-admin"]),
   getAllBacklogs,
+);
+router.get(
+  "/report",
+  authMiddleware,
+  roleAuthMiddleware(["admin", "super-admin"]),
+  validateRequest({ query: backlogReportQuerySchema }),
+  generateBacklogReport,
 );
 router.get(
   "/user/:user_id",
@@ -34,6 +44,7 @@ router.get(
   "/:id",
   authMiddleware,
   roleAuthMiddleware(["admin", "super-admin"]),
+  validateRequest({ params: idParamSchema }),
   getBacklogById,
 );
 router.post(
