@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import ArchivedEmployee from "./ArchivedEmployee";
 import {
   ArrowDownAZ,
   ArrowUpAZ,
   ChevronLeft,
   ChevronRight,
-  Eye,
+  Info,
   FileText,
   Plus,
 } from "lucide-react";
@@ -65,6 +66,7 @@ type EmployeeApiResponse = {
 };
 
 export default function EmployeeLeaveManagement() {
+  const [activeTab, setActiveTab] = useState<"list" | "archived">("list");
   const [searchQuery, setSearchQuery] = useState("");
   const [employeeTypeFilter, setEmployeeTypeFilter] = useState<
     "ALL" | "teaching" | "non-teaching"
@@ -272,276 +274,335 @@ export default function EmployeeLeaveManagement() {
 
   return (
     <div className="w-full">
-      <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-3 sm:p-6 sticky top-0 sm:top-4 h-screen sm:h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-6">
-          Leave Management
-        </h1>
+      <div className="flex justify-center gap-2 mb-4">
+        <button
+          onClick={() => setActiveTab("list")}
+          className={`px-6 py-2 font-medium text-sm rounded-t-lg transition cursor-pointer ${
+            activeTab === "list"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          Employees List
+        </button>
+        <button
+          onClick={() => setActiveTab("archived")}
+          className={`px-6 py-2 font-medium text-sm rounded-t-lg transition cursor-pointer ${
+            activeTab === "archived"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          Archived Employee
+        </button>
+      </div>
 
-        <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                placeholder="Search employee"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="text-gray-500 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              />
-            </div>
-            <button
-              onClick={handleSearch}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
-            >
-              Search
-            </button>
-          </div>
+      {activeTab === "list" ? (
+        <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-3 sm:p-6 sticky top-0 sm:top-4 h-screen sm:h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-6">
+            Employee Leave Management
+          </h1>
 
-          <div className="flex flex-wrap items-center gap-4">
-            <button
-              type="button"
-              onClick={() => setIsAddEmployeeOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
-            >
-              <Plus size={16} />
-              Add Employee
-            </button>
-
-            <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap items-center gap-3">
-              <select
-                value={employeeTypeFilter}
-                onChange={(e) => {
-                  setEmployeeTypeFilter(
-                    e.target.value as "ALL" | "teaching" | "non-teaching",
-                  );
-                  setCurrentPage(1);
-                }}
-                className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
-              >
-                <option value="ALL">All Employee Types</option>
-                <option value="teaching">Teaching</option>
-                <option value="non-teaching">Non-Teaching</option>
-              </select>
-
-              <select
-                value={letterFilter}
-                onChange={(e) => {
-                  setLetterFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
-              >
-                <option value="ALL">All Letters</option>
-                {alphabet.map((letter) => (
-                  <option key={letter} value={letter}>
-                    {letter}
-                  </option>
-                ))}
-              </select>
-
+          <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  placeholder="Search employee"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="text-gray-500 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
               <button
-                onClick={() => {
-                  setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-                }}
-                className="w-full sm:w-auto text-gray-500 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
+                onClick={handleSearch}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
               >
-                {sortOrder === "asc" ? (
-                  <>
-                    <ArrowUpAZ size={16} />
-                    A-Z
-                  </>
-                ) : (
-                  <>
-                    <ArrowDownAZ size={16} />
-                    Z-A
-                  </>
-                )}
+                Search
               </button>
             </div>
-          </div>
-        </div>
 
-        <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
-          {employeeLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-gray-500">Loading employees...</p>
-            </div>
-          ) : employeeError ? (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-red-500">Error: {employeeError}</p>
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead className="sticky top-0 z-10 bg-white">
-                <tr className="border-b-2 border-gray-200">
-                  <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
-                    Name
-                  </th>
-                  <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
-                    Employee Type
-                  </th>
-                  <th className="text-right py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedEmployees.length > 0 ? (
-                  paginatedEmployees.map((employee) => (
-                    <tr
-                      key={employee.id}
-                      className="border-b border-gray-100 hover:bg-gray-50 transition"
-                    >
-                      <td className="py-2 px-3 text-gray-900 text-sm font-medium">
-                        {employee.fullName}
-                      </td>
-                      <td className="py-2 px-3 text-gray-500 text-sm capitalize">
-                        {employee.employeeType}
-                      </td>
-                      <td className="py-2 px-3">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openLeaveModal(employee, "history")}
-                            aria-label="View leave"
-                            title="View"
-                            className="p-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer"
-                          >
-                            <Eye size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDirectAddTarget(employee)}
-                            aria-label="Add leave"
-                            title="Add Leave"
-                            className="p-2 bg-amber-100 text-amber-700 rounded hover:bg-amber-200 transition cursor-pointer"
-                          >
-                            <Plus size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              window.open(
-                                `/leave-card/${employee.id}`,
-                                "_blank",
-                              )
-                            }
-                            aria-label="Preview leave PDF"
-                            title="Preview PDF"
-                            className="p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition cursor-pointer"
-                          >
-                            <FileText size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={3} className="py-8 text-center text-gray-500">
-                      No employees found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
+            <div className="flex flex-wrap items-center gap-4">
+              <button
+                type="button"
+                onClick={() => setIsAddEmployeeOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+              >
+                <Plus size={16} />
+                Add Employee
+              </button>
 
-        {filteredEmployees.length > 0 && (
-          <div className="mt-6 space-y-3">
-            <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-              <label className="flex items-center gap-2 text-sm text-gray-600">
-                Show
+              <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap items-center gap-3">
                 <select
-                  value={itemsPerPage}
+                  value={employeeTypeFilter}
                   onChange={(e) => {
-                    setItemsPerPage(Number(e.target.value));
+                    setEmployeeTypeFilter(
+                      e.target.value as "ALL" | "teaching" | "non-teaching",
+                    );
                     setCurrentPage(1);
-                    setPageJumpInput("1");
                   }}
-                  className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+                  className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
-                  {PAGE_SIZE_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
+                  <option value="ALL">All Employee Types</option>
+                  <option value="teaching">Teaching</option>
+                  <option value="non-teaching">Non-Teaching</option>
+                </select>
+
+                <select
+                  value={letterFilter}
+                  onChange={(e) => {
+                    setLetterFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                >
+                  <option value="ALL">All Letters</option>
+                  {alphabet.map((letter) => (
+                    <option key={letter} value={letter}>
+                      {letter}
                     </option>
                   ))}
                 </select>
-                entries
-              </label>
 
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>Jump to</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={totalPages}
-                  value={pageJumpInput}
-                  onChange={(e) => setPageJumpInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleJumpToPage();
-                    }
-                  }}
-                  className="w-16 rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
-                />
                 <button
-                  onClick={handleJumpToPage}
-                  className="rounded bg-gray-100 px-2 py-1 text-sm text-gray-700 hover:bg-gray-200"
+                  onClick={() => {
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                  }}
+                  className="w-full sm:w-auto text-gray-500 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
                 >
-                  Go
+                  {sortOrder === "asc" ? (
+                    <>
+                      <ArrowUpAZ size={16} />
+                      A-Z
+                    </>
+                  ) : (
+                    <>
+                      <ArrowDownAZ size={16} />
+                      Z-A
+                    </>
+                  )}
                 </button>
               </div>
             </div>
-
-            <div className="flex items-center justify-center gap-2">
-              <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-                aria-label="Previous page"
-              >
-                <ChevronLeft size={18} />
-              </button>
-
-              {pageNumberItems.map((item, index) =>
-                item === "ellipsis" ? (
-                  <span
-                    key={`ellipsis-${index}`}
-                    className="px-2 text-sm text-gray-400 select-none"
-                  >
-                    ...
-                  </span>
-                ) : (
-                  <button
-                    key={item}
-                    onClick={() => setCurrentPage(item)}
-                    className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
-                      currentPage === item
-                        ? "bg-blue-600 text-white"
-                        : "text-gray-500 hover:bg-gray-100"
-                    }`}
-                  >
-                    {item}
-                  </button>
-                ),
-              )}
-
-              <button
-                onClick={() =>
-                  setCurrentPage(Math.min(totalPages, currentPage + 1))
-                }
-                disabled={currentPage === totalPages}
-                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-                aria-label="Next page"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
           </div>
-        )}
-      </div>
+
+          <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+            {employeeLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-gray-500">Loading employees...</p>
+              </div>
+            ) : employeeError ? (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-red-500">Error: {employeeError}</p>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="sticky top-0 z-10 bg-white">
+                  <tr className="border-b-2 border-gray-200">
+                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
+                      Name
+                    </th>
+                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
+                      Employee Type
+                    </th>
+                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
+                      Leave Status
+                    </th>
+                    <th className="text-right py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedEmployees.length > 0 ? (
+                    paginatedEmployees.map((employee) => {
+                      const isOnLeave = Boolean(
+                        employee.periodOfLeave &&
+                        employee.periodOfLeave !== "Not on leave",
+                      );
+
+                      return (
+                        <tr
+                          key={employee.id}
+                          className="border-b border-gray-100 hover:bg-gray-50 transition"
+                        >
+                          <td className="py-2 px-3 text-gray-900 text-sm font-medium">
+                            {employee.fullName}
+                          </td>
+                          <td className="py-2 px-3 text-gray-500 text-sm capitalize">
+                            {employee.employeeType}
+                          </td>
+                          <td
+                            className={`py-2 px-3 text-sm ${
+                              isOnLeave
+                                ? "bg-red-100 text-red-700 rounded"
+                                : "text-gray-600"
+                            }`}
+                          >
+                            {isOnLeave
+                              ? "On leave"
+                              : employee.periodOfLeave || "Not on leave"}
+                          </td>
+                          <td className="py-2 px-3">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openLeaveModal(employee, "history")
+                                }
+                                aria-label="View details"
+                                title="Details"
+                                className="p-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer"
+                              >
+                                <Info size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDirectAddTarget(employee)}
+                                aria-label="Add leave"
+                                title="Add Leave"
+                                className="p-2 bg-amber-100 text-amber-700 rounded hover:bg-amber-200 transition cursor-pointer"
+                              >
+                                <Plus size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  window.open(
+                                    `/leave-card/${employee.id}`,
+                                    "_blank",
+                                  )
+                                }
+                                aria-label="Preview leave PDF"
+                                title="Preview PDF"
+                                className="p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition cursor-pointer"
+                              >
+                                <FileText size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="py-8 text-center text-gray-500"
+                      >
+                        No employees found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {filteredEmployees.length > 0 && (
+            <div className="mt-6 space-y-3">
+              <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+                <label className="flex items-center gap-2 text-sm text-gray-600">
+                  Show
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                      setPageJumpInput("1");
+                    }}
+                    className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+                  >
+                    {PAGE_SIZE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                  entries
+                </label>
+
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>Jump to</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    value={pageJumpInput}
+                    onChange={(e) => setPageJumpInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleJumpToPage();
+                      }
+                    }}
+                    className="w-16 rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+                  />
+                  <button
+                    onClick={handleJumpToPage}
+                    className="rounded bg-gray-100 px-2 py-1 text-sm text-gray-700 hover:bg-gray-200"
+                  >
+                    Go
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+
+                {pageNumberItems.map(
+                  (item: number | "ellipsis", index: number) => {
+                    if (item === "ellipsis") {
+                      return (
+                        <span
+                          key={`ellipsis-${index}`}
+                          className="px-2 text-sm text-gray-400 select-none"
+                        >
+                          ...
+                        </span>
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={item}
+                        onClick={() => setCurrentPage(item)}
+                        className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
+                          currentPage === item
+                            ? "bg-blue-600 text-white"
+                            : "text-gray-500 hover:bg-gray-100"
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    );
+                  },
+                )}
+
+                <button
+                  onClick={() =>
+                    setCurrentPage(Math.min(totalPages, currentPage + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                  aria-label="Next page"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <ArchivedEmployee />
+      )}
 
       <LeaveManagementModal
         isOpen={Boolean(leaveModalTarget)}

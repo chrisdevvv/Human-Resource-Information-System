@@ -22,6 +22,7 @@ const {
   employeeListQuerySchema,
   employeeMarkOnLeaveBodySchema,
   employeeStatusCountsQuerySchema,
+  employeeArchiveBodySchema,
 } = require("../../validation/schemas");
 
 const router = express.Router();
@@ -82,7 +83,7 @@ router.patch(
   "/:id/archive",
   authMiddleware,
   roleAuthMiddleware(["admin", "super-admin"]),
-  validateRequest({ params: idParamSchema }),
+  validateRequest({ params: idParamSchema, body: employeeArchiveBodySchema }),
   archiveEmployee,
 );
 router.patch(
@@ -96,7 +97,10 @@ router.patch(
   "/:id/mark-on-leave",
   authMiddleware,
   roleAuthMiddleware(["admin", "super-admin"]),
-  validateRequest({ params: idParamSchema, body: employeeMarkOnLeaveBodySchema }),
+  validateRequest({
+    params: idParamSchema,
+    body: employeeMarkOnLeaveBodySchema,
+  }),
   markEmployeeOnLeave,
 );
 router.patch(

@@ -11,7 +11,10 @@ const schoolIdParamSchema = Joi.object({
 const employeeBodySchema = Joi.object({
   first_name: Joi.string().trim().min(1).max(100).required(),
   last_name: Joi.string().trim().min(1).max(100).required(),
-  email: Joi.string().trim().email({ tlds: { allow: false } }).allow(null, ""),
+  email: Joi.string()
+    .trim()
+    .email({ tlds: { allow: false } })
+    .allow(null, ""),
   employee_type: Joi.string().valid("teaching", "non-teaching").required(),
   school_id: Joi.number().integer().positive().required(),
 });
@@ -73,7 +76,10 @@ const userPasswordResetBodySchema = Joi.object({
 const userAdminCreateBodySchema = Joi.object({
   first_name: Joi.string().trim().min(1).max(100).required(),
   last_name: Joi.string().trim().min(1).max(100).required(),
-  email: Joi.string().trim().email({ tlds: { allow: false } }).required(),
+  email: Joi.string()
+    .trim()
+    .email({ tlds: { allow: false } })
+    .required(),
   password: Joi.string().min(8).max(128).required(),
   school_name: Joi.string().trim().min(1).max(255).required(),
 });
@@ -104,6 +110,10 @@ const registrationRejectBodySchema = Joi.object({
   rejection_reason: Joi.string().trim().max(500).allow(null, ""),
 });
 
+const employeeArchiveBodySchema = Joi.object({
+  password: Joi.string().min(1).max(128).required(),
+});
+
 module.exports = {
   idParamSchema,
   schoolIdParamSchema,
@@ -111,6 +121,7 @@ module.exports = {
   employeeListQuerySchema,
   employeeMarkOnLeaveBodySchema,
   employeeStatusCountsQuerySchema,
+  employeeArchiveBodySchema,
   schoolBodySchema,
   userRoleBodySchema,
   userStatusBodySchema,

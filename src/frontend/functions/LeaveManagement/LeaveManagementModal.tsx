@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Download, Plus, RefreshCcw, X } from "lucide-react";
+import ArchiveConfirmationModal from "./ArchiveConfirmationModal";
 import type { LeaveModalRecord } from "./leaveTypes";
 import AddLeaveModal, { type AddLeaveFormValues } from "./AddLeaveModal";
 import LeaveHistoryTable from "./LeaveHistoryTable";
@@ -13,6 +14,7 @@ import {
   createLeave,
   getLeaveHistoryByEmployee,
   type LeaveHistoryRecord,
+  archiveEmployee,
 } from "./leaveApi";
 
 type LeaveManagementModalProps = {
@@ -28,18 +30,49 @@ export default function LeaveManagementModal({
   onClose,
   initialTab = "history",
 }: LeaveManagementModalProps) {
-  const employeeId = leave?.employeeId ?? leave?.id ?? null;
-  const employeeType = leave?.employeeType ?? "non-teaching";
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [archiveSuccess, setArchiveSuccess] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<"history" | "card">("history");
-  const [historyRows, setHistoryRows] = useState<LeaveHistoryRecord[]>([]);
+  // Added missing state and refs
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isAddOpen, setIsAddOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAddOpen, setIsAddOpen] = useState(false);
   const [pdfCooldownRemaining, setPdfCooldownRemaining] = useState(0);
-  const cardRef = useRef<HTMLDivElement>(null);
   const pdfCooldownIntervalRef = useRef<number | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const handleArchive = async (password: string) => {
+    setIsArchiving(true);
+    setArchiveError(null);
+    setArchiveSuccess(false);
+    try {
+      if (!employeeId) {
+        throw new Error("Employee ID not found");
+      }
+      await archiveEmployee(employeeId, password);
+      setArchiveSuccess(true);
+      setIsArchiveOpen(false);
+
+      // Close the entire modal after a short delay to show success message
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Failed to archive employee. Please try again.";
+      setArchiveError(errorMessage);
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+  const employeeId = leave?.employeeId ?? leave?.id ?? null;
+  const employeeType = leave?.employeeType ?? "non-teaching";
+  const [activeTab, setActiveTab] = useState<"history" | "card">("history");
+  const [historyRows, setHistoryRows] = useState<LeaveHistoryRecord[]>([]);
 
   const employeeTypeLabel =
     employeeType === "non-teaching" ? "Non-Teaching" : "Teaching";
@@ -224,6 +257,23 @@ export default function LeaveManagementModal({
                   ? `Download PDF (${pdfCooldownRemaining}s)`
                   : "Download PDF"}
               </button>
+              <button
+                type="button"
+                onClick={() => setIsArchiveOpen(true)}
+                disabled={isSaving || isArchiving}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-800 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Archive
+              </button>
+              <ArchiveConfirmationModal
+                isOpen={isArchiveOpen}
+                onClose={() => setIsArchiveOpen(false)}
+                onConfirm={handleArchive}
+                isLoading={isArchiving}
+                error={archiveError}
+                success={archiveSuccess}
+                employeeName={leave.fullName}
+              />
             </div>
           </div>
         </div>

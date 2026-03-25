@@ -1,5 +1,7 @@
+const bcrypt = require("bcryptjs");
 const Employee = require("./employeeModel");
 const Backlog = require("../backlog/backlogModel");
+const pool = require("../../config/db");
 
 const toBoolean = (value) => {
   if (value === true || value === 1 || value === "1") return true;
@@ -33,14 +35,12 @@ const getAllEmployees = async (req, res) => {
     const results = await Employee.getAll(filters);
 
     if (!filters.page) return res.status(200).json({ data: results });
-    return res
-      .status(200)
-      .json({
-        data: results.data,
-        total: results.total,
-        page: results.page,
-        pageSize: results.pageSize,
-      });
+    return res.status(200).json({
+      data: results.data,
+      total: results.total,
+      page: results.page,
+      pageSize: results.pageSize,
+    });
   } catch (err) {
     res
       .status(500)
@@ -191,6 +191,15 @@ const deleteEmployee = async (req, res) => {
 
 const archiveEmployee = async (req, res) => {
   try {
+    const { password } = req.body;
+
+    // Require password for archiving
+    if (!password) {
+      return res
+        .status(400)
+        .json({ message: "Password is required to archive employee" });
+    }
+
     const employee = await Employee.getById(req.params.id, {
       includeArchived: true,
     });
@@ -200,6 +209,24 @@ const archiveEmployee = async (req, res) => {
 
     if (employee.is_archived) {
       return res.status(409).json({ message: "Employee is already archived" });
+    }
+
+    // Verify the user's password before allowing the archive
+    const [userRows] = await pool
+      .promise()
+      .query("SELECT password_hash FROM users WHERE id = ? AND is_active = 1", [
+        req.user.id,
+      ]);
+    if (!userRows[0]) {
+      return res.status(404).json({ message: "User account not found" });
+    }
+
+    const passwordMatch = await bcrypt.compare(
+      password,
+      userRows[0].password_hash,
+    );
+    if (!passwordMatch) {
+      return res.status(401).json({ message: "Password is incorrect" });
     }
 
     const result = await Employee.archive(req.params.id, req.user.id);
@@ -251,9 +278,7 @@ const unarchiveEmployee = async (req, res) => {
       details: `${employee.first_name} ${employee.last_name} (${employee.employee_type})`,
     });
 
-    return res
-      .status(200)
-      .json({ message: "Employee restored successfully" });
+    return res.status(200).json({ message: "Employee restored successfully" });
   } catch (err) {
     return res
       .status(500)
@@ -277,7 +302,9 @@ const markEmployeeOnLeave = async (req, res) => {
     }
 
     if (employee.on_leave) {
-      return res.status(409).json({ message: "Employee is already marked on leave" });
+      return res
+        .status(409)
+        .json({ message: "Employee is already marked on leave" });
     }
 
     const { on_leave_from, on_leave_until, reason } = req.body || {};
@@ -345,7 +372,10 @@ const markEmployeeAvailable = async (req, res) => {
   } catch (err) {
     return res
       .status(500)
-      .json({ message: "Error marking employee available", error: err.message });
+      .json({
+        message: "Error marking employee available",
+        error: err.message,
+      });
   }
 };
 
