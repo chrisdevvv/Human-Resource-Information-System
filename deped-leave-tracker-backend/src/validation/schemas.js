@@ -16,6 +16,36 @@ const employeeBodySchema = Joi.object({
   school_id: Joi.number().integer().positive().required(),
 });
 
+const employeeListQuerySchema = Joi.object({
+  page: Joi.number().integer().min(1),
+  pageSize: Joi.number().integer().min(1).max(200),
+  include_archived: Joi.alternatives().try(
+    Joi.boolean(),
+    Joi.string().valid("true", "false", "1", "0"),
+    Joi.number().valid(0, 1),
+  ),
+  on_leave: Joi.alternatives().try(
+    Joi.boolean(),
+    Joi.string().valid("true", "false", "1", "0"),
+    Joi.number().valid(0, 1),
+  ),
+});
+
+const employeeMarkOnLeaveBodySchema = Joi.object({
+  on_leave_from: Joi.date().iso(),
+  on_leave_until: Joi.date().iso().min(Joi.ref("on_leave_from")),
+  reason: Joi.string().trim().max(500).allow(null, ""),
+});
+
+const employeeStatusCountsQuerySchema = Joi.object({
+  school_id: Joi.number().integer().positive(),
+  include_archived: Joi.alternatives().try(
+    Joi.boolean(),
+    Joi.string().valid("true", "false", "1", "0"),
+    Joi.number().valid(0, 1),
+  ),
+});
+
 const schoolBodySchema = Joi.object({
   school_name: Joi.string().trim().min(1).max(255).required(),
   school_code: Joi.string().trim().min(1).max(50).required(),
@@ -78,6 +108,9 @@ module.exports = {
   idParamSchema,
   schoolIdParamSchema,
   employeeBodySchema,
+  employeeListQuerySchema,
+  employeeMarkOnLeaveBodySchema,
+  employeeStatusCountsQuerySchema,
   schoolBodySchema,
   userRoleBodySchema,
   userStatusBodySchema,

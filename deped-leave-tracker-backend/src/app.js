@@ -117,6 +117,63 @@ const ensureLeaveLedgerSchema = async () => {
   `);
 };
 
+const ensureEmployeeArchiveSchema = async () => {
+  await pool.promise().query(`
+    ALTER TABLE employees
+    ADD COLUMN IF NOT EXISTS is_archived TINYINT(1) NOT NULL DEFAULT 0 AFTER school_id,
+    ADD COLUMN IF NOT EXISTS archived_at DATETIME NULL AFTER is_archived,
+    ADD COLUMN IF NOT EXISTS archived_by INT NULL AFTER archived_at;
+  `);
+
+  await pool.promise().query(`
+    UPDATE employees
+    SET is_archived = 0
+    WHERE is_archived IS NULL;
+  `);
+
+  const indexStatements = [
+    `CREATE INDEX idx_employees_is_archived ON employees (is_archived)`,
+    `CREATE INDEX idx_employees_archived_by ON employees (archived_by)`,
+  ];
+
+  for (const sql of indexStatements) {
+    try {
+      await pool.promise().query(sql);
+    } catch (err) {
+      if (!/Duplicate|exists/i.test(err.message)) {
+        console.warn("Employee archive index warning:", err.message);
+      }
+    }
+  }
+};
+
+const ensureEmployeeLeaveStatusSchema = async () => {
+  await pool.promise().query(`
+    ALTER TABLE employees
+    ADD COLUMN IF NOT EXISTS on_leave TINYINT(1) NOT NULL DEFAULT 0 AFTER archived_by,
+    ADD COLUMN IF NOT EXISTS on_leave_from DATE NULL AFTER on_leave,
+    ADD COLUMN IF NOT EXISTS on_leave_until DATE NULL AFTER on_leave_from,
+    ADD COLUMN IF NOT EXISTS on_leave_reason VARCHAR(500) NULL AFTER on_leave_until,
+    ADD COLUMN IF NOT EXISTS leave_status_updated_at DATETIME NULL AFTER on_leave_reason;
+  `);
+
+  await pool.promise().query(`
+    UPDATE employees
+    SET on_leave = 0
+    WHERE on_leave IS NULL;
+  `);
+
+  try {
+    await pool
+      .promise()
+      .query(`CREATE INDEX idx_employees_on_leave ON employees (on_leave)`);
+  } catch (err) {
+    if (!/Duplicate|exists/i.test(err.message)) {
+      console.warn("Employee leave status index warning:", err.message);
+    }
+  }
+};
+
 const ensureIndexes = async () => {
   // Create helpful indexes for common filters/sorts. Errors ignored if index already exists.
   const stmts = [
@@ -173,6 +230,12 @@ app.listen(PORT, async () => {
 
     await ensureLeaveLedgerSchema();
     console.log("✔  Leave ledger schema is ready");
+
+    await ensureEmployeeArchiveSchema();
+    console.log("✔  Employee archive schema is ready");
+
+    await ensureEmployeeLeaveStatusSchema();
+    console.log("✔  Employee leave status schema is ready");
 
     await ensureIndexes();
     console.log("✔  Database indexes ensured (best-effort)");
