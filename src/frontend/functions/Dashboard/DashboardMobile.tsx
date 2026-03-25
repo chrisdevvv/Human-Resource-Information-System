@@ -93,9 +93,13 @@ type Shortcut = {
 
 type DashboardMobileProps = {
   onTabChange?: (tab: string) => void;
+  showRecentLogs?: boolean;
 };
 
-export default function DashboardMobile({ onTabChange }: DashboardMobileProps) {
+export default function DashboardMobile({
+  onTabChange,
+  showRecentLogs = true,
+}: DashboardMobileProps) {
   const [stats, setStats] = useState({
     totalEmployees: 0,
     totalUsers: 0,
@@ -135,7 +139,9 @@ export default function DashboardMobile({ onTabChange }: DashboardMobileProps) {
             "/api/registrations/pending",
             token,
           ),
-          fetchApiList<BacklogRecord>("/api/backlogs", token),
+          showRecentLogs
+            ? fetchApiList<BacklogRecord>("/api/backlogs", token)
+            : Promise.resolve([]),
           fetch(
             `${API_BASE_URL}/api/employees/status-counts?include_archived=true`,
             {
@@ -205,7 +211,7 @@ export default function DashboardMobile({ onTabChange }: DashboardMobileProps) {
           employeesOnLeave,
           archivedEmployees,
         });
-        setRecentLogs(backlogs.slice(0, 3));
+        setRecentLogs(showRecentLogs ? backlogs.slice(0, 3) : []);
         setLoading(false);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
@@ -215,7 +221,7 @@ export default function DashboardMobile({ onTabChange }: DashboardMobileProps) {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [showRecentLogs]);
 
   const statCards: StatCard[] = [
     {
@@ -353,44 +359,45 @@ export default function DashboardMobile({ onTabChange }: DashboardMobileProps) {
           </div>
         </div>
 
-        {/* Recent Logs */}
-        <div className="bg-white rounded border border-gray-200 p-3 mb-4">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="text-xs font-bold text-yellow-600 uppercase tracking-wide">
-              Recent Logs
-            </h2>
-            <button
-              type="button"
-              onClick={handleViewLogs}
-              className="cursor-pointer rounded-md bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-700 transition hover:bg-gray-200"
-            >
-              View Logs
-            </button>
-          </div>
+        {showRecentLogs && (
+          <div className="bg-white rounded border border-gray-200 p-3 mb-4">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-xs font-bold text-yellow-600 uppercase tracking-wide">
+                Recent Logs
+              </h2>
+              <button
+                type="button"
+                onClick={handleViewLogs}
+                className="cursor-pointer rounded-md bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-700 transition hover:bg-gray-200"
+              >
+                View Logs
+              </button>
+            </div>
 
-          <div className="space-y-2">
-            {recentLogs.length === 0 ? (
-              <p className="text-xs text-gray-500">No recent logs found.</p>
-            ) : (
-              recentLogs.map((log, index) => (
-                <div
-                  key={log.id || index}
-                  className="rounded border border-gray-200 p-2.5"
-                >
-                  <p className="text-xs font-semibold text-gray-900">
-                    {(log.action || "Activity").replaceAll("_", " ")}
-                  </p>
-                  <p className="mt-1 text-xs text-gray-600">
-                    {log.details || "No details available."}
-                  </p>
-                  <p className="mt-1 text-[10px] text-gray-500">
-                    {getLogActor(log)} • {formatLogDate(log.created_at)}
-                  </p>
-                </div>
-              ))
-            )}
+            <div className="space-y-2">
+              {recentLogs.length === 0 ? (
+                <p className="text-xs text-gray-500">No recent logs found.</p>
+              ) : (
+                recentLogs.map((log, index) => (
+                  <div
+                    key={log.id || index}
+                    className="rounded border border-gray-200 p-2.5"
+                  >
+                    <p className="text-xs font-semibold text-gray-900">
+                      {(log.action || "Activity").replaceAll("_", " ")}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-600">
+                      {log.details || "No details available."}
+                    </p>
+                    <p className="mt-1 text-[10px] text-gray-500">
+                      {getLogActor(log)} • {formatLogDate(log.created_at)}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Shortcuts */}
         <div className="bg-white rounded border border-gray-200 p-3">

@@ -2,8 +2,9 @@ import React, { useRef } from "react";
 import styles from "./styles.module.css";
 import AdminProfileSettings from "./functions/AdminProfileSettings";
 import AdminUserRoles from "./functions/AdminUserRoles";
-import AdminDashboard from "./functions/AdminDashboard";
 import EmployeeLeaveManagement from "../functions/LeaveManagement/EmployeeLeaveManagement";
+import Dashboard from "../functions/Dashboard/Dashboard";
+import DashboardMobile from "../functions/Dashboard/DashboardMobile";
 
 type AdminProps = {
   activeTab?: string;
@@ -36,10 +37,18 @@ export default function Admin({
       return (
         <>
           <div className="hidden md:block">
-            <AdminDashboard key={tabKey} onTabChange={onTabChange} />
+            <Dashboard
+              key={tabKey}
+              onTabChange={onTabChange}
+              showRecentLogs={false}
+            />
           </div>
           <div className="block md:hidden">
-            <AdminDashboard key={tabKey} onTabChange={onTabChange} />
+            <DashboardMobile
+              key={tabKey}
+              onTabChange={onTabChange}
+              showRecentLogs={false}
+            />
           </div>
         </>
       );

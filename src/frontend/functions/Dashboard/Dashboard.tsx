@@ -95,9 +95,13 @@ type Shortcut = {
 
 type DashboardProps = {
   onTabChange?: (tab: string) => void;
+  showRecentLogs?: boolean;
 };
 
-export default function Dashboard({ onTabChange }: DashboardProps) {
+export default function Dashboard({
+  onTabChange,
+  showRecentLogs = true,
+}: DashboardProps) {
   const [stats, setStats] = useState({
     totalEmployees: 0,
     totalUsers: 0,
@@ -138,7 +142,9 @@ export default function Dashboard({ onTabChange }: DashboardProps) {
             "/api/registrations/pending",
             token,
           ),
-          fetchApiList<BacklogRecord>("/api/backlogs", token),
+          showRecentLogs
+            ? fetchApiList<BacklogRecord>("/api/backlogs", token)
+            : Promise.resolve([]),
           fetch(
             `${API_BASE_URL}/api/employees/status-counts?include_archived=true`,
             {
@@ -210,7 +216,7 @@ export default function Dashboard({ onTabChange }: DashboardProps) {
           employeesOnLeave,
           archivedEmployees,
         });
-        setRecentLogs(backlogs.slice(0, 3));
+        setRecentLogs(showRecentLogs ? backlogs.slice(0, 3) : []);
         setLoading(false);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
@@ -220,7 +226,7 @@ export default function Dashboard({ onTabChange }: DashboardProps) {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [showRecentLogs]);
 
   const statCards: StatCard[] = [
     {
@@ -368,44 +374,51 @@ export default function Dashboard({ onTabChange }: DashboardProps) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Recent Logs */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6 lg:col-span-2">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <h2 className="text-lg font-bold text-yellow-600">Recent Logs</h2>
-              <button
-                type="button"
-                onClick={handleViewLogs}
-                className="cursor-pointer rounded-md bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-200"
-              >
-                View Logs
-              </button>
-            </div>
+          {showRecentLogs && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6 lg:col-span-2">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h2 className="text-lg font-bold text-yellow-600">
+                  Recent Logs
+                </h2>
+                <button
+                  type="button"
+                  onClick={handleViewLogs}
+                  className="cursor-pointer rounded-md bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-200"
+                >
+                  View Logs
+                </button>
+              </div>
 
-            <div className="space-y-3">
-              {recentLogs.length === 0 ? (
-                <p className="text-sm text-gray-500">No recent logs found.</p>
-              ) : (
-                recentLogs.map((log, index) => (
-                  <div
-                    key={log.id || index}
-                    className="rounded-lg border border-gray-200 p-3"
-                  >
-                    <p className="text-sm font-semibold text-gray-900">
-                      {(log.action || "Activity").replaceAll("_", " ")}
-                    </p>
-                    <p className="mt-1 text-xs text-gray-600">
-                      {log.details || "No details available."}
-                    </p>
-                    <p className="mt-1 text-[11px] text-gray-500">
-                      {getLogActor(log)} • {formatLogDate(log.created_at)}
-                    </p>
-                  </div>
-                ))
-              )}
+              <div className="space-y-3">
+                {recentLogs.length === 0 ? (
+                  <p className="text-sm text-gray-500">No recent logs found.</p>
+                ) : (
+                  recentLogs.map((log, index) => (
+                    <div
+                      key={log.id || index}
+                      className="rounded-lg border border-gray-200 p-3"
+                    >
+                      <p className="text-sm font-semibold text-gray-900">
+                        {(log.action || "Activity").replaceAll("_", " ")}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-600">
+                        {log.details || "No details available."}
+                      </p>
+                      <p className="mt-1 text-[11px] text-gray-500">
+                        {getLogActor(log)} • {formatLogDate(log.created_at)}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="flex flex-col gap-6 lg:col-span-1">
+          <div
+            className={`flex flex-col gap-6 ${
+              showRecentLogs ? "lg:col-span-1" : "lg:col-span-3"
+            }`}
+          >
             {/* Shortcuts */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-bold text-gray-900 mb-4">
