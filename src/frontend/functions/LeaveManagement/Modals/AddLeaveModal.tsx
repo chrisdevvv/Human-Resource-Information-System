@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import ConfirmationAddLeave from "../ConfirmationAddLeave";
 import AddLeaveSuccess from "../AddLeaveSuccess";
-import { getLeaveHistoryByEmployee } from "../leaveApi";
+import { getLeaveHistoryByEmployee, getLeaveParticulars } from "../leaveApi";
 
 export type AddLeaveFormValues = {
   employee_id: number;
@@ -38,7 +38,6 @@ type NumericLeaveField =
 type AddLeaveFormState = {
   period_of_leave: string;
   particulars: string;
-  isMonetization: boolean;
   hasVacationLeave: boolean;
   hasSickLeave: boolean;
   earned_vl: string;
@@ -69,7 +68,6 @@ const NUMERIC_MAX_LENGTH = MAX_WHOLE_DIGITS + 1 + MAX_DECIMAL_DIGITS;
 const defaultForm: AddLeaveFormState = {
   period_of_leave: "",
   particulars: "",
-  isMonetization: false,
   hasVacationLeave: false,
   hasSickLeave: false,
   earned_vl: "",
@@ -101,17 +99,43 @@ export default function AddLeaveModal({
     particulars: string;
     isMonetization: boolean;
   } | null>(null);
+  const [particularOptions, setParticularOptions] = useState<string[]>([]);
+  const [particularsLoading, setParticularsLoading] = useState(false);
+  const [particularInputValue, setParticularInputValue] = useState("");
+  const [showParticularDropdown, setShowParticularDropdown] = useState(false);
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     if (isOpen) {
       setForm(defaultForm);
+      setParticularInputValue("");
+      setShowParticularDropdown(false);
       setCurrentBalVl(null);
       setCurrentBalSl(null);
       setIsConfirmOpen(false);
       setPendingPayload(null);
       setIsSuccessOpen(false);
       setSuccessData(null);
+      setFormError("");
     }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const loadParticularOptions = async () => {
+      if (!isOpen) return;
+
+      try {
+        setParticularsLoading(true);
+        const options = await getLeaveParticulars();
+        setParticularOptions(options);
+      } catch {
+        setParticularOptions([]);
+      } finally {
+        setParticularsLoading(false);
+      }
+    };
+
+    void loadParticularOptions();
   }, [isOpen]);
 
   useEffect(() => {
@@ -149,6 +173,9 @@ export default function AddLeaveModal({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) {
     const { name, value } = e.target;
+    if (formError) {
+      setFormError("");
+    }
 
     setForm((prev) => {
       if (NUMERIC_FIELDS.has(name as NumericLeaveField)) {
@@ -169,20 +196,11 @@ export default function AddLeaveModal({
     });
   }
 
-  function handleMonetizationToggle(e: React.ChangeEvent<HTMLInputElement>) {
-    const checked = e.target.checked;
-
-    setForm((prev) => ({
-      ...prev,
-      isMonetization: checked,
-      particulars: checked ? "Monetization" : "",
-      hasVacationLeave: checked ? false : prev.hasVacationLeave,
-      hasSickLeave: checked ? false : prev.hasSickLeave,
-    }));
-  }
-
   function handleVacationLeaveToggle(e: React.ChangeEvent<HTMLInputElement>) {
     const checked = e.target.checked;
+    if (formError) {
+      setFormError("");
+    }
 
     setForm((prev) => ({
       ...prev,
@@ -196,6 +214,9 @@ export default function AddLeaveModal({
 
   function handleSickLeaveToggle(e: React.ChangeEvent<HTMLInputElement>) {
     const checked = e.target.checked;
+    if (formError) {
+      setFormError("");
+    }
 
     setForm((prev) => ({
       ...prev,
@@ -209,24 +230,33 @@ export default function AddLeaveModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setFormError("");
 
     if (!form.period_of_leave.trim()) {
-      alert("Period of leave is required.");
+      setFormError("Period of leave is required.");
       return;
     }
 
-    if (!form.isMonetization && !form.particulars.trim()) {
-      alert("Particulars is required unless Monetization is checked.");
+    if (!form.particulars.trim()) {
+      setFormError("Particulars is required.");
+      return;
+    }
+
+    if (particularOptions.length === 0) {
+      setFormError("Unable to load leave particulars. Please try again.");
+      return;
+    }
+
+    if (!particularOptions.includes(form.particulars.trim())) {
+      setFormError("Please select a valid Particulars option.");
       return;
     }
 
     const payload: AddLeaveFormValues = {
       employee_id: resolvedEmployeeId,
       period_of_leave: form.period_of_leave.trim(),
-      particulars: form.isMonetization
-        ? "Monetization"
-        : form.particulars.trim(),
-      isMonetization: form.isMonetization,
+      particulars: form.particulars.trim(),
+      isMonetization: false,
       earned_vl: Number(form.earned_vl || 0),
       abs_with_pay_vl: Number(form.abs_with_pay_vl || 0),
       abs_without_pay_vl: Number(form.abs_without_pay_vl || 0),
@@ -246,6 +276,7 @@ export default function AddLeaveModal({
 
     try {
       await onSave(pendingPayload);
+      setFormError("");
 
       // Close confirmation modal
       setIsConfirmOpen(false);
@@ -261,7 +292,11 @@ export default function AddLeaveModal({
       setPendingPayload(null);
     } catch (error) {
       console.error("Error saving leave:", error);
-      alert("Failed to save leave entry. Please try again.");
+      setFormError(
+        error instanceof Error
+          ? error.message
+          : "Failed to save leave entry. Please try again.",
+      );
       setIsConfirmOpen(false);
       setPendingPayload(null);
     }
@@ -278,8 +313,11 @@ export default function AddLeaveModal({
   const inputClass =
     "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
   const labelClass = "mb-1 block text-sm font-medium text-gray-700";
-  const disableVacationOption = form.isMonetization || form.hasSickLeave;
-  const disableSickOption = form.isMonetization || form.hasVacationLeave;
+  const disableVacationOption = form.hasSickLeave;
+  const disableSickOption = form.hasVacationLeave;
+  const filteredParticularOptions = particularOptions.filter((option) =>
+    option.toLowerCase().includes(particularInputValue.trim().toLowerCase()),
+  );
   const hasEarnedVl = form.earned_vl !== "";
   const hasAbsWithPayVl = form.abs_with_pay_vl !== "";
   const hasAbsWithoutPayVl = form.abs_without_pay_vl !== "";
@@ -307,51 +345,109 @@ export default function AddLeaveModal({
         <h2 className="text-xl font-bold text-gray-800">Add Leave Entry</h2>
         <p className="mt-1 text-sm text-gray-500">Employee: {employeeName}</p>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label className={labelClass}>Period of Leave</label>
-              <input
-                type="text"
-                name="period_of_leave"
-                value={form.period_of_leave}
-                onChange={handleChange}
-                placeholder="e.g. March 2026 or Mar. 21-23, 2026"
-                className={inputClass}
-              />
-            </div>
+        {formError && (
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {formError}
+          </div>
+        )}
 
-            <div className="flex items-end">
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={form.isMonetization}
-                  onChange={handleMonetizationToggle}
-                  className="h-4 w-4"
-                />
-                Monetization
-              </label>
-            </div>
+        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+          <div>
+            <label className={labelClass}>Period of Leave</label>
+            <input
+              type="text"
+              name="period_of_leave"
+              value={form.period_of_leave}
+              onChange={handleChange}
+              placeholder="e.g. March 2026 or Mar. 21-23, 2026"
+              className={inputClass}
+            />
           </div>
 
           <div>
             <label className={labelClass}>Particulars</label>
-            <textarea
-              name="particulars"
-              value={form.particulars}
-              onChange={handleChange}
-              disabled={form.isMonetization}
-              rows={3}
-              placeholder="Enter particulars"
-              className={`${inputClass} resize-none ${
-                form.isMonetization
-                  ? "cursor-not-allowed bg-gray-100 text-gray-500"
-                  : ""
-              }`}
-            />
-            {form.isMonetization && (
-              <p className="mt-1 text-xs text-blue-600">
-                Particulars is automatically set to Monetization.
+            <div className="relative">
+              <input
+                type="text"
+                name="particulars"
+                value={particularInputValue}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (formError) {
+                    setFormError("");
+                  }
+                  setParticularInputValue(value);
+                  setShowParticularDropdown(true);
+                  setForm((prev) => ({
+                    ...prev,
+                    particulars: "",
+                  }));
+                }}
+                onFocus={() => setShowParticularDropdown(true)}
+                onBlur={() => {
+                  setTimeout(() => setShowParticularDropdown(false), 150);
+                }}
+                disabled={particularsLoading}
+                placeholder={
+                  particularsLoading
+                    ? "Loading particulars..."
+                    : "Type to search particulars..."
+                }
+                className={`${inputClass} ${
+                  particularsLoading ? "bg-gray-100 cursor-not-allowed" : ""
+                }`}
+              />
+              {showParticularDropdown && (
+                <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-md border border-gray-300 bg-white shadow-lg max-h-64 overflow-y-auto">
+                  {particularsLoading ? (
+                    <div className="px-4 py-3 text-center text-sm text-gray-500">
+                      Loading particulars...
+                    </div>
+                  ) : particularOptions.length === 0 ? (
+                    <div className="px-4 py-3 text-center text-sm text-gray-500">
+                      No particulars available
+                    </div>
+                  ) : filteredParticularOptions.length > 0 ? (
+                    filteredParticularOptions.map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => {
+                          if (formError) {
+                            setFormError("");
+                          }
+                          setParticularInputValue(option);
+                          setShowParticularDropdown(false);
+                          setForm((prev) => ({
+                            ...prev,
+                            particulars: option,
+                          }));
+                        }}
+                        className={`w-full px-4 py-2 text-left text-sm transition hover:bg-blue-50 ${
+                          form.particulars === option
+                            ? "bg-blue-100 font-medium text-blue-700"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-3 text-center text-sm text-gray-500">
+                      No particulars match "{particularInputValue}"
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            {!particularsLoading && particularOptions.length === 0 && (
+              <p className="mt-1 text-xs text-red-600">
+                No particulars available. Please contact an administrator.
+              </p>
+            )}
+            {form.particulars && (
+              <p className="mt-1 text-xs text-green-700">
+                Selected: {form.particulars}
               </p>
             )}
           </div>
@@ -393,12 +489,6 @@ export default function AddLeaveModal({
                 Sick Leave
               </label>
             </div>
-
-            {form.isMonetization && (
-              <p className="text-xs text-blue-600">
-                Leave type options are disabled while Monetization is checked.
-              </p>
-            )}
           </div>
 
           {form.hasVacationLeave && (

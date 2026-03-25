@@ -563,6 +563,7 @@ const PrintableLeaveCard = React.forwardRef<
                 padding: 0,
                 boxSizing: "border-box",
                 backgroundColor: CARD_COLORS.white,
+                position: "relative",
               }}
             >
               {isFirstPage && (
@@ -661,6 +662,19 @@ export async function downloadLeaveCardPdf(
       marginMm,
       contentWidth,
       contentHeight,
+    );
+
+    // Put page number in the bottom margin area (outside the card content box).
+    pdf.setFont("times", "normal");
+    pdf.setFontSize(9);
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(
+      `Page ${i + 1} of ${pageElements.length}`,
+      pageWidth - marginMm,
+      pageHeight - 3,
+      {
+        align: "right",
+      },
     );
 
     canvas.width = 0;
