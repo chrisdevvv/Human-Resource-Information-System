@@ -268,9 +268,10 @@ const Leave = {
   // Returns all non-teaching employees for batch monthly crediting
   getAllNonTeachingEmployees: async () => {
     const [rows] = await pool.promise().query(
-      `SELECT id, first_name, last_name, employee_type
+      `SELECT id, first_name, last_name, employee_type, on_leave, on_leave_from, on_leave_until
              FROM employees
-             WHERE LOWER(REPLACE(employee_type, '_', '-')) = 'non-teaching'`,
+             WHERE is_archived = 0
+               AND LOWER(REPLACE(employee_type, '_', '-')) = 'non-teaching'`,
     );
     return rows;
   },

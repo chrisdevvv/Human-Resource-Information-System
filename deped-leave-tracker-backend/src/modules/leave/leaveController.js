@@ -10,6 +10,7 @@ const parseNum = (v) => {
 };
 const round2 = (v) => parseFloat(parseNum(v).toFixed(2));
 const todayStr = () => new Date().toISOString().slice(0, 10);
+const isoDateStr = (d) => d.toISOString().slice(0, 10);
 const toUpperStr = (v) => (typeof v === "string" ? v.trim().toUpperCase() : "");
 const toBoolean = (v) => {
   if (typeof v === "boolean") return v;
@@ -385,9 +386,50 @@ const resolveParticulars = (
   return value || null;
 };
 
+const getMonthBounds = (year, month) => {
+  const monthStart = new Date(Date.UTC(year, month - 1, 1));
+  const monthEnd = new Date(Date.UTC(year, month, 0));
+  return {
+    monthStart: isoDateStr(monthStart),
+    monthEnd: isoDateStr(monthEnd),
+  };
+};
+
+const isOnLeaveDuringPeriod = (employee, periodStart, periodEnd) => {
+  if (!toBoolean(employee?.on_leave)) {
+    return false;
+  }
+
+  const leaveFrom = employee?.on_leave_from
+    ? String(employee.on_leave_from).slice(0, 10)
+    : null;
+  const leaveUntil = employee?.on_leave_until
+    ? String(employee.on_leave_until).slice(0, 10)
+    : null;
+
+  // If dates are not provided while flagged on_leave, treat as ongoing leave.
+  if (!leaveFrom && !leaveUntil) {
+    return true;
+  }
+
+  if (!leaveFrom && leaveUntil) {
+    return leaveUntil >= periodStart;
+  }
+
+  if (leaveFrom && !leaveUntil) {
+    return leaveFrom <= periodEnd;
+  }
+
+  return leaveFrom <= periodEnd && leaveUntil >= periodStart;
+};
+
 const applyMonthlyCredit = async ({ year, month, actorUserId = null } = {}) => {
-  const { period } = normalizePeriod(year, month);
+  const { period, year: normalizedYear, month: normalizedMonth } = normalizePeriod(
+    year,
+    month,
+  );
   const today = todayStr();
+  const { monthStart, monthEnd } = getMonthBounds(normalizedYear, normalizedMonth);
 
   const employees = await Leave.getAllNonTeachingEmployees();
   const expectedCredit = getMonthlyCreditByEmployeeType("non-teaching");
@@ -396,6 +438,12 @@ const applyMonthlyCredit = async ({ year, month, actorUserId = null } = {}) => {
   const skippedNames = [];
 
   for (const emp of employees) {
+    if (isOnLeaveDuringPeriod(emp, monthStart, monthEnd)) {
+      skipped++;
+      skippedNames.push(`${emp.first_name} ${emp.last_name}`);
+      continue;
+    }
+
     const monthlyCredit = getMonthlyCreditByEmployeeType(emp.employee_type);
     if (monthlyCredit.earnedVL <= 0 && monthlyCredit.earnedSL <= 0) {
       skipped++;
