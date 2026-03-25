@@ -131,4 +131,6 @@ module.exports = {
   registrationStatusQuerySchema,
   registrationApproveBodySchema,
   registrationRejectBodySchema,
+  leaveBodySchema,
+  leaveUpdateBodySchema,
 };

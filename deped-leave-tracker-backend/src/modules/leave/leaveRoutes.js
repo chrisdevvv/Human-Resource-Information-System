@@ -10,6 +10,12 @@ const {
 } = require("./leaveController");
 const authMiddleware = require("../../middleware/authMiddleware");
 const { roleAuthMiddleware } = require("../../middleware/roleAuthMiddleware");
+const { validateRequest } = require("../../middleware/validateRequest");
+const {
+  idParamSchema,
+  leaveBodySchema,
+  leaveUpdateBodySchema,
+} = require("../../validation/schemas");
 
 const router = express.Router();
 
@@ -30,18 +36,21 @@ router.get(
   "/:id",
   authMiddleware,
   roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  validateRequest({ params: idParamSchema }),
   getLeaveRequestById,
 );
 router.post(
   "/",
   authMiddleware,
   roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  validateRequest({ body: leaveBodySchema }),
   createLeaveRequest,
 );
 router.put(
   "/:id",
   authMiddleware,
   roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  validateRequest({ params: idParamSchema, body: leaveUpdateBodySchema }),
   updateLeaveRequest,
 );
 
@@ -50,6 +59,7 @@ router.delete(
   "/:id",
   authMiddleware,
   roleAuthMiddleware(["admin", "super-admin"]),
+  validateRequest({ params: idParamSchema }),
   deleteLeaveRequest,
 );
 router.post(
