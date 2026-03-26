@@ -2,7 +2,7 @@ const pool = require("../../config/db");
 
 const User = {
   // Supports optional filters and pagination. If `pagination` is omitted, returns full rows array for backwards compatibility.
-  getAll: async ({ search, role, is_active } = {}, pagination) => {
+  getAll: async ({ search, role, is_active, school_id } = {}, pagination) => {
     let baseQuery = `
             FROM users u
             LEFT JOIN schools s ON u.school_id = s.id
@@ -26,12 +26,18 @@ const User = {
       params.push(is_active);
     }
 
+    if (school_id !== undefined && school_id !== null) {
+      baseQuery += ` AND u.school_id = ?`;
+      params.push(Number(school_id));
+    }
+
     const orderClause = ` ORDER BY u.first_name ASC, u.last_name ASC`;
 
     // If pagination not requested, return full rows (preserve existing behavior)
     if (!pagination || !pagination.page) {
       const [rows] = await pool.promise().query(
         `SELECT u.id, u.first_name, u.last_name, u.email, u.role,
+                       u.school_id,
                        u.is_active, u.created_at, u.updated_at,
                        s.school_name, s.school_code
                  ${baseQuery} ${orderClause}`,
@@ -51,6 +57,7 @@ const User = {
 
     const [rows] = await pool.promise().query(
       `SELECT u.id, u.first_name, u.last_name, u.email, u.role,
+                       u.school_id,
                        u.is_active, u.created_at, u.updated_at,
                        s.school_name, s.school_code
              ${baseQuery} ${orderClause} LIMIT ? OFFSET ?`,

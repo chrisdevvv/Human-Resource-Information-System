@@ -348,6 +348,10 @@ export default function RegistrationModal({ visible, onClose }: Props) {
         return;
       }
 
+      setIsConfirmOpen(false);
+      setPendingFormData(null);
+      setHasUnsavedChanges(false);
+      submitInProgressRef.current = false;
       setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -368,6 +372,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
 
   function handleReset() {
     if (
+      !submitted &&
       hasUnsavedChanges &&
       !window.confirm(
         "You have unsaved changes. Are you sure you want to cancel?",
@@ -551,7 +556,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                                 setShowSchoolDropdown(false);
                                 if (schoolError) setSchoolError("");
                               }}
-                              className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-50 transition ${
+                              className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-50 transition cursor-pointer ${
                                 schoolId === schoolOption.id
                                   ? "bg-blue-100 font-medium text-blue-700"
                                   : "text-gray-700"
@@ -581,7 +586,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                 <div className="flex flex-col gap-3 items-center mt-6">
                   <button
                     type="submit"
-                    className="hover:cursor-pointer px-6 py-2 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition"
+                    className="cursor-pointer px-6 py-2 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition"
                   >
                     Continue
                   </button>
@@ -692,7 +697,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   <button
                     type="submit"
                     disabled={isLoading || isConfirmOpen}
-                    className="hover:cursor-pointer px-6 py-2 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="cursor-pointer px-6 py-2 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? "Submitting..." : "Submit Request"}
                   </button>
@@ -740,14 +745,14 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                 <button
                   onClick={handleCancelConfirm}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="cursor-pointer flex-1 px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleConfirmSubmit}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="cursor-pointer flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? "Submitting..." : "Confirm & Submit"}
                 </button>

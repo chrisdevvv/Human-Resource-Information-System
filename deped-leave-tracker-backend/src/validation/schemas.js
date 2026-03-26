@@ -87,6 +87,7 @@ const userAdminCreateBodySchema = Joi.object({
 const usersQuerySchema = Joi.object({
   search: Joi.string().trim().max(255),
   role: Joi.string().valid("SUPER_ADMIN", "ADMIN", "DATA_ENCODER"),
+  school_id: Joi.number().integer().positive(),
   is_active: Joi.alternatives().try(
     Joi.number().valid(0, 1),
     Joi.string().valid("0", "1"),

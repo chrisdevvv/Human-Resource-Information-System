@@ -20,9 +20,15 @@ type User = {
   firstName: string;
   lastName: string;
   email: string;
+  schoolId: number | null;
   schoolName: string;
   role: "SUPER_ADMIN" | "ADMIN" | "DATA_ENCODER";
   isActive: boolean;
+};
+
+type SchoolOption = {
+  id: number;
+  school_name: string;
 };
 
 type UserDetails = {
@@ -65,7 +71,58 @@ export default function UserRolesMobile() {
   const [viewTarget, setViewTarget] = useState<User | null>(null);
   const [settingsTarget, setSettingsTarget] = useState<User | null>(null);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState<string>("");
+  const [schoolFilter, setSchoolFilter] = useState<string>("ALL");
+  const [schools, setSchools] = useState<SchoolOption[]>([]);
+  const [schoolsLoading, setSchoolsLoading] = useState(false);
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+  useEffect(() => {
+    try {
+      const rawUser = localStorage.getItem("user");
+      if (!rawUser) return;
+
+      const parsed = JSON.parse(rawUser) as {
+        role?: string;
+      };
+      setCurrentUserRole(String(parsed.role || "").toUpperCase());
+    } catch {
+      setCurrentUserRole("");
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchSchools = async () => {
+      if (currentUserRole !== "SUPER_ADMIN") {
+        setSchoolFilter("ALL");
+        setSchools([]);
+        return;
+      }
+
+      try {
+        setSchoolsLoading(true);
+        const response = await fetch(`${API_BASE}/api/schools/public/list`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch schools");
+        }
+
+        const result = await response.json();
+        setSchools((result.data || []) as SchoolOption[]);
+      } catch {
+        setSchools([]);
+      } finally {
+        setSchoolsLoading(false);
+      }
+    };
+
+    fetchSchools();
+  }, [currentUserRole]);
 
   const fetchUsers = async (showSpinner = true) => {
     try {
@@ -73,13 +130,21 @@ export default function UserRolesMobile() {
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
 
-      const response = await fetch(`${API_BASE}/api/users/`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const params = new URLSearchParams();
+      if (currentUserRole === "SUPER_ADMIN" && schoolFilter !== "ALL") {
+        params.set("school_id", schoolFilter);
+      }
+
+      const response = await fetch(
+        `${API_BASE}/api/users/${params.toString() ? `?${params.toString()}` : ""}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       if (!response.ok) throw new Error("Failed to fetch users");
 
@@ -90,6 +155,7 @@ export default function UserRolesMobile() {
           firstName: item.first_name as string,
           lastName: item.last_name as string,
           email: item.email as string,
+          schoolId: (item.school_id as number) ?? null,
           schoolName: (item.school_name as string) || "N/A",
           role: item.role as User["role"],
           isActive: normalizeIsActive(item.is_active),
@@ -110,7 +176,7 @@ export default function UserRolesMobile() {
     const intervalId = window.setInterval(() => fetchUsers(false), 5000);
     return () => window.clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentUserRole, schoolFilter]);
 
   const filteredUsers = userData
     .filter((user) => {
@@ -127,7 +193,17 @@ export default function UserRolesMobile() {
       const matchesLetter =
         letterFilter === "ALL" ||
         user.firstName.charAt(0).toUpperCase() === letterFilter;
-      return matchesSearch && matchesRole && matchesStatus && matchesLetter;
+      const matchesSchool =
+        currentUserRole !== "SUPER_ADMIN" ||
+        schoolFilter === "ALL" ||
+        String(user.schoolId) === schoolFilter;
+      return (
+        matchesSearch &&
+        matchesRole &&
+        matchesStatus &&
+        matchesLetter &&
+        matchesSchool
+      );
     })
     .sort((a, b) =>
       sortOrder === "asc"
@@ -257,6 +333,25 @@ export default function UserRolesMobile() {
                   <option value="DATA_ENCODER">Data Encoder</option>
                 </select>
               </div>
+
+              {currentUserRole === "SUPER_ADMIN" && (
+                <select
+                  value={schoolFilter}
+                  onChange={(e) => {
+                    setSchoolFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  disabled={schoolsLoading}
+                >
+                  <option value="ALL">All Schools</option>
+                  {schools.map((school) => (
+                    <option key={school.id} value={String(school.id)}>
+                      {school.school_name}
+                    </option>
+                  ))}
+                </select>
+              )}
 
               <div className="grid grid-cols-3 gap-2">
                 <select

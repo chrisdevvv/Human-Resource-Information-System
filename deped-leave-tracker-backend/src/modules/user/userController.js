@@ -12,12 +12,28 @@ const VALID_ROLES = ["SUPER_ADMIN", "ADMIN", "DATA_ENCODER"];
 
 const getAllUsers = async (req, res) => {
   try {
-    const { search, role, is_active, page, pageSize } = req.query;
+    const { search, role, is_active, school_id, page, pageSize } = req.query;
+
+    const requesterRole = String(req.user?.role || "").toUpperCase();
+    const requesterSchoolId = req.user?.school_id
+      ? Number(req.user.school_id)
+      : null;
+
+    let scopedSchoolId = school_id ? Number(school_id) : null;
+
+    // Admin users can only list users from their own school.
+    if (requesterRole === "ADMIN") {
+      if (!requesterSchoolId) {
+        return res.status(200).json({ data: [] });
+      }
+      scopedSchoolId = requesterSchoolId;
+    }
 
     const filters = {
       search: search || null,
       role: role || null,
       is_active: is_active !== undefined ? Number(is_active) : null,
+      school_id: scopedSchoolId,
     };
 
     const pagination = page
@@ -31,14 +47,12 @@ const getAllUsers = async (req, res) => {
       return res.status(200).json({ data: results });
     }
 
-    res
-      .status(200)
-      .json({
-        data: results.data,
-        total: results.total,
-        page: results.page,
-        pageSize: results.pageSize,
-      });
+    res.status(200).json({
+      data: results.data,
+      total: results.total,
+      page: results.page,
+      pageSize: results.pageSize,
+    });
   } catch (err) {
     res
       .status(500)
