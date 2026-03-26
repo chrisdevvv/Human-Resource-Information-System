@@ -113,13 +113,16 @@ export default function LogsReportGenerationPage() {
           }
         }
 
-        const response = await fetch(`${API_BASE}/api/backlogs?include_archived=false`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+        const response = await fetch(
+          `${API_BASE}/api/backlogs?include_archived=false`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
           },
-        });
+        );
 
         if (!response.ok) {
           throw new Error("Failed to fetch logs report data.");
