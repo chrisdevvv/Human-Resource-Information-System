@@ -116,9 +116,8 @@ const buildPdfBuffer = (rows, filters = {}) => {
         for (const row of rows) {
           ensurePdfRowSpace(doc);
 
-          const userName = [row.first_name, row.last_name]
-            .filter(Boolean)
-            .join(" ") || "-";
+          const userName =
+            [row.first_name, row.last_name].filter(Boolean).join(" ") || "-";
           const createdAt = row.created_at
             ? String(row.created_at).slice(0, 19).replace("T", " ")
             : "-";
@@ -174,24 +173,66 @@ const buildPdfBuffer = (rows, filters = {}) => {
 const getAllBacklogs = async (req, res) => {
   try {
     const { page, pageSize } = req.query;
+    const includeArchived = req.query.include_archived
+      ? toBoolean(req.query.include_archived)
+      : true;
     const pagination = page
       ? { page: Number(page), pageSize: Number(pageSize || 25) }
       : undefined;
-    const results = await Backlog.getAll(pagination);
+    const results = await Backlog.getAll(pagination, { includeArchived });
 
     if (!pagination) return res.status(200).json({ data: results });
-    return res
-      .status(200)
-      .json({
-        data: results.data,
-        total: results.total,
-        page: results.page,
-        pageSize: results.pageSize,
-      });
+    return res.status(200).json({
+      data: results.data,
+      total: results.total,
+      page: results.page,
+      pageSize: results.pageSize,
+    });
   } catch (err) {
     res
       .status(500)
       .json({ message: "Error retrieving backlogs", error: err.message });
+  }
+};
+
+const archiveBacklogsByDateRange = async (req, res) => {
+  try {
+    const fromDate = String(req.body.from || "").slice(0, 10);
+    const toDate = String(req.body.to || "").slice(0, 10);
+
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+      return res.status(400).json({ message: "Invalid archive date range." });
+    }
+
+    if (to < from) {
+      return res
+        .status(400)
+        .json({ message: "'to' date must be on or after 'from' date." });
+    }
+
+    const fromDateTime = `${fromDate} 00:00:00`;
+    const toDateTime = `${toDate} 23:59:59`;
+
+    const archived = await Backlog.archiveByDateRange({
+      from: fromDateTime,
+      to: toDateTime,
+    });
+
+    return res.status(200).json({
+      message: "Logs archived successfully.",
+      data: {
+        from: fromDate,
+        to: toDate,
+        archivedCount: archived.affectedRows,
+      },
+    });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Error archiving backlogs", error: err.message });
   }
 };
 
@@ -321,4 +362,5 @@ module.exports = {
   getBacklogsBySchool,
   createBacklog,
   generateBacklogReport,
+  archiveBacklogsByDateRange,
 };

@@ -1,8 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ViewLogsModal from "../../components/ViewLogsModal";
+import LogsReportGeneration, {
+  downloadLogsReportPdf,
+  type LogsReportRecord,
+} from "./LogsReportGeneration";
 
 type Log = {
   id: number;
@@ -17,12 +22,15 @@ type Log = {
   createdAt: string;
 };
 
+type ArchiveFlowStep = "range" | "generate-prompt" | "confirm" | "success";
+
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
 export default function LogsMobile() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [letterFilter, setLetterFilter] = useState("ALL");
@@ -36,10 +44,10 @@ export default function LogsMobile() {
   const [dateTo, setDateTo] = useState("");
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-  const MAX_RANGE_DAYS = 14;
+  const MAX_RANGE_DAYS = 30;
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const twoWeeksAgoStr = (() => {
+  const thirtyDaysAgoStr = (() => {
     const d = new Date();
     d.setDate(d.getDate() - MAX_RANGE_DAYS);
     return d.toISOString().slice(0, 10);
@@ -83,6 +91,176 @@ export default function LogsMobile() {
   const [selectedLog, setSelectedLog] = useState<Log | null>(null);
   const [logsLoading, setLogsLoading] = useState(true);
   const [logsError, setLogsError] = useState<string | null>(null);
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [archiveStep, setArchiveStep] = useState<ArchiveFlowStep>("range");
+  const [archiveShouldGenerateReport, setArchiveShouldGenerateReport] =
+    useState(false);
+  const [archiveBusy, setArchiveBusy] = useState(false);
+  const [archiveMessage, setArchiveMessage] = useState<string | null>(null);
+  const [archivedCount, setArchivedCount] = useState(0);
+  const [reportGeneratedBy, setReportGeneratedBy] = useState("System");
+  const archiveReportRef = React.useRef<HTMLDivElement | null>(null);
+
+  const formatIsoDate = (date: Date) => {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const archiveRange = React.useMemo(() => {
+    const now = new Date();
+    const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const to = new Date(from);
+    to.setDate(to.getDate() + 29);
+
+    return {
+      fromIso: formatIsoDate(from),
+      toIso: formatIsoDate(to),
+      fromLabel: from.toLocaleDateString("en-PH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      toLabel: to.toLocaleDateString("en-PH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+    };
+  }, []);
+
+  const archiveReportRows = React.useMemo<LogsReportRecord[]>(() => {
+    const from = new Date(`${archiveRange.fromIso}T00:00:00`);
+    const to = new Date(`${archiveRange.toIso}T23:59:59`);
+
+    return logsData
+      .filter((log) => {
+        const logDate = new Date(log.createdAt);
+        return logDate >= from && logDate <= to;
+      })
+      .map((log) => ({
+        id: log.id,
+        userId: log.userId,
+        firstName: log.firstName,
+        lastName: log.lastName,
+        role: log.role,
+        email: log.email,
+        schoolName: log.schoolName,
+        action: log.action,
+        details: log.details,
+        createdAt: log.createdAt,
+      }));
+  }, [archiveRange.fromIso, archiveRange.toIso, logsData]);
+
+  useEffect(() => {
+    const rawUser = localStorage.getItem("user");
+    if (!rawUser) return;
+
+    try {
+      const user = JSON.parse(rawUser) as {
+        firstName?: string;
+        first_name?: string;
+        lastName?: string;
+        last_name?: string;
+        name?: string;
+      };
+      const firstName = user.firstName || user.first_name || "";
+      const lastName = user.lastName || user.last_name || "";
+      const fullName = `${firstName} ${lastName}`.trim();
+      setReportGeneratedBy(fullName || user.name || "System");
+    } catch {
+      setReportGeneratedBy("System");
+    }
+  }, []);
+
+  const downloadArchiveRangeReport = async () => {
+    if (!archiveReportRef.current) {
+      throw new Error("Archive report preview is not ready yet.");
+    }
+
+    await downloadLogsReportPdf(
+      archiveReportRef.current,
+      `Activity Logs Report - ${archiveRange.fromIso} to ${archiveRange.toIso}.pdf`,
+    );
+  };
+
+  const openArchiveModal = () => {
+    setArchiveModalOpen(true);
+    setArchiveStep("range");
+    setArchiveShouldGenerateReport(false);
+    setArchiveMessage(null);
+    setArchivedCount(0);
+  };
+
+  const closeArchiveModal = () => {
+    if (archiveBusy) return;
+    setArchiveModalOpen(false);
+    setArchiveStep("range");
+    setArchiveShouldGenerateReport(false);
+    setArchiveMessage(null);
+  };
+
+  const performArchive = async () => {
+    try {
+      setArchiveBusy(true);
+      setArchiveMessage(null);
+
+      if (archiveShouldGenerateReport) {
+        await downloadArchiveRangeReport();
+      }
+
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("No authentication token found.");
+
+      const response = await fetch(`${API_BASE}/api/backlogs/archive`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          from: archiveRange.fromIso,
+          to: archiveRange.toIso,
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.message || "Failed to archive logs.");
+      }
+
+      const count = Number(payload?.data?.archivedCount || 0);
+      setArchivedCount(count);
+      setArchiveStep("success");
+      setArchiveMessage(
+        count > 0
+          ? `${count} log record${count !== 1 ? "s" : ""} archived successfully.`
+          : "No logs found for the selected archive range.",
+      );
+
+      await fetchLogs(false);
+    } catch (err) {
+      setArchiveMessage(
+        err instanceof Error ? err.message : "Archive process failed.",
+      );
+    } finally {
+      setArchiveBusy(false);
+    }
+  };
+
+  const openLogsReport = () => {
+    const params = new URLSearchParams();
+    if (dateFrom) params.set("from", dateFrom);
+    if (dateTo) params.set("to", dateTo);
+
+    const query = params.toString();
+    router.push(
+      query
+        ? `/super-admin/logsreportgeneration?${query}`
+        : "/super-admin/logsreportgeneration",
+    );
+  };
 
   const fetchLogs = async (showSpinner = true) => {
     try {
@@ -91,13 +269,16 @@ export default function LogsMobile() {
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
 
-      const response = await fetch(`${API_BASE}/api/backlogs`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `${API_BASE}/api/backlogs?include_archived=false`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       if (!response.ok) throw new Error("Failed to fetch logs");
 
@@ -383,7 +564,7 @@ export default function LogsMobile() {
       {/* Filters */}
       <div className="flex flex-col gap-2 mb-4">
         {/* Search */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <input
             type="text"
             placeholder="Search by name, action, or date"
@@ -399,6 +580,18 @@ export default function LogsMobile() {
             className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer"
           >
             Search
+          </button>
+          <button
+            onClick={openLogsReport}
+            className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition cursor-pointer"
+          >
+            Generate Report
+          </button>
+          <button
+            onClick={openArchiveModal}
+            className="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition cursor-pointer"
+          >
+            Archive
           </button>
         </div>
 
@@ -474,7 +667,7 @@ export default function LogsMobile() {
             <input
               type="date"
               value={dateFrom}
-              min={twoWeeksAgoStr}
+              min={thirtyDaysAgoStr}
               max={todayStr}
               onChange={(e) => handleDateFrom(e.target.value)}
               className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
@@ -487,7 +680,7 @@ export default function LogsMobile() {
             <input
               type="date"
               value={dateTo}
-              min={dateFrom || twoWeeksAgoStr}
+              min={dateFrom || thirtyDaysAgoStr}
               max={maxDateTo}
               onChange={(e) => handleDateTo(e.target.value)}
               className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
@@ -585,7 +778,7 @@ export default function LogsMobile() {
                 />
                 <button
                   onClick={handleJumpToPage}
-                  className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200"
+                  className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200 cursor-pointer"
                 >
                   Go
                 </button>
@@ -669,6 +862,178 @@ export default function LogsMobile() {
           }}
           onClose={() => setSelectedLog(null)}
         />
+      )}
+
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed top-0 opacity-0"
+        style={{ left: "-100000px" }}
+      >
+        <LogsReportGeneration
+          ref={archiveReportRef}
+          rows={archiveReportRows}
+          generatedBy={reportGeneratedBy}
+          dateFrom={archiveRange.fromIso}
+          dateTo={archiveRange.toIso}
+        />
+      </div>
+
+      {archiveModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
+          <div className="w-full max-w-md rounded-t-2xl bg-white p-4 shadow-2xl sm:rounded-xl sm:p-5">
+            <h2 className="text-base font-bold text-gray-900">Archive Logs</h2>
+
+            {archiveStep === "range" && (
+              <>
+                <p className="mt-2 text-sm text-gray-600">
+                  Archive range for last month window:
+                </p>
+                <p className="mt-1 text-sm font-semibold text-gray-800">
+                  {archiveRange.fromLabel} to {archiveRange.toLabel} (30 days)
+                </p>
+                <p className="mt-3 text-xs text-gray-500">
+                  You can generate the report now or continue to archive.
+                </p>
+
+                {archiveMessage && (
+                  <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+                    {archiveMessage}
+                  </p>
+                )}
+
+                <div className="mt-5 flex flex-wrap justify-end gap-2">
+                  <button
+                    onClick={closeArchiveModal}
+                    className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        setArchiveBusy(true);
+                        setArchiveMessage(null);
+                        await downloadArchiveRangeReport();
+                        setArchiveMessage("Report generated successfully.");
+                      } catch (err) {
+                        setArchiveMessage(
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to generate report.",
+                        );
+                      } finally {
+                        setArchiveBusy(false);
+                      }
+                    }}
+                    disabled={archiveBusy}
+                    className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Generate Report
+                  </button>
+                  <button
+                    onClick={() => {
+                      setArchiveStep("generate-prompt");
+                      setArchiveMessage(null);
+                    }}
+                    disabled={archiveBusy}
+                    className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Continue to Archive
+                  </button>
+                </div>
+              </>
+            )}
+
+            {archiveStep === "generate-prompt" && (
+              <>
+                <p className="mt-3 text-sm text-gray-700">
+                  Do you want to generate a report before archiving logs?
+                </p>
+                <div className="mt-5 flex flex-wrap justify-end gap-2">
+                  <button
+                    onClick={() => setArchiveStep("range")}
+                    className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={() => {
+                      setArchiveShouldGenerateReport(false);
+                      setArchiveStep("confirm");
+                    }}
+                    className="rounded-lg bg-gray-700 px-3 py-2 text-xs font-medium text-white hover:bg-gray-800 cursor-pointer"
+                  >
+                    No, Archive Only
+                  </button>
+                  <button
+                    onClick={() => {
+                      setArchiveShouldGenerateReport(true);
+                      setArchiveStep("confirm");
+                    }}
+                    className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 cursor-pointer"
+                  >
+                    Yes, Generate Then Archive
+                  </button>
+                </div>
+              </>
+            )}
+
+            {archiveStep === "confirm" && (
+              <>
+                <p className="mt-3 text-sm text-gray-700">
+                  Confirmation: archive logs from {archiveRange.fromLabel} to{" "}
+                  {archiveRange.toLabel}? This action will hide them from active
+                  logs.
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Generate report before archive:{" "}
+                  {archiveShouldGenerateReport ? "Yes" : "No"}
+                </p>
+
+                {archiveMessage && (
+                  <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+                    {archiveMessage}
+                  </p>
+                )}
+
+                <div className="mt-5 flex flex-wrap justify-end gap-2">
+                  <button
+                    onClick={() => setArchiveStep("generate-prompt")}
+                    disabled={archiveBusy}
+                    className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={performArchive}
+                    disabled={archiveBusy}
+                    className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {archiveBusy ? "Processing..." : "Confirm Archive"}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {archiveStep === "success" && (
+              <>
+                <p className="mt-3 text-sm text-green-700">Success message:</p>
+                <p className="mt-1 text-sm text-gray-700">{archiveMessage}</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Archived count: {archivedCount}
+                </p>
+                <div className="mt-5 flex justify-end">
+                  <button
+                    onClick={closeArchiveModal}
+                    className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 cursor-pointer"
+                  >
+                    Done
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

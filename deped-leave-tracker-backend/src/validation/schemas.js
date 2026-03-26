@@ -166,6 +166,11 @@ const backlogReportQuerySchema = Joi.object({
   ),
 });
 
+const backlogArchiveBodySchema = Joi.object({
+  from: Joi.date().iso().required(),
+  to: Joi.date().iso().required(),
+});
+
 module.exports = {
   idParamSchema,
   schoolIdParamSchema,
@@ -189,4 +194,5 @@ module.exports = {
   leaveBodySchema,
   leaveUpdateBodySchema,
   backlogReportQuerySchema,
+  backlogArchiveBodySchema,
 };
