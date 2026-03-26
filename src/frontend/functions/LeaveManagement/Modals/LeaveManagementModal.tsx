@@ -400,6 +400,13 @@ export default function LeaveManagementModal({
     setIsDeleteConfirmOpen(true);
   };
 
+  const handleCancelDeleteMode = () => {
+    if (isDeletingEntries) return;
+    setIsDeleteMode(false);
+    setSelectedHistoryIds(new Set());
+    setError(null);
+  };
+
   const confirmDeleteSelectedEntries = async () => {
     setIsDeleteConfirmOpen(false);
     const toDelete = Array.from(selectedHistoryIds);
@@ -533,6 +540,16 @@ export default function LeaveManagementModal({
                 ? `Delete Entry (${selectedHistoryIds.size})`
                 : "Delete Entry"}
             </button>
+            {isDeleteMode ? (
+              <button
+                type="button"
+                onClick={handleCancelDeleteMode}
+                disabled={isDeletingEntries}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancel
+              </button>
+            ) : null}
 
             <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap items-center gap-2">
               <button

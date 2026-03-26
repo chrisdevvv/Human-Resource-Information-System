@@ -26,13 +26,16 @@ const DEFAULT_CORS_ALLOWLIST = [
 ];
 
 const allowedOrigins = (
-  process.env.CORS_ORIGIN_ALLOWLIST || process.env.CORS_ALLOWED_ORIGINS || ""
+  process.env.CORS_ORIGIN_ALLOWLIST ||
+  process.env.CORS_ALLOWED_ORIGINS ||
+  ""
 )
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
-const corsAllowlist = allowedOrigins.length > 0 ? allowedOrigins : DEFAULT_CORS_ALLOWLIST;
+const corsAllowlist =
+  allowedOrigins.length > 0 ? allowedOrigins : DEFAULT_CORS_ALLOWLIST;
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -106,34 +109,34 @@ const ensureSecurityTables = async () => {
 const ensureLeaveLedgerSchema = async () => {
   const leaveParticularsDefaults = [
     "Adoption Leave",
+    "Balance Forwarded",
+    "Brigada Eskwela",
+    "Checking of Forms",
     "Compensatory Paid Leave",
-    "Forced Leave (Disapproved)",
+    "Early Registration/Enrollment",
+    "Election",
     "Forced Leave",
+    "Forced Leave (Disapproved)",
     "Late/Undertime",
     "Leave Credit",
     "Maternity Leave",
     "Monetization",
+    "Others",
     "Paternity Leave",
     "Rehabilitation Leave",
-    "Special Emergency Leave",
+    "Remediation/Enrichment Classes/NLC",
+    "Service Credit",
     "Sick Leave",
     "Solo Parent",
-    "Special Privilege Leave",
+    "Special Emergency Leave",
     "Special Leave for Women",
+    "Special Privilege Leave",
     "Study Leave",
     "Terminal Leave",
+    "Training/Seminar",
     "VAWC Leave",
     "Vacation Leave",
-    "Balance Forwarded",
-    "Service Credit",
-    "Training/Seminar",
-    "Brigada Eskwela",
-    "Early Registration/Enrollment",
-    "Election",
-    "Remediation/Enrichment Classes/NLC",
-    "Checking of Forms",
     "Wellness Leave",
-    "Others",
   ];
   const toEnumSql = (values) =>
     values.map((v) => `'${String(v).replace(/'/g, "''")}'`).join(",");
@@ -262,7 +265,9 @@ const ensureBacklogArchiveSchema = async () => {
   `);
 
   try {
-    await pool.promise().query(`CREATE INDEX idx_backlogs_is_archived ON backlogs (is_archived)`);
+    await pool
+      .promise()
+      .query(`CREATE INDEX idx_backlogs_is_archived ON backlogs (is_archived)`);
   } catch (err) {
     if (!/Duplicate|exists/i.test(err.message)) {
       console.warn("Backlog archive index warning:", err.message);
@@ -273,21 +278,26 @@ const ensureBacklogArchiveSchema = async () => {
 const archiveOldBacklogs = async () => {
   const oneMonthAgo = new Date();
   oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-  const cutoffDate = oneMonthAgo.toISOString().slice(0, 19).replace('T', ' ');
+  const cutoffDate = oneMonthAgo.toISOString().slice(0, 19).replace("T", " ");
 
   try {
     const [result] = await pool.promise().query(
       `UPDATE backlogs
        SET is_archived = 1
        WHERE is_archived = 0 AND created_at < ?`,
-      [cutoffDate]
+      [cutoffDate],
     );
-    
+
     if (result.changedRows > 0) {
-      console.log(`[Backlog Archive] Archived ${result.changedRows} backlogs older than ${cutoffDate}`);
+      console.log(
+        `[Backlog Archive] Archived ${result.changedRows} backlogs older than ${cutoffDate}`,
+      );
     }
   } catch (err) {
-    console.error("[Backlog Archive] Error archiving old backlogs:", err.message);
+    console.error(
+      "[Backlog Archive] Error archiving old backlogs:",
+      err.message,
+    );
   }
 };
 
@@ -403,7 +413,6 @@ app.listen(PORT, async () => {
     console.log(
       "[Backlog Archive] Scheduler enabled (runs daily at 01:00 AM).",
     );
-
   } catch (err) {
     console.error("✘  MySQL connection failed:", err.message);
   }

@@ -2,44 +2,48 @@ const pool = require("../../config/db");
 
 const SYSTEM_PARTICULARS = new Set([
   "Adoption Leave",
+  "Balance Forwarded",
+  "Brigada Eskwela",
+  "Checking of Forms",
   "Compensatory Paid Leave",
-  "Forced Leave (Disapproved)",
+  "Early Registration/Enrollment",
+  "Election",
   "Forced Leave",
+  "Forced Leave (Disapproved)",
   "Late/Undertime",
   "Leave Credit",
   "Maternity Leave",
   "Monetization",
+  "Others",
   "Paternity Leave",
   "Rehabilitation Leave",
-  "Special Emergency Leave",
+  "Remediation/Enrichment Classes/NLC",
+  "Service Credit",
   "Sick Leave",
   "Solo Parent",
-  "Special Privilege Leave",
+  "Special Emergency Leave",
   "Special Leave for Women",
+  "Special Privilege Leave",
   "Study Leave",
   "Terminal Leave",
+  "Training/Seminar",
   "VAWC Leave",
   "Vacation Leave",
-  "Balance Forwarded",
-  "Service Credit",
-  "Training/Seminar",
-  "Brigada Eskwela",
-  "Early Registration/Enrollment",
-  "Election",
-  "Remediation/Enrichment Classes/NLC",
-  "Checking of Forms",
   "Wellness Leave",
-  "Others",
 ]);
 
 const parseEnumValues = (columnType) => {
   if (!columnType || !/^enum\(/i.test(columnType)) return [];
-  const inner = columnType.slice(columnType.indexOf("(") + 1, columnType.lastIndexOf(")"));
+  const inner = columnType.slice(
+    columnType.indexOf("(") + 1,
+    columnType.lastIndexOf(")"),
+  );
   const matches = inner.match(/'((?:[^'\\]|\\.)*)'/g) || [];
   return matches.map((token) => token.slice(1, -1).replace(/\\'/g, "'"));
 };
 
-const toEnumSql = (values) => values.map((v) => `'${String(v).replace(/'/g, "''")}'`).join(",");
+const toEnumSql = (values) =>
+  values.map((v) => `'${String(v).replace(/'/g, "''")}'`).join(",");
 
 const Leave = {
   // Supports optional filtering by employee_id and pagination. If pagination not provided, returns full rows for compatibility.

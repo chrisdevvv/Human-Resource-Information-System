@@ -8,6 +8,7 @@ import {
   UserCheck,
   UserMinus,
   Archive,
+  Building2,
 } from "lucide-react";
 
 const API_BASE_URL =
@@ -81,6 +82,7 @@ const fetchApiList = async <T,>(
 const normalizeRole = (role: unknown) =>
   String(role || "")
     .trim()
+    .replace(/[_\s]+/g, "-")
     .toUpperCase();
 
 type StatCard = {
@@ -110,12 +112,14 @@ export default function Dashboard({
   const [stats, setStats] = useState({
     totalEmployees: 0,
     totalUsers: 0,
+    totalSchools: 0,
     pendingRequests: 0,
     approvedThisMonth: 0,
     pendingRegistrations: 0,
     employeesOnLeave: 0,
     archivedEmployees: 0,
   });
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -154,6 +158,8 @@ export default function Dashboard({
         }
 
         const isAdmin = currentUserRole === "ADMIN";
+        const isSuperAdminRole = currentUserRole === "SUPER-ADMIN";
+        setIsSuperAdmin(isSuperAdminRole);
         const scopedEmployeesEndpoint =
           isAdmin && currentUserSchoolId
             ? `/api/employees/school/${currentUserSchoolId}`
@@ -173,6 +179,7 @@ export default function Dashboard({
           users,
           leaves,
           pendingRegistrationsList,
+          schools,
           backlogs,
           employeeStatusCountsResponse,
         ] = await Promise.all([
@@ -183,6 +190,9 @@ export default function Dashboard({
             "/api/registrations/pending",
             token,
           ),
+          isSuperAdminRole
+            ? fetchApiList<Record<string, unknown>>("/api/schools", token)
+            : Promise.resolve([]),
           showRecentLogs
             ? fetchApiList<BacklogRecord>("/api/backlogs", token)
             : Promise.resolve([]),
@@ -205,6 +215,7 @@ export default function Dashboard({
 
         const totalEmployees = employees.length;
         const totalUsers = users.length;
+        const totalSchools = schools.length;
         const pendingRegistrations = pendingRegistrationsList.length;
         const employeesOnLeave =
           Number(employeeStatusCountsResponse?.data?.on_leave) || 0;
@@ -248,6 +259,7 @@ export default function Dashboard({
         setStats({
           totalEmployees,
           totalUsers,
+          totalSchools,
           pendingRequests,
           approvedThisMonth,
           pendingRegistrations,
@@ -281,6 +293,17 @@ export default function Dashboard({
       icon: <UserCheck className="w-8 h-8" />,
       textColor: "text-green-700",
     },
+    ...(isSuperAdmin
+      ? [
+          {
+            title: "Total Schools",
+            value: stats.totalSchools,
+            subtitle: "Registered schools in system",
+            icon: <Building2 className="w-8 h-8" />,
+            textColor: "text-cyan-700",
+          } as StatCard,
+        ]
+      : []),
     {
       title: "Employees on Leave",
       value: stats.employeesOnLeave,

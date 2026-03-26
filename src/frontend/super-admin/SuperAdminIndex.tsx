@@ -6,6 +6,7 @@ import UserRolesMobile from "./functions/UserRoles/UserRolesMobile";
 import Logs from "./functions/Logs/Logs";
 import LogsMobile from "./functions/Logs/LogsMobile";
 import SuperAdminProfileSettings from "./functions/SuperAdminProfileSettings";
+import ConfigurationPage from "./functions/Configuration/page";
 import EmployeeLeaveManagement from "../functions/LeaveManagement/EmployeeLeaveManagement";
 import Dashboard from "../functions/Dashboard/Dashboard";
 import DashboardMobile from "../functions/Dashboard/DashboardMobile";
@@ -59,6 +60,8 @@ export default function SuperAdmin({
             </div>
           </>
         );
+      case "configuration":
+        return <ConfigurationPage key={tabKey} />;
       case "profile-settings":
         return <SuperAdminProfileSettings key={tabKey} />;
       default:

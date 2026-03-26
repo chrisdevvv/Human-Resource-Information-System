@@ -31,6 +31,11 @@ export const ACCESSIBLE_FEATURES: AccessibleFeature[] = [
     roles: ["super-admin"],
   },
   {
+    id: "configuration",
+    label: "Configuration",
+    roles: ["super-admin"],
+  },
+  {
     id: "profile-settings",
     label: "Profile Settings",
     roles: ["data-encoder", "admin", "super-admin"],
@@ -119,6 +124,9 @@ export function canAccessPage(
       );
     case "logs":
     case "admin-logs":
+      return normalizeRole(userRole) === "super-admin";
+    case "configuration":
+    case "super-admin-configuration":
       return normalizeRole(userRole) === "super-admin";
     case "leave-management":
     case "employee-management":

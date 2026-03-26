@@ -12,7 +12,7 @@ Notes / Next steps:
 - Manual test: open an employee's Leave Management modal, enter delete mode, select rows, click "Delete Entry" to confirm.
 - Optional: replace other `window.confirm` usages with `DeleteEntryConfirmation` for consistent UX.
 
-Recent updates (2026-03-26):
+Recent updates (2026-03-26 - Part 1):
 - Logs reporting flow improvements (desktop + mobile):
 	- Added `Generate Report` button in logs screens and routed to `src/app/super-admin/logsreportgeneration/page.tsx`.
 	- Added support for passing `from` and `to` query params so reports can be generated from selected date filters.
@@ -43,3 +43,129 @@ Notes / quick verification checklist:
 - Open Leave Management Details and verify school is shown from backend data (not `N/A` when available).
 - In Logs (desktop/mobile), verify report generation, 30-day range behavior, and archive-confirmation flow.
 
+Recent updates (2026-03-26 - Part 2 - Configuration Module):
+- Configuration module completed with full API integration:
+	- `src/frontend/super-admin/functions/Configuration/page.tsx` now fetches real schools and particulars data from backend APIs.
+	- Schools data fetched from `GET /api/school` endpoint (super-admin only).
+	- Particulars data fetched from `GET /api/leave/particulars` endpoint (super-admin only).
+- Add functionality implemented for both schools and particulars:
+	- Schools: Generates school_code from school name automatically when creating new entry.
+	- Particulars: Accepts particular name string and adds to ENUM field in database.
+	- Both submit to respective POST endpoints with full error handling.
+- State management and UX improvements:
+	- Added loading states with spinner animation during data fetching.
+	- Added error banner display for failed API calls.
+	- Modal handles both schools and particulars with context-specific labels.
+	- Toast notifications show success/error messages with appropriate styling.
+	- Form input accepts Enter key to submit (in addition to Save button).
+	- Save button shows loading state with spinner during submission.
+- Data transformation:
+	- Schools transformed to ConfigurationItem format with id, name, status (always "Active"), updatedBy.
+	- Particulars transformed from string array to ConfigurationItem objects with index-based IDs.
+	- Search/filter functionality maintained for both lists after data fetch.
+- Mobile responsiveness verified:
+	- Tab buttons responsive with `flex-col gap-4 lg:flex-row` layout.
+	- Modal has `px-4` padding for mobile viewport fit.
+	- Toast uses `w-[min(360px,calc(100vw-2rem))]` for responsive sizing.
+	- SchoolsList and ParticularsList maintain desktop tables (hidden md:block) and mobile cards (md:hidden).
+- Access control enforcement:
+	- Configuration page accessible only to super-admin role (verified in routing).
+	- APIs already enforce super-admin-only access for write operations.
+	- Auth token fetched from localStorage for all API requests.
+
+API Integration Details:
+- Schools endpoint: `POST /api/school` expects { school_name: string, school_code: string }
+- Particulars endpoint: `POST /api/leave/particulars` expects { particular: string }
+- Both endpoints require Bearer token authentication.
+- Error responses handled and displayed in UI toast notifications.
+
+Technical Implementation:
+- Fetch API used with Authorization header for authenticated requests.
+- API base URL configured via environment variable `NEXT_PUBLIC_API_BASE_URL` (defaults to http://localhost:3000).
+- Loading state prevents form submission during API call.
+- Modal input cleared after successful submission.
+- Particulars transformation uses index as ID since API doesn't return IDs for ENUM values.
+
+Notes / verification checklist:
+- Login as super-admin and navigate to Configuration tab to test schools/particulars list display.
+- Add a new school: verify it appears in schools list and backend database.
+- Add a new particular: verify it appears in particulars list and new ENUM value is created.
+- Test mobile responsiveness: verify lists and modal display correctly on mobile devices.
+- Test error handling: disconnect network or use invalid auth token to see error states.
+- Verify search/filter functionality works on fetched data.
+
+Recent updates (2026-03-26 - Part 3 - Configuration Delete Functionality):
+- Removed Status and Updated By columns from both SchoolsList and ParticularsList:
+	- Desktop table now shows only Name and Actions columns.
+	- Mobile cards display only school/particular name and delete button.
+	- Simplified data structure removes unnecessary status and updatedBy fields.
+- Removed edit (pencil) button from both lists:
+	- Only delete action remains available.
+- Implemented full delete functionality:
+	- Delete button now red-styled (bg-red-100, text-red-700, hover:bg-red-200).
+	- Clicking delete shows confirmation modal with item name.
+	- Confirmation modal displays warning: "This action cannot be undone."
+	- Delete button in confirmation modal shows loading spinner during API call.
+	- Cancel button allows users to dismiss confirmation.
+- Delete API integration:
+	- Schools: `DELETE /api/schools/{id}` removes school record.
+	- Particulars: `DELETE /api/leave/particulars` with { particular: string } removes ENUM value.
+	- Both require Bearer token authentication.
+- Success/error handling:
+	- Successful deletion: toast shows "School/Particular '{name}' deleted successfully".
+	- Failed deletion: toast shows error message from backend.
+	- List updates immediately after successful deletion.
+- Type system updates:
+	- SchoolsList now expects items: Array<{ id: number; school_name: string }>
+	- ParticularsList now expects items: Array<{ id: number | string; name: string }>
+	- Both require onDelete callback: (id: number | string, name: string) => void
+- Component state management:
+	- New state variables: showDeleteConfirm, deleteTarget ({ id, name, type }), isDeleting
+	- New functions: handleDeleteSchool, handleDeleteParticular, confirmDelete
+	- Data no longer transformed to ConfigurationItem format; passed directly to lists
+	- filteredSchools and filteredParticulars used directly without transformation
+
+Notes / verification checklist:
+- Login as super-admin and navigate to Configuration tab.
+- Add a new school and verify it appears in list.
+- Click delete button on a school: confirm modal appears with school name.
+- Click Delete in confirmation: school should disappear from list after successful deletion.
+- Try to delete a particular: same flow with particular name in confirmation.
+- Test on mobile: verify delete button is visible and functional.
+- Test error handling: verify error messages display if server returns error.
+- Verify all three Configuration files compile with no TypeScript errors.
+
+Recent updates (2026-03-26 - Part 4 - Configuration Controls + Sidebar School Label):
+- Configuration controls alignment update (schools + particulars):
+	- Updated both `SchoolsList.tsx` and `ParticularsList.tsx` so the search input and filter dropdown stay grouped beside each other.
+	- This applies to both sections in the Configuration page to keep layout and behavior consistent.
+	- On larger screens, search + filter appear side-by-side as one control group; Add button remains beside them.
+	- On smaller screens, controls still stack cleanly while preserving order and spacing.
+
+- Sidebar identity subtitle update (desktop + mobile):
+	- Updated `SidebarIndex.tsx` and `SidebarMobile.tsx` to show a subtitle under `ELMS`.
+	- Super Admin subtitle is fixed to: `Department of Education`.
+	- Admin and Data Encoder subtitle now shows their real assigned school.
+
+- Assigned school resolution logic improvement:
+	- Sidebar first tries to read school name from stored user fields (`school_name`, `schoolName`, nested school object values).
+	- If school name is missing but `school_id` exists, sidebar now fetches from `GET /api/schools/{id}` using bearer token.
+	- This avoids showing generic text when user data only contains school ID.
+	- Fallback label remains `Assigned School` only when no school value can be resolved.
+
+- Long school name display improvement:
+	- Removed single-line truncation with `...` for sidebar subtitle text.
+	- School label now wraps and stays centered, allowing a clean two-line display for longer names.
+
+Files updated in this batch:
+- `src/frontend/super-admin/functions/Configuration/SchoolsList.tsx`
+- `src/frontend/super-admin/functions/Configuration/ParticularsList.tsx`
+- `src/frontend/sidebar/SidebarIndex.tsx`
+- `src/frontend/sidebar/SidebarMobile.tsx`
+
+Quick verification checklist:
+- Open Configuration page and confirm search bar is beside filtering in both Schools and Particulars sections.
+- Login as Admin/Data Encoder and verify sidebar subtitle shows actual assigned school (not static text).
+- Test account where user object has `school_id` only and verify school name still appears after fetch.
+- Login as Super Admin and verify subtitle is always `Department of Education`.
+- Check long school names in desktop and mobile sidebar and confirm centered 2-line display without ellipsis.

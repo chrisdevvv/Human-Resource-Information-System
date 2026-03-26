@@ -8,6 +8,7 @@ import {
   UserCheck,
   UserMinus,
   Archive,
+  Building2,
 } from "lucide-react";
 
 const API_BASE_URL =
@@ -81,6 +82,7 @@ const fetchApiList = async <T,>(
 const normalizeRole = (role: unknown) =>
   String(role || "")
     .trim()
+    .replace(/[_\s]+/g, "-")
     .toUpperCase();
 
 type StatCard = {
@@ -108,11 +110,13 @@ export default function DashboardMobile({
   const [stats, setStats] = useState({
     totalEmployees: 0,
     totalUsers: 0,
+    totalSchools: 0,
     pendingRequests: 0,
     pendingRegistrations: 0,
     employeesOnLeave: 0,
     archivedEmployees: 0,
   });
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -137,9 +141,13 @@ export default function DashboardMobile({
           try {
             const parsed = JSON.parse(rawUser) as {
               role?: string;
+              user_role?: string;
+              userRole?: string;
               school_id?: number | string;
             };
-            currentUserRole = normalizeRole(parsed.role);
+            currentUserRole = normalizeRole(
+              parsed.role ?? parsed.user_role ?? parsed.userRole,
+            );
             const parsedSchoolId = Number(parsed.school_id);
             currentUserSchoolId = Number.isFinite(parsedSchoolId)
               ? parsedSchoolId
@@ -151,6 +159,8 @@ export default function DashboardMobile({
         }
 
         const isAdmin = currentUserRole === "ADMIN";
+        const isSuperAdminRole = currentUserRole === "SUPER-ADMIN";
+        setIsSuperAdmin(isSuperAdminRole);
         const scopedEmployeesEndpoint =
           isAdmin && currentUserSchoolId
             ? `/api/employees/school/${currentUserSchoolId}`
@@ -170,6 +180,7 @@ export default function DashboardMobile({
           users,
           leaves,
           pendingRegistrationsList,
+          schools,
           backlogs,
           employeeStatusCountsResponse,
         ] = await Promise.all([
@@ -180,6 +191,9 @@ export default function DashboardMobile({
             "/api/registrations/pending",
             token,
           ),
+          isSuperAdminRole
+            ? fetchApiList<Record<string, unknown>>("/api/schools", token)
+            : Promise.resolve([]),
           showRecentLogs
             ? fetchApiList<BacklogRecord>("/api/backlogs", token)
             : Promise.resolve([]),
@@ -202,6 +216,7 @@ export default function DashboardMobile({
 
         const totalEmployees = employees.length;
         const totalUsers = users.length;
+        const totalSchools = schools.length;
         const pendingRegistrations = pendingRegistrationsList.length;
         const employeesOnLeave =
           Number(employeeStatusCountsResponse?.data?.on_leave) || 0;
@@ -244,6 +259,7 @@ export default function DashboardMobile({
         setStats({
           totalEmployees,
           totalUsers,
+          totalSchools,
           pendingRequests,
           pendingRegistrations,
           employeesOnLeave,
@@ -265,31 +281,41 @@ export default function DashboardMobile({
     {
       title: "Total Employees",
       value: stats.totalEmployees,
-      icon: <Users className="w-5 h-5" />,
+      icon: <Users className="w-4 h-4" />,
       textColor: "text-blue-700",
     },
     {
       title: "Total Users",
       value: stats.totalUsers,
-      icon: <UserCheck className="w-5 h-5" />,
+      icon: <UserCheck className="w-4 h-4" />,
       textColor: "text-green-700",
     },
+    ...(isSuperAdmin
+      ? [
+          {
+            title: "Total Schools",
+            value: stats.totalSchools,
+            icon: <Building2 className="w-4 h-4" />,
+            textColor: "text-cyan-700",
+          } as StatCard,
+        ]
+      : []),
     {
       title: "Employees on Leave",
       value: stats.employeesOnLeave,
-      icon: <UserMinus className="w-5 h-5" />,
+      icon: <UserMinus className="w-4 h-4" />,
       textColor: "text-amber-700",
     },
     {
       title: "Archived Employees",
       value: stats.archivedEmployees,
-      icon: <Archive className="w-5 h-5" />,
+      icon: <Archive className="w-4 h-4" />,
       textColor: "text-rose-700",
     },
     {
       title: "Pending Registrations",
       value: stats.pendingRegistrations,
-      icon: <FileText className="w-5 h-5" />,
+      icon: <FileText className="w-4 h-4" />,
       textColor: "text-purple-700",
     },
   ];
@@ -297,12 +323,12 @@ export default function DashboardMobile({
   const shortcuts: Shortcut[] = [
     {
       label: "Employee Management",
-      icon: <Users className="w-5 h-5" />,
+      icon: <Users className="w-4 h-4" />,
       tab: "employee-management",
     },
     {
       label: "User & Roles",
-      icon: <Settings className="w-5 h-5" />,
+      icon: <Settings className="w-4 h-4" />,
       tab: "user-roles",
     },
   ];
@@ -355,38 +381,42 @@ export default function DashboardMobile({
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen pb-20">
+    <div className="bg-gray-50 min-h-screen pb-16">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
-        <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 text-xs mt-1">System overview</p>
+      <div className="sticky top-0 z-10 border-b border-gray-200 bg-white px-3 py-3">
+        <h1 className="text-lg font-bold text-gray-900">Dashboard</h1>
+        <p className="mt-0.5 text-[11px] text-gray-500">System overview</p>
       </div>
 
       {/* Main Content */}
-      <div className="p-3">
+      <div className="space-y-3 p-2.5">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2 rounded mb-3">
+          <div className="rounded border border-red-200 bg-red-50 px-2.5 py-2 text-[11px] text-red-700">
             {error}
           </div>
         )}
 
         {/* Quick Stats */}
-        <div className="mb-4">
-          <h2 className="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">
+        <div>
+          <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-700">
             Stats
           </h2>
-          <div className="grid grid-cols-1 gap-2">
+          <div className="grid grid-cols-2 gap-1.5">
             {statCards.map((stat, index) => (
               <div
                 key={index}
-                className="bg-white border border-gray-200 rounded p-3"
+                className="rounded border border-gray-200 bg-white p-2"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className={`${stat.textColor} text-xs font-medium`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p
+                      className={`${stat.textColor} text-[11px] font-medium leading-tight`}
+                    >
                       {stat.title}
                     </p>
-                    <p className={`${stat.textColor} text-2xl font-bold mt-1`}>
+                    <p
+                      className={`${stat.textColor} mt-0.5 text-xl font-bold leading-none`}
+                    >
                       {stat.value}
                     </p>
                   </div>
@@ -398,33 +428,35 @@ export default function DashboardMobile({
         </div>
 
         {showRecentLogs && (
-          <div className="bg-white rounded border border-gray-200 p-3 mb-4">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="text-xs font-bold text-yellow-600 uppercase tracking-wide">
+          <div className="rounded border border-gray-200 bg-white p-2.5">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <h2 className="text-[11px] font-bold uppercase tracking-wide text-yellow-600">
                 Recent Logs
               </h2>
               <button
                 type="button"
                 onClick={handleViewLogs}
-                className="cursor-pointer rounded-md bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-700 transition hover:bg-gray-200"
+                className="cursor-pointer rounded-md bg-gray-100 px-2 py-1 text-[10px] font-semibold text-gray-700 transition hover:bg-gray-200"
               >
                 View Logs
               </button>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {recentLogs.length === 0 ? (
-                <p className="text-xs text-gray-500">No recent logs found.</p>
+                <p className="text-[11px] text-gray-500">
+                  No recent logs found.
+                </p>
               ) : (
                 recentLogs.map((log, index) => (
                   <div
                     key={log.id || index}
-                    className="rounded border border-gray-200 p-2.5"
+                    className="rounded border border-gray-200 p-2"
                   >
-                    <p className="text-xs font-semibold text-gray-900">
+                    <p className="text-[11px] font-semibold text-gray-900">
                       {(log.action || "Activity").replaceAll("_", " ")}
                     </p>
-                    <p className="mt-1 text-xs text-gray-600">
+                    <p className="mt-0.5 text-[11px] text-gray-600">
                       {log.details || "No details available."}
                     </p>
                     <p className="mt-1 text-[10px] text-gray-500">
@@ -438,19 +470,19 @@ export default function DashboardMobile({
         )}
 
         {/* Shortcuts */}
-        <div className="bg-white rounded border border-gray-200 p-3">
-          <h2 className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide">
+        <div className="rounded border border-gray-200 bg-white p-2.5">
+          <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-700">
             Shortcuts
           </h2>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             {shortcuts.map((shortcut, index) => (
               <button
                 key={index}
                 onClick={() => handleShortcutClick(shortcut.tab)}
-                className="cursor-pointer flex items-center gap-3 p-3 rounded bg-linear-to-b from-blue-50 to-blue-100 border border-blue-200 hover:border-blue-400 hover:shadow active:bg-blue-200 transition-all text-left"
+                className="cursor-pointer flex items-center gap-2 rounded border border-blue-200 bg-linear-to-b from-blue-50 to-blue-100 p-2.5 text-left transition-all hover:border-blue-400 hover:shadow active:bg-blue-200"
               >
                 <div className="text-blue-700">{shortcut.icon}</div>
-                <p className="text-sm font-medium text-gray-900 leading-tight">
+                <p className="text-xs font-medium leading-tight text-gray-900">
                   {shortcut.label}
                 </p>
               </button>

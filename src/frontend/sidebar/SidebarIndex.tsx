@@ -6,6 +6,7 @@ import {
   Activity,
   ChevronLeft,
   ChevronRight,
+  SlidersHorizontal,
   LayoutDashboard,
   LogOut,
   SettingsIcon,
@@ -13,6 +14,9 @@ import {
   Users,
 } from "lucide-react";
 import { logoutNow } from "@/frontend/auth/session";
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
 export type SidebarRole = "data-encoder" | "admin" | "super-admin";
 
@@ -48,6 +52,12 @@ const SIDEBAR_TABS: SidebarTab[] = [
     id: "logs",
     label: "Activity Logs",
     icon: Activity,
+    roles: ["super-admin"],
+  },
+  {
+    id: "configuration",
+    label: "Configuration",
+    icon: SlidersHorizontal,
     roles: ["super-admin"],
   },
 ];
@@ -131,6 +141,75 @@ function getFirstNameFromStoredUser(userStr: string | null): string {
   return "";
 }
 
+function toPositiveNumber(value: unknown): number | null {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+}
+
+function getSchoolContextFromStoredUser(userStr: string | null): {
+  schoolName: string;
+  schoolId: number | null;
+} {
+  if (!userStr) {
+    return { schoolName: "", schoolId: null };
+  }
+
+  const parsed = JSON.parse(userStr) as unknown;
+  if (!parsed || typeof parsed !== "object") {
+    return { schoolName: "", schoolId: null };
+  }
+
+  const root = parsed as Record<string, unknown>;
+  const nestedCandidates = [root, root.user, root.data, root.profile].filter(
+    (item): item is Record<string, unknown> =>
+      typeof item === "object" && item !== null,
+  );
+
+  let fallbackSchoolId: number | null = null;
+
+  for (const candidate of nestedCandidates) {
+    const directSchoolName =
+      safeValue(candidate.school_name) || safeValue(candidate.schoolName);
+    const directSchoolId = toPositiveNumber(
+      candidate.school_id ?? candidate.schoolId,
+    );
+
+    const schoolObj =
+      typeof candidate.school === "object" && candidate.school !== null
+        ? (candidate.school as Record<string, unknown>)
+        : null;
+
+    const nestedSchoolName = schoolObj
+      ? safeValue(schoolObj.school_name) ||
+        safeValue(schoolObj.schoolName) ||
+        safeValue(schoolObj.name)
+      : "";
+    const nestedSchoolId = schoolObj
+      ? toPositiveNumber(schoolObj.id ?? schoolObj.school_id)
+      : null;
+
+    const resolvedSchoolName =
+      directSchoolName || nestedSchoolName || safeValue(candidate.school);
+    const resolvedSchoolId = directSchoolId ?? nestedSchoolId;
+
+    if (!fallbackSchoolId && resolvedSchoolId) {
+      fallbackSchoolId = resolvedSchoolId;
+    }
+
+    if (resolvedSchoolName) {
+      return {
+        schoolName: resolvedSchoolName,
+        schoolId: resolvedSchoolId ?? fallbackSchoolId,
+      };
+    }
+  }
+
+  return { schoolName: "", schoolId: fallbackSchoolId };
+}
+
 type SidebarProps = {
   role: string;
   activeTab: string;
@@ -154,17 +233,81 @@ export default function SidebarIndex({
 }: SidebarProps) {
   const [internalCollapsed, setInternalCollapsed] = useState(defaultCollapsed);
   const [firstName, setFirstName] = useState("");
+  const [schoolLabel, setSchoolLabel] = useState("");
+  const normalizedRole = useMemo(() => normalizeRole(role), [role]);
   const tabs = useMemo(() => getSidebarTabsByRole(role), [role]);
   const isCollapsed = collapsed ?? internalCollapsed;
 
   useEffect(() => {
-    try {
-      const userStr = localStorage.getItem("user");
-      setFirstName(getFirstNameFromStoredUser(userStr));
-    } catch (error) {
-      console.error("Error parsing user data:", error);
-    }
-  }, []);
+    let isDisposed = false;
+
+    const loadSchoolLabel = async () => {
+      try {
+        const userStr = localStorage.getItem("user");
+        setFirstName(getFirstNameFromStoredUser(userStr));
+
+        if (normalizedRole === "super-admin") {
+          setSchoolLabel("Department of Education");
+          return;
+        }
+
+        const { schoolName, schoolId } =
+          getSchoolContextFromStoredUser(userStr);
+
+        if (schoolName) {
+          setSchoolLabel(schoolName);
+          return;
+        }
+
+        setSchoolLabel("Assigned School");
+        if (!schoolId) {
+          return;
+        }
+
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          return;
+        }
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/schools/${schoolId}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        const body = (await response.json().catch(() => ({}))) as {
+          data?: { school_name?: unknown };
+        };
+
+        if (!response.ok || isDisposed) {
+          return;
+        }
+
+        const fetchedSchoolName = safeValue(body.data?.school_name);
+        if (fetchedSchoolName) {
+          setSchoolLabel(fetchedSchoolName);
+        }
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        setSchoolLabel(
+          normalizedRole === "super-admin"
+            ? "Department of Education"
+            : "Assigned School",
+        );
+      }
+    };
+
+    loadSchoolLabel();
+
+    return () => {
+      isDisposed = true;
+    };
+  }, [normalizedRole]);
 
   const handleToggle = () => {
     const next = !isCollapsed;
@@ -208,6 +351,9 @@ export default function SidebarIndex({
               <h2 className="text-lg font-semibold leading-tight text-center">
                 {title}
               </h2>
+              <p className="mt-1 max-w-55 text-xs leading-tight text-blue-100 text-center whitespace-normal overflow-hidden max-h-8">
+                {schoolLabel}
+              </p>
             </div>
           )}
 

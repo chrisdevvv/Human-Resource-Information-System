@@ -13,6 +13,7 @@ const ALLOWED_TABS = new Set([
   "employee-management",
   "user-roles",
   "logs",
+  "configuration",
   "profile-settings",
 ]);
 
