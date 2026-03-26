@@ -706,13 +706,22 @@ function AdminUserDetailsModal({
             />
             <AdminDetailsRow label="Email" value={user.email} />
             <AdminDetailsRow label="School" value={user.school_name || "N/A"} />
-            <AdminDetailsRow label="Role" value={user.role.replace(/_/g, " ")} />
+            <AdminDetailsRow
+              label="Role"
+              value={user.role.replace(/_/g, " ")}
+            />
             <AdminDetailsRow
               label="Status"
               value={normalizeIsActive(user.is_active) ? "Active" : "Inactive"}
             />
-            <AdminDetailsRow label="Created At" value={formatDate(user.created_at)} />
-            <AdminDetailsRow label="Updated At" value={formatDate(user.updated_at)} />
+            <AdminDetailsRow
+              label="Created At"
+              value={formatDate(user.created_at)}
+            />
+            <AdminDetailsRow
+              label="Updated At"
+              value={formatDate(user.updated_at)}
+            />
           </div>
         ) : null}
 
