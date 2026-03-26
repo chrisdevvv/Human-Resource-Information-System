@@ -9,31 +9,43 @@ const {
 } = require("../../utils/mailer");
 
 const VALID_ROLES = ["SUPER_ADMIN", "ADMIN", "DATA_ENCODER"];
+const normalizeRole = (role) =>
+  String(role || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .replace(/-/g, "_");
+
+const getScopedSchoolId = async (user) => {
+  const tokenSchoolId = Number(user?.school_id) || null;
+  if (tokenSchoolId) return tokenSchoolId;
+
+  if (!user?.id) return null;
+  const userRow = await User.getById(user.id);
+  return Number(userRow?.school_id) || null;
+};
 
 const getAllUsers = async (req, res) => {
   try {
-    const { search, role, is_active, school_id, page, pageSize } = req.query;
+    const { search, role, is_active, page, pageSize } = req.query;
+    const requesterRole = normalizeRole(req.user?.role);
 
-    const requesterRole = String(req.user?.role || "").toUpperCase();
-    const requesterSchoolId = req.user?.school_id
-      ? Number(req.user.school_id)
-      : null;
+    const scopeSchoolId =
+      requesterRole === "SUPER_ADMIN"
+        ? null
+        : await getScopedSchoolId(req.user);
 
-    let scopedSchoolId = school_id ? Number(school_id) : null;
-
-    // Admin users can only list users from their own school.
-    if (requesterRole === "ADMIN") {
-      if (!requesterSchoolId) {
-        return res.status(200).json({ data: [] });
-      }
-      scopedSchoolId = requesterSchoolId;
+    if (requesterRole !== "SUPER_ADMIN" && !scopeSchoolId) {
+      return res
+        .status(403)
+        .json({ message: "Your account has no assigned school" });
     }
 
     const filters = {
       search: search || null,
       role: role || null,
       is_active: is_active !== undefined ? Number(is_active) : null,
-      school_id: scopedSchoolId,
+      school_id: scopeSchoolId,
     };
 
     const pagination = page
