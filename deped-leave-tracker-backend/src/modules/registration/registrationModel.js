@@ -53,6 +53,18 @@ const Registration = {
     return rows[0]?.school_name || null;
   },
 
+  getReviewerScopeById: async (user_id) => {
+    const [rows] = await pool.promise().query(
+      `SELECT u.id, u.role, u.school_id, s.school_name
+       FROM users u
+       LEFT JOIN schools s ON u.school_id = s.id
+       WHERE u.id = ?
+       LIMIT 1`,
+      [user_id],
+    );
+    return rows[0] || null;
+  },
+
   approve: async (
     id,
     approved_role,

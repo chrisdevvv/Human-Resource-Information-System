@@ -2,7 +2,7 @@ const pool = require("../../config/db");
 
 const User = {
   // Supports optional filters and pagination. If `pagination` is omitted, returns full rows array for backwards compatibility.
-  getAll: async ({ search, role, is_active } = {}, pagination) => {
+  getAll: async ({ search, role, is_active, school_id } = {}, pagination) => {
     let baseQuery = `
             FROM users u
             LEFT JOIN schools s ON u.school_id = s.id
@@ -24,6 +24,11 @@ const User = {
     if (is_active !== undefined && is_active !== null) {
       baseQuery += ` AND u.is_active = ?`;
       params.push(is_active);
+    }
+
+    if (school_id !== undefined && school_id !== null) {
+      baseQuery += ` AND u.school_id = ?`;
+      params.push(school_id);
     }
 
     const orderClause = ` ORDER BY u.first_name ASC, u.last_name ASC`;

@@ -7,7 +7,13 @@ const {
 } = require("../../utils/mailer");
 
 const scopedRoles = new Set(["ADMIN", "DATA_ENCODER"]);
-const normalizeRole = (role) => String(role || "").trim().toUpperCase();
+const normalizeRole = (role) => {
+  const raw = String(role || "").trim().toUpperCase().replace(/\s+/g, "_").replace(/-/g, "_");
+  if (raw === "SUPER_ADMIN") return "SUPER_ADMIN";
+  if (raw === "ADMIN") return "ADMIN";
+  if (raw === "DATA_ENCODER") return "DATA_ENCODER";
+  return raw;
+};
 
 const resolveScope = async (user) => {
   const role = normalizeRole(user?.role);
@@ -21,13 +27,18 @@ const resolveScope = async (user) => {
     throw err;
   }
 
-  if (!user?.school_id) {
-    const err = new Error("Your account has no assigned school");
-    err.statusCode = 403;
-    throw err;
+  const tokenSchoolId = Number(user?.school_id) || null;
+  let schoolName = null;
+
+  if (tokenSchoolId) {
+    schoolName = await Registration.getSchoolNameById(tokenSchoolId);
   }
 
-  const schoolName = await Registration.getSchoolNameById(user.school_id);
+  if (!schoolName && user?.id) {
+    const reviewerScope = await Registration.getReviewerScopeById(user.id);
+    schoolName = reviewerScope?.school_name || null;
+  }
+
   if (!schoolName) {
     const err = new Error("Assigned school not found");
     err.statusCode = 403;
@@ -48,7 +59,10 @@ const getAllRegistrations = async (req, res) => {
   } catch (err) {
     const statusCode = err.statusCode || 500;
     res.status(statusCode).json({
-      message: "Error retrieving registration requests",
+      message:
+        statusCode === 500
+          ? "Error retrieving registration requests"
+          : err.message,
       error: err.message,
     });
   }
@@ -64,7 +78,9 @@ const getPendingRegistrations = async (req, res) => {
   } catch (err) {
     const statusCode = err.statusCode || 500;
     res.status(statusCode).json({
-      message: "Error retrieving pending registrations",
+      message: statusCode === 500
+        ? `Error retrieving pending registrations: ${err.message}`
+        : err.message,
       error: err.message,
     });
   }
@@ -84,7 +100,10 @@ const getRegistrationById = async (req, res) => {
   } catch (err) {
     const statusCode = err.statusCode || 500;
     res.status(statusCode).json({
-      message: "Error retrieving registration request",
+      message:
+        statusCode === 500
+          ? "Error retrieving registration request"
+          : err.message,
       error: err.message,
     });
   }
