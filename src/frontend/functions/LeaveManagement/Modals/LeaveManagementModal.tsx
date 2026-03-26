@@ -33,6 +33,7 @@ type EmployeeDetailResponse = {
   data?: {
     on_leave?: boolean | number | string | null;
     email?: string | null;
+    school_name?: string | null;
   };
   message?: string;
 };
@@ -50,6 +51,7 @@ export default function LeaveManagementModal({
   const [showArchiveSuccess, setShowArchiveSuccess] = useState(false);
   const [isMarkedOnLeave, setIsMarkedOnLeave] = useState(false);
   const [employeeEmail, setEmployeeEmail] = useState("");
+  const [employeeSchoolFromApi, setEmployeeSchoolFromApi] = useState("");
   const [isLeaveStatusLoading, setIsLeaveStatusLoading] = useState(false);
   const [isLeaveStatusUpdating, setIsLeaveStatusUpdating] = useState(false);
   const [leaveStatusError, setLeaveStatusError] = useState<string | null>(null);
@@ -93,6 +95,8 @@ export default function LeaveManagementModal({
   };
   const employeeId = leave?.employeeId ?? leave?.id ?? null;
   const employeeType = leave?.employeeType ?? "non-teaching";
+  const employeeSchool =
+    employeeSchoolFromApi || (leave?.schoolName || "").trim() || "N/A";
   const [activeTab, setActiveTab] = useState<"history" | "card">("history");
   const [historyRows, setHistoryRows] = useState<LeaveHistoryRecord[]>([]);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -141,6 +145,7 @@ export default function LeaveManagementModal({
 
       setIsMarkedOnLeave(toBool(body.data?.on_leave));
       setEmployeeEmail(String(body.data?.email || "").trim());
+      setEmployeeSchoolFromApi(String(body.data?.school_name || "").trim());
       setLeaveStatusError(null);
     } catch (err) {
       setLeaveStatusError(
@@ -268,6 +273,7 @@ export default function LeaveManagementModal({
     setActiveTab(initialTab);
     setIsDeleteMode(false);
     setSelectedHistoryIds(new Set());
+    setEmployeeSchoolFromApi("");
     void fetchHistory();
     void fetchEmployeeLeaveStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -432,6 +438,7 @@ export default function LeaveManagementModal({
               <p className="text-sm text-gray-500">
                 Employee Type: {employeeTypeLabel}
               </p>
+              <p className="text-sm text-gray-500">School: {employeeSchool}</p>
               <div className="mt-3 flex items-start gap-3">
                 <input
                   id="mark-on-leave"

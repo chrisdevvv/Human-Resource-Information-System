@@ -74,8 +74,29 @@ const getAllUsers = async (req, res) => {
 
 const getUserById = async (req, res) => {
   try {
+    const requesterRole = normalizeRole(req.user?.role);
+    const scopeSchoolId =
+      requesterRole === "SUPER_ADMIN"
+        ? null
+        : await getScopedSchoolId(req.user);
+
+    if (requesterRole !== "SUPER_ADMIN" && !scopeSchoolId) {
+      return res
+        .status(403)
+        .json({ message: "Your account has no assigned school" });
+    }
+
     const user = await User.getById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (requesterRole !== "SUPER_ADMIN") {
+      if (Number(user.school_id) !== Number(scopeSchoolId)) {
+        return res.status(403).json({
+          message: "You can only view users from your assigned school",
+        });
+      }
+    }
+
     res.status(200).json({ data: user });
   } catch (err) {
     res
@@ -306,7 +327,9 @@ const adminResetPassword = async (req, res) => {
 
 const createDataEncoderByAdmin = async (req, res) => {
   try {
-    if (!["ADMIN", "SUPER_ADMIN"].includes(req.user.role)) {
+    const requesterRole = normalizeRole(req.user?.role);
+
+    if (!["ADMIN", "SUPER_ADMIN"].includes(requesterRole)) {
       return res.status(403).json({
         message:
           "Only ADMIN or SUPER_ADMIN users can add users via this endpoint",
@@ -315,19 +338,14 @@ const createDataEncoderByAdmin = async (req, res) => {
 
     const { first_name, last_name, email, password, school_name } = req.body;
 
-    if (!first_name || !last_name || !email || !password || !school_name) {
+    if (!first_name || !last_name || !email || !password) {
       return res.status(400).json({
-        message:
-          "first_name, last_name, email, password, and school_name are required",
+        message: "first_name, last_name, email, and password are required",
       });
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
-    const normalizedSchoolName = String(school_name).trim();
-
-    if (!normalizedSchoolName) {
-      return res.status(400).json({ message: "school_name is required" });
-    }
+    const normalizedSchoolName = String(school_name || "").trim();
 
     const [existingUserRows] = await pool
       .promise()
@@ -345,25 +363,39 @@ const createDataEncoderByAdmin = async (req, res) => {
       await conn.beginTransaction();
 
       let schoolId;
-      const [schoolRows] = await conn.query(
-        "SELECT id FROM schools WHERE school_name = ? LIMIT 1",
-        [normalizedSchoolName],
-      );
-
-      if (schoolRows.length > 0) {
-        schoolId = schoolRows[0].id;
+      if (requesterRole === "ADMIN") {
+        const scopedSchoolId = await getScopedSchoolId(req.user);
+        if (!scopedSchoolId) {
+          return res
+            .status(403)
+            .json({ message: "Your account has no assigned school" });
+        }
+        schoolId = scopedSchoolId;
       } else {
-        const schoolCode = normalizedSchoolName
-          .split(/\s+/)
-          .filter(Boolean)
-          .map((word) => word[0].toUpperCase())
-          .join("");
+        if (!normalizedSchoolName) {
+          return res.status(400).json({ message: "school_name is required" });
+        }
 
-        const [newSchoolResult] = await conn.query(
-          "INSERT INTO schools (school_name, school_code) VALUES (?, ?)",
-          [normalizedSchoolName, schoolCode || "SCH"],
+        const [schoolRows] = await conn.query(
+          "SELECT id FROM schools WHERE school_name = ? LIMIT 1",
+          [normalizedSchoolName],
         );
-        schoolId = newSchoolResult.insertId;
+
+        if (schoolRows.length > 0) {
+          schoolId = schoolRows[0].id;
+        } else {
+          const schoolCode = normalizedSchoolName
+            .split(/\s+/)
+            .filter(Boolean)
+            .map((word) => word[0].toUpperCase())
+            .join("");
+
+          const [newSchoolResult] = await conn.query(
+            "INSERT INTO schools (school_name, school_code) VALUES (?, ?)",
+            [normalizedSchoolName, schoolCode || "SCH"],
+          );
+          schoolId = newSchoolResult.insertId;
+        }
       }
 
       const [insertResult] = await conn.query(

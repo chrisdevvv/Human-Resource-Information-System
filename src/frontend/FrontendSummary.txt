@@ -12,3 +12,34 @@ Notes / Next steps:
 - Manual test: open an employee's Leave Management modal, enter delete mode, select rows, click "Delete Entry" to confirm.
 - Optional: replace other `window.confirm` usages with `DeleteEntryConfirmation` for consistent UX.
 
+Recent updates (2026-03-26):
+- Logs reporting flow improvements (desktop + mobile):
+	- Added `Generate Report` button in logs screens and routed to `src/app/super-admin/logsreportgeneration/page.tsx`.
+	- Added support for passing `from` and `to` query params so reports can be generated from selected date filters.
+	- Updated logs date range handling from 14 days to 30 days.
+- Logs report viewing and PDF generation:
+	- Implemented responsive report preview behavior for smaller/mobile screens.
+	- Updated PDF export strategy to render from an offscreen cloned report container to avoid transform/scale issues.
+- Logs archive UX updates (desktop + mobile):
+	- Added archive flow with modal confirmations and optional report generation before archive.
+	- Added success/error handling states and clearer action prompts in archive flow.
+- Cursor and interaction polish:
+	- Added `cursor-pointer` to actionable buttons in logs pages and registration modal areas.
+- Registration modal behavior fixes:
+	- Fixed confirm modal behavior to auto-close correctly after successful registration.
+	- Prevented unsaved-changes prompt from appearing after completed submission.
+- User roles school-based visibility/filtering:
+	- Updated `UserRoles.tsx` and `UserRolesMobile.tsx` to support school-aware filtering behavior for super admin/admin flows.
+	- Adjusted desktop school filter control width for better layout fit.
+- Dashboard scoping updates (desktop + mobile):
+	- Updated dashboard data fetch logic so admin views are scoped by assigned `school_id` for employees/users/status counts.
+- Leave Management updates:
+	- `LeaveManagementModal.tsx`: now displays employee school in details section (under employee type) and fetches school from employee detail API.
+	- `EmployeeLeaveManagement.tsx`: passes `schoolName` into leave details modal payload.
+	- `EmployeeLeaveManagement.tsx` and `ArchivedEmployee.tsx`: frontend requests are role-aware and use school-scoped employee endpoints for admin/data-encoder users.
+
+Notes / quick verification checklist:
+- Login as admin or data encoder and confirm employee lists only show same-school records.
+- Open Leave Management Details and verify school is shown from backend data (not `N/A` when available).
+- In Logs (desktop/mobile), verify report generation, 30-day range behavior, and archive-confirmation flow.
+

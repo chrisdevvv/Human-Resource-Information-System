@@ -18,13 +18,26 @@ const Employee = {
       whereParts.push("employees.on_leave = 0");
     }
 
-    const whereClause = whereParts.length > 0 ? `WHERE ${whereParts.join(" AND ")}` : "";
+    if (filters.schoolId) {
+      whereParts.push("employees.school_id = ?");
+    }
+
+    const params = [];
+    if (filters.schoolId) {
+      params.push(filters.schoolId);
+    }
+
+    const whereClause =
+      whereParts.length > 0 ? `WHERE ${whereParts.join(" AND ")}` : "";
     const baseQuery = `FROM employees JOIN schools ON employees.school_id = schools.id ${whereClause}`;
 
     if (!page) {
-      const [rows] = await pool.promise().query(
-        `SELECT employees.*, schools.school_name ${baseQuery} ORDER BY employees.id ASC`,
-      );
+      const [rows] = await pool
+        .promise()
+        .query(
+          `SELECT employees.*, schools.school_name ${baseQuery} ORDER BY employees.id ASC`,
+          params,
+        );
       return rows;
     }
 
@@ -32,13 +45,13 @@ const Employee = {
 
     const [[{ total }]] = await pool
       .promise()
-      .query(`SELECT COUNT(1) as total ${baseQuery}`);
+      .query(`SELECT COUNT(1) as total ${baseQuery}`, params);
 
     const [rows] = await pool
       .promise()
       .query(
         `SELECT employees.*, schools.school_name ${baseQuery} ORDER BY employees.id ASC LIMIT ? OFFSET ?`,
-        [pageSize, offset],
+        [...params, pageSize, offset],
       );
 
     return { data: rows, total: Number(total), page, pageSize };
@@ -46,7 +59,9 @@ const Employee = {
 
   getById: async (id, options = {}) => {
     const includeArchived = Boolean(options.includeArchived);
-    const archivedFilter = includeArchived ? "" : "AND employees.is_archived = 0";
+    const archivedFilter = includeArchived
+      ? ""
+      : "AND employees.is_archived = 0";
     const [rows] = await pool.promise().query(
       `
             SELECT employees.*, schools.school_name
@@ -62,21 +77,24 @@ const Employee = {
 
   getBySchool: async (school_id, options = {}) => {
     const includeArchived = Boolean(options.includeArchived);
-    const whereParts = ["school_id = ?"];
+    const whereParts = ["employees.school_id = ?"];
 
     if (!includeArchived) {
-      whereParts.push("is_archived = 0");
+      whereParts.push("employees.is_archived = 0");
     }
 
     if (options.onLeave === true) {
-      whereParts.push("on_leave = 1");
+      whereParts.push("employees.on_leave = 1");
     } else if (options.onLeave === false) {
-      whereParts.push("on_leave = 0");
+      whereParts.push("employees.on_leave = 0");
     }
 
     const whereClause = whereParts.join(" AND ");
     const [rows] = await pool.promise().query(
-      `SELECT * FROM employees WHERE ${whereClause}`,
+      `SELECT employees.*, schools.school_name
+       FROM employees
+       JOIN schools ON employees.school_id = schools.id
+       WHERE ${whereClause}`,
       [school_id],
     );
     return rows;
@@ -174,13 +192,15 @@ const Employee = {
       params,
     );
 
-    return rows[0] || {
-      total_all: 0,
-      archived: 0,
-      active_total: 0,
-      on_leave: 0,
-      available: 0,
-    };
+    return (
+      rows[0] || {
+        total_all: 0,
+        archived: 0,
+        active_total: 0,
+        on_leave: 0,
+        available: 0,
+      }
+    );
   },
 
   delete: async (id) => {

@@ -30,7 +30,7 @@ const SIDEBAR_TABS: SidebarTab[] = [
     id: "dashboard",
     label: "Dashboard",
     icon: LayoutDashboard,
-    roles: ALL_ROLES,
+    roles: ["admin", "super-admin"],
   },
   {
     id: "employee-management",
@@ -42,7 +42,7 @@ const SIDEBAR_TABS: SidebarTab[] = [
     id: "user-roles",
     label: "User & Roles",
     icon: ShieldCheck,
-    roles: ["super-admin"],
+    roles: ["admin", "super-admin"],
   },
   {
     id: "logs",

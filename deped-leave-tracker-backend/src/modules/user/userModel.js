@@ -26,6 +26,11 @@ const User = {
       params.push(is_active);
     }
 
+    if (school_id !== undefined && school_id !== null) {
+      baseQuery += ` AND u.school_id = ?`;
+      params.push(Number(school_id));
+    }
+
     const orderClause = ` ORDER BY u.first_name ASC, u.last_name ASC`;
 
     // If pagination not requested, return full rows (preserve existing behavior)

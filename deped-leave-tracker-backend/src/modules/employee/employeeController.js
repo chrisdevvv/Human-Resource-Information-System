@@ -19,6 +19,11 @@ const isSchoolScopedWriteRole = (role) => {
   return normalized === "ADMIN" || normalized === "DATA_ENCODER";
 };
 
+const getScopedSchoolId = (req) => {
+  const schoolId = Number(req.user?.school_id);
+  return Number.isFinite(schoolId) && schoolId > 0 ? schoolId : null;
+};
+
 const isSameSchool = (userSchoolId, targetSchoolId) =>
   Number(userSchoolId) > 0 && Number(userSchoolId) === Number(targetSchoolId);
 
@@ -34,11 +39,22 @@ const getAllEmployees = async (req, res) => {
         ? undefined
         : toBoolean(on_leave);
 
+    const scopedSchoolId = isSchoolScopedWriteRole(req.user?.role)
+      ? getScopedSchoolId(req)
+      : null;
+
+    if (isSchoolScopedWriteRole(req.user?.role) && !scopedSchoolId) {
+      return res.status(403).json({
+        message: "Your account is not assigned to a valid school",
+      });
+    }
+
     const filters = {
       page: page ? Number(page) : undefined,
       pageSize: pageSize ? Number(pageSize) : undefined,
       includeArchived,
       onLeave,
+      schoolId: scopedSchoolId,
     };
     const results = await Employee.getAll(filters);
 
@@ -60,6 +76,16 @@ const getEmployeeById = async (req, res) => {
   try {
     const result = await Employee.getById(req.params.id);
     if (!result) return res.status(404).json({ message: "Employee not found" });
+
+    if (isSchoolScopedWriteRole(req.user?.role)) {
+      if (!isSameSchool(req.user?.school_id, result.school_id)) {
+        return res.status(403).json({
+          message:
+            "You can only view employee records under your assigned school",
+        });
+      }
+    }
+
     res.status(200).json({ data: result });
   } catch (err) {
     res
@@ -70,6 +96,17 @@ const getEmployeeById = async (req, res) => {
 
 const getEmployeesBySchool = async (req, res) => {
   try {
+    const requestedSchoolId = Number(req.params.school_id);
+    if (
+      isSchoolScopedWriteRole(req.user?.role) &&
+      !isSameSchool(req.user?.school_id, requestedSchoolId)
+    ) {
+      return res.status(403).json({
+        message:
+          "You can only view employee records under your assigned school",
+      });
+    }
+
     const includeArchived =
       toBoolean(req.query?.include_archived) && isAdminLevel(req.user?.role);
     const onLeave =
@@ -79,7 +116,7 @@ const getEmployeesBySchool = async (req, res) => {
         ? undefined
         : toBoolean(req.query?.on_leave);
 
-    const results = await Employee.getBySchool(req.params.school_id, {
+    const results = await Employee.getBySchool(requestedSchoolId, {
       includeArchived,
       onLeave,
     });
@@ -96,7 +133,18 @@ const getEmployeeStatusCounts = async (req, res) => {
     const includeArchivedRequested = toBoolean(req.query?.include_archived);
     const includeArchived =
       includeArchivedRequested && isAdminLevel(req.user?.role);
-    const schoolId = req.query?.school_id ? Number(req.query.school_id) : null;
+    const requestedSchoolId = req.query?.school_id
+      ? Number(req.query.school_id)
+      : null;
+    const schoolId = isSchoolScopedWriteRole(req.user?.role)
+      ? getScopedSchoolId(req)
+      : requestedSchoolId;
+
+    if (isSchoolScopedWriteRole(req.user?.role) && !schoolId) {
+      return res.status(403).json({
+        message: "Your account is not assigned to a valid school",
+      });
+    }
 
     const counts = await Employee.getStatusCounts({ schoolId });
     const totalAll = Number(counts.total_all || 0);

@@ -16,15 +16,6 @@ type AdminAddUserModalProps = {
 
 type FormStep = 1 | 2;
 
-type SchoolApiItem = {
-  school_name?: unknown;
-  schoolName?: unknown;
-};
-
-type SchoolListResponse = {
-  data?: SchoolApiItem[];
-};
-
 function validateEmail(value: string) {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return re.test(value);
@@ -95,7 +86,6 @@ export default function AdminAddUserModal({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [school, setSchool] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -104,7 +94,6 @@ export default function AdminAddUserModal({
   const [firstNameError, setFirstNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
   const [emailError, setEmailError] = useState("");
-  const [schoolError, setSchoolError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
 
@@ -112,54 +101,25 @@ export default function AdminAddUserModal({
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [schoolOptions, setSchoolOptions] = useState<string[]>([]);
+  const [assignedSchoolName, setAssignedSchoolName] = useState("");
 
   useEffect(() => {
-    let disposed = false;
+    try {
+      const rawUser = localStorage.getItem("user");
+      if (!rawUser) return;
 
-    const loadSchools = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/schools`);
-        if (!response.ok) {
-          throw new Error("Failed to load schools");
-        }
+      const parsed = JSON.parse(rawUser) as {
+        school_name?: string;
+        schoolName?: string;
+      };
 
-        const payload = (await response
-          .json()
-          .catch(() => ({}))) as SchoolListResponse;
-        const rows = Array.isArray(payload.data) ? payload.data : [];
-
-        const names = Array.from(
-          new Set(
-            rows
-              .map((row) => {
-                const rawValue =
-                  typeof row.school_name === "string"
-                    ? row.school_name
-                    : typeof row.schoolName === "string"
-                      ? row.schoolName
-                      : "";
-                return rawValue.trim();
-              })
-              .filter(Boolean),
-          ),
-        ).sort((a, b) => a.localeCompare(b));
-
-        if (!disposed) {
-          setSchoolOptions(names);
-        }
-      } catch {
-        if (!disposed) {
-          setSchoolOptions([]);
-        }
-      }
-    };
-
-    loadSchools();
-
-    return () => {
-      disposed = true;
-    };
+      const resolvedSchool = String(
+        parsed.school_name || parsed.schoolName || "",
+      ).trim();
+      setAssignedSchoolName(resolvedSchool);
+    } catch {
+      setAssignedSchoolName("");
+    }
   }, []);
 
   const validateDetailsStep = () => {
@@ -194,13 +154,6 @@ export default function AdminAddUserModal({
       hasError = true;
     } else {
       setEmailError("");
-    }
-
-    if (!school.trim()) {
-      setSchoolError("School is required");
-      hasError = true;
-    } else {
-      setSchoolError("");
     }
 
     if (hasError) {
@@ -279,7 +232,6 @@ export default function AdminAddUserModal({
             last_name: lastName.trim(),
             email: email.trim(),
             password,
-            school_name: school.trim(),
           }),
         },
       );
@@ -380,26 +332,16 @@ export default function AdminAddUserModal({
 
               <div className="md:col-span-2">
                 <label className="text-sm font-medium text-gray-700">
-                  School
+                  Assigned School
                 </label>
-                <input
-                  value={school}
-                  onChange={(e) => {
-                    setSchool(e.target.value);
-                    if (schoolError) setSchoolError("");
-                  }}
-                  placeholder="School name"
-                  list="admin-add-user-school-options"
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700"
-                />
-                <datalist id="admin-add-user-school-options">
-                  {schoolOptions.map((option) => (
-                    <option key={option} value={option} />
-                  ))}
-                </datalist>
-                {schoolError && (
-                  <p className="text-xs text-red-600 mt-1">{schoolError}</p>
-                )}
+                <div className="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                  {assignedSchoolName ||
+                    "Automatically assigned to your school"}
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  New users created here are automatically assigned to your
+                  school.
+                </p>
               </div>
             </div>
           )}

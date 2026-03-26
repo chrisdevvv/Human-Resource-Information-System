@@ -8,16 +8,12 @@ import StickyHeader from "../../frontend/components/StickyHeader";
 import { hasAccessToFeature } from "../../frontend/auth/roleAccess";
 
 const ACTIVE_TAB_STORAGE_KEY = "activeTab:data-encoder";
-const ALLOWED_TABS = new Set([
-  "dashboard",
-  "employee-management",
-  "profile-settings",
-]);
+const ALLOWED_TABS = new Set(["employee-management", "profile-settings"]);
 
 export default function Page() {
   const router = useRouter();
   const [role, setRole] = useState("data-encoder");
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("employee-management");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
 

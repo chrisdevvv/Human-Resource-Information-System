@@ -81,7 +81,7 @@ const userAdminCreateBodySchema = Joi.object({
     .email({ tlds: { allow: false } })
     .required(),
   password: Joi.string().min(8).max(128).required(),
-  school_name: Joi.string().trim().min(1).max(255).required(),
+  school_name: Joi.string().trim().min(1).max(255),
 });
 
 const usersQuerySchema = Joi.object({

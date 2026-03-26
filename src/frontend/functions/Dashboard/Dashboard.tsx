@@ -78,6 +78,11 @@ const fetchApiList = async <T,>(
   return normalizeList<T>(payload);
 };
 
+const normalizeRole = (role: unknown) =>
+  String(role || "")
+    .trim()
+    .toUpperCase();
+
 type StatCard = {
   title: string;
   value: number | string;
@@ -120,12 +125,48 @@ export default function Dashboard({
     const fetchDashboardData = async () => {
       try {
         const token = localStorage.getItem("authToken");
+        const rawUser = localStorage.getItem("user");
 
         if (!token) {
           setError("Not authenticated");
           setLoading(false);
           return;
         }
+
+        let currentUserRole = "";
+        let currentUserSchoolId: number | null = null;
+
+        if (rawUser) {
+          try {
+            const parsed = JSON.parse(rawUser) as {
+              role?: string;
+              school_id?: number | string;
+            };
+            currentUserRole = normalizeRole(parsed.role);
+            const parsedSchoolId = Number(parsed.school_id);
+            currentUserSchoolId = Number.isFinite(parsedSchoolId)
+              ? parsedSchoolId
+              : null;
+          } catch {
+            currentUserRole = "";
+            currentUserSchoolId = null;
+          }
+        }
+
+        const isAdmin = currentUserRole === "ADMIN";
+        const scopedEmployeesEndpoint =
+          isAdmin && currentUserSchoolId
+            ? `/api/employees/school/${currentUserSchoolId}`
+            : "/api/employees";
+        const scopedUsersEndpoint =
+          isAdmin && currentUserSchoolId
+            ? `/api/users?school_id=${currentUserSchoolId}`
+            : "/api/users";
+        const statusCountsUrl =
+          `${API_BASE_URL}/api/employees/status-counts?include_archived=true` +
+          (isAdmin && currentUserSchoolId
+            ? `&school_id=${currentUserSchoolId}`
+            : "");
 
         const [
           employees,
@@ -135,8 +176,8 @@ export default function Dashboard({
           backlogs,
           employeeStatusCountsResponse,
         ] = await Promise.all([
-          fetchApiList<Record<string, unknown>>("/api/employees", token),
-          fetchApiList<Record<string, unknown>>("/api/users", token),
+          fetchApiList<Record<string, unknown>>(scopedEmployeesEndpoint, token),
+          fetchApiList<Record<string, unknown>>(scopedUsersEndpoint, token),
           fetchApiList<LeaveRecord>("/api/leave", token),
           fetchApiList<Record<string, unknown>>(
             "/api/registrations/pending",
@@ -145,12 +186,9 @@ export default function Dashboard({
           showRecentLogs
             ? fetchApiList<BacklogRecord>("/api/backlogs", token)
             : Promise.resolve([]),
-          fetch(
-            `${API_BASE_URL}/api/employees/status-counts?include_archived=true`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            },
-          ).then(async (response) => {
+          fetch(statusCountsUrl, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then(async (response) => {
             const payload = (await response
               .json()
               .catch(() => ({}))) as EmployeeStatusCountsResponse;

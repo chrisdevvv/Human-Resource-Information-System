@@ -20,6 +20,14 @@ type SchoolApiResponse = {
   message?: string;
 };
 
+type SchoolByIdResponse = {
+  data?: {
+    id?: number;
+    school_name?: string;
+  };
+  message?: string;
+};
+
 type CreateEmployeeResponse = {
   message?: string;
 };
@@ -38,6 +46,13 @@ const NAME_PATTERN = /^[A-Za-z.\s]+$/;
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
+const normalizeRole = (value: unknown): string =>
+  String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .replace(/-/g, "_");
+
 export default function AddEmployeeModal({
   isOpen,
   onClose,
@@ -52,6 +67,9 @@ export default function AddEmployeeModal({
   const [schoolId, setSchoolId] = useState<number | null>(null);
   const [schoolInputValue, setSchoolInputValue] = useState("");
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState("");
+  const [assignedSchoolId, setAssignedSchoolId] = useState<number | null>(null);
+  const [assignedSchoolName, setAssignedSchoolName] = useState("");
 
   const [schools, setSchools] = useState<School[]>([]);
   const [schoolsLoading, setSchoolsLoading] = useState(false);
@@ -75,6 +93,54 @@ export default function AddEmployeeModal({
 
   useEffect(() => {
     if (!isOpen) {
+      return;
+    }
+
+    try {
+      const rawUser = localStorage.getItem("user");
+      if (!rawUser) {
+        setCurrentUserRole("");
+        setAssignedSchoolId(null);
+        setAssignedSchoolName("");
+        return;
+      }
+
+      const parsed = JSON.parse(rawUser) as {
+        role?: string;
+        school_id?: number | string | null;
+        schoolId?: number | string | null;
+        school_name?: string | null;
+        schoolName?: string | null;
+      };
+
+      const normalizedRole = normalizeRole(parsed.role);
+      const resolvedSchoolId = Number(parsed.school_id ?? parsed.schoolId);
+      const resolvedSchoolName = String(
+        parsed.school_name || parsed.schoolName || "",
+      ).trim();
+
+      setCurrentUserRole(normalizedRole);
+      setAssignedSchoolId(
+        Number.isFinite(resolvedSchoolId) && resolvedSchoolId > 0
+          ? resolvedSchoolId
+          : null,
+      );
+      setAssignedSchoolName(resolvedSchoolName);
+    } catch {
+      setCurrentUserRole("");
+      setAssignedSchoolId(null);
+      setAssignedSchoolName("");
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    if (currentUserRole !== "SUPER_ADMIN") {
+      setSchools([]);
+      setSchoolsLoading(false);
       return;
     }
 
@@ -115,7 +181,75 @@ export default function AddEmployeeModal({
     };
 
     loadSchools();
-  }, [isOpen]);
+  }, [isOpen, currentUserRole]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    if (!["ADMIN", "DATA_ENCODER"].includes(currentUserRole)) {
+      return;
+    }
+
+    if (!assignedSchoolId || assignedSchoolName) {
+      return;
+    }
+
+    let isDisposed = false;
+
+    const loadAssignedSchoolName = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          return;
+        }
+
+        const response = await fetch(
+          `${API_BASE}/api/schools/${assignedSchoolId}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        const body = (await response
+          .json()
+          .catch(() => ({}))) as SchoolByIdResponse;
+        if (!response.ok) {
+          return;
+        }
+
+        const fetchedName = String(body.data?.school_name || "").trim();
+        if (!isDisposed && fetchedName) {
+          setAssignedSchoolName(fetchedName);
+        }
+      } catch {
+        // Keep fallback label when school lookup fails.
+      }
+    };
+
+    loadAssignedSchoolName();
+
+    return () => {
+      isDisposed = true;
+    };
+  }, [isOpen, currentUserRole, assignedSchoolId, assignedSchoolName]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    if (["ADMIN", "DATA_ENCODER"].includes(currentUserRole)) {
+      setSchoolId(assignedSchoolId);
+      setSchoolInputValue(assignedSchoolName);
+      setShowSchoolDropdown(false);
+    }
+  }, [isOpen, currentUserRole, assignedSchoolId, assignedSchoolName]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -126,6 +260,9 @@ export default function AddEmployeeModal({
       setSchoolId(null);
       setSchoolInputValue("");
       setShowSchoolDropdown(false);
+      setCurrentUserRole("");
+      setAssignedSchoolId(null);
+      setAssignedSchoolName("");
       setSchools([]);
       setSchoolsLoading(false);
       setSubmitLoading(false);
@@ -157,6 +294,11 @@ export default function AddEmployeeModal({
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (!["SUPER_ADMIN", "ADMIN", "DATA_ENCODER"].includes(currentUserRole)) {
+      setErrorMessage("Your role is not allowed to add employees.");
+      return;
+    }
+
     if (!firstName.trim() || !lastName.trim()) {
       setErrorMessage("First name and last name are required.");
       return;
@@ -183,16 +325,36 @@ export default function AddEmployeeModal({
       return;
     }
 
-    if (!schoolId) {
-      setErrorMessage("Please select a valid school from the dropdown.");
-      return;
-    }
-
     setErrorMessage(null);
-    const selectedSchool = schools.find((s) => s.id === schoolId);
-    if (!selectedSchool) {
-      setErrorMessage("Invalid school selection.");
-      return;
+    let resolvedSchoolId: number | null = null;
+    let resolvedSchoolName = "";
+
+    if (["ADMIN", "DATA_ENCODER"].includes(currentUserRole)) {
+      resolvedSchoolId = assignedSchoolId;
+      resolvedSchoolName = assignedSchoolName;
+
+      if (!resolvedSchoolId) {
+        setErrorMessage("Your account has no assigned school.");
+        return;
+      }
+
+      if (!resolvedSchoolName) {
+        resolvedSchoolName = "Assigned school";
+      }
+    } else {
+      if (!schoolId) {
+        setErrorMessage("Please select a valid school from the dropdown.");
+        return;
+      }
+
+      const selectedSchool = schools.find((s) => s.id === schoolId);
+      if (!selectedSchool) {
+        setErrorMessage("Invalid school selection.");
+        return;
+      }
+
+      resolvedSchoolId = selectedSchool.id;
+      resolvedSchoolName = selectedSchool.school_name;
     }
 
     setPendingPayload({
@@ -200,8 +362,8 @@ export default function AddEmployeeModal({
       last_name: lastName.trim(),
       email: email.trim(),
       employee_type: employeeType,
-      school_id: schoolId,
-      school_name: selectedSchool.school_name,
+      school_id: resolvedSchoolId,
+      school_name: resolvedSchoolName,
     } as PendingEmployeePayload);
     setIsConfirmOpen(true);
   };
@@ -362,65 +524,80 @@ export default function AddEmployeeModal({
               <label className="block text-sm font-medium text-gray-600">
                 School
               </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={schoolInputValue}
-                  onChange={(e) => {
-                    setSchoolInputValue(e.target.value);
-                    setShowSchoolDropdown(true);
-                  }}
-                  onFocus={() => setShowSchoolDropdown(true)}
-                  onBlur={() => {
-                    // Delay closing to allow click on option
-                    setTimeout(() => setShowSchoolDropdown(false), 150);
-                  }}
-                  disabled={schoolsLoading}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  placeholder={
-                    schoolsLoading
-                      ? "Loading schools..."
-                      : "Type to search schools..."
-                  }
-                />
-                {showSchoolDropdown && (
-                  <div className="absolute top-full mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                    {schoolsLoading ? (
-                      <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                        Loading schools...
-                      </div>
-                    ) : schools.length === 0 ? (
-                      <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                        No schools available
-                      </div>
-                    ) : filteredSchools.length > 0 ? (
-                      filteredSchools.map((school) => (
-                        <button
-                          key={school.id}
-                          type="button"
-                          onClick={() => {
-                            setSchoolId(school.id);
-                            setSchoolInputValue(school.school_name);
-                            setShowSchoolDropdown(false);
-                          }}
-                          className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-50 transition ${
-                            schoolId === school.id
-                              ? "bg-blue-100 font-medium text-blue-700"
-                              : "text-gray-700"
-                          }`}
-                        >
-                          {school.school_name}
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                        No schools match "{schoolInputValue}"
-                      </div>
-                    )}
+              {["ADMIN", "DATA_ENCODER"].includes(currentUserRole) ? (
+                <>
+                  <div className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+                    {assignedSchoolName ||
+                      (assignedSchoolId
+                        ? "Loading assigned school..."
+                        : "No assigned school")}
                   </div>
-                )}
-              </div>
-              {schoolId && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    New employees created here are automatically assigned to
+                    your school.
+                  </p>
+                </>
+              ) : (
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={schoolInputValue}
+                    onChange={(e) => {
+                      setSchoolInputValue(e.target.value);
+                      setShowSchoolDropdown(true);
+                    }}
+                    onFocus={() => setShowSchoolDropdown(true)}
+                    onBlur={() => {
+                      // Delay closing to allow click on option
+                      setTimeout(() => setShowSchoolDropdown(false), 150);
+                    }}
+                    disabled={schoolsLoading}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    placeholder={
+                      schoolsLoading
+                        ? "Loading schools..."
+                        : "Type to search schools..."
+                    }
+                  />
+                  {showSchoolDropdown && (
+                    <div className="absolute top-full mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                      {schoolsLoading ? (
+                        <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                          Loading schools...
+                        </div>
+                      ) : schools.length === 0 ? (
+                        <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                          No schools available
+                        </div>
+                      ) : filteredSchools.length > 0 ? (
+                        filteredSchools.map((school) => (
+                          <button
+                            key={school.id}
+                            type="button"
+                            onClick={() => {
+                              setSchoolId(school.id);
+                              setSchoolInputValue(school.school_name);
+                              setShowSchoolDropdown(false);
+                            }}
+                            className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-50 transition ${
+                              schoolId === school.id
+                                ? "bg-blue-100 font-medium text-blue-700"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            {school.school_name}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                          No schools match "{schoolInputValue}"
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+              {schoolId && currentUserRole === "SUPER_ADMIN" && (
                 <p className="mt-1 text-xs text-green-700">✓ School selected</p>
               )}
             </div>

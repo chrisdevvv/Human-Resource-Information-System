@@ -2,34 +2,19 @@
 
 import React, { useEffect, useState } from "react";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
-import ConfirmationModal from "../../components/ConfirmationModal";
+import ConfirmationModal from "../../super-admin/components/ConfirmationModal";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
 const FORCE_PASSWORD_CHANGE_KEY = "forcePasswordChange:addedUsers";
 
-type AddUserModalProps = {
+type EncoderAddUserModalProps = {
   onClose: () => void;
   onSuccess: () => void;
 };
 
 type FormStep = 1 | 2;
-
-type SchoolApiItem = {
-  id?: unknown;
-  school_name?: unknown;
-  schoolName?: unknown;
-};
-
-type SchoolOption = {
-  id: number;
-  school_name: string;
-};
-
-type SchoolListResponse = {
-  data?: SchoolApiItem[];
-};
 
 function validateEmail(value: string) {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -72,6 +57,14 @@ function validatePassword(value: string) {
   return { valid: true, message: "" };
 }
 
+function normalizeRole(value: unknown): string {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .replace(/-/g, "_");
+}
+
 function addForcedPasswordChangeEmail(email: string) {
   try {
     const normalizedEmail = email.trim().toLowerCase();
@@ -93,24 +86,24 @@ function addForcedPasswordChangeEmail(email: string) {
   }
 }
 
-export default function AddUserModal({
+export default function EncoderAddUserModal({
   onClose,
   onSuccess,
-}: AddUserModalProps) {
+}: EncoderAddUserModalProps) {
   const [step, setStep] = useState<FormStep>(1);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [schoolId, setSchoolId] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [assignedSchoolName, setAssignedSchoolName] = useState("");
+  const [currentUserRole, setCurrentUserRole] = useState("");
 
   const [firstNameError, setFirstNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
   const [emailError, setEmailError] = useState("");
-  const [schoolError, setSchoolError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
 
@@ -118,67 +111,29 @@ export default function AddUserModal({
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [schoolOptions, setSchoolOptions] = useState<SchoolOption[]>([]);
-  const [schoolsLoading, setSchoolsLoading] = useState(false);
 
   useEffect(() => {
-    let disposed = false;
-
-    const loadSchools = async () => {
-      try {
-        setSchoolsLoading(true);
-        const response = await fetch(`${API_BASE_URL}/api/schools/public/list`);
-        if (!response.ok) {
-          throw new Error("Failed to load schools");
-        }
-
-        const payload = (await response
-          .json()
-          .catch(() => ({}))) as SchoolListResponse;
-        const rows = Array.isArray(payload.data) ? payload.data : [];
-
-        const options: SchoolOption[] = rows
-          .map((row) => {
-            const rawId = Number(row.id);
-            const rawName =
-              typeof row.school_name === "string"
-                ? row.school_name
-                : typeof row.schoolName === "string"
-                  ? row.schoolName
-                  : "";
-
-            const normalizedName = rawName.trim();
-            if (!Number.isFinite(rawId) || rawId <= 0 || !normalizedName) {
-              return null;
-            }
-
-            return {
-              id: rawId,
-              school_name: normalizedName,
-            };
-          })
-          .filter((item): item is SchoolOption => item !== null)
-          .sort((a, b) => a.school_name.localeCompare(b.school_name));
-
-        if (!disposed) {
-          setSchoolOptions(options);
-        }
-      } catch {
-        if (!disposed) {
-          setSchoolOptions([]);
-        }
-      } finally {
-        if (!disposed) {
-          setSchoolsLoading(false);
-        }
+    try {
+      const rawUser = localStorage.getItem("user");
+      if (!rawUser) {
+        setCurrentUserRole("");
+        return;
       }
-    };
 
-    loadSchools();
-
-    return () => {
-      disposed = true;
-    };
+      const parsed = JSON.parse(rawUser) as {
+        role?: string;
+        school_name?: string;
+        schoolName?: string;
+      };
+      setCurrentUserRole(normalizeRole(parsed.role));
+      const schoolName = String(
+        parsed.school_name || parsed.schoolName || "",
+      ).trim();
+      setAssignedSchoolName(schoolName);
+    } catch {
+      setCurrentUserRole("");
+      setAssignedSchoolName("");
+    }
   }, []);
 
   const validateDetailsStep = () => {
@@ -215,19 +170,12 @@ export default function AddUserModal({
       setEmailError("");
     }
 
-    if (!schoolId) {
-      setSchoolError("School is required");
+    if (!assignedSchoolName) {
+      setError("Your account has no assigned school.");
       hasError = true;
-    } else if (
-      !schoolOptions.some((option) => String(option.id) === schoolId)
-    ) {
-      setSchoolError("Please select a valid school from the dropdown");
-      hasError = true;
-    } else {
-      setSchoolError("");
     }
 
-    if (hasError) {
+    if (hasError && !error) {
       setError("Please correct the errors before continuing.");
     }
 
@@ -285,44 +233,12 @@ export default function AddUserModal({
       setLoading(true);
       setError("");
 
-      const selectedSchool = schoolOptions.find(
-        (option) => String(option.id) === schoolId,
-      );
-
-      if (!selectedSchool) {
-        throw new Error("Please select a valid school from the dropdown.");
+      if (!assignedSchoolName) {
+        throw new Error("Your account has no assigned school.");
       }
 
-      const registerResponse = await fetch(
-        `${API_BASE_URL}/api/auth/register`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            first_name: firstName.trim(),
-            last_name: lastName.trim(),
-            email: email.trim(),
-            password,
-            school_name: selectedSchool.school_name,
-            requested_role: "DATA_ENCODER",
-            suppress_pending_email: true,
-          }),
-        },
-      );
-
-      const registerPayload = await registerResponse
-        .json()
-        .catch(() => ({}) as { message?: string; requestId?: number });
-
-      if (!registerResponse.ok) {
-        throw new Error(
-          registerPayload.message || "Failed to submit registration request.",
-        );
-      }
-
-      const requestId = registerPayload.requestId;
-      if (!requestId) {
-        throw new Error("Missing request ID from registration response.");
+      if (!["ADMIN", "DATA_ENCODER"].includes(currentUserRole)) {
+        throw new Error("Your role is not allowed to add users.");
       }
 
       const token = localStorage.getItem("authToken");
@@ -330,8 +246,8 @@ export default function AddUserModal({
         throw new Error("No authentication token found.");
       }
 
-      const approveResponse = await fetch(
-        `${API_BASE_URL}/api/registrations/${requestId}/approve`,
+      const createResponse = await fetch(
+        `${API_BASE_URL}/api/users/admin-create`,
         {
           method: "POST",
           headers: {
@@ -339,21 +255,20 @@ export default function AddUserModal({
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            approved_role: "DATA_ENCODER",
-            temporary_password: password,
-            suppress_approved_email: true,
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            email: email.trim(),
+            password,
           }),
         },
       );
 
-      const approvePayload = await approveResponse
+      const createPayload = await createResponse
         .json()
         .catch(() => ({}) as { message?: string });
 
-      if (!approveResponse.ok) {
-        throw new Error(
-          approvePayload.message || "Failed to approve new user.",
-        );
+      if (!createResponse.ok) {
+        throw new Error(createPayload.message || "Failed to create new user.");
       }
 
       addForcedPasswordChangeEmail(email);
@@ -444,29 +359,15 @@ export default function AddUserModal({
 
               <div className="md:col-span-2">
                 <label className="text-sm font-medium text-gray-700">
-                  School
+                  Assigned School
                 </label>
-                <select
-                  value={schoolId}
-                  onChange={(e) => {
-                    setSchoolId(e.target.value);
-                    if (schoolError) setSchoolError("");
-                  }}
-                  disabled={schoolsLoading}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white cursor-pointer disabled:cursor-not-allowed"
-                >
-                  <option value="">
-                    {schoolsLoading ? "Loading schools..." : "Select a school"}
-                  </option>
-                  {schoolOptions.map((option) => (
-                    <option key={option.id} value={String(option.id)}>
-                      {option.school_name}
-                    </option>
-                  ))}
-                </select>
-                {schoolError && (
-                  <p className="text-xs text-red-600 mt-1">{schoolError}</p>
-                )}
+                <div className="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                  {assignedSchoolName || "No assigned school"}
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  New users created here are automatically assigned to your
+                  school.
+                </p>
               </div>
             </div>
           )}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
 import ConfirmationModal from "./ConfirmationModal";
 
@@ -10,6 +10,15 @@ const API_BASE_URL =
 type AddUserModalProps = {
   onClose: () => void;
   onSuccess: () => void;
+};
+
+type SchoolOption = {
+  id: number;
+  school_name: string;
+};
+
+type SchoolListResponse = {
+  data?: SchoolOption[];
 };
 
 function validateEmail(value: string) {
@@ -60,7 +69,7 @@ export default function AddUserModal({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [school, setSchool] = useState("");
+  const [schoolId, setSchoolId] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -77,6 +86,52 @@ export default function AddUserModal({
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [schoolOptions, setSchoolOptions] = useState<SchoolOption[]>([]);
+  const [schoolsLoading, setSchoolsLoading] = useState(false);
+
+  useEffect(() => {
+    let isDisposed = false;
+
+    const loadSchools = async () => {
+      try {
+        setSchoolsLoading(true);
+        const response = await fetch(
+          `${API_BASE_URL}/api/schools/public/list`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch schools");
+        }
+
+        const payload = (await response
+          .json()
+          .catch(() => ({}))) as SchoolListResponse;
+
+        if (!isDisposed) {
+          const options = Array.isArray(payload.data) ? payload.data : [];
+          setSchoolOptions(options);
+        }
+      } catch {
+        if (!isDisposed) {
+          setSchoolOptions([]);
+        }
+      } finally {
+        if (!isDisposed) {
+          setSchoolsLoading(false);
+        }
+      }
+    };
+
+    loadSchools();
+
+    return () => {
+      isDisposed = true;
+    };
+  }, []);
 
   const validateForm = () => {
     let hasError = false;
@@ -112,8 +167,13 @@ export default function AddUserModal({
       setEmailError("");
     }
 
-    if (!school.trim()) {
+    if (!schoolId) {
       setSchoolError("School is required");
+      hasError = true;
+    } else if (
+      !schoolOptions.some((option) => String(option.id) === schoolId)
+    ) {
+      setSchoolError("Please select a valid school from the dropdown");
       hasError = true;
     } else {
       setSchoolError("");
@@ -159,6 +219,14 @@ export default function AddUserModal({
       setLoading(true);
       setError("");
 
+      const selectedSchool = schoolOptions.find(
+        (option) => String(option.id) === schoolId,
+      );
+
+      if (!selectedSchool) {
+        throw new Error("Please select a valid school from the dropdown.");
+      }
+
       const registerResponse = await fetch(
         `${API_BASE_URL}/api/auth/register`,
         {
@@ -169,7 +237,7 @@ export default function AddUserModal({
             last_name: lastName.trim(),
             email: email.trim(),
             password,
-            school_name: school.trim(),
+            school_name: selectedSchool.school_name,
             requested_role: "DATA_ENCODER",
             suppress_pending_email: true,
           }),
@@ -308,15 +376,24 @@ export default function AddUserModal({
               <label className="text-sm font-medium text-gray-700">
                 School
               </label>
-              <input
-                value={school}
+              <select
+                value={schoolId}
                 onChange={(e) => {
-                  setSchool(e.target.value);
+                  setSchoolId(e.target.value);
                   if (schoolError) setSchoolError("");
                 }}
-                placeholder="School name"
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700"
-              />
+                disabled={schoolsLoading}
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white cursor-pointer disabled:cursor-not-allowed"
+              >
+                <option value="">
+                  {schoolsLoading ? "Loading schools..." : "Select a school"}
+                </option>
+                {schoolOptions.map((option) => (
+                  <option key={option.id} value={String(option.id)}>
+                    {option.school_name}
+                  </option>
+                ))}
+              </select>
               {schoolError && (
                 <p className="text-xs text-red-600 mt-1">{schoolError}</p>
               )}

@@ -34,14 +34,14 @@ router.post(
 router.get(
   "/",
   authMiddleware,
-  roleAuthMiddleware(["admin", "super-admin"]),
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
   validateRequest({ query: usersQuerySchema }),
   getAllUsers,
 );
 router.get(
   "/:id",
   authMiddleware,
-  roleAuthMiddleware(["admin", "super-admin"]),
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
   validateRequest({ params: idParamSchema }),
   getUserById,
 );

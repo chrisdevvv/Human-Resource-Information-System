@@ -7,6 +7,7 @@ import {
   ArrowUpAZ,
   ArrowDownAZ,
   Settings,
+  Eye,
 } from "lucide-react";
 import PendingAccounts from "./PendingAccounts";
 import UserSettingModal from "../../components/UserSettingModal";
@@ -35,6 +36,14 @@ const normalizeIsActive = (value: unknown): boolean => {
   return value === true || value === 1 || value === "1" || value === "true";
 };
 
+const normalizeRole = (value: unknown): string => {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .replace(/-/g, "_");
+};
+
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 export default function UserRoles() {
@@ -56,6 +65,9 @@ export default function UserRoles() {
   const [settingsTarget, setSettingsTarget] = useState<User | null>(null);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState<string>("");
+  const [currentUserSchoolId, setCurrentUserSchoolId] = useState<number | null>(
+    null,
+  );
   const [schoolFilter, setSchoolFilter] = useState<string>("ALL");
   const [schools, setSchools] = useState<SchoolOption[]>([]);
   const [schoolsLoading, setSchoolsLoading] = useState(false);
@@ -68,10 +80,17 @@ export default function UserRoles() {
 
       const parsed = JSON.parse(rawUser) as {
         role?: string;
+        school_id?: number | string | null;
+        schoolId?: number | string | null;
       };
-      setCurrentUserRole(String(parsed.role || "").toUpperCase());
+      setCurrentUserRole(normalizeRole(parsed.role));
+      const schoolId = Number(parsed.school_id ?? parsed.schoolId);
+      setCurrentUserSchoolId(
+        Number.isFinite(schoolId) && schoolId > 0 ? schoolId : null,
+      );
     } catch {
       setCurrentUserRole("");
+      setCurrentUserSchoolId(null);
     }
   }, []);
 
@@ -146,7 +165,14 @@ export default function UserRoles() {
         role: item.role,
         isActive: normalizeIsActive(item.is_active),
       }));
-      setUserData(formatted);
+      const scopedData =
+        currentUserRole !== "SUPER_ADMIN" && currentUserSchoolId
+          ? formatted.filter(
+              (item: User) =>
+                Number(item.schoolId) === Number(currentUserSchoolId),
+            )
+          : formatted;
+      setUserData(scopedData);
       setUserError(null);
     } catch (err) {
       setUserError(err instanceof Error ? err.message : "An error occurred");
@@ -169,7 +195,7 @@ export default function UserRoles() {
 
     return () => window.clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUserRole, schoolFilter]);
+  }, [currentUserRole, currentUserSchoolId, schoolFilter]);
 
   const filteredUsers = userData
     .filter((user) => {
@@ -466,9 +492,11 @@ export default function UserRoles() {
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => setDetailsTargetId(user.id)}
-                              className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition text-xs font-semibold cursor-pointer"
+                              className="p-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer"
+                              aria-label={`View details for ${user.firstName} ${user.lastName}`}
+                              title="View details"
                             >
-                              Details
+                              <Eye size={14} />
                             </button>
                             <button
                               onClick={() => setSettingsTarget(user)}

@@ -42,6 +42,41 @@ const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
+type SessionUser = {
+  role?: string;
+  school_id?: number | string | null;
+  schoolId?: number | string | null;
+};
+
+const normalizeRole = (role: unknown) =>
+  String(role || "")
+    .trim()
+    .toUpperCase()
+    .replace(/-/g, "_");
+
+const getScopedEmployeeEndpoint = () => {
+  const rawUser = localStorage.getItem("user");
+  if (!rawUser) {
+    return "/api/employees/";
+  }
+
+  try {
+    const parsed = JSON.parse(rawUser) as SessionUser;
+    const normalizedRole = normalizeRole(parsed.role);
+    const schoolId = Number(parsed.school_id ?? parsed.schoolId);
+    const isSchoolScopedRole =
+      normalizedRole === "ADMIN" || normalizedRole === "DATA_ENCODER";
+
+    if (isSchoolScopedRole && Number.isFinite(schoolId) && schoolId > 0) {
+      return `/api/employees/school/${schoolId}`;
+    }
+  } catch {
+    // Fall back to broad endpoint when user payload is malformed.
+  }
+
+  return "/api/employees/";
+};
+
 const toBoolean = (value: unknown) => {
   if (value === true || value === 1 || value === "1") return true;
   if (typeof value === "string") {
@@ -117,7 +152,9 @@ export default function EmployeeLeaveManagement() {
         throw new Error("No authentication token found.");
       }
 
-      const response = await fetch(`${API_BASE}/api/employees/`, {
+      const scopedEndpoint = getScopedEmployeeEndpoint();
+
+      const response = await fetch(`${API_BASE}${scopedEndpoint}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -275,6 +312,7 @@ export default function EmployeeLeaveManagement() {
       employeeId: employee.employeeId,
       fullName: employee.fullName,
       employeeType: employee.employeeType,
+      schoolName: employee.schoolName,
       periodOfLeave: employee.periodOfLeave,
       particulars: employee.particulars,
       balVl: employee.balVl,
