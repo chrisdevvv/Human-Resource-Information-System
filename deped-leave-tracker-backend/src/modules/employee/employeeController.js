@@ -14,6 +14,14 @@ const isAdminLevel = (role) => {
   return normalized === "ADMIN" || normalized === "SUPER_ADMIN";
 };
 
+const isSchoolScopedWriteRole = (role) => {
+  const normalized = String(role || "").toUpperCase();
+  return normalized === "ADMIN" || normalized === "DATA_ENCODER";
+};
+
+const isSameSchool = (userSchoolId, targetSchoolId) =>
+  Number(userSchoolId) > 0 && Number(userSchoolId) === Number(targetSchoolId);
+
 const getAllEmployees = async (req, res) => {
   try {
     const { page, pageSize, include_archived, on_leave } = req.query;
@@ -118,6 +126,15 @@ const getEmployeeStatusCounts = async (req, res) => {
 
 const createEmployee = async (req, res) => {
   try {
+    if (isSchoolScopedWriteRole(req.user?.role)) {
+      if (!isSameSchool(req.user?.school_id, req.body?.school_id)) {
+        return res.status(403).json({
+          message:
+            "You can only create employee records under your assigned school",
+        });
+      }
+    }
+
     const result = await Employee.create(req.body);
     const { first_name, last_name, employee_type, school_id } = req.body;
     await Backlog.record({
@@ -140,6 +157,29 @@ const createEmployee = async (req, res) => {
 
 const updateEmployee = async (req, res) => {
   try {
+    const existing = await Employee.getById(req.params.id, {
+      includeArchived: true,
+    });
+    if (!existing) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    if (isSchoolScopedWriteRole(req.user?.role)) {
+      if (!isSameSchool(req.user?.school_id, existing.school_id)) {
+        return res.status(403).json({
+          message:
+            "You can only edit employee records under your assigned school",
+        });
+      }
+
+      if (!isSameSchool(req.user?.school_id, req.body?.school_id)) {
+        return res.status(403).json({
+          message:
+            "You can only assign employee records to your assigned school",
+        });
+      }
+    }
+
     const result = await Employee.update(req.params.id, req.body);
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Employee not found" });
@@ -170,6 +210,16 @@ const deleteEmployee = async (req, res) => {
     });
     if (!employee)
       return res.status(404).json({ message: "Employee not found" });
+
+    if (isSchoolScopedWriteRole(req.user?.role)) {
+      if (!isSameSchool(req.user?.school_id, employee.school_id)) {
+        return res.status(403).json({
+          message:
+            "You can only delete employee records under your assigned school",
+        });
+      }
+    }
+
     const result = await Employee.delete(req.params.id);
     await Backlog.record({
       user_id: req.user.id,

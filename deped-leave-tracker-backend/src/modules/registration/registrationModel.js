@@ -1,7 +1,7 @@
 const pool = require("../../config/db");
 
 const Registration = {
-  getAll: async (status = null) => {
+  getAll: async (status = null, options = {}) => {
     let query = `
             SELECT rr.id, rr.first_name, rr.last_name, rr.email, rr.school_name, rr.requested_role,
                    rr.approved_role, rr.status, rr.rejection_reason,
@@ -12,20 +12,45 @@ const Registration = {
             LEFT JOIN users u ON rr.reviewed_by = u.id
         `;
     const params = [];
+    const whereParts = [];
+
     if (status) {
-      query += " WHERE rr.status = ?";
+      whereParts.push("rr.status = ?");
       params.push(status);
     }
+
+    if (options.schoolName) {
+      whereParts.push("LOWER(TRIM(rr.school_name)) = LOWER(TRIM(?))");
+      params.push(options.schoolName);
+    }
+
+    if (whereParts.length > 0) {
+      query += ` WHERE ${whereParts.join(" AND ")}`;
+    }
+
     query += " ORDER BY rr.created_at DESC";
     const [rows] = await pool.promise().query(query, params);
     return rows;
   },
 
-  getById: async (id) => {
+  getById: async (id, options = {}) => {
+    let query = "SELECT * FROM registration_requests WHERE id = ?";
+    const params = [id];
+
+    if (options.schoolName) {
+      query += " AND LOWER(TRIM(school_name)) = LOWER(TRIM(?))";
+      params.push(options.schoolName);
+    }
+
+    const [rows] = await pool.promise().query(query, params);
+    return rows[0];
+  },
+
+  getSchoolNameById: async (school_id) => {
     const [rows] = await pool
       .promise()
-      .query("SELECT * FROM registration_requests WHERE id = ?", [id]);
-    return rows[0];
+      .query("SELECT school_name FROM schools WHERE id = ? LIMIT 1", [school_id]);
+    return rows[0]?.school_name || null;
   },
 
   approve: async (

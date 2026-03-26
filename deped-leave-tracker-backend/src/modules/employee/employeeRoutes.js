@@ -57,25 +57,25 @@ router.get(
   getEmployeeById,
 );
 
-// Write operations - Admin and Super Admin only
+// Write operations - Admin, Data Encoder, and Super Admin
 router.post(
   "/",
   authMiddleware,
-  roleAuthMiddleware(["admin", "super-admin"]),
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
   validateRequest({ body: employeeBodySchema }),
   createEmployee,
 );
 router.put(
   "/:id",
   authMiddleware,
-  roleAuthMiddleware(["admin", "super-admin"]),
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
   validateRequest({ params: idParamSchema, body: employeeBodySchema }),
   updateEmployee,
 );
 router.delete(
   "/:id",
   authMiddleware,
-  roleAuthMiddleware(["admin", "super-admin"]),
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
   validateRequest({ params: idParamSchema }),
   deleteEmployee,
 );
