@@ -1,102 +1,175 @@
-'use client';
+"use client";
 // Component: ForgotModal
 // Filename: ForgotModal.tsx
-// Purpose: Multi-step reset password modal (email -> simulate sent -> change password)
-import React, { useState } from 'react';
-import { Mail, Lock } from '../../assets/icons';
+// Purpose: Send password reset email
+import React, { useEffect, useState } from "react";
+import { Mail } from "../../assets/icons";
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
 type Props = { visible: boolean; onClose: () => void };
 
 export default function ForgotModal({ visible, onClose }: Props) {
-  const [step, setStep] = useState<'email' | 'sent' | 'old' | 'new'>('email');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
-  function sendReset() {
-    if (!email) return;
-    setStep('sent');
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [visible]);
+
+  function validateEmail(email: string) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  }
+
+  async function sendResetEmail() {
+    setEmailError("");
+    setSuccessMessage("");
+
+    if (!email.trim()) {
+      setEmailError("Email is required");
+      return;
+    }
+    if (!validateEmail(email)) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setEmailError(data.message || "Failed to send reset email");
+        return;
+      }
+
+      setSuccessMessage(
+        "Reset link has been sent to your email. Please check your inbox.",
+      );
+      setTimeout(() => {
+        resetForm();
+        onClose();
+      }, 3000);
+    } catch (err) {
+      setEmailError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function resetForm() {
+    setEmail("");
+    setEmailError("");
+    setSuccessMessage("");
   }
 
   return (
-    <div className={`${visible ? 'flex' : 'hidden'} fixed inset-0 items-center justify-center bg-black/40 z-50`} aria-hidden={!visible}>
-      <div className="relative bg-white p-6 rounded-lg w-full max-w-lg border-2 border-blue-600 shadow-lg">
-        <button className="absolute right-2 top-2 text-xl" id="forgotClose" onClick={onClose}>
+    <div
+      className={`${visible ? "flex" : "hidden"} fixed inset-0 items-center justify-center bg-black/40 z-50 px-4`}
+      aria-hidden={!visible}
+    >
+      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6 shadow-lg sm:p-8">
+        <button
+          className="absolute right-2 top-2 text-xl hover:bg-red-500 hover:text-white rounded p-1 transition"
+          id="forgotClose"
+          onClick={() => {
+            resetForm();
+            onClose();
+          }}
+        >
           &times;
         </button>
-        <h3 className="text-center text-lg font-semibold">Reset Password</h3>
+        <h3 className="text-center text-lg font-semibold text-sky-800">
+          Reset Password
+        </h3>
 
-        {step === 'email' && (
-          <div id="forgotStepEmail" className="mt-3">
-            <label className="block">Enter your account email</label>
-            <div className="flex items-center gap-3 mt-2">
-              <Mail className="text-blue-600" size={18} />
-              <input id="forgotEmail" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="flex-1 px-3 py-2 border rounded-md" />
+        <div id="forgotStepEmail" className="mt-3">
+          {successMessage ? (
+            <div className="p-4 bg-green-50 border border-green-200 rounded-md mb-4">
+              <p className="text-green-700">{successMessage}</p>
             </div>
-            <div className="flex gap-3 justify-center mt-4">
-              <button id="sendReset" className="px-4 py-2 bg-blue-600 text-white rounded-md" onClick={sendReset}>
-                Send reset email
-              </button>
-              <button id="cancelForgot" className="px-4 py-2 border rounded-md" onClick={onClose}>
-                Cancel
-              </button>
-            </div>
-            <div id="forgotMsg" className="text-red-600 text-sm mt-2" />
-          </div>
-        )}
+          ) : (
+            <>
+              <label className="flex items-center gap-2 text-sky-900">
+                <Mail className="text-blue-600" size={18} />
+                Enter your account email <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="forgotEmail"
+                type="email"
+                placeholder="name@deped.gov.ph"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailError) setEmailError("");
+                }}
+                onBlur={() => {
+                  if (!email.trim()) {
+                    setEmailError("Email is required");
+                  } else if (!validateEmail(email)) {
+                    setEmailError("Please enter a valid email address");
+                  } else {
+                    setEmailError("");
+                  }
+                }}
+                className={`mt-2 w-full px-3 py-2 border rounded-md text-gray-800 placeholder:text-gray-500 ${
+                  emailError ? "border-red-500" : ""
+                }`}
+                disabled={isLoading}
+              />
+              {emailError && (
+                <p className="text-sm text-red-600 mt-1">{emailError}</p>
+              )}
+            </>
+          )}
 
-        {step === 'sent' && (
-          <div id="forgotStepSent" className="mt-3">
-            <p className="text-gray-500">If an account matched that email, a reset link was sent. (Test mode)</p>
-            <div className="text-center mt-3">
-              <button id="openResetLink" className="px-4 py-2 bg-blue-600 text-white rounded-md" onClick={() => setStep('old')}>
-                Open reset link
-              </button>
-              <button id="cancelForgot2" className="px-4 py-2 border rounded-md ml-2" onClick={onClose}>
-                Cancel
-              </button>
-            </div>
+          <div className="flex flex-col gap-3 items-center mt-4">
+            {!successMessage && (
+              <>
+                <button
+                  id="sendReset"
+                  className="hover:cursor-pointer transition hover:bg-blue-700 px-6 py-2 bg-blue-600 text-white rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={sendResetEmail}
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Sending..." : "Send reset email"}
+                </button>
+                <button
+                  id="cancelForgot"
+                  className="text-black hover:cursor-pointer bg-gray-200 px-6 py-2 border rounded-md w-full hover:bg-gray-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => {
+                    resetForm();
+                    onClose();
+                  }}
+                  disabled={isLoading}
+                >
+                  Cancel
+                </button>
+              </>
+            )}
           </div>
-        )}
-
-        {step === 'old' && (
-          <div id="forgotStep1" className="mt-3">
-            <label className="block">Old password</label>
-            <div className="flex items-center gap-3 mt-2">
-              <Lock className="text-blue-600" size={18} />
-              <input id="oldPassword" type="password" className="flex-1 px-3 py-2 border rounded-md" />
-            </div>
-            <div className="flex gap-3 justify-center mt-4">
-              <button id="verifyOld" className="px-4 py-2 bg-blue-600 text-white rounded-md" onClick={() => setStep('new')}>
-                Verify
-              </button>
-              <button id="cancelForgot3" className="px-4 py-2 border rounded-md" onClick={onClose}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 'new' && (
-          <div id="forgotStep2" className="mt-3">
-            <label className="block">New password</label>
-            <div className="flex items-center gap-3 mt-2">
-              <Lock className="text-blue-600" size={18} />
-              <input id="newPassword" type="password" className="flex-1 px-3 py-2 border rounded-md" />
-            </div>
-            <label className="block mt-2">Confirm new password</label>
-            <div className="flex items-center gap-3 mt-2">
-              <Lock className="text-blue-600" size={18} />
-              <input id="confirmPassword" type="password" className="flex-1 px-3 py-2 border rounded-md" />
-            </div>
-            <div className="flex gap-3 justify-center mt-4">
-              <button id="saveNew" className="px-4 py-2 bg-blue-600 text-white rounded-md" onClick={onClose}>
-                Save
-              </button>
-              <button id="backToOld" className="px-4 py-2 border rounded-md" onClick={() => setStep('old')}>
-                Back
-              </button>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

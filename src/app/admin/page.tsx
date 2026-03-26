@@ -1,7 +1,138 @@
 "use client";
-import React from "react";
-import Admin from "../../frontend/admin";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Admin from "../../frontend/admin/AdminIndex";
+import SidebarIndex from "../../frontend/sidebar/SidebarIndex";
+import SidebarMobile from "../../frontend/sidebar/SidebarMobile";
+import StickyHeader from "../../frontend/components/StickyHeader";
+import { hasAccessToFeature } from "../../frontend/auth/roleAccess";
+
+const ACTIVE_TAB_STORAGE_KEY = "activeTab:admin";
+const ALLOWED_TABS = new Set([
+  "dashboard",
+  "employee-management",
+  "user-roles",
+  "profile-settings",
+]);
 
 export default function Page() {
-  return <Admin />;
+  const router = useRouter();
+  const [role, setRole] = useState("data-encoder");
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  useEffect(() => {
+    const verifyAuth = () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        const raw = localStorage.getItem("user");
+
+        if (!token || !raw) {
+          setIsAuthorized(false);
+          router.replace("/login");
+          return;
+        }
+
+        const u = JSON.parse(raw);
+        // Check if user's role is admin or super-admin
+        const normalizedRole = String(u?.role || "").toLowerCase();
+        if (
+          !normalizedRole.includes("admin") ||
+          normalizedRole.includes("super")
+        ) {
+          // Not admin (or is super-admin, which has its own page)
+          if (normalizedRole.includes("data")) {
+            router.replace("/data-encoder");
+          } else {
+            setIsAuthorized(false);
+            router.replace("/login");
+          }
+          setIsAuthorized(false);
+          router.replace("/login");
+          return;
+        }
+
+        const savedTab = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+        // Validate that the saved tab is allowed for this role
+        const nextTab =
+          savedTab &&
+          ALLOWED_TABS.has(savedTab) &&
+          hasAccessToFeature(u.role, savedTab)
+            ? savedTab
+            : "dashboard";
+        // Verify default tab is accessible
+        if (!hasAccessToFeature(u.role, nextTab)) {
+          setIsAuthorized(false);
+          router.replace("/login");
+          return;
+        }
+
+        setRole(u.role);
+        setActiveTab(nextTab);
+        setIsAuthorized(true);
+      } catch (e) {
+        setIsAuthorized(false);
+        router.replace("/login");
+      }
+    };
+
+    verifyAuth();
+    window.addEventListener("pageshow", verifyAuth);
+    return () => window.removeEventListener("pageshow", verifyAuth);
+  }, [router]);
+
+  if (!isAuthorized) {
+    return null;
+  }
+
+  const handleToggleSidebar = () => {
+    setSidebarCollapsed((current) => !current);
+  };
+
+  const handleTabChange = (tab: string) => {
+    if (!ALLOWED_TABS.has(tab)) {
+      return;
+    }
+    if (!hasAccessToFeature(role, tab)) {
+      return;
+    }
+
+    setActiveTab(tab);
+    localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, tab);
+  };
+
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="md:hidden">
+        <SidebarMobile
+          role={role}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          title="ELMS"
+        />
+      </div>
+
+      <div className="hidden md:flex min-h-screen">
+        <SidebarIndex
+          role={role}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={setSidebarCollapsed}
+        />
+
+        <div className="flex-1 min-w-0">
+          <StickyHeader onMenuClick={handleToggleSidebar} />
+          <main className="p-6 min-h-[calc(100vh-88px)] w-full transition-all duration-300">
+            <Admin activeTab={activeTab} onTabChange={handleTabChange} />
+          </main>
+        </div>
+      </div>
+
+      <main className="md:hidden p-4 min-h-[calc(100vh-72px)] w-full">
+        <Admin activeTab={activeTab} onTabChange={handleTabChange} />
+      </main>
+    </div>
+  );
 }
