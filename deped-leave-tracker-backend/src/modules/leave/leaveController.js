@@ -456,12 +456,16 @@ const isOnLeaveDuringPeriod = (employee, periodStart, periodEnd) => {
 };
 
 const applyMonthlyCredit = async ({ year, month, actorUserId = null } = {}) => {
-  const { period, year: normalizedYear, month: normalizedMonth } = normalizePeriod(
-    year,
-    month,
-  );
+  const {
+    period,
+    year: normalizedYear,
+    month: normalizedMonth,
+  } = normalizePeriod(year, month);
   const today = todayStr();
-  const { monthStart, monthEnd } = getMonthBounds(normalizedYear, normalizedMonth);
+  const { monthStart, monthEnd } = getMonthBounds(
+    normalizedYear,
+    normalizedMonth,
+  );
 
   const employees = await Leave.getAllNonTeachingEmployees();
   const expectedCredit = getMonthlyCreditByEmployeeType("non-teaching");
@@ -795,14 +799,12 @@ const getAllLeaveRequests = async (req, res) => {
     const results = await Leave.getAll(filters, pagination);
 
     if (!pagination) return res.status(200).json({ data: results });
-    return res
-      .status(200)
-      .json({
-        data: results.data,
-        total: results.total,
-        page: results.page,
-        pageSize: results.pageSize,
-      });
+    return res.status(200).json({
+      data: results.data,
+      total: results.total,
+      page: results.page,
+      pageSize: results.pageSize,
+    });
   } catch (err) {
     res
       .status(500)
@@ -840,14 +842,12 @@ const getLeavesByEmployee = async (req, res) => {
       { employee_id: req.params.employee_id },
       pagination,
     );
-    return res
-      .status(200)
-      .json({
-        data: results.data,
-        total: results.total,
-        page: results.page,
-        pageSize: results.pageSize,
-      });
+    return res.status(200).json({
+      data: results.data,
+      total: results.total,
+      page: results.page,
+      pageSize: results.pageSize,
+    });
   } catch (err) {
     res
       .status(500)
@@ -983,7 +983,8 @@ const deleteLeaveRequest = async (req, res) => {
       user_id: req.user.id,
       school_id: null,
       employee_id: leave.employee_id || null,
-      leave_id: Number(req.params.id),
+      // Leave row is already deleted above; keep backlog insert valid.
+      leave_id: null,
       action: "LEAVE_DELETED",
       details: `${leave.period_of_leave} — ${leave.full_name || "employee"}`,
     });

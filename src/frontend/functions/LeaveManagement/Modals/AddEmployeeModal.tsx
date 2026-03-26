@@ -49,7 +49,9 @@ export default function AddEmployeeModal({
   const [employeeType, setEmployeeType] = useState<"teaching" | "non-teaching">(
     "non-teaching",
   );
-  const [schoolName, setSchoolName] = useState("");
+  const [schoolId, setSchoolId] = useState<number | null>(null);
+  const [schoolInputValue, setSchoolInputValue] = useState("");
+  const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
 
   const [schools, setSchools] = useState<School[]>([]);
   const [schoolsLoading, setSchoolsLoading] = useState(false);
@@ -62,6 +64,13 @@ export default function AddEmployeeModal({
     useState<PendingEmployeePayload | null>(null);
   const sortedSchools = [...schools].sort((a, b) =>
     a.school_name.localeCompare(b.school_name),
+  );
+
+  const filteredSchools = sortedSchools.filter((school) =>
+    school.school_name
+      .trim()
+      .toLowerCase()
+      .includes(schoolInputValue.trim().toLowerCase()),
   );
 
   useEffect(() => {
@@ -114,7 +123,9 @@ export default function AddEmployeeModal({
       setLastName("");
       setEmail("");
       setEmployeeType("non-teaching");
-      setSchoolName("");
+      setSchoolId(null);
+      setSchoolInputValue("");
+      setShowSchoolDropdown(false);
       setSchools([]);
       setSchoolsLoading(false);
       setSubmitLoading(false);
@@ -172,26 +183,25 @@ export default function AddEmployeeModal({
       return;
     }
 
-    if (!schoolName.trim()) {
-      setErrorMessage("School is required.");
+    if (!schoolId) {
+      setErrorMessage("Please select a valid school from the dropdown.");
       return;
     }
 
-    const selectedSchool = schools.find(
-      (school) =>
-        school.school_name.trim().toLowerCase() ===
-        schoolName.trim().toLowerCase(),
-    );
-
-    // Allow manual input: if school not found, proceed and create on confirmation.
     setErrorMessage(null);
+    const selectedSchool = schools.find((s) => s.id === schoolId);
+    if (!selectedSchool) {
+      setErrorMessage("Invalid school selection.");
+      return;
+    }
+
     setPendingPayload({
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       email: email.trim(),
       employee_type: employeeType,
-      school_id: selectedSchool ? selectedSchool.id : null,
-      school_name: schoolName.trim(),
+      school_id: schoolId,
+      school_name: selectedSchool.school_name,
     } as PendingEmployeePayload);
     setIsConfirmOpen(true);
   };
@@ -221,77 +231,12 @@ export default function AddEmployeeModal({
         throw new Error("No authentication token found. Please log in again.");
       }
 
-      // Ensure school exists: if no school_id in pending payload, create the school first
-      let schoolId = pendingPayload.school_id ?? null;
-      if (!schoolId) {
-        // Generate a school code from the school name
-        const generateSchoolCode = (name: string): string => {
-          // Use first letters of each word, uppercased
-          const words = name.trim().split(/\s+/);
-          if (words.length === 0) return "SCH";
-
-          // Take first letter of each word up to 4 letters, or the full first word if short
-          if (words.length === 1) {
-            return words[0].slice(0, 4).toUpperCase();
-          }
-
-          const code = words
-            .slice(0, 3)
-            .map((w) => w[0])
-            .join("")
-            .toUpperCase();
-          return code || "SCH";
-        };
-
-        const schoolCode = generateSchoolCode(pendingPayload.school_name);
-
-        const createSchoolRes = await fetch(`${API_BASE}/api/schools/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            school_name: pendingPayload.school_name,
-            school_code: schoolCode,
-          }),
-        });
-
-        const createdSchoolBody = await createSchoolRes
-          .json()
-          .catch(() => ({}));
-        if (!createSchoolRes.ok) {
-          throw new Error(
-            createdSchoolBody.message || "Failed to create school",
-          );
-        }
-
-        const newId =
-          createdSchoolBody?.data?.insertId ||
-          createdSchoolBody?.data?.insert_id ||
-          null;
-        if (newId) {
-          schoolId = Number(newId);
-        } else {
-          // Fallback: reload schools and find by name
-          const reloadRes = await fetch(`${API_BASE}/api/schools/`, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-          });
-          const reloadBody = await reloadRes.json().catch(() => ({}));
-          const options = Array.isArray(reloadBody.data) ? reloadBody.data : [];
-          setSchools(options);
-          const found = options.find(
-            (s: any) =>
-              s.school_name.trim().toLowerCase() ===
-              pendingPayload.school_name.trim().toLowerCase(),
-          );
-          if (found) schoolId = found.id;
-        }
-
-        if (!schoolId) {
-          throw new Error("Unable to resolve or create school.");
-        }
+      // School must already exist in database (validated in form submission)
+      const resolvedSchoolId = pendingPayload.school_id;
+      if (!resolvedSchoolId) {
+        throw new Error(
+          "School is required and must be selected from the database.",
+        );
       }
 
       const response = await fetch(`${API_BASE}/api/employees/`, {
@@ -305,7 +250,7 @@ export default function AddEmployeeModal({
           last_name: pendingPayload.last_name,
           email: pendingPayload.email,
           employee_type: pendingPayload.employee_type,
-          school_id: schoolId,
+          school_id: resolvedSchoolId,
         }),
       });
 
@@ -317,22 +262,6 @@ export default function AddEmployeeModal({
       setRecentlyAddedName(
         `${pendingPayload.first_name} ${pendingPayload.last_name}`.trim(),
       );
-
-      // Add created school to local list if it wasn't present
-      if (schoolId) {
-        const exists = schools.some(
-          (s) =>
-            s.id === schoolId ||
-            s.school_name.trim().toLowerCase() ===
-              pendingPayload.school_name.trim().toLowerCase(),
-        );
-        if (!exists) {
-          setSchools((prev) => [
-            ...prev,
-            { id: schoolId as number, school_name: pendingPayload.school_name },
-          ]);
-        }
-      }
 
       setIsConfirmOpen(false);
       setPendingPayload(null);
@@ -433,22 +362,67 @@ export default function AddEmployeeModal({
               <label className="block text-sm font-medium text-gray-600">
                 School
               </label>
-              <input
-                type="text"
-                value={schoolName}
-                onChange={(e) => setSchoolName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder={
-                  schoolsLoading
-                    ? "Loading schools..."
-                    : "Type or paste school name"
-                }
-                disabled={schoolsLoading}
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Type the school name manually. New names will be created and
-                added.
-              </p>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={schoolInputValue}
+                  onChange={(e) => {
+                    setSchoolInputValue(e.target.value);
+                    setShowSchoolDropdown(true);
+                  }}
+                  onFocus={() => setShowSchoolDropdown(true)}
+                  onBlur={() => {
+                    // Delay closing to allow click on option
+                    setTimeout(() => setShowSchoolDropdown(false), 150);
+                  }}
+                  disabled={schoolsLoading}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  placeholder={
+                    schoolsLoading
+                      ? "Loading schools..."
+                      : "Type to search schools..."
+                  }
+                />
+                {showSchoolDropdown && (
+                  <div className="absolute top-full mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                    {schoolsLoading ? (
+                      <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                        Loading schools...
+                      </div>
+                    ) : schools.length === 0 ? (
+                      <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                        No schools available
+                      </div>
+                    ) : filteredSchools.length > 0 ? (
+                      filteredSchools.map((school) => (
+                        <button
+                          key={school.id}
+                          type="button"
+                          onClick={() => {
+                            setSchoolId(school.id);
+                            setSchoolInputValue(school.school_name);
+                            setShowSchoolDropdown(false);
+                          }}
+                          className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-50 transition ${
+                            schoolId === school.id
+                              ? "bg-blue-100 font-medium text-blue-700"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {school.school_name}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                        No schools match "{schoolInputValue}"
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              {schoolId && (
+                <p className="mt-1 text-xs text-green-700">✓ School selected</p>
+              )}
             </div>
           </div>
 

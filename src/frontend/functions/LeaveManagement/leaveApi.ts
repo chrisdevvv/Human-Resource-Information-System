@@ -62,6 +62,11 @@ type LeaveListResponse = {
   message?: string;
 };
 
+type LeaveParticularsResponse = {
+  data?: string[];
+  message?: string;
+};
+
 type ApiResponse = {
   message?: string;
 };
@@ -127,6 +132,16 @@ export async function getLeaveHistoryByEmployee(
 
   const body = await parseResponse<LeaveListResponse>(response);
   return (body.data || []).map(mapLeaveRecord).sort((a, b) => a.id - b.id);
+}
+
+export async function getLeaveParticulars(): Promise<string[]> {
+  const response = await fetch(`${LEAVE_ENDPOINT}/particulars`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  const body = await parseResponse<LeaveParticularsResponse>(response);
+  return (body.data || []).filter((item): item is string => Boolean(item));
 }
 
 export async function createLeave(payload: CreateLeavePayload): Promise<void> {

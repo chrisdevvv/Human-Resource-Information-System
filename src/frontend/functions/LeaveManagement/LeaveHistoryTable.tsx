@@ -7,6 +7,10 @@ type LeaveHistoryTableProps = {
   rows: LeaveHistoryRecord[];
   loading?: boolean;
   error?: string | null;
+  selectable?: boolean;
+  selectedIds?: Set<number>;
+  onToggleRow?: (rowId: number) => void;
+  onToggleAll?: () => void;
 };
 
 const formatNumber = (value: number) => {
@@ -39,7 +43,16 @@ export default function LeaveHistoryTable({
   rows,
   loading = false,
   error = null,
+  selectable = false,
+  selectedIds,
+  onToggleRow,
+  onToggleAll,
 }: LeaveHistoryTableProps) {
+  const allSelected =
+    selectable &&
+    rows.length > 0 &&
+    rows.every((row) => selectedIds?.has(row.id));
+
   if (loading) {
     return (
       <div className="rounded-lg border border-gray-200 p-8 text-center text-sm text-gray-500">
@@ -61,6 +74,16 @@ export default function LeaveHistoryTable({
       <table className="w-full min-w-full border-collapse text-sm">
         <thead className="bg-gray-50">
           <tr className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-600 whitespace-nowrap">
+            {selectable && (
+              <th className="px-3 py-2 text-center">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={() => onToggleAll?.()}
+                  className="h-4 w-4 cursor-pointer rounded border-gray-300"
+                />
+              </th>
+            )}
             <th className="px-3 py-2 text-left">Period of Leave</th>
             <th className="px-3 py-2 text-left">Particulars</th>
             <th className="px-3 py-2 text-right">Earned VL</th>
@@ -91,6 +114,16 @@ export default function LeaveHistoryTable({
                     isMonthlyCredit ? "bg-emerald-50/40" : "bg-white"
                   }`}
                 >
+                  {selectable && (
+                    <td className="px-3 py-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(selectedIds?.has(row.id))}
+                        onChange={() => onToggleRow?.(row.id)}
+                        className="h-4 w-4 cursor-pointer rounded border-gray-300"
+                      />
+                    </td>
+                  )}
                   <td
                     className="px-3 py-2 font-medium text-gray-900"
                     style={{ paddingTop: "7px", paddingBottom: "10px" }}
@@ -132,7 +165,10 @@ export default function LeaveHistoryTable({
             })
           ) : (
             <tr>
-              <td colSpan={11} className="px-3 py-8 text-center text-gray-500">
+              <td
+                colSpan={selectable ? 12 : 11}
+                className="px-3 py-8 text-center text-gray-500"
+              >
                 No leave history yet for this employee.
               </td>
             </tr>

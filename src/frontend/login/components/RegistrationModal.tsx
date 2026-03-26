@@ -20,6 +20,14 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [school, setSchool] = useState("");
+  const [schoolId, setSchoolId] = useState<number | null>(null);
+  const [schoolInputValue, setSchoolInputValue] = useState("");
+  const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
+  const [schools, setSchools] = useState<
+    Array<{ id: number; school_name: string }>
+  >([]);
+  const [schoolsLoading, setSchoolsLoading] = useState(false);
+  const [schoolsError, setSchoolsError] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -46,6 +54,47 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
+    // Load schools
+    const loadSchools = async () => {
+      try {
+        setSchoolsLoading(true);
+        setSchoolsError("");
+        const response = await fetch(
+          `${API_BASE_URL}/api/schools/public/list`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        );
+
+        console.log("Schools API Response Status:", response.status);
+        const body = await response.json();
+        console.log("Schools API Response Body:", body);
+
+        if (response.ok) {
+          const options = body.data || [];
+          console.log("Schools loaded:", options);
+          setSchools(options);
+        } else {
+          const errorMsg =
+            body.message || `API returned status ${response.status}`;
+          console.error("Schools API Error:", errorMsg);
+          setSchoolsError(errorMsg);
+        }
+      } catch (err) {
+        const errorMsg =
+          err instanceof Error ? err.message : "Failed to load schools";
+        console.error("Failed to load schools:", err);
+        setSchoolsError(errorMsg);
+      } finally {
+        setSchoolsLoading(false);
+      }
+    };
+
+    loadSchools();
+
     return () => {
       document.body.style.overflow = previousOverflow;
     };
@@ -58,6 +107,17 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   const [schoolError, setSchoolError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
+
+  const sortedSchools = [...schools].sort((a, b) =>
+    a.school_name.localeCompare(b.school_name),
+  );
+
+  const filteredSchools = sortedSchools.filter((school) =>
+    school.school_name
+      .trim()
+      .toLowerCase()
+      .includes(schoolInputValue.trim().toLowerCase()),
+  );
 
   // Track unsaved changes
   const trackChange = (newValue: string, currentValue: string) => {
@@ -209,6 +269,11 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       hasError = true;
     }
 
+    if (!schoolId) {
+      setSchoolError("Please select a valid school from the dropdown");
+      hasError = true;
+    }
+
     if (hasError) {
       setError("Please correct the errors before continuing");
       return;
@@ -316,6 +381,9 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     setLastName("");
     setEmail("");
     setSchool("");
+    setSchoolId(null);
+    setSchoolInputValue("");
+    setShowSchoolDropdown(false);
     setPassword("");
     setConfirmPassword("");
     setError("");
@@ -434,16 +502,77 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                     <Building2 className="text-blue-600" size={18} />
                     School <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    value={school}
-                    onChange={(e) => {
-                      trackChange(e.target.value, school);
-                      setSchool(e.target.value);
-                      if (schoolError) setSchoolError("");
-                    }}
-                    placeholder="Enter school name"
-                    className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${schoolError ? "border-red-500" : ""}`}
-                  />
+                  <div className="relative mt-2">
+                    <input
+                      type="text"
+                      value={schoolInputValue}
+                      onChange={(e) => {
+                        setSchoolInputValue(e.target.value);
+                        setShowSchoolDropdown(true);
+                      }}
+                      onFocus={() => setShowSchoolDropdown(true)}
+                      onBlur={() => {
+                        // Delay closing to allow click on option
+                        setTimeout(() => setShowSchoolDropdown(false), 150);
+                      }}
+                      disabled={schoolsLoading}
+                      className={`w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
+                        schoolError ? "border-red-500" : ""
+                      } ${schoolsLoading ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                      placeholder={
+                        schoolsLoading
+                          ? "Loading schools..."
+                          : "Type to search schools..."
+                      }
+                    />
+                    {showSchoolDropdown && (
+                      <div className="absolute top-full mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
+                        {schoolsLoading ? (
+                          <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                            Loading schools...
+                          </div>
+                        ) : schoolsError ? (
+                          <div className="px-4 py-3 text-sm text-red-600 text-center">
+                            Error: {schoolsError}
+                          </div>
+                        ) : schools.length === 0 ? (
+                          <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                            No schools available
+                          </div>
+                        ) : filteredSchools.length > 0 ? (
+                          filteredSchools.map((schoolOption) => (
+                            <button
+                              key={schoolOption.id}
+                              type="button"
+                              onClick={() => {
+                                setSchoolId(schoolOption.id);
+                                setSchoolInputValue(schoolOption.school_name);
+                                setSchool(schoolOption.school_name);
+                                setShowSchoolDropdown(false);
+                                if (schoolError) setSchoolError("");
+                              }}
+                              className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-50 transition ${
+                                schoolId === schoolOption.id
+                                  ? "bg-blue-100 font-medium text-blue-700"
+                                  : "text-gray-700"
+                              }`}
+                            >
+                              {schoolOption.school_name}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                            No schools match "{schoolInputValue}"
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {schoolId && (
+                    <p className="mt-1 text-xs text-green-700">
+                      ✓ School selected
+                    </p>
+                  )}
                   {schoolError && (
                     <p className="text-sm text-red-600 mt-1">{schoolError}</p>
                   )}

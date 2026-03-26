@@ -1,53 +1,32 @@
 "use client";
 
 import React from "react";
-import type { LeaveHistoryRecord } from "./leaveApi";
 
-type PrintableLeaveCardProps = {
-  employeeName: string;
-  employeeType: "teaching" | "non-teaching";
-  rows: LeaveHistoryRecord[];
+export type LogsReportRecord = {
+  id: number;
+  userId?: number;
+  firstName: string;
+  lastName: string;
+  role: string;
+  email: string;
+  schoolName: string;
+  action: string;
+  details: string;
+  createdAt: string;
 };
 
-type FormattedLeaveHistoryRecord = LeaveHistoryRecord & {
-  periodOfLeaveDisplay: string;
-  particularsDisplay: string;
-  earnedVlDisplay: string;
-  absWithPayVlDisplay: string;
-  absWithoutPayVlDisplay: string;
-  balVlDisplay: string;
-  earnedSlDisplay: string;
-  absWithPaySlDisplay: string;
-  absWithoutPaySlDisplay: string;
-  balSlDisplay: string;
-  dateOfActionDisplay: string;
+type LogsReportGenerationProps = {
+  rows: LogsReportRecord[];
+  generatedBy?: string;
+  dateFrom?: string;
+  dateTo?: string;
 };
 
-const formatNumber = (value: number | null | undefined): string =>
-  // Always show three decimal places for leave amounts
-  Number(value ?? 0).toFixed(3);
-
-const formatDateOnly = (dateStr: string): string => {
-  if (!dateStr) return "-";
-
-  const datePart = dateStr.split("T")[0].split(" ")[0];
-  if (!datePart) return "-";
-
-  const parts = datePart.split("-");
-  if (parts.length === 3) {
-    const [year, month, day] = parts;
-    const d = new Date(Number(year), Number(month) - 1, Number(day));
-
-    if (!Number.isNaN(d.getTime())) {
-      return d.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-    }
-  }
-
-  return datePart;
+type FormattedLogsReportRecord = LogsReportRecord & {
+  dateTimeDisplay: string;
+  fullNameDisplay: string;
+  actionDisplay: string;
+  detailsDisplay: string;
 };
 
 const CARD_COLORS = {
@@ -64,7 +43,37 @@ const PAGE_HEIGHT_PX_AT_96_DPI = Math.round((297 / 25.4) * 96);
 const PAGE_WIDTH_MM = "210mm";
 const PAGE_HEIGHT_MM = "297mm";
 
-const LeaveTableHeader = React.memo(function LeaveTableHeader() {
+const formatDateTime = (dateStr: string): string => {
+  if (!dateStr) return "-";
+
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) {
+    return dateStr;
+  }
+
+  return d.toLocaleString("en-PH", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+};
+
+const formatDateOnly = (dateStr?: string): string => {
+  if (!dateStr) return "All";
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString("en-PH", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
+const LogsTableHeader = React.memo(function LogsTableHeader() {
   return (
     <thead>
       <tr
@@ -76,81 +85,51 @@ const LeaveTableHeader = React.memo(function LeaveTableHeader() {
       >
         <th
           className="border px-2 py-2 text-left"
-          style={{ borderColor: CARD_COLORS.black, width: "100px" }}
+          style={{ borderColor: CARD_COLORS.black, width: "108px" }}
         >
-          Period of Leave
+          Date and Time
+        </th>
+        <th
+          className="border px-2 py-2 text-left"
+          style={{ borderColor: CARD_COLORS.black, width: "120px" }}
+        >
+          User
+        </th>
+        <th
+          className="border px-2 py-2 text-left"
+          style={{ borderColor: CARD_COLORS.black, width: "85px" }}
+        >
+          Role
+        </th>
+        <th
+          className="border px-2 py-2 text-left"
+          style={{ borderColor: CARD_COLORS.black, width: "120px" }}
+        >
+          School
+        </th>
+        <th
+          className="border px-2 py-2 text-left"
+          style={{ borderColor: CARD_COLORS.black, width: "120px" }}
+        >
+          Action
         </th>
         <th
           className="border px-2 py-2 text-left"
           style={{ borderColor: CARD_COLORS.black }}
         >
-          Particulars
-        </th>
-        <th
-          className="border px-2 py-2 text-right"
-          style={{ borderColor: CARD_COLORS.black }}
-        >
-          Earned VL
-        </th>
-        <th
-          className="border px-2 py-2 text-right"
-          style={{ borderColor: CARD_COLORS.black }}
-        >
-          Abs With Pay VL
-        </th>
-        <th
-          className="border px-2 py-2 text-right"
-          style={{ borderColor: CARD_COLORS.black }}
-        >
-          Abs Without Pay VL
-        </th>
-        <th
-          className="border px-2 py-2 text-right"
-          style={{ borderColor: CARD_COLORS.black }}
-        >
-          Bal VL
-        </th>
-        <th
-          className="border px-2 py-2 text-right"
-          style={{ borderColor: CARD_COLORS.black }}
-        >
-          Earned SL
-        </th>
-        <th
-          className="border px-2 py-2 text-right"
-          style={{ borderColor: CARD_COLORS.black }}
-        >
-          Abs With Pay SL
-        </th>
-        <th
-          className="border px-2 py-2 text-right"
-          style={{ borderColor: CARD_COLORS.black }}
-        >
-          Abs Without Pay SL
-        </th>
-        <th
-          className="border px-2 py-2 text-right"
-          style={{ borderColor: CARD_COLORS.black }}
-        >
-          Bal SL
-        </th>
-        <th
-          className="border px-2 py-2 text-left"
-          style={{ borderColor: CARD_COLORS.black }}
-        >
-          Date and Action Taken / Evaluation
+          Details
         </th>
       </tr>
     </thead>
   );
 });
 
-const LeaveDataRow = React.memo(function LeaveDataRow({
+const LogsDataRow = React.memo(function LogsDataRow({
   row,
   index,
   rowRef,
 }: {
-  row: FormattedLeaveHistoryRecord;
+  row: FormattedLogsReportRecord;
   index: number;
   rowRef?: (node: HTMLTableRowElement | null) => void;
 }) {
@@ -163,82 +142,66 @@ const LeaveDataRow = React.memo(function LeaveDataRow({
       }}
     >
       <td
-        className="border px-1.5 py-0.5 align-top"
+        className="border px-1.5 py-1 align-top"
         style={{ borderColor: CARD_COLORS.black }}
       >
-        {row.periodOfLeaveDisplay}
+        {row.dateTimeDisplay}
       </td>
       <td
         className="border px-1.5 py-1 align-top"
         style={{ borderColor: CARD_COLORS.black }}
       >
-        {row.particularsDisplay}
-      </td>
-      <td
-        className="border px-1.5 py-0.5 text-right align-top"
-        style={{ borderColor: CARD_COLORS.black }}
-      >
-        {row.earnedVlDisplay}
-      </td>
-      <td
-        className="border px-1.5 py-1 text-right align-top"
-        style={{ borderColor: CARD_COLORS.black }}
-      >
-        {row.absWithPayVlDisplay}
-      </td>
-      <td
-        className="border px-1.5 py-1 text-right align-top"
-        style={{ borderColor: CARD_COLORS.black }}
-      >
-        {row.absWithoutPayVlDisplay}
-      </td>
-      <td
-        className="border px-1.5 py-1 text-right align-top"
-        style={{ borderColor: CARD_COLORS.black }}
-      >
-        {row.balVlDisplay}
-      </td>
-      <td
-        className="border px-1.5 py-1 text-right align-top"
-        style={{ borderColor: CARD_COLORS.black }}
-      >
-        {row.earnedSlDisplay}
-      </td>
-      <td
-        className="border px-1.5 py-1 text-right align-top"
-        style={{ borderColor: CARD_COLORS.black }}
-      >
-        {row.absWithPaySlDisplay}
-      </td>
-      <td
-        className="border px-1.5 py-1 text-right align-top"
-        style={{ borderColor: CARD_COLORS.black }}
-      >
-        {row.absWithoutPaySlDisplay}
-      </td>
-      <td
-        className="border px-1.5 py-1 text-right align-top"
-        style={{ borderColor: CARD_COLORS.black }}
-      >
-        {row.balSlDisplay}
+        {row.fullNameDisplay}
       </td>
       <td
         className="border px-1.5 py-1 align-top"
         style={{ borderColor: CARD_COLORS.black }}
       >
-        {row.dateOfActionDisplay}
+        {row.role || "-"}
+      </td>
+      <td
+        className="border px-1.5 py-1 align-top"
+        style={{ borderColor: CARD_COLORS.black }}
+      >
+        {row.schoolName || "-"}
+      </td>
+      <td
+        className="border px-1.5 py-1 align-top"
+        style={{ borderColor: CARD_COLORS.black }}
+      >
+        {row.actionDisplay}
+      </td>
+      <td
+        className="border px-1.5 py-1 align-top"
+        style={{ borderColor: CARD_COLORS.black }}
+      >
+        {row.detailsDisplay}
       </td>
     </tr>
   );
 });
 
 const DocumentHeader = React.memo(function DocumentHeader({
-  employeeName,
-  employeeType,
+  generatedBy,
+  dateFrom,
+  dateTo,
+  totalRows,
 }: {
-  employeeName: string;
-  employeeType: "teaching" | "non-teaching";
+  generatedBy?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  totalRows: number;
 }) {
+  const generatedAt = new Date().toLocaleString("en-PH", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+
   return (
     <>
       <div
@@ -262,23 +225,27 @@ const DocumentHeader = React.memo(function DocumentHeader({
           className="mt-2 font-bold uppercase tracking-wide"
           style={{ fontSize: "14pt", lineHeight: 1.2 }}
         >
-          EMPLOYEE LEAVE CARD
+          Activity Logs Report
         </p>
       </div>
 
       <div
-        className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2"
+        className="mb-4 grid grid-cols-1 gap-1 sm:grid-cols-2"
         style={{ fontSize: "10pt" }}
       >
         <p>
-          <span className="font-semibold">Name of Employee:</span>{" "}
-          <span style={{ fontWeight: "bold" }}>{employeeName}</span>
+          <span className="font-semibold">Generated At:</span> {generatedAt}
         </p>
         <p>
-          <span className="font-semibold">Type:</span>{" "}
-          <span style={{ fontWeight: "bold" }}>
-            {employeeType === "non-teaching" ? "Non-Teaching" : "Teaching"}
-          </span>
+          <span className="font-semibold">Generated By:</span>{" "}
+          {generatedBy?.trim() || "System"}
+        </p>
+        <p>
+          <span className="font-semibold">Date Range:</span>{" "}
+          {formatDateOnly(dateFrom)} to {formatDateOnly(dateTo)}
+        </p>
+        <p>
+          <span className="font-semibold">Total Records:</span> {totalRows}
         </p>
       </div>
     </>
@@ -289,7 +256,7 @@ const EmptyStateRow = React.memo(function EmptyStateRow() {
   return (
     <tr>
       <td
-        colSpan={11}
+        colSpan={6}
         className="border px-1.5 text-center"
         style={{
           borderColor: CARD_COLORS.black,
@@ -298,38 +265,32 @@ const EmptyStateRow = React.memo(function EmptyStateRow() {
           paddingBottom: "calc(2rem - 2px)",
         }}
       >
-        No leave entries available.
+        No logs available.
       </td>
     </tr>
   );
 });
 
-const PrintableLeaveCard = React.forwardRef<
+const LogsReportGeneration = React.forwardRef<
   HTMLDivElement,
-  PrintableLeaveCardProps
->(function PrintableLeaveCard({ employeeName, employeeType, rows }, ref) {
+  LogsReportGenerationProps
+>(function LogsReportGeneration({ rows, generatedBy, dateFrom, dateTo }, ref) {
   const firstPageStaticRef = React.useRef<HTMLDivElement | null>(null);
   const nextPageStaticRef = React.useRef<HTMLDivElement | null>(null);
   const rowMeasureRefs = React.useRef<(HTMLTableRowElement | null)[]>([]);
   const [pageChunks, setPageChunks] = React.useState<
-    FormattedLeaveHistoryRecord[][]
+    FormattedLogsReportRecord[][]
   >([]);
   const [isMeasured, setIsMeasured] = React.useState(false);
 
-  const formattedRows = React.useMemo<FormattedLeaveHistoryRecord[]>(() => {
+  const formattedRows = React.useMemo<FormattedLogsReportRecord[]>(() => {
     return rows.map((row) => ({
       ...row,
-      periodOfLeaveDisplay: row.periodOfLeave || "-",
-      particularsDisplay: row.particulars || "-",
-      earnedVlDisplay: formatNumber(row.earnedVl),
-      absWithPayVlDisplay: formatNumber(row.absWithPayVl),
-      absWithoutPayVlDisplay: formatNumber(row.absWithoutPayVl),
-      balVlDisplay: formatNumber(row.balVl),
-      earnedSlDisplay: formatNumber(row.earnedSl),
-      absWithPaySlDisplay: formatNumber(row.absWithPaySl),
-      absWithoutPaySlDisplay: formatNumber(row.absWithoutPaySl),
-      balSlDisplay: formatNumber(row.balSl),
-      dateOfActionDisplay: formatDateOnly(row.dateOfAction),
+      dateTimeDisplay: formatDateTime(row.createdAt),
+      fullNameDisplay:
+        `${row.firstName || ""} ${row.lastName || ""}`.trim() || "Unknown",
+      actionDisplay: row.action || "-",
+      detailsDisplay: row.details || "-",
     }));
   }, [rows]);
 
@@ -380,8 +341,8 @@ const PrintableLeaveCard = React.forwardRef<
         return;
       }
 
-      const chunks: FormattedLeaveHistoryRecord[][] = [];
-      let currentChunk: FormattedLeaveHistoryRecord[] = [];
+      const chunks: FormattedLogsReportRecord[][] = [];
+      let currentChunk: FormattedLogsReportRecord[] = [];
       let currentHeight = 0;
       let availableHeight = firstAvailable;
 
@@ -413,52 +374,52 @@ const PrintableLeaveCard = React.forwardRef<
 
     const rafId = requestAnimationFrame(measure);
     return () => cancelAnimationFrame(rafId);
-  }, [formattedRows, employeeName, employeeType]);
+  }, [formattedRows, generatedBy, dateFrom, dateTo]);
 
   return (
     <>
       <style>{`
-        @page {
-          size: A4;
-          margin: ${PAPER_MARGIN_CM}cm;
-        }
+				@page {
+					size: A4;
+					margin: ${PAPER_MARGIN_CM}cm;
+				}
 
-        @media print {
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-          }
+				@media print {
+					html, body {
+						margin: 0 !important;
+						padding: 0 !important;
+					}
 
-          .leave-card-root {
-            width: auto !important;
-            max-width: none !important;
-          }
+					.logs-report-root {
+						width: auto !important;
+						max-width: none !important;
+					}
 
-          .leave-card-page {
-            break-after: page;
-            page-break-after: always;
-          }
+					.logs-report-page {
+						break-after: page;
+						page-break-after: always;
+					}
 
-          .leave-card-page:last-child {
-            break-after: auto;
-            page-break-after: auto;
-          }
+					.logs-report-page:last-child {
+						break-after: auto;
+						page-break-after: auto;
+					}
 
-          table {
-            width: 100% !important;
-            border-collapse: collapse;
-          }
+					table {
+						width: 100% !important;
+						border-collapse: collapse;
+					}
 
-          thead {
-            display: table-header-group;
-          }
+					thead {
+						display: table-header-group;
+					}
 
-          tr, td, th {
-            break-inside: avoid;
-            page-break-inside: avoid;
-          }
-        }
-      `}</style>
+					tr, td, th {
+						break-inside: avoid;
+						page-break-inside: avoid;
+					}
+				}
+			`}</style>
 
       <div
         aria-hidden="true"
@@ -484,12 +445,14 @@ const PrintableLeaveCard = React.forwardRef<
           }}
         >
           <DocumentHeader
-            employeeName={employeeName}
-            employeeType={employeeType}
+            generatedBy={generatedBy}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            totalRows={formattedRows.length}
           />
           <div className="border" style={{ borderColor: CARD_COLORS.black }}>
             <table className="w-full border-collapse">
-              <LeaveTableHeader />
+              <LogsTableHeader />
               <tbody />
             </table>
           </div>
@@ -505,7 +468,7 @@ const PrintableLeaveCard = React.forwardRef<
         >
           <div className="border" style={{ borderColor: CARD_COLORS.black }}>
             <table className="w-full border-collapse">
-              <LeaveTableHeader />
+              <LogsTableHeader />
               <tbody />
             </table>
           </div>
@@ -520,10 +483,10 @@ const PrintableLeaveCard = React.forwardRef<
         >
           <div className="border" style={{ borderColor: CARD_COLORS.black }}>
             <table className="w-full border-collapse">
-              <LeaveTableHeader />
-              <tbody style={{ fontSize: "11px" }}>
+              <LogsTableHeader />
+              <tbody style={{ fontSize: "10px" }}>
                 {formattedRows.map((row, index) => (
-                  <LeaveDataRow
+                  <LogsDataRow
                     key={`measure-${row.id ?? index}-${index}`}
                     row={row}
                     index={index}
@@ -540,7 +503,7 @@ const PrintableLeaveCard = React.forwardRef<
 
       <div
         ref={ref}
-        className="leave-card-root mx-auto w-full text-[9pt] print:max-w-none"
+        className="logs-report-root mx-auto w-full text-[9pt] print:max-w-none"
         style={{
           width: PAGE_WIDTH_MM,
           backgroundColor: CARD_COLORS.white,
@@ -554,22 +517,23 @@ const PrintableLeaveCard = React.forwardRef<
 
           return (
             <div
-              key={`leave-card-page-${pageIndex}`}
-              data-leave-card-page="true"
-              className="leave-card-page"
+              key={`logs-report-page-${pageIndex}`}
+              data-logs-report-page="true"
+              className="logs-report-page"
               style={{
                 width: PAGE_WIDTH_MM,
                 minHeight: PAGE_HEIGHT_MM,
                 padding: 0,
                 boxSizing: "border-box",
                 backgroundColor: CARD_COLORS.white,
-                position: "relative",
               }}
             >
               {isFirstPage && (
                 <DocumentHeader
-                  employeeName={employeeName}
-                  employeeType={employeeType}
+                  generatedBy={generatedBy}
+                  dateFrom={dateFrom}
+                  dateTo={dateTo}
+                  totalRows={formattedRows.length}
                 />
               )}
 
@@ -578,11 +542,11 @@ const PrintableLeaveCard = React.forwardRef<
                 style={{ borderColor: CARD_COLORS.black }}
               >
                 <table className="w-full border-collapse">
-                  <LeaveTableHeader />
-                  <tbody style={{ fontSize: "11px" }}>
+                  <LogsTableHeader />
+                  <tbody style={{ fontSize: "10px" }}>
                     {pageRows.length > 0 ? (
                       pageRows.map((row, index) => (
-                        <LeaveDataRow
+                        <LogsDataRow
                           key={`${row.id ?? index}-${pageIndex}-${index}`}
                           row={row}
                           index={index}
@@ -602,19 +566,17 @@ const PrintableLeaveCard = React.forwardRef<
   );
 });
 
-export default PrintableLeaveCard;
+export default LogsReportGeneration;
 
-export function createLeaveCardFileName(employeeName?: string): string {
-  const sanitizedName = (employeeName || "Employee")
-    .replace(/[\\/:*?"<>|]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  const displayName = sanitizedName || "Employee";
-  return `${displayName} - Leave Card.pdf`;
+export function createLogsReportFileName(): string {
+  const now = new Date();
+  const yyyy = String(now.getFullYear());
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  return `Activity Logs Report - ${yyyy}-${mm}-${dd}.pdf`;
 }
 
-export async function downloadLeaveCardPdf(
+export async function downloadLogsReportPdf(
   element: HTMLElement,
   fileName: string,
 ): Promise<void> {
@@ -630,55 +592,73 @@ export async function downloadLeaveCardPdf(
   const contentWidth = pageWidth - marginMm * 2;
   const contentHeight = pageHeight - marginMm * 2;
 
-  const pageElements = Array.from(
-    element.querySelectorAll<HTMLElement>("[data-leave-card-page='true']"),
-  );
+  const sandbox = document.createElement("div");
+  sandbox.style.position = "fixed";
+  sandbox.style.left = "-100000px";
+  sandbox.style.top = "0";
+  sandbox.style.pointerEvents = "none";
+  sandbox.style.zIndex = "-1";
+  sandbox.style.background = "#ffffff";
 
-  if (pageElements.length === 0) {
-    throw new Error("No printable leave card pages found.");
-  }
+  const clone = element.cloneNode(true) as HTMLElement;
+  clone.style.transform = "none";
+  clone.style.transformOrigin = "top left";
 
-  for (let i = 0; i < pageElements.length; i++) {
-    const pageEl = pageElements[i];
+  sandbox.appendChild(clone);
+  document.body.appendChild(sandbox);
 
-    const canvas = await html2canvas(pageEl, {
-      scale: 1.25,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      logging: false,
-      removeContainer: true,
-    });
+  try {
+    const pageElements = Array.from(
+      clone.querySelectorAll<HTMLElement>("[data-logs-report-page='true']"),
+    );
 
-    const imgData = canvas.toDataURL("image/jpeg", 0.86);
-
-    if (i > 0) {
-      pdf.addPage();
+    if (pageElements.length === 0) {
+      throw new Error("No printable logs report pages found.");
     }
 
-    pdf.addImage(
-      imgData,
-      "JPEG",
-      marginMm,
-      marginMm,
-      contentWidth,
-      contentHeight,
-    );
+    for (let i = 0; i < pageElements.length; i++) {
+      const pageEl = pageElements[i];
 
-    // Put page number in the bottom margin area (outside the card content box).
-    pdf.setFont("times", "normal");
-    pdf.setFontSize(9);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text(
-      `Page ${i + 1} of ${pageElements.length}`,
-      pageWidth - marginMm,
-      pageHeight - 3,
-      {
-        align: "right",
-      },
-    );
+      const canvas = await html2canvas(pageEl, {
+        scale: 1.25,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        removeContainer: true,
+      });
 
-    canvas.width = 0;
-    canvas.height = 0;
+      const imgData = canvas.toDataURL("image/jpeg", 0.86);
+
+      if (i > 0) {
+        pdf.addPage();
+      }
+
+      pdf.addImage(
+        imgData,
+        "JPEG",
+        marginMm,
+        marginMm,
+        contentWidth,
+        contentHeight,
+      );
+
+      pdf.setFont("times", "normal");
+      pdf.setFontSize(9);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(
+        `Page ${i + 1} of ${pageElements.length}`,
+        pageWidth - marginMm,
+        pageHeight - 3,
+        {
+          align: "right",
+        },
+      );
+
+      canvas.width = 0;
+      canvas.height = 0;
+    }
+  } finally {
+    sandbox.remove();
   }
 
   pdf.save(fileName);

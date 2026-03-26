@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Download, Plus, RefreshCcw, X } from "lucide-react";
+import { Download, Plus, RefreshCcw, Trash2, X } from "lucide-react";
 import ArchiveConfirmationModal from "./ArchiveConfirmationModal";
+import DeleteEntryConfirmation from "./DeleteEntryConfirmation";
 import MarkLeaveConfirmationModal from "./MarkLeaveConfirmationModal";
 import ArchiveSuccessMessage from "../ArchiveSuccessMessage";
 import type { LeaveModalRecord } from "../leaveTypes";
@@ -14,6 +15,7 @@ import PrintableLeaveCard, {
 } from "../PrintableLeaveCard";
 import {
   createLeave,
+  deleteLeave,
   getLeaveHistoryByEmployee,
   type LeaveHistoryRecord,
   archiveEmployee,
@@ -93,6 +95,12 @@ export default function LeaveManagementModal({
   const employeeType = leave?.employeeType ?? "non-teaching";
   const [activeTab, setActiveTab] = useState<"history" | "card">("history");
   const [historyRows, setHistoryRows] = useState<LeaveHistoryRecord[]>([]);
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [selectedHistoryIds, setSelectedHistoryIds] = useState<Set<number>>(
+    new Set(),
+  );
+  const [isDeletingEntries, setIsDeletingEntries] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   const employeeTypeLabel =
     employeeType === "non-teaching" ? "Non-Teaching" : "Teaching";
@@ -234,6 +242,14 @@ export default function LeaveManagementModal({
       if (showSpinner) setLoading(true);
       const rows = await getLeaveHistoryByEmployee(employeeId);
       setHistoryRows(rows);
+      setSelectedHistoryIds((prev) => {
+        const validIds = new Set(rows.map((row) => row.id));
+        const next = new Set<number>();
+        prev.forEach((id) => {
+          if (validIds.has(id)) next.add(id);
+        });
+        return next;
+      });
       setError(null);
     } catch (err) {
       setError(
@@ -250,10 +266,19 @@ export default function LeaveManagementModal({
   useEffect(() => {
     if (!isOpen || !employeeId) return;
     setActiveTab(initialTab);
+    setIsDeleteMode(false);
+    setSelectedHistoryIds(new Set());
     void fetchHistory();
     void fetchEmployeeLeaveStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, employeeId, initialTab]);
+
+  useEffect(() => {
+    if (activeTab !== "history") {
+      setIsDeleteMode(false);
+      setSelectedHistoryIds(new Set());
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     return () => {
@@ -319,6 +344,75 @@ export default function LeaveManagementModal({
       await downloadLeaveCardPdf(cardRef.current, pdfFileName);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to export PDF.");
+    }
+  };
+
+  const handleOpenHistoryInNewTab = () => {
+    window.open(`/leave-history/${employeeId}`, "_blank");
+  };
+
+  const handleToggleHistoryRow = (rowId: number) => {
+    setSelectedHistoryIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(rowId)) {
+        next.delete(rowId);
+      } else {
+        next.add(rowId);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleAllHistoryRows = () => {
+    const allRowIds = historyRows.map((row) => row.id);
+    const areAllSelected =
+      allRowIds.length > 0 &&
+      allRowIds.every((rowId) => selectedHistoryIds.has(rowId));
+
+    if (areAllSelected) {
+      setSelectedHistoryIds(new Set());
+      return;
+    }
+
+    setSelectedHistoryIds(new Set(allRowIds));
+  };
+
+  const handleDeleteSelectedEntries = async () => {
+    if (isDeletingEntries) return;
+
+    if (!isDeleteMode) {
+      setIsDeleteMode(true);
+      setSelectedHistoryIds(new Set());
+      return;
+    }
+
+    if (selectedHistoryIds.size === 0) {
+      setError("Please select at least one entry to delete.");
+      return;
+    }
+    // Open confirmation modal instead of using window.confirm
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteSelectedEntries = async () => {
+    setIsDeleteConfirmOpen(false);
+    const toDelete = Array.from(selectedHistoryIds);
+    setIsDeletingEntries(true);
+    setError(null);
+
+    try {
+      for (const leaveId of toDelete) {
+        await deleteLeave(leaveId);
+      }
+      setSelectedHistoryIds(new Set());
+      setIsDeleteMode(false);
+      await fetchHistory(false);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to delete leave entries.",
+      );
+    } finally {
+      setIsDeletingEntries(false);
     }
   };
 
@@ -414,6 +508,24 @@ export default function LeaveManagementModal({
             >
               Printable Leave Card
             </button>
+            <button
+              type="button"
+              onClick={handleOpenHistoryInNewTab}
+              className="cursor-pointer rounded-lg px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
+            >
+              Open in Another Tab
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteSelectedEntries}
+              disabled={activeTab !== "history" || isDeletingEntries}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Trash2 size={14} />
+              {isDeleteMode
+                ? `Delete Entry (${selectedHistoryIds.size})`
+                : "Delete Entry"}
+            </button>
 
             <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap items-center gap-2">
               <button
@@ -477,6 +589,10 @@ export default function LeaveManagementModal({
               rows={historyRows}
               loading={loading}
               error={error}
+              selectable={isDeleteMode}
+              selectedIds={selectedHistoryIds}
+              onToggleRow={handleToggleHistoryRow}
+              onToggleAll={handleToggleAllHistoryRows}
             />
           ) : (
             <PrintableLeaveCard
@@ -506,6 +622,18 @@ export default function LeaveManagementModal({
         error={leaveStatusError}
         onConfirm={handleConfirmLeaveStatusChange}
         onClose={handleCloseLeaveStatusConfirm}
+      />
+      <DeleteEntryConfirmation
+        isOpen={isDeleteConfirmOpen}
+        onClose={() => setIsDeleteConfirmOpen(false)}
+        onConfirm={confirmDeleteSelectedEntries}
+        isLoading={isDeletingEntries}
+        title="Delete selected entries"
+        description={`Are you sure you want to delete ${selectedHistoryIds.size} selected entr${
+          selectedHistoryIds.size > 1 ? "ies" : "y"
+        }? This action cannot be undone.`}
+        confirmLabel={`Delete (${selectedHistoryIds.size})`}
+        cancelLabel="Cancel"
       />
     </div>
   );

@@ -6,11 +6,16 @@ const {
   getBacklogsBySchool,
   createBacklog,
   generateBacklogReport,
+  archiveBacklogsByDateRange,
 } = require("./backlogController");
 const authMiddleware = require("../../middleware/authMiddleware");
 const { roleAuthMiddleware } = require("../../middleware/roleAuthMiddleware");
 const { validateRequest } = require("../../middleware/validateRequest");
-const { idParamSchema, backlogReportQuerySchema } = require("../../validation/schemas");
+const {
+  idParamSchema,
+  backlogReportQuerySchema,
+  backlogArchiveBodySchema,
+} = require("../../validation/schemas");
 
 const router = express.Router();
 
@@ -52,6 +57,13 @@ router.post(
   authMiddleware,
   roleAuthMiddleware(["admin", "super-admin"]),
   createBacklog,
+);
+router.patch(
+  "/archive",
+  authMiddleware,
+  roleAuthMiddleware(["admin", "super-admin"]),
+  validateRequest({ body: backlogArchiveBodySchema }),
+  archiveBacklogsByDateRange,
 );
 
 module.exports = router;

@@ -158,6 +158,21 @@ const Backlog = {
 
     return rows;
   },
+
+  archiveByDateRange: async ({ from, to }) => {
+    const [result] = await pool.promise().query(
+      `UPDATE backlogs
+         SET is_archived = 1
+         WHERE is_archived = 0
+           AND created_at >= ?
+           AND created_at <= ?`,
+      [from, to],
+    );
+
+    return {
+      affectedRows: Number(result.affectedRows || 0),
+    };
+  },
 };
 
 module.exports = Backlog;

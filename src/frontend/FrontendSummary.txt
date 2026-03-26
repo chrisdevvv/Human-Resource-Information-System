@@ -1,0 +1,14 @@
+
+Recent updates (2026-03-25):
+- Added a reusable confirmation modal `DeleteEntryConfirmation` at `src/frontend/functions/LeaveManagement/Modals/DeleteEntryConfirmation.tsx`.
+- Replaced native `window.confirm` deletion flow in `LeaveManagementModal.tsx` with the styled `DeleteEntryConfirmation` modal. The modal opens when deleting selected leave history rows and shows a loading state during deletion.
+- Wired the confirmation modal into `LeaveManagementModal.tsx`:
+	- New state `isDeleteConfirmOpen` to control visibility.
+	- `handleDeleteSelectedEntries` now opens the modal; `confirmDeleteSelectedEntries` performs the delete calls and refetches history.
+- Leave history selection and delete mode behavior remains: click "Delete Entry" to enter delete mode, select rows (checkboxes appear), then click "Delete Entry" again to open the confirmation modal.
+- LeaveHistoryTable supports selectable rows and a select-all checkbox; it's used by the modal when `selectable` is true.
+
+Notes / Next steps:
+- Manual test: open an employee's Leave Management modal, enter delete mode, select rows, click "Delete Entry" to confirm.
+- Optional: replace other `window.confirm` usages with `DeleteEntryConfirmation` for consistent UX.
+
