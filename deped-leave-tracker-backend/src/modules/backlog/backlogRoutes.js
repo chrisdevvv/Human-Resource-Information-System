@@ -23,45 +23,45 @@ const router = express.Router();
 router.get(
   "/",
   authMiddleware,
-  roleAuthMiddleware(["admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   getAllBacklogs,
 );
 router.get(
   "/report",
   authMiddleware,
-  roleAuthMiddleware(["admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   validateRequest({ query: backlogReportQuerySchema }),
   generateBacklogReport,
 );
 router.get(
   "/user/:user_id",
   authMiddleware,
-  roleAuthMiddleware(["admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   getBacklogsByUser,
 );
 router.get(
   "/school/:school_id",
   authMiddleware,
-  roleAuthMiddleware(["admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   getBacklogsBySchool,
 );
 router.get(
   "/:id",
   authMiddleware,
-  roleAuthMiddleware(["admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   validateRequest({ params: idParamSchema }),
   getBacklogById,
 );
 router.post(
   "/",
   authMiddleware,
-  roleAuthMiddleware(["admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   createBacklog,
 );
 router.patch(
   "/archive",
   authMiddleware,
-  roleAuthMiddleware(["admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   validateRequest({ body: backlogArchiveBodySchema }),
   archiveBacklogsByDateRange,
 );
