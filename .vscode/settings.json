@@ -5,9 +5,14 @@
     "**/deped_leave_tracker*.sql": "mysql",
     "**/migrations/*.sql": "mysql",
     "**/*_table.sql": "mysql",
+    "**/node_modules/**/tsconfig.json": "plaintext",
+    "**/node_modules/**/tsconfig*.json": "plaintext",
+    "**/node_modules/*/tsconfig.json": "plaintext",
     "**/node_modules/html2canvas/tsconfig.json": "plaintext"
   },
   "mssql.enableDiagnostics": false,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.tsserver.experimental.enableProjectDiagnostics": false,
   "[sql]": {
     "editor.defaultFormatter": null
   }

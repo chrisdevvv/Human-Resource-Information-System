@@ -1,5 +1,4 @@
 "use client";
-// @ts-nocheck
 
 import React, { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
