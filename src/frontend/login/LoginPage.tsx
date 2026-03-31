@@ -237,7 +237,7 @@ export default function LoginPage() {
         {/* Logos Container */}
         <div className="-mt-10 flex items-center justify-center gap-6">
           {/* Logo */}
-          <img src="/images/sdlogo.svg" alt="SD Logo" className="h-60 w-auto" />
+          <img src="/sdologo-new.svg" alt="SD Logo" className="h-60 w-auto" />
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-2xl">

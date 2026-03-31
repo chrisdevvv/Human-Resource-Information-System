@@ -232,7 +232,7 @@ export default function LoginPageMobile() {
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] px-4 py-6">
         <div className="flex items-center justify-center gap-4 mb-6">
           <img
-            src="/images/sdlogo.svg"
+            src="/sdologo-new.svg"
             alt="SD Logo"
             className="h-32 sm:h-36 w-auto"
           />
