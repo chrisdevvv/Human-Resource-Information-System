@@ -1,4 +1,4 @@
-# DepEd Leave Tracker - RBAC Alignment Summary
+# Human Resource Management System - RBAC Alignment Summary
 
 This document summarizes the backend RBAC alignment changes applied to remove frontend-only restrictions and enforce the same rules at the API level.
 

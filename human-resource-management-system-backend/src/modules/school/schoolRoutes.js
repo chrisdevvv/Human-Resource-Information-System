@@ -24,6 +24,12 @@ router.get(
   getAllSchools,
 );
 router.get(
+  "/config/list",
+  authMiddleware,
+  roleAuthMiddleware(["super-admin"]),
+  getAllSchools,
+);
+router.get(
   "/:id",
   authMiddleware,
   roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),

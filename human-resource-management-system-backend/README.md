@@ -1,6 +1,6 @@
-# DepEd Employee Leave Tracker
+# Human Resource Management System
 
-This is a backend application for the DepEd Employee Leave Tracker, built using Node.js and MySQL. The application allows employees to manage their leave requests efficiently.
+This is a backend application for the Human Resource Management System, built using Node.js and MySQL. The application allows employees to manage their leave requests efficiently.
 
 ## Table of Contents
 
@@ -15,12 +15,12 @@ This is a backend application for the DepEd Employee Leave Tracker, built using 
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/deped-leave-tracker-backend.git
+   git clone https://github.com/yourusername/human-resource-management-system-backend.git
    ```
 
 2. Navigate to the project directory:
    ```
-   cd deped-leave-tracker-backend
+   cd human-resource-management-system-backend
    ```
 
 3. Install the dependencies:
