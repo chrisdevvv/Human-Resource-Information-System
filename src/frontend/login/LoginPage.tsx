@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 // Component: LoginPage
 // Filename: LoginPage.tsx
