@@ -169,3 +169,67 @@ Quick verification checklist:
 - Test account where user object has `school_id` only and verify school name still appears after fetch.
 - Login as Super Admin and verify subtitle is always `Department of Education`.
 - Check long school names in desktop and mobile sidebar and confirm centered 2-line display without ellipsis.
+
+Recent updates (2026-03-31):
+- Logging policy update:
+	- Starting today, every requested frontend-related change will be recorded in this file with its date.
+- Sidebar navigation update:
+	- Added `Employees List` tab (admin and super-admin only) and placed it above `Leave Management` in desktop and mobile sidebars.
+	- `Employees List` currently uses layout-only content (no employee data), based on the Leave Management page structure.
+- Naming/branding adjustments:
+	- Updated system label text from `Employee Leave Management System` to `Human Resource Information System` in UI/email text targets.
+	- Updated acronym text from `ELMS` to `HRIS` in applicable UI/email text targets.
+	- Reverted logo file references specifically back to `[DEPED] ELMS Logo.svg` where requested.
+- Logo path update:
+	- Replaced remaining `sdlogo/sdologo` image references with `/sdologo-new.svg` where requested.
+- Typography update (non-PDF scope):
+	- Applied Poppins as the primary font across frontend/global styles and added Google Fonts import in `src/app/globals.css`.
+	- Kept PDF generation code untouched as requested.
+
+Recent updates (2026-03-31 - Add Employee Relocation):
+- Leave Management and Employees List behavior change:
+	- Removed `Add Employee` action from `EmployeeLeaveManagement.tsx`.
+	- Moved `Add Employee` action and modal trigger to `EmployeesListLayout.tsx`.
+	- `Employees List` now hosts the add flow while keeping the same modal permission logic for `SUPER_ADMIN` and `ADMIN` (and existing role checks inside modal).
+	- Leave Management now focuses on leave-related actions only.
+
+Recent updates (2026-03-31 - Leave Management / Employees List Layout Update):
+- Employee Leave Management UI adjustment:
+	- Moved filter controls to the left side by removing right alignment behavior.
+- Archived tab relocation:
+	- Removed top `Employees List / Archived Employee` tab switcher from `EmployeeLeaveManagement.tsx`.
+	- Added top tab switcher to `EmployeesListLayout.tsx` instead.
+	- `EmployeesListLayout.tsx` now switches between:
+		- `Employees List` (with Add Employee action)
+		- `Archived Employee` (renders `ArchivedEmployee` component)
+
+Recent updates (2026-03-31 - Employees List Data and Actions):
+- Employees List now renders actual employee records (same scoped fetch rules as Leave Management).
+- Added search/filter/sort/pagination controls in `EmployeesListLayout.tsx`.
+- Kept `Add Employee` action in Employees List.
+- Restricted row actions to `Details` only (removed other per-row action behaviors from this view).
+- Details action opens the leave details/history modal for the selected employee.
+
+Recent updates (2026-03-31 - Build Fix):
+- Fixed JSX parse error (`Unterminated regexp literal`) in `EmployeesListLayout.tsx`.
+- Root cause was an extra closing `</div>` in the list branch markup.
+- Removed the extra closing tag and confirmed no file-level errors in the component.
+
+Recent updates (2026-03-31 - Employees List Simplification):
+- Removed `Leave Status` column from `EmployeesListLayout.tsx`.
+- Removed action-button behavior from Employees List rows (no details/action buttons).
+- Employees List table now shows employee details as plain columns: `Name`, `Employee Type`, `Email`, and `School`.
+- Leave-specific actions remain in the Leave Management tab only.
+
+Recent updates (2026-03-31 - Build Fix: EmployeesList import path):
+- Fixed module resolution error in `src/frontend/functions/EmployeesList/EmployeesListLayout.tsx`.
+- Updated `AddEmployeeModal` import from `./Modals/AddEmployeeModal` to `./AddEmployeeModal` after file relocation.
+- Verified no file-level errors for affected super-admin import chain.
+
+Recent updates (2026-03-31 - Archive Action Relocation):
+- Removed `Archive` button and archive confirmation/success flow from Leave Management details modal:
+	- `src/frontend/functions/LeaveManagement/Modals/LeaveManagementModal.tsx`
+- Added `Archive` action in Employees List rows:
+	- `src/frontend/functions/EmployeesList/EmployeesListLayout.tsx`
+	- Uses existing `archiveEmployee` API logic with password confirmation and success message.
+	- Refreshes employees list after successful archive.

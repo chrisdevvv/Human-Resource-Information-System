@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Download, Plus, RefreshCcw, X } from "lucide-react";
-import ArchiveConfirmationModal from "./Modals/ArchiveConfirmationModal";
+import ArchiveConfirmationModal from "../EmployeesList/ArchiveConfirmationModal";
 import MarkLeaveConfirmationModal from "./Modals/MarkLeaveConfirmationModal";
 import ArchiveSuccessMessage from "./ArchiveSuccessMessage";
 import type { LeaveModalRecord } from "./leaveTypes";

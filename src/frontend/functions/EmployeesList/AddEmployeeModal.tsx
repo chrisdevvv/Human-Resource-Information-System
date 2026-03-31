@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import ConfirmationModal from "../../../super-admin/components/ConfirmationModal";
-import ConfirmationAddEmployee from "../ConfirmationAddEmployee";
+import ConfirmationModal from "../../super-admin/components/ConfirmationModal";
+import ConfirmationAddEmployee from "./ConfirmationAddEmployee";
 
 type School = {
   id: number;
