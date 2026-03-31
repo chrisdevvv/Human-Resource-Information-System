@@ -21,6 +21,11 @@ export const ACCESSIBLE_FEATURES: AccessibleFeature[] = [
     roles: ["data-encoder", "admin", "super-admin"],
   },
   {
+    id: "employees-list",
+    label: "Employees List",
+    roles: ["admin", "super-admin"],
+  },
+  {
     id: "user-roles",
     label: "User & Roles",
     roles: ["admin", "super-admin"],
@@ -133,6 +138,8 @@ export function canAccessPage(
       return ["data-encoder", "admin", "super-admin"].includes(
         normalizeRole(userRole),
       );
+    case "employees-list":
+      return ["admin", "super-admin"].includes(normalizeRole(userRole));
     case "profile-settings":
       return ["data-encoder", "admin", "super-admin"].includes(
         normalizeRole(userRole),

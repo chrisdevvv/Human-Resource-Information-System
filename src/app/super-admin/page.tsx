@@ -11,6 +11,7 @@ const ACTIVE_TAB_STORAGE_KEY = "activeTab:super-admin";
 const ALLOWED_TABS = new Set([
   "dashboard",
   "employee-management",
+  "employees-list",
   "user-roles",
   "logs",
   "configuration",

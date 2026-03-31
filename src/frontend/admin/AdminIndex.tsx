@@ -3,6 +3,7 @@ import styles from "./styles.module.css";
 import AdminProfileSettings from "./functions/AdminProfileSettings";
 import AdminUserRoles from "./functions/AdminUserRoles";
 import EmployeeLeaveManagement from "../functions/LeaveManagement/EmployeeLeaveManagement";
+import EmployeesListLayout from "../functions/LeaveManagement/EmployeesListLayout";
 import Dashboard from "../functions/Dashboard/Dashboard";
 import DashboardMobile from "../functions/Dashboard/DashboardMobile";
 
@@ -27,6 +28,8 @@ export default function Admin({
   const tabKey = `${activeTab}-${tabVisitCounts.current[activeTab] ?? 0}`;
 
   switch (activeTab) {
+    case "employees-list":
+      return <EmployeesListLayout key={tabKey} />;
     case "employee-management":
       return <EmployeeLeaveManagement key={tabKey} />;
     case "user-roles":

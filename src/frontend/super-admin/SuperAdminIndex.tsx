@@ -8,6 +8,7 @@ import LogsMobile from "./functions/Logs/LogsMobile";
 import SuperAdminProfileSettings from "./functions/SuperAdminProfileSettings";
 import ConfigurationPage from "./functions/Configuration/page";
 import EmployeeLeaveManagement from "../functions/LeaveManagement/EmployeeLeaveManagement";
+import EmployeesListLayout from "../functions/LeaveManagement/EmployeesListLayout";
 import Dashboard from "../functions/Dashboard/Dashboard";
 import DashboardMobile from "../functions/Dashboard/DashboardMobile";
 import styles from "./styles.module.css";
@@ -36,6 +37,8 @@ export default function SuperAdmin({
 
   const renderContent = () => {
     switch (activeTab) {
+      case "employees-list":
+        return <EmployeesListLayout key={tabKey} />;
       case "employee-management":
         return <EmployeeLeaveManagement key={tabKey} />;
       case "user-roles":

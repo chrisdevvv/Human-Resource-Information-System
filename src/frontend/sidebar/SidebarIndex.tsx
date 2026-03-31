@@ -37,6 +37,12 @@ const SIDEBAR_TABS: SidebarTab[] = [
     roles: ["admin", "super-admin"],
   },
   {
+    id: "employees-list",
+    label: "Employees List",
+    icon: Users,
+    roles: ["admin", "super-admin"],
+  },
+  {
     id: "employee-management",
     label: "Leave Management",
     icon: Users,
