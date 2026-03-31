@@ -1,4 +1,4 @@
-# DepEd Leave Tracker — Backend Security Hardening Summary
+# Human Resource Management System — Backend Security Hardening Summary
 
 This document summarizes all security improvements and structural enhancements made to the backend during this development session.
 

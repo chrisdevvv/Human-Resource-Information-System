@@ -46,7 +46,7 @@ Notes / quick verification checklist:
 Recent updates (2026-03-26 - Part 2 - Configuration Module):
 - Configuration module completed with full API integration:
 	- `src/frontend/super-admin/functions/Configuration/page.tsx` now fetches real schools and particulars data from backend APIs.
-	- Schools data fetched from `GET /api/school` endpoint (super-admin only).
+	- Schools data fetched from `GET /api/schools` endpoint (super-admin only).
 	- Particulars data fetched from `GET /api/leave/particulars` endpoint (super-admin only).
 - Add functionality implemented for both schools and particulars:
 	- Schools: Generates school_code from school name automatically when creating new entry.
@@ -74,7 +74,7 @@ Recent updates (2026-03-26 - Part 2 - Configuration Module):
 	- Auth token fetched from localStorage for all API requests.
 
 API Integration Details:
-- Schools endpoint: `POST /api/school` expects { school_name: string, school_code: string }
+- Schools endpoint: `POST /api/schools` expects { school_name: string, school_code: string }
 - Particulars endpoint: `POST /api/leave/particulars` expects { particular: string }
 - Both endpoints require Bearer token authentication.
 - Error responses handled and displayed in UI toast notifications.

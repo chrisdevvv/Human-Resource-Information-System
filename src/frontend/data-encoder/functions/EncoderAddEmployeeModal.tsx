@@ -237,7 +237,7 @@ export default function EncoderAddUserModal({
         throw new Error("Your account has no assigned school.");
       }
 
-      if (!["ADMIN", "DATA_ENCODER"].includes(currentUserRole)) {
+      if (!["ADMIN", "SUPER_ADMIN"].includes(currentUserRole)) {
         throw new Error("Your role is not allowed to add users.");
       }
 

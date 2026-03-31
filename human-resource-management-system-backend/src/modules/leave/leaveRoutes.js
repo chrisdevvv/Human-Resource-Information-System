@@ -45,6 +45,12 @@ router.get(
   roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
   getLeaveParticulars,
 );
+router.get(
+  "/particulars/config",
+  authMiddleware,
+  roleAuthMiddleware(["super-admin"]),
+  getLeaveParticulars,
+);
 router.post(
   "/particulars",
   authMiddleware,

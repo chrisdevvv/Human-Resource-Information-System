@@ -9,7 +9,7 @@ This folder contains backend configuration setup.
 - `DB_HOST` (default: `127.0.0.1`)
 - `DB_USER` (default: `root`)
 - `DB_PASSWORD` (default: empty)
-- `DB_NAME` (default: `deped_leave_tracker`)
+- `DB_NAME` (default: `human_resource_management_system`)
 - `DB_PORT` (default: `3306`)
 
 ## Notes

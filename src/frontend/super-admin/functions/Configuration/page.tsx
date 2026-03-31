@@ -92,8 +92,8 @@ export default function ConfigurationPage() {
       };
 
       const [schoolsRes, particularsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/schools`, { headers }),
-        fetch(`${API_BASE_URL}/api/leave/particulars`, { headers }),
+        fetch(`${API_BASE_URL}/api/schools/config/list`, { headers }),
+        fetch(`${API_BASE_URL}/api/leave/particulars/config`, { headers }),
       ]);
 
       if (schoolsRes.ok) {
