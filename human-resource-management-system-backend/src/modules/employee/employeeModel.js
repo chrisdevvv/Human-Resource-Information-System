@@ -101,23 +101,45 @@ const Employee = {
   },
 
   create: async (data) => {
-    const { first_name, last_name, email, employee_type, school_id } = data;
+    const {
+      first_name,
+      last_name,
+      email,
+      employee_type,
+      school_id,
+      birthdate,
+    } = data;
     const [result] = await pool
       .promise()
       .query(
-        "INSERT INTO employees (first_name, last_name, email, employee_type, school_id) VALUES (?, ?, ?, ?, ?)",
-        [first_name, last_name, email, employee_type, school_id],
+        "INSERT INTO employees (first_name, last_name, email, employee_type, school_id, birthdate) VALUES (?, ?, ?, ?, ?, ?)",
+        [first_name, last_name, email, employee_type, school_id, birthdate],
       );
     return result;
   },
 
   update: async (id, data) => {
-    const { first_name, last_name, email, employee_type, school_id } = data;
+    const {
+      first_name,
+      last_name,
+      email,
+      employee_type,
+      school_id,
+      birthdate,
+    } = data;
     const [result] = await pool
       .promise()
       .query(
-        "UPDATE employees SET first_name = ?, last_name = ?, email = ?, employee_type = ?, school_id = ? WHERE id = ? AND is_archived = 0",
-        [first_name, last_name, email, employee_type, school_id, id],
+        "UPDATE employees SET first_name = ?, last_name = ?, email = ?, employee_type = ?, school_id = ?, birthdate = ? WHERE id = ? AND is_archived = 0",
+        [
+          first_name,
+          last_name,
+          email,
+          employee_type,
+          school_id,
+          birthdate || null,
+          id,
+        ],
       );
     return result;
   },

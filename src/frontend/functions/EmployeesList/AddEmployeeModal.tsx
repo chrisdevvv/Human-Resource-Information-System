@@ -36,6 +36,7 @@ type PendingEmployeePayload = {
   first_name: string;
   last_name: string;
   email: string;
+  birthdate: string;
   employee_type: "teaching" | "non-teaching";
   school_id?: number | null;
   school_name: string;
@@ -61,6 +62,7 @@ export default function AddEmployeeModal({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [birthdate, setBirthdate] = useState("");
   const [employeeType, setEmployeeType] = useState<"teaching" | "non-teaching">(
     "non-teaching",
   );
@@ -256,6 +258,7 @@ export default function AddEmployeeModal({
       setFirstName("");
       setLastName("");
       setEmail("");
+      setBirthdate("");
       setEmployeeType("non-teaching");
       setSchoolId(null);
       setSchoolInputValue("");
@@ -319,6 +322,16 @@ export default function AddEmployeeModal({
       return;
     }
 
+    if (!birthdate) {
+      setErrorMessage("Birthdate is required.");
+      return;
+    }
+
+    if (new Date(birthdate) > new Date()) {
+      setErrorMessage("Birthdate cannot be in the future.");
+      return;
+    }
+
     // Keep employee type explicit in validation even if a default exists.
     if (!employeeType) {
       setErrorMessage("Employee type is required.");
@@ -361,6 +374,7 @@ export default function AddEmployeeModal({
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       email: email.trim(),
+      birthdate,
       employee_type: employeeType,
       school_id: resolvedSchoolId,
       school_name: resolvedSchoolName,
@@ -411,6 +425,7 @@ export default function AddEmployeeModal({
           first_name: pendingPayload.first_name,
           last_name: pendingPayload.last_name,
           email: pendingPayload.email,
+          birthdate: pendingPayload.birthdate,
           employee_type: pendingPayload.employee_type,
           school_id: resolvedSchoolId,
         }),
@@ -500,6 +515,19 @@ export default function AddEmployeeModal({
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="employee@email.com"
+            />
+          </div>
+
+          <div className="mt-3 space-y-2.5">
+            <label className="block text-sm font-medium text-gray-600">
+              Birthdate
+            </label>
+            <input
+              type="date"
+              value={birthdate}
+              onChange={(e) => setBirthdate(e.target.value)}
+              max={new Date().toISOString().slice(0, 10)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 

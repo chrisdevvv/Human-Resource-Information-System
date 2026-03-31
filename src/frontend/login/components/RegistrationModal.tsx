@@ -19,6 +19,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [birthdate, setBirthdate] = useState("");
   const [school, setSchool] = useState("");
   const [schoolId, setSchoolId] = useState<number | null>(null);
   const [schoolInputValue, setSchoolInputValue] = useState("");
@@ -40,6 +41,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     firstName: string;
     lastName: string;
     email: string;
+    birthdate: string;
     school: string;
     password: string;
   } | null>(null);
@@ -104,6 +106,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   const [firstNameError, setFirstNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [birthdateError, setBirthdateError] = useState("");
   const [schoolError, setSchoolError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
@@ -274,6 +277,14 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       hasError = true;
     }
 
+    if (!birthdate) {
+      setBirthdateError("Birthdate is required");
+      hasError = true;
+    } else if (new Date(birthdate) > new Date()) {
+      setBirthdateError("Birthdate cannot be in the future");
+      hasError = true;
+    }
+
     if (hasError) {
       setError("Please correct the errors before continuing");
       return;
@@ -313,6 +324,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       firstName,
       lastName,
       email,
+      birthdate,
       school,
       password,
     });
@@ -334,6 +346,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
           first_name: pendingFormData.firstName,
           last_name: pendingFormData.lastName,
           email: pendingFormData.email,
+          birthdate: pendingFormData.birthdate,
           password: pendingFormData.password,
           school_name: pendingFormData.school,
         }),
@@ -385,6 +398,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     setFirstName("");
     setLastName("");
     setEmail("");
+    setBirthdate("");
     setSchool("");
     setSchoolId(null);
     setSchoolInputValue("");
@@ -396,6 +410,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     setFirstNameError("");
     setLastNameError("");
     setEmailError("");
+    setBirthdateError("");
     setSchoolError("");
     setPasswordError("");
     setConfirmPasswordError("");
@@ -483,7 +498,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   </div>
                 </div>
 
-                <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+                <label className="mb-1 mt-5 flex items-center gap-2 text-sm text-gray-700">
                   <Mail className="text-blue-600" size={18} />
                   Email <span className="text-red-500">*</span>
                 </label>
@@ -496,10 +511,29 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   }}
                   onBlur={handleEmailBlur}
                   placeholder="name@deped.gov.ph"
-                  className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${emailError ? "border-red-500" : ""}`}
+                  className={`mt-1 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${emailError ? "border-red-500" : ""}`}
                 />
                 {emailError && (
                   <p className="text-sm text-red-600 mt-1">{emailError}</p>
+                )}
+
+                <label className="mb-3 mt-4 flex items-center gap-2 text-sm text-gray-700">
+                  <User className="text-blue-600" size={18} />
+                  Birthdate <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={birthdate}
+                  onChange={(e) => {
+                    trackChange(e.target.value, birthdate);
+                    setBirthdate(e.target.value);
+                    if (birthdateError) setBirthdateError("");
+                  }}
+                  max={new Date().toISOString().slice(0, 10)}
+                  className={`-mt-1 w-full text-gray-700 px-3 py-2 border rounded-md ${birthdateError ? "border-red-500" : ""}`}
+                />
+                {birthdateError && (
+                  <p className="text-sm text-red-600 mt-1">{birthdateError}</p>
                 )}
 
                 <div className="mt-4">

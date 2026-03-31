@@ -37,6 +37,7 @@ const User = {
     if (!pagination || !pagination.page) {
       const [rows] = await pool.promise().query(
         `SELECT u.id, u.first_name, u.last_name, u.email, u.role,
+                       u.birthdate,
                        u.school_id,
                        u.is_active, u.created_at, u.updated_at,
                        s.school_name, s.school_code
@@ -57,6 +58,7 @@ const User = {
 
     const [rows] = await pool.promise().query(
       `SELECT u.id, u.first_name, u.last_name, u.email, u.role,
+                       u.birthdate,
                        u.school_id,
                        u.is_active, u.created_at, u.updated_at,
                        s.school_name, s.school_code
@@ -70,6 +72,7 @@ const User = {
   getById: async (id) => {
     const [rows] = await pool.promise().query(
       `SELECT u.id, u.first_name, u.last_name, u.email, u.role,
+                    u.birthdate,
                     u.is_active, u.created_at, u.updated_at,
                     u.school_id, s.school_name, s.school_code
              FROM users u

@@ -24,7 +24,15 @@ const LOGIN_ATTEMPT_WINDOW_SECONDS = Math.max(
   Number(process.env.LOGIN_ATTEMPT_WINDOW_SECONDS || LOGIN_LOCK_SECONDS),
 );
 
-const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
+const normalizeEmail = (email) =>
+  String(email || "")
+    .trim()
+    .toLowerCase();
+const normalizeBirthdate = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString().slice(0, 10);
+};
 
 const getSourceIp = (req) => {
   const forwarded = req.headers["x-forwarded-for"];
@@ -35,7 +43,8 @@ const getSourceIp = (req) => {
   return String(rawIp).replace(/^::ffff:/, "");
 };
 
-const getLoginAttemptIdentifier = (email, ip) => `${normalizeEmail(email)}|${ip}`;
+const getLoginAttemptIdentifier = (email, ip) =>
+  `${normalizeEmail(email)}|${ip}`;
 
 const getActiveLoginAttempt = async (identifier) => {
   const [rows] = await pool
@@ -137,6 +146,7 @@ const register = async (req, res) => {
     password,
     school_name,
     requested_role,
+    birthdate,
     suppress_pending_email,
   } = req.body;
 
@@ -147,6 +157,11 @@ const register = async (req, res) => {
   }
 
   try {
+    const normalizedBirthdate = normalizeBirthdate(birthdate);
+    if (!normalizedBirthdate) {
+      return res.status(400).json({ message: "Valid birthdate is required" });
+    }
+
     // Add school to schools table if it doesn't exist yet
     const [existingSchool] = await pool
       .promise()
@@ -195,7 +210,7 @@ const register = async (req, res) => {
     const [result] = await pool
       .promise()
       .query(
-        "INSERT INTO registration_requests (first_name, last_name, email, password_hash, school_name, requested_role) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO registration_requests (first_name, last_name, email, password_hash, school_name, requested_role, birthdate) VALUES (?, ?, ?, ?, ?, ?, ?)",
         [
           first_name,
           last_name,
@@ -203,6 +218,7 @@ const register = async (req, res) => {
           hashedPassword,
           school_name.trim(),
           requested_role || null,
+          normalizedBirthdate,
         ],
       );
     // Fire-and-forget — email failure must not block the registration response

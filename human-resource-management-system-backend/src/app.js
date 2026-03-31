@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("./config/loadEnv");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -252,6 +252,23 @@ const ensureEmployeeLeaveStatusSchema = async () => {
   }
 };
 
+const ensureBirthdateSchema = async () => {
+  await pool.promise().query(`
+    ALTER TABLE employees
+    ADD COLUMN IF NOT EXISTS birthdate DATE NULL AFTER email;
+  `);
+
+  await pool.promise().query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS birthdate DATE NULL AFTER email;
+  `);
+
+  await pool.promise().query(`
+    ALTER TABLE registration_requests
+    ADD COLUMN IF NOT EXISTS birthdate DATE NULL AFTER email;
+  `);
+};
+
 const ensureBacklogArchiveSchema = async () => {
   await pool.promise().query(`
     ALTER TABLE backlogs
@@ -363,6 +380,9 @@ app.listen(PORT, async () => {
 
     await ensureEmployeeLeaveStatusSchema();
     console.log("✔  Employee leave status schema is ready");
+
+    await ensureBirthdateSchema();
+    console.log("✔  Birthdate schema is ready");
 
     await ensureBacklogArchiveSchema();
     console.log("✔  Backlog archive schema is ready");

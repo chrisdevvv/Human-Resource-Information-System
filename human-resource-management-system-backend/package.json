@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "seed": "node src/seed.js"
+    "seed": "node src/seed.js",
+    "backfill:birthdates": "node src/scripts/backfill-birthdates.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

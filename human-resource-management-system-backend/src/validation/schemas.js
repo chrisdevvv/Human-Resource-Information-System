@@ -8,7 +8,9 @@ const schoolIdParamSchema = Joi.object({
   school_id: Joi.number().integer().positive().required(),
 });
 
-const employeeBodySchema = Joi.object({
+const birthdateSchema = Joi.date().iso().max("now");
+
+const employeeCreateBodySchema = Joi.object({
   first_name: Joi.string().trim().min(1).max(100).required(),
   last_name: Joi.string().trim().min(1).max(100).required(),
   email: Joi.string()
@@ -17,6 +19,19 @@ const employeeBodySchema = Joi.object({
     .allow(null, ""),
   employee_type: Joi.string().valid("teaching", "non-teaching").required(),
   school_id: Joi.number().integer().positive().required(),
+  birthdate: birthdateSchema.required(),
+});
+
+const employeeUpdateBodySchema = Joi.object({
+  first_name: Joi.string().trim().min(1).max(100).required(),
+  last_name: Joi.string().trim().min(1).max(100).required(),
+  email: Joi.string()
+    .trim()
+    .email({ tlds: { allow: false } })
+    .allow(null, ""),
+  employee_type: Joi.string().valid("teaching", "non-teaching").required(),
+  school_id: Joi.number().integer().positive().required(),
+  birthdate: birthdateSchema.allow(null),
 });
 
 const employeeListQuerySchema = Joi.object({
@@ -80,6 +95,7 @@ const userAdminCreateBodySchema = Joi.object({
     .trim()
     .email({ tlds: { allow: false } })
     .required(),
+  birthdate: birthdateSchema.required(),
   password: Joi.string().min(8).max(128).required(),
   school_name: Joi.string().trim().min(1).max(255),
 });
@@ -96,6 +112,23 @@ const usersQuerySchema = Joi.object({
 
 const registrationStatusQuerySchema = Joi.object({
   status: Joi.string().valid("PENDING", "APPROVED", "REJECTED"),
+});
+
+const authRegisterBodySchema = Joi.object({
+  first_name: Joi.string().trim().min(1).max(100).required(),
+  last_name: Joi.string().trim().min(1).max(100).required(),
+  email: Joi.string()
+    .trim()
+    .email({ tlds: { allow: false } })
+    .required(),
+  password: Joi.string().min(8).max(128).required(),
+  school_name: Joi.string().trim().min(1).max(255).required(),
+  requested_role: Joi.string().valid("ADMIN", "DATA_ENCODER").optional(),
+  birthdate: birthdateSchema.required(),
+  suppress_pending_email: Joi.alternatives().try(
+    Joi.boolean(),
+    Joi.string().valid("true", "false"),
+  ),
 });
 
 const registrationApproveBodySchema = Joi.object({
@@ -175,7 +208,8 @@ const backlogArchiveBodySchema = Joi.object({
 module.exports = {
   idParamSchema,
   schoolIdParamSchema,
-  employeeBodySchema,
+  employeeCreateBodySchema,
+  employeeUpdateBodySchema,
   employeeListQuerySchema,
   employeeMarkOnLeaveBodySchema,
   employeeStatusCountsQuerySchema,
@@ -186,6 +220,7 @@ module.exports = {
   userPasswordResetBodySchema,
   userAdminCreateBodySchema,
   usersQuerySchema,
+  authRegisterBodySchema,
   registrationStatusQuerySchema,
   registrationApproveBodySchema,
   registrationRejectBodySchema,

@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("./config/loadEnv");
 const bcrypt = require("bcryptjs");
 const pool = require("./config/db");
 
