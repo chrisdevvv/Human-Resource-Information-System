@@ -225,7 +225,7 @@ export default function SidebarIndex({
   role,
   activeTab,
   onTabChange,
-  title = "ELMS",
+  title = "HRIS",
   collapsed,
   defaultCollapsed = false,
   onToggleCollapse,

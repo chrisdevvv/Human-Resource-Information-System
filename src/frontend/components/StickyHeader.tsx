@@ -15,7 +15,7 @@ export default function StickyHeader(_: StickyHeaderProps) {
             DEPARTMENT OF EDUCATION
           </p>
           <h1 className="text-xl font-bold">
-            Employee Leave Management System
+            Human Resource Information System
           </h1>
         </div>
       </div>

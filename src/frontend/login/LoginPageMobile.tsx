@@ -224,7 +224,7 @@ export default function LoginPageMobile() {
             DEPARTMENT OF EDUCATION
           </p>
           <h1 className="text-sm sm:text-base font-bold leading-tight">
-            Employee Leave Management System
+            Human Resource Information System
           </h1>
         </div>
       </header>

@@ -109,7 +109,7 @@ export default function Page() {
           role={role}
           activeTab={activeTab}
           onTabChange={handleTabChange}
-          title="ELMS"
+          title="HRIS"
         />
       </div>
 

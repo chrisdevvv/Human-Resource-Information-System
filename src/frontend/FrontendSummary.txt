@@ -143,7 +143,7 @@ Recent updates (2026-03-26 - Part 4 - Configuration Controls + Sidebar School La
 	- On smaller screens, controls still stack cleanly while preserving order and spacing.
 
 - Sidebar identity subtitle update (desktop + mobile):
-	- Updated `SidebarIndex.tsx` and `SidebarMobile.tsx` to show a subtitle under `ELMS`.
+	- Updated `SidebarIndex.tsx` and `SidebarMobile.tsx` to show a subtitle under `HRIS`.
 	- Super Admin subtitle is fixed to: `Department of Education`.
 	- Admin and Data Encoder subtitle now shows their real assigned school.
 

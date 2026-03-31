@@ -222,7 +222,7 @@ export default function SidebarMobile({
   role,
   activeTab,
   onTabChange,
-  title = "ELMS",
+  title = "HRIS",
   className = "",
 }: SidebarMobileProps) {
   const [isOpen, setIsOpen] = useState(false);
