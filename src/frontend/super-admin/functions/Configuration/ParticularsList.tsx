@@ -1,7 +1,13 @@
 "use client";
 
-import React from "react";
-import { ListChecks, Search, Trash2, ArrowUpAZ } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  ListChecks,
+  Search,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 type ParticularsListProps = {
   items: Array<{ id: number | string; name: string }>;
@@ -22,8 +28,61 @@ export default function ParticularsList({
   sortValue,
   onSortChange,
 }: ParticularsListProps) {
+  const PAGE_SIZE_OPTIONS = [10, 20, 50];
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(PAGE_SIZE_OPTIONS[0]);
+
+  const totalPages = Math.max(1, Math.ceil(items.length / itemsPerPage));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchValue, sortValue, itemsPerPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return items.slice(start, start + itemsPerPage);
+  }, [currentPage, items, itemsPerPage]);
+
+  const pageItems = useMemo(() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    if (currentPage <= 4) {
+      return [1, 2, 3, 4, 5, "ellipsis", totalPages] as const;
+    }
+
+    if (currentPage >= totalPages - 3) {
+      return [
+        1,
+        "ellipsis",
+        totalPages - 4,
+        totalPages - 3,
+        totalPages - 2,
+        totalPages - 1,
+        totalPages,
+      ] as const;
+    }
+
+    return [
+      1,
+      "ellipsis",
+      currentPage - 1,
+      currentPage,
+      currentPage + 1,
+      "ellipsis",
+      totalPages,
+    ] as const;
+  }, [currentPage, totalPages]);
+
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <section className="rounded-2xl border border-gray-200 bg-white shadow-sm flex h-full min-h-0 flex-col overflow-hidden">
       <div className="border-b border-gray-200 px-4 py-4 sm:px-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
@@ -72,7 +131,7 @@ export default function ParticularsList({
         </div>
       </div>
 
-      <div className="hidden md:block overflow-x-auto">
+      <div className="hidden md:block overflow-x-auto overflow-y-auto flex-1 min-h-0">
         <table className="min-w-full">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50">
@@ -85,7 +144,7 @@ export default function ParticularsList({
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => (
+            {paginatedItems.map((item) => (
               <tr key={item.id} className="border-b border-gray-100">
                 <td className="px-4 py-3 text-sm font-medium text-gray-900 sm:px-6">
                   {item.name}
@@ -108,8 +167,8 @@ export default function ParticularsList({
         </table>
       </div>
 
-      <div className="space-y-3 p-4 md:hidden">
-        {items.map((item) => (
+      <div className="space-y-3 overflow-y-auto flex-1 min-h-0 p-4 md:hidden">
+        {paginatedItems.map((item) => (
           <article
             key={item.id}
             className="rounded-xl border border-gray-200 bg-white p-4"
@@ -128,6 +187,75 @@ export default function ParticularsList({
           </article>
         ))}
       </div>
+
+      {items.length > 0 && (
+        <div className="border-t border-gray-200 px-4 py-3 sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              Show
+              <select
+                value={itemsPerPage}
+                onChange={(event) =>
+                  setItemsPerPage(Number(event.target.value))
+                }
+                className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+              >
+                {PAGE_SIZE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+              entries
+            </label>
+
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="cursor-pointer rounded p-2 text-gray-500 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Previous page"
+              >
+                <ChevronLeft size={18} />
+              </button>
+
+              {pageItems.map((item, index) =>
+                item === "ellipsis" ? (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="px-2 text-sm text-gray-400"
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    onClick={() => setCurrentPage(item)}
+                    className={`cursor-pointer h-9 w-9 rounded text-sm font-medium transition ${
+                      currentPage === item
+                        ? "bg-blue-600 text-white"
+                        : "text-gray-500 hover:bg-gray-100"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ),
+              )}
+
+              <button
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="cursor-pointer rounded p-2 text-gray-500 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Next page"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

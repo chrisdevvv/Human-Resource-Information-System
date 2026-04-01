@@ -52,6 +52,7 @@ function resetLandingTabOnLogin(role?: string) {
 
 export default function LoginPageMobile() {
   const router = useRouter();
+  const currentYear = new Date().getFullYear();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -217,19 +218,26 @@ export default function LoginPageMobile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
       <header className="sticky top-0 z-50 bg-blue-700 text-white py-3 px-4 shadow-md">
-        <div className="max-w-md mx-auto w-full text-left">
-          <p className="text-[10px] sm:text-xs font-medium tracking-wider">
-            DEPARTMENT OF EDUCATION
-          </p>
-          <h1 className="text-sm sm:text-base font-bold leading-tight">
-            Human Resource Information System
-          </h1>
+        <div className="w-full flex items-center justify-start gap-2 text-left">
+          <img
+            src="/images/[DEPED] ELMS Logo.svg"
+            alt="DepEd ELMS Logo"
+            className="h-10 sm:h-11 w-auto"
+          />
+          <div>
+            <p className="text-[10px] sm:text-xs font-medium tracking-wider">
+              DEPARTMENT OF EDUCATION
+            </p>
+            <h1 className="text-sm sm:text-base font-bold leading-tight">
+              Human Resource Information System
+            </h1>
+          </div>
         </div>
       </header>
 
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] px-4 py-6">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
         <div className="flex items-center justify-center gap-4 mb-6">
           <img
             src="/sdologo-new.svg"
@@ -365,6 +373,17 @@ export default function LoginPageMobile() {
           </div>
         </div>
       </div>
+
+      <footer className="bg-blue-700 text-white px-4 py-3 shadow-inner">
+        <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs sm:text-sm">
+          <div className="text-left">
+            <span>&copy; {currentYear} DepEd Human Resource Information System</span>
+          </div>
+          <div className="text-left sm:text-right">
+            Developer: Shania Condalor &amp; Alexis Torrefiel
+          </div>
+        </div>
+      </footer>
 
       <LoginSuccessModal
         visible={showLoginSuccess}

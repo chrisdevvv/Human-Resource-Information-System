@@ -318,7 +318,7 @@ export default function UserRoles() {
 
       {/* Tab Content */}
       {activeTab === "users" && (
-        <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-6 sticky top-4 h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
+        <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-6 sticky top-4 flex flex-col">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">
             User & Roles
           </h1>
@@ -443,13 +443,13 @@ export default function UserRoles() {
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+          <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
             {userLoading ? (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex items-center justify-center py-10">
                 <p className="text-gray-500">Loading users...</p>
               </div>
             ) : userError ? (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex items-center justify-center py-10">
                 <p className="text-red-500">Error: {userError}</p>
               </div>
             ) : (

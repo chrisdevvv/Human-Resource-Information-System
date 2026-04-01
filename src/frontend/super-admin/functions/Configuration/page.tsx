@@ -345,7 +345,7 @@ export default function ConfigurationPage() {
   };
 
   return (
-    <section className="w-full space-y-4 sm:space-y-6">
+    <section className="w-full h-[calc(100vh-7rem)] flex flex-col gap-4 sm:gap-6 overflow-hidden">
       <div className="rounded-2xl bg-linear-to-r from-blue-700 to-blue-500 p-4 text-white shadow-sm sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -415,42 +415,46 @@ export default function ConfigurationPage() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-          <div className="inline-flex animate-spin">
-            <div className="h-6 w-6 rounded-full border-4 border-gray-200 border-t-blue-600" />
+      <div className="min-h-0 flex-1">
+        {isLoading ? (
+          <div className="h-full rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+            <div className="inline-flex animate-spin">
+              <div className="h-6 w-6 rounded-full border-4 border-gray-200 border-t-blue-600" />
+            </div>
+            <p className="mt-4 text-sm text-gray-600">
+              Loading configuration...
+            </p>
           </div>
-          <p className="mt-4 text-sm text-gray-600">Loading configuration...</p>
-        </div>
-      ) : activeTab === "schools" ? (
-        <SchoolsList
-          items={filteredSchools}
-          searchValue={schoolSearch}
-          onSearchChange={setSchoolSearch}
-          onAdd={() => setShowEntryModal(true)}
-          onDelete={handleDeleteSchool}
-          sortValue={schoolSort}
-          onSortChange={setSchoolSort}
-        />
-      ) : (
-        <ParticularsList
-          items={filteredParticulars.map((particular, index) => ({
-            id: index,
-            name: particular,
-          }))}
-          searchValue={particularSearch}
-          onSearchChange={setParticularSearch}
-          onAdd={() => setShowEntryModal(true)}
-          onDelete={handleDeleteParticular}
-          sortValue={particularSort}
-          onSortChange={setParticularSort}
-        />
-      )}
+        ) : activeTab === "schools" ? (
+          <SchoolsList
+            items={filteredSchools}
+            searchValue={schoolSearch}
+            onSearchChange={setSchoolSearch}
+            onAdd={() => setShowEntryModal(true)}
+            onDelete={handleDeleteSchool}
+            sortValue={schoolSort}
+            onSortChange={setSchoolSort}
+          />
+        ) : (
+          <ParticularsList
+            items={filteredParticulars.map((particular, index) => ({
+              id: index,
+              name: particular,
+            }))}
+            searchValue={particularSearch}
+            onSearchChange={setParticularSearch}
+            onAdd={() => setShowEntryModal(true)}
+            onDelete={handleDeleteParticular}
+            sortValue={particularSort}
+            onSortChange={setParticularSort}
+          />
+        )}
+      </div>
 
       {showEntryModal ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
-            <div className="flex items-start justify-between border-b border-gray-200 px-5 py-4">
+            <div className="border-b border-gray-200 px-5 py-4">
               <div>
                 <h2 className="text-lg font-bold text-gray-900">
                   Add {activeTab === "schools" ? "School" : "Particular"}
@@ -461,17 +465,6 @@ export default function ConfigurationPage() {
                   to add it to the system.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowEntryModal(false);
-                  setModalInput("");
-                }}
-                className="cursor-pointer rounded-md p-1 text-gray-500 hover:bg-gray-100"
-                aria-label="Close"
-              >
-                <X size={16} />
-              </button>
             </div>
             <div className="space-y-4 px-5 py-4">
               <label className="block text-sm font-medium text-gray-700">
