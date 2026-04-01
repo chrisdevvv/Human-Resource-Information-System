@@ -18,8 +18,11 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `human_resource_management_system`
+-- Database: `human_resource_information_system`
 --
+
+CREATE DATABASE IF NOT EXISTS `human_resource_information_system`;
+USE `human_resource_information_system`;
 
 -- --------------------------------------------------------
 

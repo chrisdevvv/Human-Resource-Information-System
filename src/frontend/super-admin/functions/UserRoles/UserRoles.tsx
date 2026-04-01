@@ -32,6 +32,17 @@ type SchoolOption = {
   school_name: string;
 };
 
+type UserApiRow = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  school_id?: number | null;
+  school_name?: string | null;
+  role: "SUPER_ADMIN" | "ADMIN" | "DATA_ENCODER";
+  is_active: unknown;
+};
+
 const normalizeIsActive = (value: unknown): boolean => {
   return value === true || value === 1 || value === "1" || value === "true";
 };
@@ -155,7 +166,8 @@ export default function UserRoles() {
       if (!response.ok) throw new Error("Failed to fetch users");
 
       const result = await response.json();
-      const formatted = (result.data || []).map((item: any) => ({
+      const rows = (result.data || []) as UserApiRow[];
+      const formatted = rows.map((item) => ({
         id: item.id,
         firstName: item.first_name,
         lastName: item.last_name,

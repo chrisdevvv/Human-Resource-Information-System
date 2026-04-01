@@ -392,7 +392,7 @@ export default function AddEmployeeModal({
       setErrorMessage(null);
 
       // Try to get token from localStorage with a small delay to ensure it's available
-      let token = localStorage.getItem("authToken");
+      const token = localStorage.getItem("authToken");
 
       if (!token) {
         // Check if localStorage is accessible at all
@@ -618,7 +618,7 @@ export default function AddEmployeeModal({
                         ))
                       ) : (
                         <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                          No schools match "{schoolInputValue}"
+                          No schools match &quot;{schoolInputValue}&quot;
                         </div>
                       )}
                     </div>

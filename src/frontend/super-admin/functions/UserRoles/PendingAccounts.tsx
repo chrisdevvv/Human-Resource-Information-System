@@ -29,6 +29,19 @@ type RegistrationRequest = {
   created_at: string;
 };
 
+type RegistrationApiRow = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  school_name: string;
+  approved_role?: string | null;
+  rejection_reason?: string | null;
+  reviewed_at?: string | null;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  created_at: string;
+};
+
 type PendingAccountsProps = {
   onRefreshUsers?: () => void;
 };
@@ -97,7 +110,8 @@ export default function PendingAccounts({
       }
 
       const result = await response.json();
-      const formattedData = (result.data || []).map((item: any) => ({
+      const rows = (result.data || []) as RegistrationApiRow[];
+      const formattedData = rows.map((item) => ({
         id: item.id,
         firstName: item.first_name,
         lastName: item.last_name,

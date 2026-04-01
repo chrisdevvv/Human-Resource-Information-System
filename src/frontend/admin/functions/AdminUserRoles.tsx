@@ -27,6 +27,16 @@ type User = {
 type EditableUserRole = "ADMIN" | "DATA_ENCODER";
 type EditableUser = Omit<User, "role"> & { role: EditableUserRole };
 
+type UserApiRow = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  school_name?: string | null;
+  role: "SUPER_ADMIN" | "ADMIN" | "DATA_ENCODER";
+  is_active: unknown;
+};
+
 const normalizeIsActive = (value: unknown): boolean => {
   return value === true || value === 1 || value === "1" || value === "true";
 };
@@ -92,8 +102,8 @@ export default function AdminUserRoles() {
       const result = await response.json();
 
       // When pagination is used backend returns { data, total, page, pageSize }
-      const rows = result.data || [];
-      const formatted = (rows as any[]).map((item: any) => ({
+      const rows = (result.data || []) as UserApiRow[];
+      const formatted = rows.map((item) => ({
         id: item.id,
         firstName: item.first_name,
         lastName: item.last_name,

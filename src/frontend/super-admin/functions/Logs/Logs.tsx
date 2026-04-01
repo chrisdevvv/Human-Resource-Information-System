@@ -22,6 +22,19 @@ type Log = {
   createdAt: string;
 };
 
+type LogApiRow = {
+  id: number;
+  user_id: number;
+  first_name?: string;
+  last_name?: string;
+  role?: string;
+  email?: string;
+  school_name?: string;
+  action?: string;
+  details?: string;
+  created_at: string;
+};
+
 type ArchiveFlowStep = "range" | "generate-prompt" | "confirm" | "success";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
@@ -291,7 +304,8 @@ export default function Logs() {
       if (!response.ok) throw new Error("Failed to fetch logs");
 
       const result = await response.json();
-      const formatted = (result.data || []).map((item: any) => ({
+      const rows = (result.data || []) as LogApiRow[];
+      const formatted = rows.map((item) => ({
         id: item.id,
         userId: item.user_id,
         firstName: item.first_name || "Unknown",

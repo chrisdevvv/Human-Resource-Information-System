@@ -601,7 +601,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                           ))
                         ) : (
                           <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                            No schools match "{schoolInputValue}"
+                            No schools match &quot;{schoolInputValue}&quot;
                           </div>
                         )}
                       </div>
