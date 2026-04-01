@@ -7,7 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import UnarchiveConfirmationModal from "./UnarchiveConfirmationModal";
+import UnarchiveConfirmationModal from "./modals/UnarchiveConfirmationModal";
 import { unarchiveEmployee } from "../LeaveManagement/leaveApi";
 
 type EmployeeRecordApi = {

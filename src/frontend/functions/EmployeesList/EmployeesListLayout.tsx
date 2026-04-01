@@ -9,9 +9,9 @@ import {
   Archive,
   Plus,
 } from "lucide-react";
-import AddEmployeeModal from "./AddEmployeeModal";
+import AddEmployeeModal from "./modals/AddEmployeeModal";
 import ArchivedEmployee from "./ArchivedEmployee";
-import ArchiveConfirmationModal from "./ArchiveConfirmationModal";
+import ArchiveConfirmationModal from "./modals/ArchiveConfirmationModal";
 import ArchiveSuccessMessage from "../LeaveManagement/ArchiveSuccessMessage";
 import { archiveEmployee } from "../LeaveManagement/leaveApi";
 

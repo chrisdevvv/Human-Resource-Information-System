@@ -3,8 +3,8 @@
 // Filename: RegistrationModal.tsx
 // Purpose: Registration request form — submits to registration_requests table for admin approval
 import React, { useEffect, useRef, useState } from "react";
-import { Mail, Key, User, X, Building2, Eye, EyeOff } from "../../assets/icons";
-import { RegistrationSuccessModal } from "../../registration";
+import { Mail, Key, User, X, Building2, Eye, EyeOff } from "../assets/icons";
+import { RegistrationSuccessModal } from ".";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
