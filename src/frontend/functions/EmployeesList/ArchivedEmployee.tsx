@@ -13,6 +13,7 @@ import { unarchiveEmployee } from "../LeaveManagement/leaveApi";
 type EmployeeRecordApi = {
   id: number;
   first_name: string;
+  middle_name?: string | null;
   last_name: string;
   email?: string | null;
   school_name?: string | null;
@@ -71,8 +72,9 @@ const getArchivedEmployeesEndpoint = () => {
 
 const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
   const firstName = item.first_name?.trim() || "Unknown";
+  const middleName = item.middle_name?.trim() || "";
   const lastName = item.last_name?.trim() || "Employee";
-  const fullName = `${firstName} ${lastName}`.trim();
+  const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
   return {
     id: item.id,
     fullName,

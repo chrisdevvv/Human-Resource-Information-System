@@ -11,6 +11,7 @@ import {
 type EmployeeInfo = {
   id: number;
   first_name: string;
+  middle_name?: string | null;
   last_name: string;
   employee_type: "teaching" | "non-teaching";
   email?: string | null;
@@ -84,7 +85,9 @@ export default function LeaveHistoryPage() {
         <p className="mt-1 text-sm text-gray-600">
           Employee:{" "}
           {employee
-            ? `${employee.first_name} ${employee.last_name}`.trim()
+            ? [employee.first_name, employee.middle_name, employee.last_name]
+                .filter(Boolean)
+                .join(" ")
             : "Loading..."}
         </p>
 

@@ -173,6 +173,24 @@ const Backlog = {
       affectedRows: Number(result.affectedRows || 0),
     };
   },
+
+  archiveByIds: async ({ ids }) => {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return { affectedRows: 0 };
+    }
+
+    const [result] = await pool.promise().query(
+      `UPDATE backlogs
+         SET is_archived = 1
+         WHERE is_archived = 0
+           AND id IN (?)`,
+      [ids],
+    );
+
+    return {
+      affectedRows: Number(result.affectedRows || 0),
+    };
+  },
 };
 
 module.exports = Backlog;

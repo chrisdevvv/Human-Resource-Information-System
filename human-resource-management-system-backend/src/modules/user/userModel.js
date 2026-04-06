@@ -36,7 +36,7 @@ const User = {
     // If pagination not requested, return full rows (preserve existing behavior)
     if (!pagination || !pagination.page) {
       const [rows] = await pool.promise().query(
-        `SELECT u.id, u.first_name, u.last_name, u.email, u.role,
+        `SELECT u.id, u.first_name, u.middle_name, u.last_name, u.email, u.role,
                        u.birthdate,
                        u.school_id,
                        u.is_active, u.created_at, u.updated_at,
@@ -57,7 +57,7 @@ const User = {
       .query(`SELECT COUNT(1) as total ${baseQuery}`, params);
 
     const [rows] = await pool.promise().query(
-      `SELECT u.id, u.first_name, u.last_name, u.email, u.role,
+      `SELECT u.id, u.first_name, u.middle_name, u.last_name, u.email, u.role,
                        u.birthdate,
                        u.school_id,
                        u.is_active, u.created_at, u.updated_at,
@@ -71,7 +71,7 @@ const User = {
 
   getById: async (id) => {
     const [rows] = await pool.promise().query(
-      `SELECT u.id, u.first_name, u.last_name, u.email, u.role,
+      `SELECT u.id, u.first_name, u.middle_name, u.last_name, u.email, u.role,
                     u.birthdate,
                     u.is_active, u.created_at, u.updated_at,
                     u.school_id, s.school_name, s.school_code

@@ -221,6 +221,8 @@ export default function LogsMobile() {
       setArchiveBusy(true);
       setArchiveMessage(null);
 
+      const archiveTargetIds = filteredLogs.map((log) => log.id);
+
       if (archiveShouldGenerateReport) {
         await downloadArchiveRangeReport();
       }
@@ -237,6 +239,7 @@ export default function LogsMobile() {
         body: JSON.stringify({
           from: archiveRange.fromIso,
           to: archiveRange.toIso,
+          ids: archiveTargetIds,
         }),
       });
 
@@ -253,6 +256,13 @@ export default function LogsMobile() {
           ? `${count} log record${count !== 1 ? "s" : ""} archived successfully.`
           : "No logs found for the selected archive range.",
       );
+
+      if (count > 0 && archiveTargetIds.length > 0) {
+        // Immediate UI refresh: remove just-archived rows from active logs list.
+        setLogsData((prev) =>
+          prev.filter((log) => !archiveTargetIds.includes(log.id)),
+        );
+      }
 
       await fetchLogs(false);
     } catch (err) {
@@ -288,6 +298,7 @@ export default function LogsMobile() {
         `${API_BASE}/api/backlogs?include_archived=false`,
         {
           method: "GET",
+          cache: "no-store",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
@@ -946,7 +957,8 @@ export default function LogsMobile() {
                   </button>
                   <button
                     onClick={() => {
-                      setArchiveStep("generate-prompt");
+                      setArchiveStep("confirm");
+                      setArchiveShouldGenerateReport(false);
                       setArchiveMessage(null);
                     }}
                     disabled={archiveBusy}
@@ -1012,7 +1024,7 @@ export default function LogsMobile() {
 
                 <div className="mt-5 flex flex-wrap justify-end gap-2">
                   <button
-                    onClick={() => setArchiveStep("generate-prompt")}
+                    onClick={() => setArchiveStep("range")}
                     disabled={archiveBusy}
                     className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >

@@ -5,6 +5,7 @@ const Backlog = require("../backlog/backlogModel");
 const {
   sendRoleChanged,
   sendPasswordChanged,
+  sendAccountStatusChanged,
   sendAccountCreatedCredentials,
 } = require("../../utils/mailer");
 
@@ -190,6 +191,11 @@ const updateUserStatus = async (req, res) => {
 
     const user = await User.getById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
+    const previousIsActive =
+      user.is_active === true ||
+      user.is_active === 1 ||
+      user.is_active === "1" ||
+      user.is_active === "true";
 
     // Prevent self-deactivation
     if (String(req.user.id) === String(req.params.id) && !is_active) {
@@ -199,6 +205,12 @@ const updateUserStatus = async (req, res) => {
     }
 
     await User.updateStatus(req.params.id, is_active);
+
+    // Fire-and-forget — email failure must not block the response
+    if (previousIsActive !== is_active) {
+      sendAccountStatusChanged(user.email, user.first_name, is_active);
+    }
+
     await Backlog.record({
       user_id: req.user.id,
       school_id: null,

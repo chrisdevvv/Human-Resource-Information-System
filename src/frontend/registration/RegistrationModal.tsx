@@ -17,6 +17,8 @@ type Props = {
 export default function RegistrationModal({ visible, onClose }: Props) {
   const [step, setStep] = useState(1);
   const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [noMiddleName, setNoMiddleName] = useState(false);
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [birthdate, setBirthdate] = useState("");
@@ -39,6 +41,8 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [pendingFormData, setPendingFormData] = useState<{
     firstName: string;
+    middleName: string;
+    noMiddleName: boolean;
     lastName: string;
     email: string;
     birthdate: string;
@@ -104,6 +108,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
 
   // Individual field errors
   const [firstNameError, setFirstNameError] = useState("");
+  const [middleNameError, setMiddleNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [birthdateError, setBirthdateError] = useState("");
@@ -202,6 +207,23 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     }
   }
 
+  function handleMiddleNameBlur() {
+    if (noMiddleName) {
+      setMiddleNameError("");
+      return;
+    }
+
+    if (!middleName.trim()) {
+      setMiddleNameError("Middle name is required");
+    } else if (!validateName(middleName)) {
+      setMiddleNameError("Middle name must be at least 2 letters");
+    } else if (!startsWithCapital(middleName)) {
+      setMiddleNameError("Middle name must start with a capital letter");
+    } else {
+      setMiddleNameError("");
+    }
+  }
+
   function handleEmailBlur() {
     if (!email.trim()) {
       setEmailError("Email is required");
@@ -257,6 +279,19 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     } else if (!startsWithCapital(lastName)) {
       setLastNameError("Last name must start with a capital letter");
       hasError = true;
+    }
+
+    if (!noMiddleName) {
+      if (!middleName.trim()) {
+        setMiddleNameError("Middle name is required");
+        hasError = true;
+      } else if (!validateName(middleName)) {
+        setMiddleNameError("Middle name must be at least 2 letters");
+        hasError = true;
+      } else if (!startsWithCapital(middleName)) {
+        setMiddleNameError("Middle name must start with a capital letter");
+        hasError = true;
+      }
     }
 
     if (!email.trim()) {
@@ -322,6 +357,8 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     // Store form data and show confirmation modal
     setPendingFormData({
       firstName,
+      middleName,
+      noMiddleName,
       lastName,
       email,
       birthdate,
@@ -344,6 +381,10 @@ export default function RegistrationModal({ visible, onClose }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           first_name: pendingFormData.firstName,
+          middle_name: pendingFormData.noMiddleName
+            ? null
+            : pendingFormData.middleName,
+          no_middle_name: pendingFormData.noMiddleName,
           last_name: pendingFormData.lastName,
           email: pendingFormData.email,
           birthdate: pendingFormData.birthdate,
@@ -396,6 +437,8 @@ export default function RegistrationModal({ visible, onClose }: Props) {
 
     setStep(1);
     setFirstName("");
+    setMiddleName("");
+    setNoMiddleName(false);
     setLastName("");
     setEmail("");
     setBirthdate("");
@@ -408,6 +451,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     setError("");
     setSubmitted(false);
     setFirstNameError("");
+    setMiddleNameError("");
     setLastNameError("");
     setEmailError("");
     setBirthdateError("");
@@ -474,6 +518,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                       </p>
                     )}
                   </div>
+
                   <div>
                     <label className="flex items-center gap-2 text-sm text-gray-700">
                       <User className="text-blue-600" size={18} />
@@ -498,43 +543,97 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   </div>
                 </div>
 
-                <label className="mb-1 mt-5 flex items-center gap-2 text-sm text-gray-700">
-                  <Mail className="text-blue-600" size={18} />
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  value={email}
-                  onChange={(e) => {
-                    trackChange(e.target.value, email);
-                    setEmail(e.target.value);
-                    if (emailError) setEmailError("");
-                  }}
-                  onBlur={handleEmailBlur}
-                  placeholder="name@deped.gov.ph"
-                  className={`mt-1 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${emailError ? "border-red-500" : ""}`}
-                />
-                {emailError && (
-                  <p className="text-sm text-red-600 mt-1">{emailError}</p>
-                )}
+                <div>
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <User className="text-blue-600" size={18} />
+                    Middle name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    value={middleName}
+                    onChange={(e) => {
+                      trackChange(e.target.value, middleName);
+                      setMiddleName(e.target.value);
+                      if (middleNameError) setMiddleNameError("");
+                    }}
+                    onBlur={handleMiddleNameBlur}
+                    disabled={noMiddleName}
+                    placeholder={
+                      noMiddleName ? "No middle name provided" : "Middle name"
+                    }
+                    className={`mt-2 w-full px-3 py-2 border rounded-md placeholder:text-gray-500 ${
+                      noMiddleName
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "text-gray-700"
+                    } ${middleNameError ? "border-red-500" : ""}`}
+                  />
+                  <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={noMiddleName}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setNoMiddleName(checked);
+                        if (checked) {
+                          setMiddleName("");
+                          setMiddleNameError("");
+                        }
+                      }}
+                      className="h-4 w-4 cursor-pointer"
+                    />
+                    I don't have a middle name
+                  </label>
+                  {middleNameError && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {middleNameError}
+                    </p>
+                  )}
+                </div>
 
-                <label className="mb-3 mt-4 flex items-center gap-2 text-sm text-gray-700">
-                  <User className="text-blue-600" size={18} />
-                  Birthdate <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={birthdate}
-                  onChange={(e) => {
-                    trackChange(e.target.value, birthdate);
-                    setBirthdate(e.target.value);
-                    if (birthdateError) setBirthdateError("");
-                  }}
-                  max={new Date().toISOString().slice(0, 10)}
-                  className={`-mt-1 w-full text-gray-700 px-3 py-2 border rounded-md ${birthdateError ? "border-red-500" : ""}`}
-                />
-                {birthdateError && (
-                  <p className="text-sm text-red-600 mt-1">{birthdateError}</p>
-                )}
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <div>
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <Mail className="text-blue-600" size={18} />
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      value={email}
+                      onChange={(e) => {
+                        trackChange(e.target.value, email);
+                        setEmail(e.target.value);
+                        if (emailError) setEmailError("");
+                      }}
+                      onBlur={handleEmailBlur}
+                      placeholder="name@deped.gov.ph"
+                      className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${emailError ? "border-red-500" : ""}`}
+                    />
+                    {emailError && (
+                      <p className="text-sm text-red-600 mt-1">{emailError}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <User className="text-blue-600" size={18} />
+                      Birthdate <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={birthdate}
+                      onChange={(e) => {
+                        trackChange(e.target.value, birthdate);
+                        setBirthdate(e.target.value);
+                        if (birthdateError) setBirthdateError("");
+                      }}
+                      max={new Date().toISOString().slice(0, 10)}
+                      className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md ${birthdateError ? "border-red-500" : ""}`}
+                    />
+                    {birthdateError && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {birthdateError}
+                      </p>
+                    )}
+                  </div>
+                </div>
 
                 <div className="mt-4">
                   <label className="flex items-center gap-2 text-sm text-gray-700">
@@ -755,17 +854,28 @@ export default function RegistrationModal({ visible, onClose }: Props) {
         {/* Confirmation Modal */}
         {isConfirmOpen && pendingFormData && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm mx-4">
+            <div className="bg-white rounded-lg shadow-lg p-7 sm:p-8 w-full max-w-md mx-4">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">
                 Confirm Registration
               </h3>
               <div className="space-y-3 mb-6">
                 <p className="text-sm text-gray-600">
-                  <strong>Name:</strong> {pendingFormData.firstName}{" "}
-                  {pendingFormData.lastName}
+                  <strong>First name:</strong> {pendingFormData.firstName}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Middle name:</strong>{" "}
+                  {pendingFormData.noMiddleName
+                    ? "I don't have a middle name"
+                    : pendingFormData.middleName}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Last name:</strong> {pendingFormData.lastName}
                 </p>
                 <p className="text-sm text-gray-600">
                   <strong>Email:</strong> {pendingFormData.email}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Birthdate:</strong> {pendingFormData.birthdate}
                 </p>
                 <p className="text-sm text-gray-600">
                   <strong>School:</strong> {pendingFormData.school}
@@ -775,18 +885,18 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                 Please review your information before submitting. Once
                 submitted, your registration request will be pending approval.
               </p>
-              <div className="flex gap-3">
+              <div className="flex items-center justify-center gap-4 pt-1">
                 <button
                   onClick={handleCancelConfirm}
                   disabled={isLoading}
-                  className="cursor-pointer flex-1 px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="cursor-pointer px-3 py-1.5 text-sm bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleConfirmSubmit}
                   disabled={isLoading}
-                  className="cursor-pointer flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="cursor-pointer px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? "Submitting..." : "Confirm & Submit"}
                 </button>

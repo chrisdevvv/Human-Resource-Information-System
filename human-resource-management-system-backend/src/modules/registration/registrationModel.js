@@ -3,7 +3,7 @@ const pool = require("../../config/db");
 const Registration = {
   getAll: async (status = null, options = {}) => {
     let query = `
-            SELECT rr.id, rr.first_name, rr.last_name, rr.email, rr.school_name, rr.requested_role,
+                 SELECT rr.id, rr.first_name, rr.middle_name, rr.last_name, rr.email, rr.school_name, rr.requested_role,
                    rr.birthdate,
                    rr.approved_role, rr.status, rr.rejection_reason,
                    rr.reviewed_by, rr.reviewed_at, rr.created_at,
@@ -120,9 +120,10 @@ const Registration = {
       }
 
       await conn.query(
-        "INSERT INTO users (first_name, last_name, email, password_hash, role, school_id, birthdate, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)",
+        "INSERT INTO users (first_name, middle_name, last_name, email, password_hash, role, school_id, birthdate, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)",
         [
           request.first_name,
+          request.middle_name || null,
           request.last_name,
           request.email,
           password_hash_to_use,

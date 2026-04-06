@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const pool = require("../config/db");
+const JWT_SECRET = process.env.JWT_SECRET || "dev_jwt_secret";
 
 const authMiddleware = async (req, res, next) => {
   try {
@@ -9,7 +10,7 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ message: "No token provided" });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     if (decoded.id && decoded.iat) {
       const [invalidations] = await pool.promise().query(

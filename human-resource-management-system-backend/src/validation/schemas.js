@@ -9,9 +9,31 @@ const schoolIdParamSchema = Joi.object({
 });
 
 const birthdateSchema = Joi.date().iso().max("now");
+const noMiddleNameSchema = Joi.alternatives().try(
+  Joi.boolean(),
+  Joi.string().valid("true", "false", "1", "0"),
+  Joi.number().valid(0, 1),
+);
+
+const middleNameSchema = Joi.string().trim().max(100).allow(null, "");
+
+const requiredMiddleNameWhenApplicable = middleNameSchema.when(
+  "no_middle_name",
+  {
+    is: Joi.alternatives().try(
+      Joi.boolean().valid(true),
+      Joi.string().valid("true", "1"),
+      Joi.number().valid(1),
+    ),
+    then: middleNameSchema,
+    otherwise: Joi.string().trim().min(1).max(100).required(),
+  },
+);
 
 const employeeCreateBodySchema = Joi.object({
   first_name: Joi.string().trim().min(1).max(100).required(),
+  middle_name: requiredMiddleNameWhenApplicable,
+  no_middle_name: noMiddleNameSchema,
   last_name: Joi.string().trim().min(1).max(100).required(),
   email: Joi.string()
     .trim()
@@ -24,6 +46,8 @@ const employeeCreateBodySchema = Joi.object({
 
 const employeeUpdateBodySchema = Joi.object({
   first_name: Joi.string().trim().min(1).max(100).required(),
+  middle_name: requiredMiddleNameWhenApplicable,
+  no_middle_name: noMiddleNameSchema,
   last_name: Joi.string().trim().min(1).max(100).required(),
   email: Joi.string()
     .trim()
@@ -116,6 +140,8 @@ const registrationStatusQuerySchema = Joi.object({
 
 const authRegisterBodySchema = Joi.object({
   first_name: Joi.string().trim().min(1).max(100).required(),
+  middle_name: requiredMiddleNameWhenApplicable,
+  no_middle_name: noMiddleNameSchema,
   last_name: Joi.string().trim().min(1).max(100).required(),
   email: Joi.string()
     .trim()
@@ -203,6 +229,7 @@ const backlogReportQuerySchema = Joi.object({
 const backlogArchiveBodySchema = Joi.object({
   from: Joi.date().iso().required(),
   to: Joi.date().iso().required(),
+  ids: Joi.array().items(Joi.number().integer().positive()).min(1).optional(),
 });
 
 module.exports = {

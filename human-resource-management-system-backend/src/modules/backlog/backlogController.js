@@ -197,6 +197,23 @@ const getAllBacklogs = async (req, res) => {
 
 const archiveBacklogsByDateRange = async (req, res) => {
   try {
+    const ids = Array.isArray(req.body.ids)
+      ? req.body.ids
+          .map((id) => Number(id))
+          .filter((id) => Number.isInteger(id) && id > 0)
+      : [];
+
+    if (ids.length > 0) {
+      const archived = await Backlog.archiveByIds({ ids });
+      return res.status(200).json({
+        message: "Logs archived successfully.",
+        data: {
+          archivedCount: archived.affectedRows,
+          mode: "ids",
+        },
+      });
+    }
+
     const fromDate = String(req.body.from || "").slice(0, 10);
     const toDate = String(req.body.to || "").slice(0, 10);
 
@@ -227,6 +244,7 @@ const archiveBacklogsByDateRange = async (req, res) => {
         from: fromDate,
         to: toDate,
         archivedCount: archived.affectedRows,
+        mode: "range",
       },
     });
   } catch (err) {
