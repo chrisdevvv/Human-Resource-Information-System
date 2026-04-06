@@ -616,12 +616,10 @@ const getLeaveParticulars = async (_req, res) => {
     const data = await Leave.getParticulars();
     return res.status(200).json({ data, total: data.length });
   } catch (err) {
-    return res
-      .status(500)
-      .json({
-        message: "Error retrieving leave particulars",
-        error: err.message,
-      });
+    return res.status(500).json({
+      message: "Error retrieving leave particulars",
+      error: err.message,
+    });
   }
 };
 
@@ -848,7 +846,10 @@ const drawLeaveCardHeader = (doc) => {
     .text("Republic of the Philippines", { align: "center", lineGap: 1 })
     .text("Department of Education", { align: "center", lineGap: 1 })
     .text("Region III", { align: "center", lineGap: 1 })
-    .text("Division of City of San Jose del Monte", { align: "center", lineGap: 1 })
+    .text("Division of City of San Jose del Monte", {
+      align: "center",
+      lineGap: 1,
+    })
     .moveDown(0.35)
     .fontSize(14)
     .text("EMPLOYEE LEAVE CARD", { align: "center" })
