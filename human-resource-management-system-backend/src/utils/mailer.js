@@ -369,6 +369,54 @@ async function sendRoleChanged(to, firstName, oldRole, newRole) {
 }
 
 // ---------------------------------------------------------------------------
+// Email: Account status changed (sent to user when account is activated/deactivated)
+// ---------------------------------------------------------------------------
+async function sendAccountStatusChanged(to, firstName, isActive) {
+  const statusLabel = isActive ? "Activated" : "Deactivated";
+  const statusColor = isActive ? "#15803d" : "#b91c1c";
+  const statusBg = isActive ? "#f0fdf4" : "#fef2f2";
+  const statusBorder = isActive ? "#bbf7d0" : "#fecaca";
+
+  const html = baseTemplate(`
+        <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Hi ${firstName},</h2>
+        <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
+            Your account status in the <strong>DepEd Human Resource Information System</strong>
+            has been updated by a system administrator.
+        </p>
+        <div style="background:${statusBg};border:1px solid ${statusBorder};padding:16px 20px;
+                    border-radius:6px;margin:16px 0 24px;text-align:center;">
+            <p style="margin:0 0 6px;font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;">
+                Current Account Status
+            </p>
+            <p style="margin:0;font-size:24px;font-weight:700;color:${statusColor};">
+                ${statusLabel}
+            </p>
+        </div>
+        <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">
+            ${
+              isActive
+                ? "You can now sign in and continue using your account."
+                : "Your access has been temporarily disabled. If you think this is a mistake, please contact your system administrator."
+            }
+        </p>
+        <div style="text-align:center;">
+          <a href="${FRONTEND_URL}/login"
+               style="display:inline-block;background:#1d4ed8;color:#ffffff;
+                      padding:12px 32px;border-radius:6px;text-decoration:none;
+                      font-size:15px;font-weight:600;">
+                Go to Login
+            </a>
+        </div>
+    `);
+
+  await sendMail({
+    to,
+    subject: `Your Account Has Been ${statusLabel} — DepEd HRIS`,
+    html,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Email: Account created by admin/super admin (with initial credentials)
 // ---------------------------------------------------------------------------
 async function sendAccountCreatedCredentials(
@@ -427,5 +475,6 @@ module.exports = {
   sendPasswordResetLink,
   sendPasswordChanged,
   sendRoleChanged,
+  sendAccountStatusChanged,
   sendAccountCreatedCredentials,
 };

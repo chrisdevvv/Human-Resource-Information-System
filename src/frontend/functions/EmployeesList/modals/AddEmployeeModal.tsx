@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import ConfirmationModal from "../../../super-admin/components/ConfirmationModal";
-import ConfirmationAddEmployee from "../ConfirmationAddEmployee";
 
 type School = {
   id: number;
@@ -12,7 +11,7 @@ type School = {
 type AddEmployeeModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (employeeName: string) => void;
 };
 
 type SchoolApiResponse = {
@@ -34,6 +33,8 @@ type CreateEmployeeResponse = {
 
 type PendingEmployeePayload = {
   first_name: string;
+  middle_name?: string | null;
+  no_middle_name?: boolean;
   last_name: string;
   email: string;
   birthdate: string;
@@ -60,6 +61,8 @@ export default function AddEmployeeModal({
   onSuccess,
 }: AddEmployeeModalProps) {
   const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [noMiddleName, setNoMiddleName] = useState(false);
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [birthdate, setBirthdate] = useState("");
@@ -78,8 +81,6 @@ export default function AddEmployeeModal({
   const [submitLoading, setSubmitLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
-  const [recentlyAddedName, setRecentlyAddedName] = useState("");
   const [pendingPayload, setPendingPayload] =
     useState<PendingEmployeePayload | null>(null);
   const sortedSchools = [...schools].sort((a, b) =>
@@ -256,6 +257,8 @@ export default function AddEmployeeModal({
   useEffect(() => {
     if (!isOpen) {
       setFirstName("");
+      setMiddleName("");
+      setNoMiddleName(false);
       setLastName("");
       setEmail("");
       setBirthdate("");
@@ -271,24 +274,9 @@ export default function AddEmployeeModal({
       setSubmitLoading(false);
       setErrorMessage(null);
       setIsConfirmOpen(false);
-      setIsSuccessOpen(false);
-      setRecentlyAddedName("");
       setPendingPayload(null);
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    if (!isSuccessOpen) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      handleCloseSuccessModal();
-    }, 3000);
-
-    return () => window.clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSuccessOpen]);
 
   if (!isOpen) {
     return null;
@@ -307,9 +295,17 @@ export default function AddEmployeeModal({
       return;
     }
 
+    if (!noMiddleName && !middleName.trim()) {
+      setErrorMessage(
+        "Middle name is required. Check 'I don't have a middle name' if applicable.",
+      );
+      return;
+    }
+
     if (
       !NAME_PATTERN.test(firstName.trim()) ||
-      !NAME_PATTERN.test(lastName.trim())
+      !NAME_PATTERN.test(lastName.trim()) ||
+      (!noMiddleName && !NAME_PATTERN.test(middleName.trim()))
     ) {
       setErrorMessage(
         "Name must contain letters only. Dot (.) and spaces are allowed.",
@@ -372,6 +368,8 @@ export default function AddEmployeeModal({
 
     setPendingPayload({
       first_name: firstName.trim(),
+      middle_name: noMiddleName ? null : middleName.trim(),
+      no_middle_name: noMiddleName,
       last_name: lastName.trim(),
       email: email.trim(),
       birthdate,
@@ -423,6 +421,8 @@ export default function AddEmployeeModal({
         },
         body: JSON.stringify({
           first_name: pendingPayload.first_name,
+          middle_name: pendingPayload.middle_name,
+          no_middle_name: pendingPayload.no_middle_name,
           last_name: pendingPayload.last_name,
           email: pendingPayload.email,
           birthdate: pendingPayload.birthdate,
@@ -436,13 +436,15 @@ export default function AddEmployeeModal({
         throw new Error(body.message || "Failed to create employee");
       }
 
-      setRecentlyAddedName(
-        `${pendingPayload.first_name} ${pendingPayload.last_name}`.trim(),
-      );
+      const createdEmployeeName =
+        `${pendingPayload.first_name} ${pendingPayload.last_name}`.trim();
 
       setIsConfirmOpen(false);
       setPendingPayload(null);
-      setIsSuccessOpen(true);
+      if (onSuccess) {
+        onSuccess(createdEmployeeName);
+      }
+      onClose();
     } catch (err) {
       setErrorMessage(
         err instanceof Error ? err.message : "Failed to create employee",
@@ -458,18 +460,6 @@ export default function AddEmployeeModal({
     }
 
     setIsConfirmOpen(false);
-  };
-
-  const handleCloseSuccessModal = () => {
-    if (submitLoading) {
-      return;
-    }
-
-    setIsSuccessOpen(false);
-    if (onSuccess) {
-      onSuccess();
-    }
-    onClose();
   };
 
   return (
@@ -491,6 +481,7 @@ export default function AddEmployeeModal({
                 placeholder="Juan"
               />
             </div>
+
             <div className="space-y-2.5">
               <label className="block text-sm font-medium text-gray-600">
                 Last Name
@@ -505,30 +496,65 @@ export default function AddEmployeeModal({
             </div>
           </div>
 
-          <div className="mt-3 space-y-2.5">
+          <div className="space-y-2.5">
             <label className="block text-sm font-medium text-gray-600">
-              Email
+              Middle Name
             </label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="employee@email.com"
+              type="text"
+              value={middleName}
+              onChange={(e) => setMiddleName(e.target.value)}
+              disabled={noMiddleName}
+              className={`w-full px-4 py-3 border border-gray-300 rounded-lg text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                noMiddleName
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "text-gray-700"
+              }`}
+              placeholder={noMiddleName ? "No middle name provided" : "Santos"}
             />
+            <label className="inline-flex items-center gap-2 text-xs text-gray-600">
+              <input
+                type="checkbox"
+                checked={noMiddleName}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setNoMiddleName(checked);
+                  if (checked) {
+                    setMiddleName("");
+                  }
+                }}
+                className="h-4 w-4 cursor-pointer"
+              />
+              I don't have a middle name
+            </label>
           </div>
 
-          <div className="mt-3 space-y-2.5">
-            <label className="block text-sm font-medium text-gray-600">
-              Birthdate
-            </label>
-            <input
-              type="date"
-              value={birthdate}
-              onChange={(e) => setBirthdate(e.target.value)}
-              max={new Date().toISOString().slice(0, 10)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="space-y-2.5">
+              <label className="block text-sm font-medium text-gray-600">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="employee@email.com"
+              />
+            </div>
+
+            <div className="space-y-2.5">
+              <label className="block text-sm font-medium text-gray-600">
+                Birthdate
+              </label>
+              <input
+                type="date"
+                value={birthdate}
+                onChange={(e) => setBirthdate(e.target.value)}
+                max={new Date().toISOString().slice(0, 10)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
 
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -642,18 +668,13 @@ export default function AddEmployeeModal({
               type="button"
               onClick={onClose}
               className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer"
-              disabled={submitLoading || isConfirmOpen || isSuccessOpen}
+              disabled={submitLoading || isConfirmOpen}
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={
-                submitLoading ||
-                isConfirmOpen ||
-                isSuccessOpen ||
-                schoolsLoading
-              }
+              disabled={submitLoading || isConfirmOpen || schoolsLoading}
               className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition font-medium text-sm cursor-pointer"
             >
               {submitLoading ? "Saving..." : "Add Employee"}
@@ -674,7 +695,11 @@ export default function AddEmployeeModal({
             <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 space-y-1">
               <p>
                 <span className="font-semibold text-gray-800">Name:</span>{" "}
-                {pendingPayload.first_name} {pendingPayload.last_name}
+                {pendingPayload.first_name}
+                {pendingPayload.middle_name
+                  ? ` ${pendingPayload.middle_name}`
+                  : ""}{" "}
+                {pendingPayload.last_name}
               </p>
               <p>
                 <span className="font-semibold text-gray-800">Email:</span>{" "}
@@ -695,12 +720,6 @@ export default function AddEmployeeModal({
             </div>
           )}
         </ConfirmationModal>
-
-        <ConfirmationAddEmployee
-          isOpen={isSuccessOpen}
-          employeeName={recentlyAddedName}
-          onClose={handleCloseSuccessModal}
-        />
       </div>
     </div>
   );

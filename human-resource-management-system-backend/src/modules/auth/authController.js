@@ -10,6 +10,7 @@ const {
 
 const FRONTEND_URL =
   process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3001";
+const JWT_SECRET = process.env.JWT_SECRET || "dev_jwt_secret";
 const RESET_TOKEN_TTL = process.env.RESET_PASSWORD_TOKEN_TTL || "2h";
 const LOGIN_MAX_ATTEMPTS = Math.max(
   1,
@@ -70,7 +71,7 @@ const clearLoginAttempts = async (identifier) => {
 
 const verifyPasswordResetToken = (token, passwordHash) => {
   try {
-    return jwt.verify(token, process.env.JWT_SECRET + passwordHash, {
+    return jwt.verify(token, JWT_SECRET + passwordHash, {
       maxAge: RESET_TOKEN_TTL,
       clockTolerance: 0,
     });
@@ -141,6 +142,7 @@ const invalidateUserSessions = async (userId) => {
 const register = async (req, res) => {
   const {
     first_name,
+    middle_name,
     last_name,
     email,
     password,
@@ -210,9 +212,10 @@ const register = async (req, res) => {
     const [result] = await pool
       .promise()
       .query(
-        "INSERT INTO registration_requests (first_name, last_name, email, password_hash, school_name, requested_role, birthdate) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO registration_requests (first_name, middle_name, last_name, email, password_hash, school_name, requested_role, birthdate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         [
           first_name,
+          middle_name || null,
           last_name,
           email,
           hashedPassword,
@@ -300,7 +303,7 @@ const login = async (req, res) => {
         role: user.role,
         school_id: user.school_id,
       },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: "1d" },
     );
     res.status(200).json({
@@ -437,8 +440,8 @@ const changePassword = async (req, res) => {
 
 // ---------------------------------------------------------------------------
 // POST /api/auth/forgot-password
-// Public — accepts { email }, sends a reset link if the account exists.
-// Always returns success to avoid leaking whether an email is registered.
+// Public — accepts { email }, sends a reset link only for an existing active account.
+// Returns a clear error when no matching user is found.
 // ---------------------------------------------------------------------------
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
@@ -447,33 +450,35 @@ const forgotPassword = async (req, res) => {
   }
 
   try {
+    const normalizedEmail = normalizeEmail(email);
     const [results] = await pool
       .promise()
       .query(
         "SELECT id, first_name, email, password_hash FROM users WHERE email = ? AND is_active = 1",
-        [email],
+        [normalizedEmail],
       );
     const user = results[0];
 
-    // Always respond with success — never reveal if the email exists or not
-    if (user) {
-      // Sign reset token with JWT_SECRET + current password_hash so the token
-      // is automatically invalidated the moment the password changes.
-      const resetToken = jwt.sign(
-        { id: user.id, purpose: "password-reset" },
-        process.env.JWT_SECRET + user.password_hash,
-        { expiresIn: RESET_TOKEN_TTL },
-      );
-
-      const resetLink = `${FRONTEND_URL}/reset-password?token=${resetToken}`;
-
-      // Fire-and-forget
-      sendPasswordResetLink(user.email, user.first_name, resetLink);
+    if (!user) {
+      return res.status(404).json({ message: "No user found with that email" });
     }
+
+    // Sign reset token with JWT_SECRET + current password_hash so the token
+    // is automatically invalidated the moment the password changes.
+    const resetToken = jwt.sign(
+      { id: user.id, purpose: "password-reset" },
+      JWT_SECRET + user.password_hash,
+      { expiresIn: RESET_TOKEN_TTL },
+    );
+
+    const resetLink = `${FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+    // Fire-and-forget
+    sendPasswordResetLink(user.email, user.first_name, resetLink);
 
     res.status(200).json({
       message:
-        "If an account with that email exists, a reset link has been sent.",
+        "Reset link has been sent to your email. Please check your inbox.",
     });
   } catch (error) {
     res

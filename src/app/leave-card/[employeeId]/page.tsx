@@ -15,6 +15,7 @@ import {
 type EmployeeInfo = {
   id: number;
   first_name: string;
+  middle_name?: string | null;
   last_name: string;
   employee_type: "teaching" | "non-teaching";
 };
@@ -77,7 +78,9 @@ export default function LeaveCardPreviewPage() {
     try {
       setIsPdfLoading(true);
       const employeeName =
-        `${employee.first_name} ${employee.last_name}`.trim() || "Employee";
+        [employee.first_name, employee.middle_name, employee.last_name]
+          .filter(Boolean)
+          .join(" ") || "Employee";
       await downloadLeaveCardPdf(
         cardRef.current,
         createLeaveCardFileName(employeeName),
@@ -105,7 +108,13 @@ export default function LeaveCardPreviewPage() {
     );
   }
 
-  const fullName = `${employee.first_name} ${employee.last_name}`.trim();
+  const fullName = [
+    employee.first_name,
+    employee.middle_name,
+    employee.last_name,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div className="min-h-screen bg-gray-100">

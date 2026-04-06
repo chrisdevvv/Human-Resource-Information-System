@@ -21,6 +21,8 @@ const MAX_JSON_BODY_SIZE = process.env.MAX_JSON_BODY_SIZE || "100kb";
 const MAX_FORM_BODY_SIZE = process.env.MAX_FORM_BODY_SIZE || "100kb";
 
 const DEFAULT_CORS_ALLOWLIST = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
   "http://localhost:3001",
   "http://127.0.0.1:3001",
 ];
@@ -269,6 +271,23 @@ const ensureBirthdateSchema = async () => {
   `);
 };
 
+const ensureMiddleNameSchema = async () => {
+  await pool.promise().query(`
+    ALTER TABLE employees
+    ADD COLUMN IF NOT EXISTS middle_name VARCHAR(75) NULL AFTER first_name;
+  `);
+
+  await pool.promise().query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS middle_name VARCHAR(75) NULL AFTER first_name;
+  `);
+
+  await pool.promise().query(`
+    ALTER TABLE registration_requests
+    ADD COLUMN IF NOT EXISTS middle_name VARCHAR(75) NULL AFTER first_name;
+  `);
+};
+
 const ensureBacklogArchiveSchema = async () => {
   await pool.promise().query(`
     ALTER TABLE backlogs
@@ -383,6 +402,9 @@ app.listen(PORT, async () => {
 
     await ensureBirthdateSchema();
     console.log("✔  Birthdate schema is ready");
+
+    await ensureMiddleNameSchema();
+    console.log("✔  Middle name schema is ready");
 
     await ensureBacklogArchiveSchema();
     console.log("✔  Backlog archive schema is ready");

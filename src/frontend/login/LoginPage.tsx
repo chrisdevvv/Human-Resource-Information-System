@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff } from "../assets/icons";
+import { CircleHelp, Clock3, Mail as MailContact } from "lucide-react";
 import {
   LoginSuccessModal,
   ForgotModal,
@@ -63,6 +64,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
   const [showLoginSuccess, setShowLoginSuccess] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<{
     firstName?: string;
@@ -374,16 +376,100 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <footer className="bg-blue-700 text-white px-6 py-3 shadow-inner">
-        <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-sm">
-          <div className="text-left">
-            <span>&copy; {currentYear} DepEd Human Resource Information System</span>
+      <footer className="bg-blue-700 text-white px-6 py-4 shadow-inner">
+        <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
+          <div className="text-left sm:mr-auto">
+            <button
+              type="button"
+              onClick={() => setShowContactModal(true)}
+              className="cursor-pointer font-semibold hover:underline underline-offset-4 hover:text-blue-100 transition"
+            >
+              Contact Us
+            </button>
           </div>
           <div className="text-left sm:text-right">
-            Developer: Shania Condalor &amp; Alexis Torrefiel
+            <div className="text-left">
+              <span>
+                &copy; {currentYear} DepEd Human Resource Information System
+              </span>
+            </div>
+            <div>Developer: Shania Condalor &amp; Alexis Torrefiel</div>
           </div>
         </div>
       </footer>
+
+      {showContactModal && (
+        <div
+          className="fixed inset-0 z-60 bg-black/50 backdrop-blur-[1px] flex items-center justify-center p-4"
+          onClick={() => setShowContactModal(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Contact details"
+        >
+          <div
+            className="w-full max-w-lg rounded-xl bg-white p-5 sm:p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <CircleHelp size={20} className="text-blue-700" />
+                <h3 className="text-lg font-bold text-gray-900">Contact Us</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowContactModal(false)}
+                aria-label="Close contact modal"
+                className="cursor-pointer rounded-md border border-gray-200 w-7 h-7 flex items-center justify-center text-sm font-bold text-gray-600 hover:bg-red-500 hover:text-white hover:border-red-500 transition"
+              >
+                X
+              </button>
+            </div>
+
+            <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+              Have a question or need assistance with the Human Resource
+              Information System? Reach out to us through any of the channels
+              below.
+            </p>
+
+            <div className="mt-4 space-y-3">
+              <div className="rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2.5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-blue-700">
+                  Email Address
+                </p>
+                <div className="mt-1 flex items-start gap-2">
+                  <MailContact size={16} className="mt-0.5 text-blue-700" />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 break-all">
+                      arthur.francisco@deped.gov.ph
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      For inquiries regarding employee records, system access,
+                      and HR-related concerns
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-amber-100 bg-amber-50/70 px-3 py-2.5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+                  Office Hours
+                </p>
+                <div className="mt-1 flex items-start gap-2">
+                  <Clock3 size={16} className="mt-0.5 text-amber-700" />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      Monday - Friday, 8:00 AM - 4:00 PM
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      Closed on weekends and national holidays
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <LoginSuccessModal
         visible={showLoginSuccess}

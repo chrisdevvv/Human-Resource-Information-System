@@ -15,6 +15,8 @@ export default function RegistrationMobile() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [step, setStep] = useState<StepId>(1);
   const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [noMiddleName, setNoMiddleName] = useState(false);
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [birthdate, setBirthdate] = useState("");
@@ -26,6 +28,7 @@ export default function RegistrationMobile() {
   const [submitted, setSubmitted] = useState(false);
 
   const [firstNameError, setFirstNameError] = useState("");
+  const [middleNameError, setMiddleNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [birthdateError, setBirthdateError] = useState("");
@@ -83,6 +86,8 @@ export default function RegistrationMobile() {
   function resetForm() {
     setStep(1);
     setFirstName("");
+    setMiddleName("");
+    setNoMiddleName(false);
     setLastName("");
     setEmail("");
     setBirthdate("");
@@ -92,6 +97,7 @@ export default function RegistrationMobile() {
     setError("");
     setSubmitted(false);
     setFirstNameError("");
+    setMiddleNameError("");
     setLastNameError("");
     setEmailError("");
     setBirthdateError("");
@@ -124,6 +130,19 @@ export default function RegistrationMobile() {
     } else if (!startsWithCapital(lastName)) {
       setLastNameError("Last name must start with a capital letter");
       hasError = true;
+    }
+
+    if (!noMiddleName) {
+      if (!middleName.trim()) {
+        setMiddleNameError("Middle name is required");
+        hasError = true;
+      } else if (!validateName(middleName)) {
+        setMiddleNameError("Middle name must be at least 2 letters");
+        hasError = true;
+      } else if (!startsWithCapital(middleName)) {
+        setMiddleNameError("Middle name must start with a capital letter");
+        hasError = true;
+      }
     }
 
     if (!email.trim()) {
@@ -188,6 +207,8 @@ export default function RegistrationMobile() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           first_name: firstName,
+          middle_name: noMiddleName ? null : middleName,
+          no_middle_name: noMiddleName,
           last_name: lastName,
           email,
           birthdate,
@@ -281,6 +302,48 @@ export default function RegistrationMobile() {
                   {firstNameError && (
                     <p className="text-sm text-red-600 mt-1">
                       {firstNameError}
+                    </p>
+                  )}
+
+                  <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+                    <User className="text-blue-600" size={18} />
+                    Middle name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    value={middleName}
+                    onChange={(e) => {
+                      setMiddleName(e.target.value);
+                      if (middleNameError) setMiddleNameError("");
+                    }}
+                    disabled={noMiddleName}
+                    placeholder={
+                      noMiddleName ? "No middle name provided" : "Middle name"
+                    }
+                    className={`mt-2 w-full px-3 py-2 border rounded-md placeholder:text-gray-500 ${
+                      noMiddleName
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "text-gray-700"
+                    } ${middleNameError ? "border-red-500" : ""}`}
+                  />
+                  <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={noMiddleName}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setNoMiddleName(checked);
+                        if (checked) {
+                          setMiddleName("");
+                          setMiddleNameError("");
+                        }
+                      }}
+                      className="h-4 w-4 cursor-pointer"
+                    />
+                    I don't have a middle name
+                  </label>
+                  {middleNameError && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {middleNameError}
                     </p>
                   )}
 

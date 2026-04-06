@@ -27,6 +27,9 @@ const getScopedSchoolId = (req) => {
 const isSameSchool = (userSchoolId, targetSchoolId) =>
   Number(userSchoolId) > 0 && Number(userSchoolId) === Number(targetSchoolId);
 
+const buildFullName = (firstName, middleName, lastName) =>
+  [firstName, middleName, lastName].filter(Boolean).join(" ").trim();
+
 const getAllEmployees = async (req, res) => {
   try {
     const { page, pageSize, include_archived, on_leave } = req.query;
@@ -184,14 +187,15 @@ const createEmployee = async (req, res) => {
     }
 
     const result = await Employee.create(req.body);
-    const { first_name, last_name, employee_type, school_id } = req.body;
+    const { first_name, middle_name, last_name, employee_type, school_id } =
+      req.body;
     await Backlog.record({
       user_id: req.user.id,
       school_id: school_id || null,
       employee_id: result.insertId,
       leave_id: null,
       action: "EMPLOYEE_CREATED",
-      details: `${first_name} ${last_name} (${employee_type})`,
+      details: `${buildFullName(first_name, middle_name, last_name)} (${employee_type})`,
     });
     res
       .status(201)
@@ -232,14 +236,15 @@ const updateEmployee = async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Employee not found" });
     }
-    const { first_name, last_name, employee_type, school_id } = req.body;
+    const { first_name, middle_name, last_name, employee_type, school_id } =
+      req.body;
     await Backlog.record({
       user_id: req.user.id,
       school_id: school_id || null,
       employee_id: Number(req.params.id),
       leave_id: null,
       action: "EMPLOYEE_UPDATED",
-      details: `${first_name} ${last_name} (${employee_type})`,
+      details: `${buildFullName(first_name, middle_name, last_name)} (${employee_type})`,
     });
     res
       .status(200)

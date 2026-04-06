@@ -9,25 +9,28 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
 type ProfileInfo = {
-  fullName: string;
-  role: string;
+  firstName: string;
+  lastName: string;
+  middleName: string;
   email: string;
+  birthdate: string;
   school: string;
 };
 
-const ROLE_LABELS: Record<string, string> = {
-  SUPER_ADMIN: "Super Admin",
-  ADMIN: "Admin",
-  DATA_ENCODER: "Data Encoder",
+const toBirthdateLabel = (raw: unknown) => {
+  if (!raw) return "N/A";
+  const value = String(raw).trim();
+  if (!value) return "N/A";
+  return value.slice(0, 10);
 };
-
-const toRoleLabel = (raw: string) => ROLE_LABELS[raw] || raw || "N/A";
 
 export default function AdminProfileSettings() {
   const [profile, setProfile] = useState<ProfileInfo>({
-    fullName: "N/A",
-    role: "N/A",
+    firstName: "N/A",
+    lastName: "N/A",
+    middleName: "N/A",
     email: "N/A",
+    birthdate: "N/A",
     school: "N/A",
   });
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -55,13 +58,12 @@ export default function AdminProfileSettings() {
         }
 
         const parsed = JSON.parse(raw);
-        const fullName =
-          `${parsed.first_name || ""} ${parsed.last_name || ""}`.trim();
-
         setProfile({
-          fullName: fullName || "N/A",
-          role: toRoleLabel(parsed.role),
+          firstName: parsed.first_name || "N/A",
+          lastName: parsed.last_name || "N/A",
+          middleName: parsed.middle_name || "N/A",
           email: parsed.email || "N/A",
+          birthdate: toBirthdateLabel(parsed.birthdate),
           school: parsed.school_name || "N/A",
         });
 
@@ -81,11 +83,11 @@ export default function AdminProfileSettings() {
             const user = result.data;
             setProfile((prev) => ({
               ...prev,
-              fullName:
-                `${user?.first_name || ""} ${user?.last_name || ""}`.trim() ||
-                prev.fullName,
-              role: toRoleLabel(user?.role || parsed.role),
+              firstName: user?.first_name || prev.firstName,
+              lastName: user?.last_name || prev.lastName,
+              middleName: user?.middle_name || "N/A",
               email: user?.email || prev.email,
+              birthdate: toBirthdateLabel(user?.birthdate),
               school: user?.school_name || prev.school,
             }));
           }
@@ -186,20 +188,30 @@ export default function AdminProfileSettings() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Full Name
+              First Name
             </label>
             <input
-              value={profile.fullName}
+              value={profile.firstName}
               readOnly
               className="mt-1 w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-700"
             />
           </div>
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Role
+              Last Name
             </label>
             <input
-              value={profile.role}
+              value={profile.lastName}
+              readOnly
+              className="mt-1 w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-700"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Middle Name
+            </label>
+            <input
+              value={profile.middleName || "N/A"}
               readOnly
               className="mt-1 w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-700"
             />
@@ -215,6 +227,16 @@ export default function AdminProfileSettings() {
             />
           </div>
           <div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Birthdate
+            </label>
+            <input
+              value={profile.birthdate}
+              readOnly
+              className="mt-1 w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-700"
+            />
+          </div>
+          <div className="sm:col-span-2">
             <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               School
             </label>

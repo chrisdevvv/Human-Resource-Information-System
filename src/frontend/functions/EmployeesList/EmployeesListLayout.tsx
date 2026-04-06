@@ -8,6 +8,8 @@ import {
   ChevronRight,
   Archive,
   Plus,
+  CheckCircle2,
+  X,
 } from "lucide-react";
 import AddEmployeeModal from "./modals/AddEmployeeModal";
 import ArchivedEmployee from "./ArchivedEmployee";
@@ -18,6 +20,7 @@ import { archiveEmployee } from "../LeaveManagement/leaveApi";
 type EmployeeRecordApi = {
   id: number;
   first_name: string;
+  middle_name?: string | null;
   last_name: string;
   email?: string | null;
   school_name?: string | null;
@@ -79,8 +82,9 @@ const getScopedEmployeeEndpoint = () => {
 
 const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
   const firstName = item.first_name?.trim() || "Unknown";
+  const middleName = item.middle_name?.trim() || "";
   const lastName = item.last_name?.trim() || "Employee";
-  const fullName = `${firstName} ${lastName}`.trim();
+  const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
 
   return {
     id: item.id,
@@ -113,6 +117,20 @@ export default function EmployeesListLayout() {
   const [showArchiveSuccess, setShowArchiveSuccess] = useState(false);
   const [selectedArchiveEmployee, setSelectedArchiveEmployee] =
     useState<EmployeeRecord | null>(null);
+  const [showAddSuccessToast, setShowAddSuccessToast] = useState(false);
+  const [addSuccessMessage, setAddSuccessMessage] = useState("");
+
+  useEffect(() => {
+    if (!showAddSuccessToast) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setShowAddSuccessToast(false);
+    }, 3000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [showAddSuccessToast]);
 
   const fetchEmployees = async (showSpinner = true) => {
     try {
@@ -590,8 +608,14 @@ export default function EmployeesListLayout() {
       <AddEmployeeModal
         isOpen={isAddEmployeeOpen}
         onClose={() => setIsAddEmployeeOpen(false)}
-        onSuccess={() => {
+        onSuccess={(employeeName) => {
           setIsAddEmployeeOpen(false);
+          setAddSuccessMessage(
+            employeeName
+              ? `${employeeName} has been added to the system.`
+              : "Employee has been added to the system.",
+          );
+          setShowAddSuccessToast(true);
           if (activeTab === "list") {
             fetchEmployees(false);
           }
@@ -613,6 +637,26 @@ export default function EmployeesListLayout() {
         onClose={handleArchiveSuccessClose}
         autoCloseDuration={2000}
       />
+
+      {showAddSuccessToast ? (
+        <div className="fixed bottom-5 right-5 z-50 w-[min(360px,calc(100vw-2rem))] rounded-xl border border-gray-200 bg-white p-4 shadow-lg">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="mt-0.5 text-emerald-600" size={18} />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-900">Success</p>
+              <p className="text-sm text-gray-600">{addSuccessMessage}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAddSuccessToast(false)}
+              className="cursor-pointer text-gray-400 hover:text-gray-700"
+              aria-label="Close toast"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

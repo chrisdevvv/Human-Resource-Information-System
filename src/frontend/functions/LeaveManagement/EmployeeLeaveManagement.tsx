@@ -20,6 +20,7 @@ import type { LeaveModalRecord } from "@/frontend/functions/LeaveManagement/leav
 type EmployeeRecordApi = {
   id: number;
   first_name: string;
+  middle_name?: string | null;
   last_name: string;
   email?: string | null;
   school_name?: string | null;
@@ -85,8 +86,9 @@ const toBoolean = (value: unknown) => {
 
 const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
   const firstName = item.first_name?.trim() || "Unknown";
+  const middleName = item.middle_name?.trim() || "";
   const lastName = item.last_name?.trim() || "Employee";
-  const fullName = `${firstName} ${lastName}`.trim();
+  const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
 
   return {
     id: item.id,
@@ -113,6 +115,9 @@ export default function EmployeeLeaveManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [employeeTypeFilter, setEmployeeTypeFilter] = useState<
     "ALL" | "teaching" | "non-teaching"
+  >("ALL");
+  const [leaveStatusFilter, setLeaveStatusFilter] = useState<
+    "ALL" | "on-leave" | "not-on-leave"
   >("ALL");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [letterFilter, setLetterFilter] = useState("ALL");
@@ -204,11 +209,22 @@ export default function EmployeeLeaveManagement() {
           employeeTypeFilter === "ALL" ||
           employee.employeeType === employeeTypeFilter;
 
+        const matchesLeaveStatus =
+          leaveStatusFilter === "ALL" ||
+          (leaveStatusFilter === "on-leave"
+            ? employee.onLeave
+            : !employee.onLeave);
+
         const matchesLetter =
           letterFilter === "ALL" ||
           employee.fullName.charAt(0).toUpperCase() === letterFilter;
 
-        return matchesSearch && matchesEmployeeType && matchesLetter;
+        return (
+          matchesSearch &&
+          matchesEmployeeType &&
+          matchesLeaveStatus &&
+          matchesLetter
+        );
       })
       .sort((a, b) => {
         if (sortOrder === "asc") {
@@ -217,7 +233,14 @@ export default function EmployeeLeaveManagement() {
 
         return b.fullName.localeCompare(a.fullName);
       });
-  }, [employeeData, searchQuery, employeeTypeFilter, letterFilter, sortOrder]);
+  }, [
+    employeeData,
+    searchQuery,
+    employeeTypeFilter,
+    leaveStatusFilter,
+    letterFilter,
+    sortOrder,
+  ]);
 
   const totalPages = Math.max(
     1,
@@ -373,6 +396,21 @@ export default function EmployeeLeaveManagement() {
                     {letter}
                   </option>
                 ))}
+              </select>
+
+              <select
+                value={leaveStatusFilter}
+                onChange={(e) => {
+                  setLeaveStatusFilter(
+                    e.target.value as "ALL" | "on-leave" | "not-on-leave",
+                  );
+                  setCurrentPage(1);
+                }}
+                className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+              >
+                <option value="ALL">All Leave Status</option>
+                <option value="on-leave">On Leave</option>
+                <option value="not-on-leave">Not On Leave</option>
               </select>
 
               <button

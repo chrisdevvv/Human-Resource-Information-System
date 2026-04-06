@@ -6,6 +6,7 @@ const dotenv = require("dotenv");
 const candidates = [
   path.resolve(process.cwd(), ".env"),
   path.resolve(__dirname, "..", "..", ".env"),
+  path.resolve(__dirname, "..", "..", "..", ".env"),
   path.resolve(
     __dirname,
     "..",

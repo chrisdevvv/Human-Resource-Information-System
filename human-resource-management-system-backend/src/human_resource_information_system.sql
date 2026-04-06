@@ -50,6 +50,7 @@ CREATE TABLE `backlogs` (
 CREATE TABLE `employees` (
   `id` int(11) NOT NULL,
   `first_name` varchar(75) NOT NULL,
+  `middle_name` varchar(75) DEFAULT NULL,
   `last_name` varchar(75) NOT NULL,
   `email` varchar(191) DEFAULT NULL,
   `employee_type` enum('teaching','non-teaching') NOT NULL,
@@ -90,6 +91,7 @@ CREATE TABLE `leaves` (
 CREATE TABLE `registration_requests` (
   `id` int(11) NOT NULL,
   `first_name` varchar(75) NOT NULL,
+  `middle_name` varchar(75) DEFAULT NULL,
   `last_name` varchar(75) NOT NULL,
   `email` varchar(191) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
@@ -143,6 +145,7 @@ CREATE TABLE `super_admin_schools` (
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `first_name` varchar(75) NOT NULL,
+  `middle_name` varchar(75) DEFAULT NULL,
   `last_name` varchar(75) NOT NULL,
   `email` varchar(191) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
