@@ -4,4 +4,4 @@ export { default as LoginModal } from "./LoginModal";
 export { default as LoginSuccessModal } from "./LoginSuccessModal";
 export { default as ForgotModal } from "./ForgotModal";
 export { default as ErrorModal } from "./ErrorModal";
-export { default as RegistrationModal } from "./RegistrationModal";
+export { default as RegistrationModal } from "../../registration/RegistrationModal";

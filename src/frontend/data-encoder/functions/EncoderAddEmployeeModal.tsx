@@ -94,6 +94,7 @@ export default function EncoderAddUserModal({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [birthdate, setBirthdate] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -104,6 +105,7 @@ export default function EncoderAddUserModal({
   const [firstNameError, setFirstNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [birthdateError, setBirthdateError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
 
@@ -168,6 +170,16 @@ export default function EncoderAddUserModal({
       hasError = true;
     } else {
       setEmailError("");
+    }
+
+    if (!birthdate) {
+      setBirthdateError("Birthdate is required");
+      hasError = true;
+    } else if (new Date(birthdate) > new Date()) {
+      setBirthdateError("Birthdate cannot be in the future");
+      hasError = true;
+    } else {
+      setBirthdateError("");
     }
 
     if (!assignedSchoolName) {
@@ -258,6 +270,7 @@ export default function EncoderAddUserModal({
             first_name: firstName.trim(),
             last_name: lastName.trim(),
             email: email.trim(),
+            birthdate,
             password,
           }),
         },
@@ -354,6 +367,25 @@ export default function EncoderAddUserModal({
                 />
                 {emailError && (
                   <p className="text-xs text-red-600 mt-1">{emailError}</p>
+                )}
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Birthdate
+                </label>
+                <input
+                  type="date"
+                  value={birthdate}
+                  onChange={(e) => {
+                    setBirthdate(e.target.value);
+                    if (birthdateError) setBirthdateError("");
+                  }}
+                  max={new Date().toISOString().slice(0, 10)}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700"
+                />
+                {birthdateError && (
+                  <p className="text-xs text-red-600 mt-1">{birthdateError}</p>
                 )}
               </div>
 

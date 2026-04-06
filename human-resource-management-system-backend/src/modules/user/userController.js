@@ -9,6 +9,12 @@ const {
 } = require("../../utils/mailer");
 
 const VALID_ROLES = ["SUPER_ADMIN", "ADMIN", "DATA_ENCODER"];
+const normalizeBirthdate = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString().slice(0, 10);
+};
+
 const normalizeRole = (role) =>
   String(role || "")
     .trim()
@@ -336,7 +342,8 @@ const createDataEncoderByAdmin = async (req, res) => {
       });
     }
 
-    const { first_name, last_name, email, password, school_name } = req.body;
+    const { first_name, last_name, email, password, school_name, birthdate } =
+      req.body;
 
     if (!first_name || !last_name || !email || !password) {
       return res.status(400).json({
@@ -345,6 +352,10 @@ const createDataEncoderByAdmin = async (req, res) => {
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
+    const normalizedBirthdate = normalizeBirthdate(birthdate);
+    if (!normalizedBirthdate) {
+      return res.status(400).json({ message: "Valid birthdate is required" });
+    }
     const normalizedSchoolName = String(school_name || "").trim();
 
     const [existingUserRows] = await pool
@@ -399,7 +410,7 @@ const createDataEncoderByAdmin = async (req, res) => {
       }
 
       const [insertResult] = await conn.query(
-        "INSERT INTO users (first_name, last_name, email, password_hash, role, school_id, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)",
+        "INSERT INTO users (first_name, last_name, email, password_hash, role, school_id, birthdate, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)",
         [
           String(first_name).trim(),
           String(last_name).trim(),
@@ -407,6 +418,7 @@ const createDataEncoderByAdmin = async (req, res) => {
           hashedPassword,
           "DATA_ENCODER",
           schoolId,
+          normalizedBirthdate,
         ],
       );
 

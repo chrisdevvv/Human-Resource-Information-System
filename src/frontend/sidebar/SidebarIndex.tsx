@@ -37,6 +37,12 @@ const SIDEBAR_TABS: SidebarTab[] = [
     roles: ["admin", "super-admin"],
   },
   {
+    id: "employees-list",
+    label: "Employees List",
+    icon: Users,
+    roles: ["admin", "super-admin"],
+  },
+  {
     id: "employee-management",
     label: "Leave Management",
     icon: Users,
@@ -225,7 +231,7 @@ export default function SidebarIndex({
   role,
   activeTab,
   onTabChange,
-  title = "ELMS",
+  title = "HRIS",
   collapsed,
   defaultCollapsed = false,
   onToggleCollapse,

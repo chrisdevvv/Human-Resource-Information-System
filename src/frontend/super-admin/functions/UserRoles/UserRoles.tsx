@@ -32,6 +32,17 @@ type SchoolOption = {
   school_name: string;
 };
 
+type UserApiRow = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  school_id?: number | null;
+  school_name?: string | null;
+  role: "SUPER_ADMIN" | "ADMIN" | "DATA_ENCODER";
+  is_active: unknown;
+};
+
 const normalizeIsActive = (value: unknown): boolean => {
   return value === true || value === 1 || value === "1" || value === "true";
 };
@@ -155,7 +166,8 @@ export default function UserRoles() {
       if (!response.ok) throw new Error("Failed to fetch users");
 
       const result = await response.json();
-      const formatted = (result.data || []).map((item: any) => ({
+      const rows = (result.data || []) as UserApiRow[];
+      const formatted = rows.map((item) => ({
         id: item.id,
         firstName: item.first_name,
         lastName: item.last_name,
@@ -306,7 +318,7 @@ export default function UserRoles() {
 
       {/* Tab Content */}
       {activeTab === "users" && (
-        <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-6 sticky top-4 h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
+        <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-6 sticky top-4 flex flex-col">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">
             User & Roles
           </h1>
@@ -431,13 +443,13 @@ export default function UserRoles() {
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+          <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
             {userLoading ? (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex items-center justify-center py-10">
                 <p className="text-gray-500">Loading users...</p>
               </div>
             ) : userError ? (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex items-center justify-center py-10">
                 <p className="text-red-500">Error: {userError}</p>
               </div>
             ) : (

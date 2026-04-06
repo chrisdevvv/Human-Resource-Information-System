@@ -22,6 +22,19 @@ type Log = {
   createdAt: string;
 };
 
+type LogApiRow = {
+  id: number;
+  user_id: number;
+  first_name?: string;
+  last_name?: string;
+  role?: string;
+  email?: string;
+  school_name?: string;
+  action?: string;
+  details?: string;
+  created_at: string;
+};
+
 type ArchiveFlowStep = "range" | "generate-prompt" | "confirm" | "success";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
@@ -46,52 +59,25 @@ export default function Logs() {
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-  const MAX_RANGE_DAYS = 30;
-
-  // Overall allowed window: today and the 30 days before it
   const todayStr = new Date().toISOString().slice(0, 10);
-  const thirtyDaysAgoStr = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - MAX_RANGE_DAYS);
-    return d.toISOString().slice(0, 10);
-  })();
 
-  // When dateFrom changes, clamp dateTo so the range never exceeds 30 days
+  // Keep date inputs valid while allowing custom long ranges.
   const handleDateFrom = (value: string) => {
     setDateFrom(value);
     setCurrentPage(1);
-    if (value && dateTo) {
-      const from = new Date(value);
-      const to = new Date(dateTo);
-      const maxTo = new Date(from);
-      maxTo.setDate(maxTo.getDate() + MAX_RANGE_DAYS);
-      if (to > maxTo) setDateTo(maxTo.toISOString().slice(0, 10));
-      if (to < from) setDateTo(value);
+    if (value && dateTo && new Date(dateTo) < new Date(value)) {
+      setDateTo(value);
     }
   };
 
-  // When dateTo changes, clamp so range never exceeds 30 days
+  // Keep date inputs valid while allowing custom long ranges.
   const handleDateTo = (value: string) => {
-    if (value && dateFrom) {
-      const from = new Date(dateFrom);
-      const to = new Date(value);
-      const maxTo = new Date(from);
-      maxTo.setDate(maxTo.getDate() + MAX_RANGE_DAYS);
-      if (to > maxTo) value = maxTo.toISOString().slice(0, 10);
-      if (to < from) value = dateFrom;
+    if (value && dateFrom && new Date(value) < new Date(dateFrom)) {
+      value = dateFrom;
     }
     setDateTo(value);
     setCurrentPage(1);
   };
-
-  // max selectable end date = min(dateFrom + 30 days, today)
-  const maxDateTo = (() => {
-    if (!dateFrom) return todayStr;
-    const d = new Date(dateFrom);
-    d.setDate(d.getDate() + MAX_RANGE_DAYS);
-    const candidate = d.toISOString().slice(0, 10);
-    return candidate < todayStr ? candidate : todayStr;
-  })();
 
   const [logsData, setLogsData] = useState<Log[]>([]);
   const [selectedLog, setSelectedLog] = useState<Log | null>(null);
@@ -114,7 +100,7 @@ export default function Logs() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  const archiveRange = React.useMemo(() => {
+  const defaultArchiveRange = React.useMemo(() => {
     const now = new Date();
     const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const to = new Date(from);
@@ -135,6 +121,45 @@ export default function Logs() {
       }),
     };
   }, []);
+
+  const archiveRange = React.useMemo(() => {
+    let fromIso = defaultArchiveRange.fromIso;
+    let toIso = defaultArchiveRange.toIso;
+
+    if (dateFrom || dateTo) {
+      fromIso = dateFrom || dateTo || defaultArchiveRange.fromIso;
+      toIso = dateTo || todayStr;
+
+      if (new Date(toIso) < new Date(fromIso)) {
+        toIso = fromIso;
+      }
+    }
+
+    const from = new Date(`${fromIso}T00:00:00`);
+    const to = new Date(`${toIso}T00:00:00`);
+
+    return {
+      fromIso,
+      toIso,
+      fromLabel: from.toLocaleDateString("en-PH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      toLabel: to.toLocaleDateString("en-PH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      usesCustomRange: Boolean(dateFrom || dateTo),
+    };
+  }, [
+    dateFrom,
+    dateTo,
+    defaultArchiveRange.fromIso,
+    defaultArchiveRange.toIso,
+    todayStr,
+  ]);
 
   const archiveReportRows = React.useMemo<LogsReportRecord[]>(() => {
     const from = new Date(`${archiveRange.fromIso}T00:00:00`);
@@ -291,7 +316,8 @@ export default function Logs() {
       if (!response.ok) throw new Error("Failed to fetch logs");
 
       const result = await response.json();
-      const formatted = (result.data || []).map((item: any) => ({
+      const rows = (result.data || []) as LogApiRow[];
+      const formatted = rows.map((item) => ({
         id: item.id,
         userId: item.user_id,
         firstName: item.first_name || "Unknown",
@@ -593,7 +619,7 @@ export default function Logs() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-6 sticky top-4 h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
+    <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-6 sticky top-4 flex flex-col">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Activity Logs</h1>
 
       {/* Filters */}
@@ -691,7 +717,6 @@ export default function Logs() {
             <input
               type="date"
               value={dateFrom}
-              min={thirtyDaysAgoStr}
               max={todayStr}
               onChange={(e) => handleDateFrom(e.target.value)}
               className="text-gray-500 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
@@ -702,8 +727,8 @@ export default function Logs() {
             <input
               type="date"
               value={dateTo}
-              min={dateFrom || thirtyDaysAgoStr}
-              max={maxDateTo}
+              min={dateFrom || ""}
+              max={todayStr}
               onChange={(e) => handleDateTo(e.target.value)}
               className="text-gray-500 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
             />
@@ -729,13 +754,13 @@ export default function Logs() {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+      <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
         {logsLoading ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center py-10">
             <p className="text-gray-500">Loading logs...</p>
           </div>
         ) : logsError ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center py-10">
             <p className="text-red-500">Error: {logsError}</p>
           </div>
         ) : (
@@ -939,14 +964,14 @@ export default function Logs() {
 
             {archiveStep === "range" && (
               <>
-                <p className="mt-2 text-sm text-gray-600">
-                  Archive range for last month window:
-                </p>
+                <p className="mt-2 text-sm text-gray-600">Archive range:</p>
                 <p className="mt-1 text-sm font-semibold text-gray-800">
-                  {archiveRange.fromLabel} to {archiveRange.toLabel} (30 days)
+                  {archiveRange.fromLabel} to {archiveRange.toLabel}
                 </p>
                 <p className="mt-3 text-xs text-gray-500">
-                  You can generate the report now or continue to archive.
+                  {archiveRange.usesCustomRange
+                    ? "Using your selected date filter range."
+                    : "No date filter selected, using the default monthly archive window."}
                 </p>
 
                 {archiveMessage && (

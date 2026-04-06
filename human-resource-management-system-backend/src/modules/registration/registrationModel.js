@@ -4,6 +4,7 @@ const Registration = {
   getAll: async (status = null, options = {}) => {
     let query = `
             SELECT rr.id, rr.first_name, rr.last_name, rr.email, rr.school_name, rr.requested_role,
+                   rr.birthdate,
                    rr.approved_role, rr.status, rr.rejection_reason,
                    rr.reviewed_by, rr.reviewed_at, rr.created_at,
                    u.first_name AS reviewed_by_first_name,
@@ -49,7 +50,9 @@ const Registration = {
   getSchoolNameById: async (school_id) => {
     const [rows] = await pool
       .promise()
-      .query("SELECT school_name FROM schools WHERE id = ? LIMIT 1", [school_id]);
+      .query("SELECT school_name FROM schools WHERE id = ? LIMIT 1", [
+        school_id,
+      ]);
     return rows[0]?.school_name || null;
   },
 
@@ -117,7 +120,7 @@ const Registration = {
       }
 
       await conn.query(
-        "INSERT INTO users (first_name, last_name, email, password_hash, role, school_id, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)",
+        "INSERT INTO users (first_name, last_name, email, password_hash, role, school_id, birthdate, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)",
         [
           request.first_name,
           request.last_name,
@@ -125,6 +128,7 @@ const Registration = {
           password_hash_to_use,
           role,
           school_id,
+          request.birthdate || null,
         ],
       );
 

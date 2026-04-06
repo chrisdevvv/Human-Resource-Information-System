@@ -44,48 +44,24 @@ export default function LogsMobile() {
   const [dateTo, setDateTo] = useState("");
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-  const MAX_RANGE_DAYS = 30;
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const thirtyDaysAgoStr = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - MAX_RANGE_DAYS);
-    return d.toISOString().slice(0, 10);
-  })();
 
   const handleDateFrom = (value: string) => {
     setDateFrom(value);
     setCurrentPage(1);
-    if (value && dateTo) {
-      const from = new Date(value);
-      const to = new Date(dateTo);
-      const maxTo = new Date(from);
-      maxTo.setDate(maxTo.getDate() + MAX_RANGE_DAYS);
-      if (to > maxTo) setDateTo(maxTo.toISOString().slice(0, 10));
-      if (to < from) setDateTo(value);
+    if (value && dateTo && new Date(dateTo) < new Date(value)) {
+      setDateTo(value);
     }
   };
 
   const handleDateTo = (value: string) => {
-    if (value && dateFrom) {
-      const from = new Date(dateFrom);
-      const to = new Date(value);
-      const maxTo = new Date(from);
-      maxTo.setDate(maxTo.getDate() + MAX_RANGE_DAYS);
-      if (to > maxTo) value = maxTo.toISOString().slice(0, 10);
-      if (to < from) value = dateFrom;
+    if (value && dateFrom && new Date(value) < new Date(dateFrom)) {
+      value = dateFrom;
     }
     setDateTo(value);
     setCurrentPage(1);
   };
-
-  const maxDateTo = (() => {
-    if (!dateFrom) return todayStr;
-    const d = new Date(dateFrom);
-    d.setDate(d.getDate() + MAX_RANGE_DAYS);
-    const candidate = d.toISOString().slice(0, 10);
-    return candidate < todayStr ? candidate : todayStr;
-  })();
 
   const [logsData, setLogsData] = useState<Log[]>([]);
   const [selectedLog, setSelectedLog] = useState<Log | null>(null);
@@ -108,7 +84,7 @@ export default function LogsMobile() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  const archiveRange = React.useMemo(() => {
+  const defaultArchiveRange = React.useMemo(() => {
     const now = new Date();
     const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const to = new Date(from);
@@ -129,6 +105,45 @@ export default function LogsMobile() {
       }),
     };
   }, []);
+
+  const archiveRange = React.useMemo(() => {
+    let fromIso = defaultArchiveRange.fromIso;
+    let toIso = defaultArchiveRange.toIso;
+
+    if (dateFrom || dateTo) {
+      fromIso = dateFrom || dateTo || defaultArchiveRange.fromIso;
+      toIso = dateTo || todayStr;
+
+      if (new Date(toIso) < new Date(fromIso)) {
+        toIso = fromIso;
+      }
+    }
+
+    const from = new Date(`${fromIso}T00:00:00`);
+    const to = new Date(`${toIso}T00:00:00`);
+
+    return {
+      fromIso,
+      toIso,
+      fromLabel: from.toLocaleDateString("en-PH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      toLabel: to.toLocaleDateString("en-PH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      usesCustomRange: Boolean(dateFrom || dateTo),
+    };
+  }, [
+    dateFrom,
+    dateTo,
+    defaultArchiveRange.fromIso,
+    defaultArchiveRange.toIso,
+    todayStr,
+  ]);
 
   const archiveReportRows = React.useMemo<LogsReportRecord[]>(() => {
     const from = new Date(`${archiveRange.fromIso}T00:00:00`);
@@ -667,7 +682,6 @@ export default function LogsMobile() {
             <input
               type="date"
               value={dateFrom}
-              min={thirtyDaysAgoStr}
               max={todayStr}
               onChange={(e) => handleDateFrom(e.target.value)}
               className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
@@ -680,8 +694,8 @@ export default function LogsMobile() {
             <input
               type="date"
               value={dateTo}
-              min={dateFrom || thirtyDaysAgoStr}
-              max={maxDateTo}
+              min={dateFrom || ""}
+              max={todayStr}
               onChange={(e) => handleDateTo(e.target.value)}
               className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             />
@@ -885,14 +899,14 @@ export default function LogsMobile() {
 
             {archiveStep === "range" && (
               <>
-                <p className="mt-2 text-sm text-gray-600">
-                  Archive range for last month window:
-                </p>
+                <p className="mt-2 text-sm text-gray-600">Archive range:</p>
                 <p className="mt-1 text-sm font-semibold text-gray-800">
-                  {archiveRange.fromLabel} to {archiveRange.toLabel} (30 days)
+                  {archiveRange.fromLabel} to {archiveRange.toLabel}
                 </p>
                 <p className="mt-3 text-xs text-gray-500">
-                  You can generate the report now or continue to archive.
+                  {archiveRange.usesCustomRange
+                    ? "Using your selected date filter range."
+                    : "No date filter selected, using the default monthly archive window."}
                 </p>
 
                 {archiveMessage && (

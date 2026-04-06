@@ -1,8 +1,6 @@
 (async () => {
   try {
-    require("dotenv").config({
-      path: require("path").join(__dirname, "../../.env"),
-    });
+    require("../config/loadEnv");
     const fetch = globalThis.fetch || (await import("node-fetch")).default;
     const adminPassword =
       process.env.TEST_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD;

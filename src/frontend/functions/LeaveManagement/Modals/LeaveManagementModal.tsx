@@ -2,10 +2,8 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Download, Plus, RefreshCcw, Trash2, X } from "lucide-react";
-import ArchiveConfirmationModal from "./ArchiveConfirmationModal";
 import DeleteEntryConfirmation from "./DeleteEntryConfirmation";
 import MarkLeaveConfirmationModal from "./MarkLeaveConfirmationModal";
-import ArchiveSuccessMessage from "../ArchiveSuccessMessage";
 import type { LeaveModalRecord } from "../leaveTypes";
 import AddLeaveModal, { type AddLeaveFormValues } from "./AddLeaveModal";
 import LeaveHistoryTable from "../LeaveHistoryTable";
@@ -18,7 +16,6 @@ import {
   deleteLeave,
   getLeaveHistoryByEmployee,
   type LeaveHistoryRecord,
-  archiveEmployee,
 } from "../leaveApi";
 
 type LeaveManagementModalProps = {
@@ -45,10 +42,6 @@ export default function LeaveManagementModal({
   initialTab = "history",
   onLeaveStatusChanged,
 }: LeaveManagementModalProps) {
-  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
-  const [isArchiving, setIsArchiving] = useState(false);
-  const [archiveError, setArchiveError] = useState<string | null>(null);
-  const [showArchiveSuccess, setShowArchiveSuccess] = useState(false);
   const [isMarkedOnLeave, setIsMarkedOnLeave] = useState(false);
   const [employeeEmail, setEmployeeEmail] = useState("");
   const [employeeSchoolFromApi, setEmployeeSchoolFromApi] = useState("");
@@ -68,31 +61,7 @@ export default function LeaveManagementModal({
   const [pdfCooldownRemaining, setPdfCooldownRemaining] = useState(0);
   const pdfCooldownIntervalRef = useRef<number | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
-  const handleArchive = async (password: string) => {
-    setIsArchiving(true);
-    setArchiveError(null);
-    try {
-      if (!employeeId) {
-        throw new Error("Employee ID not found");
-      }
-      await archiveEmployee(employeeId, password);
-      setIsArchiveOpen(false);
-      setShowArchiveSuccess(true);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Failed to archive employee. Please try again.";
-      setArchiveError(errorMessage);
-    } finally {
-      setIsArchiving(false);
-    }
-  };
 
-  const handleArchiveSuccessClose = () => {
-    setShowArchiveSuccess(false);
-    onClose();
-  };
   const employeeId = leave?.employeeId ?? leave?.id ?? null;
   const employeeType = leave?.employeeType ?? "non-teaching";
   const employeeSchool =
@@ -581,28 +550,6 @@ export default function LeaveManagementModal({
                   ? `Download PDF (${pdfCooldownRemaining}s)`
                   : "Download PDF"}
               </button>
-              <button
-                type="button"
-                onClick={() => setIsArchiveOpen(true)}
-                disabled={isSaving || isArchiving}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-800 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Archive
-              </button>
-              <ArchiveConfirmationModal
-                isOpen={isArchiveOpen}
-                onClose={() => setIsArchiveOpen(false)}
-                onConfirm={handleArchive}
-                isLoading={isArchiving}
-                error={archiveError}
-                employeeName={leave.fullName}
-              />
-              <ArchiveSuccessMessage
-                isVisible={showArchiveSuccess}
-                employeeName={leave.fullName}
-                onClose={handleArchiveSuccessClose}
-                autoCloseDuration={2000}
-              />
             </div>
           </div>
         </div>

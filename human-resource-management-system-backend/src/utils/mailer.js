@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("../config/loadEnv");
 const nodemailer = require("nodemailer");
 
 // ---------------------------------------------------------------------------
@@ -14,10 +14,11 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const FROM = process.env.SMTP_FROM || "DepEd ELMS <noreply@deped.gov.ph>";
+const FROM = process.env.SMTP_FROM || "DepEd HRIS <noreply@deped.gov.ph>";
 const FRONTEND_URL =
   process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3001";
-const RESET_LINK_LABEL = process.env.RESET_PASSWORD_TOKEN_TTL_LABEL || "2 hours";
+const RESET_LINK_LABEL =
+  process.env.RESET_PASSWORD_TOKEN_TTL_LABEL || "2 hours";
 
 // Only attempt to send if all SMTP vars are present
 const SMTP_READY = !!(
@@ -57,7 +58,7 @@ function baseTemplate(bodyContent) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
 </head>
-<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;">
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Poppins,Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 0;">
     <tr><td align="center">
       <table width="560" cellpadding="0" cellspacing="0"
@@ -68,13 +69,13 @@ function baseTemplate(bodyContent) {
           <td style="background:#1d4ed8;padding:24px 32px;">
             <!-- Logos -->
             <div style="text-align:center;margin-bottom:16px;">
-              <img src="${FRONTEND_URL}/images/sdlogo.svg" alt="SD Logo" style="height:80px;width:auto;margin:0 12px;vertical-align:middle;display:inline-block;" />
+              <img src="${FRONTEND_URL}/sdologo-new.svg" alt="SD Logo" style="height:80px;width:auto;margin:0 12px;vertical-align:middle;display:inline-block;" />
             </div>
             <p style="margin:0;font-size:11px;color:#bfdbfe;letter-spacing:2px;text-transform:uppercase;text-align:center;">
               Department of Education
             </p>
             <h1 style="margin:4px 0 0;font-size:20px;color:#ffffff;text-align:center;">
-              Employee Leave Management System
+              Human Resource Information System
             </h1>
           </td>
         </tr>
@@ -90,7 +91,7 @@ function baseTemplate(bodyContent) {
         <tr>
           <td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #e5e7eb;">
             <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
-              This is an automated message from DepEd ELMS. Please do not reply to this email.
+              This is an automated message from DepEd HRIS. Please do not reply to this email.
             </p>
           </td>
         </tr>
@@ -130,7 +131,7 @@ async function sendRegistrationReceived(to, firstName) {
         <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Hi ${firstName},</h2>
         <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
             We have received your registration request for the
-            <strong>DepEd Employee Leave Management System</strong>.
+            <strong>DepEd Human Resource Information System</strong>.
         </p>
         <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">
             Your request is currently <strong>pending review</strong> by a system administrator.
@@ -151,7 +152,7 @@ async function sendRegistrationReceived(to, firstName) {
 
   await sendMail({
     to,
-    subject: "Registration Request Received — DepEd ELMS",
+    subject: "Registration Request Received — DepEd HRIS",
     html,
   });
 }
@@ -193,7 +194,7 @@ async function sendRegistrationApproved(to, firstName, role) {
 
   await sendMail({
     to,
-    subject: "Registration Approved — Welcome to DepEd ELMS",
+    subject: "Registration Approved — Welcome to DepEd HRIS",
     html,
   });
 }
@@ -216,7 +217,7 @@ async function sendRegistrationRejected(to, firstName, reason) {
         <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Hi ${firstName},</h2>
         <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
             We regret to inform you that your registration request for the
-            <strong>DepEd Employee Leave Management System</strong> has been
+            <strong>DepEd Human Resource Information System</strong> has been
             <strong style="color:#dc2626;">rejected</strong>.
         </p>
         ${reasonBlock}
@@ -231,7 +232,7 @@ async function sendRegistrationRejected(to, firstName, reason) {
 
   await sendMail({
     to,
-    subject: "Registration Request Update — DepEd ELMS",
+    subject: "Registration Request Update — DepEd HRIS",
     html,
   });
 }
@@ -244,7 +245,7 @@ async function sendPasswordResetLink(to, firstName, resetLink) {
         <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Hi ${firstName},</h2>
         <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
             We received a request to reset the password for your
-            <strong>DepEd Employee Leave Management System</strong> account.
+            <strong>DepEd Human Resource Information System</strong> account.
         </p>
         <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">
           Click the button below to reset your password. This link is valid for
@@ -275,7 +276,7 @@ async function sendPasswordResetLink(to, firstName, resetLink) {
 
   await sendMail({
     to,
-    subject: "Reset Your Password \u2014 DepEd ELMS",
+    subject: "Reset Your Password \u2014 DepEd HRIS",
     html,
   });
 }
@@ -288,7 +289,7 @@ async function sendPasswordChanged(to, firstName) {
         <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Hi ${firstName},</h2>
         <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
             This is a confirmation that the password for your
-            <strong>DepEd Employee Leave Management System</strong> account has been
+            <strong>DepEd Human Resource Information System</strong> account has been
             <strong>successfully changed</strong>.
         </p>
         <div style="background:#fef9c3;border-left:4px solid #ca8a04;padding:14px 18px;
@@ -311,7 +312,7 @@ async function sendPasswordChanged(to, firstName) {
 
   await sendMail({
     to,
-    subject: "Your Password Has Been Changed \u2014 DepEd ELMS",
+    subject: "Your Password Has Been Changed \u2014 DepEd HRIS",
     html,
   });
 }
@@ -323,7 +324,7 @@ async function sendRoleChanged(to, firstName, oldRole, newRole) {
   const html = baseTemplate(`
         <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Hi ${firstName},</h2>
         <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.6;">
-            Your account role in the <strong>DepEd Employee Leave Management System</strong>
+            Your account role in the <strong>DepEd Human Resource Information System</strong>
             has been updated by a system administrator.
         </p>
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
@@ -362,7 +363,7 @@ async function sendRoleChanged(to, firstName, oldRole, newRole) {
 
   await sendMail({
     to,
-    subject: "Your Account Role Has Been Updated — DepEd ELMS",
+    subject: "Your Account Role Has Been Updated — DepEd HRIS",
     html,
   });
 }
@@ -381,7 +382,7 @@ async function sendAccountCreatedCredentials(
         <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Hi ${firstName},</h2>
         <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
             Your account has been created in the
-            <strong>DepEd Employee Leave Management System</strong> by a system administrator.
+            <strong>DepEd Human Resource Information System</strong> by a system administrator.
         </p>
         <div style="background:#eff6ff;border:1px solid #bfdbfe;padding:16px 20px;
                     border-radius:6px;margin:16px 0 20px;">
@@ -414,7 +415,7 @@ async function sendAccountCreatedCredentials(
 
   await sendMail({
     to,
-    subject: "Your Account Credentials — DepEd ELMS",
+    subject: "Your Account Credentials — DepEd HRIS",
     html,
   });
 }

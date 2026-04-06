@@ -18,7 +18,8 @@ const { validateRequest } = require("../../middleware/validateRequest");
 const {
   idParamSchema,
   schoolIdParamSchema,
-  employeeBodySchema,
+  employeeCreateBodySchema,
+  employeeUpdateBodySchema,
   employeeListQuerySchema,
   employeeMarkOnLeaveBodySchema,
   employeeStatusCountsQuerySchema,
@@ -62,14 +63,14 @@ router.post(
   "/",
   authMiddleware,
   roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
-  validateRequest({ body: employeeBodySchema }),
+  validateRequest({ body: employeeCreateBodySchema }),
   createEmployee,
 );
 router.put(
   "/:id",
   authMiddleware,
   roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
-  validateRequest({ params: idParamSchema, body: employeeBodySchema }),
+  validateRequest({ params: idParamSchema, body: employeeUpdateBodySchema }),
   updateEmployee,
 );
 router.delete(

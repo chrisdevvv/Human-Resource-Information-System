@@ -1,4 +1,4 @@
-﻿require("dotenv").config();
+﻿require("./loadEnv");
 const mysql = require("mysql2");
 
 const dbName = process.env.DB_NAME;

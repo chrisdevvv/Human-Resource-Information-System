@@ -17,6 +17,7 @@ export default function RegistrationMobile() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [birthdate, setBirthdate] = useState("");
   const [school, setSchool] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -27,6 +28,7 @@ export default function RegistrationMobile() {
   const [firstNameError, setFirstNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [birthdateError, setBirthdateError] = useState("");
   const [schoolError, setSchoolError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
@@ -83,6 +85,7 @@ export default function RegistrationMobile() {
     setFirstName("");
     setLastName("");
     setEmail("");
+    setBirthdate("");
     setSchool("");
     setPassword("");
     setConfirmPassword("");
@@ -91,6 +94,7 @@ export default function RegistrationMobile() {
     setFirstNameError("");
     setLastNameError("");
     setEmailError("");
+    setBirthdateError("");
     setSchoolError("");
     setPasswordError("");
     setConfirmPasswordError("");
@@ -135,6 +139,14 @@ export default function RegistrationMobile() {
       hasError = true;
     }
 
+    if (!birthdate) {
+      setBirthdateError("Birthdate is required");
+      hasError = true;
+    } else if (new Date(birthdate) > new Date()) {
+      setBirthdateError("Birthdate cannot be in the future");
+      hasError = true;
+    }
+
     if (hasError) {
       setError("Please correct the errors before continuing");
       return;
@@ -175,11 +187,12 @@ export default function RegistrationMobile() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName,
-          lastName,
+          first_name: firstName,
+          last_name: lastName,
           email,
+          birthdate,
           password,
-          school,
+          school_name: school,
         }),
       });
 
@@ -299,10 +312,30 @@ export default function RegistrationMobile() {
                       if (emailError) setEmailError("");
                     }}
                     placeholder="name@deped.gov.ph"
-                    className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${emailError ? "border-red-500" : ""}`}
+                    className={`mt-1 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${emailError ? "border-red-500" : ""}`}
                   />
                   {emailError && (
                     <p className="text-sm text-red-600 mt-1">{emailError}</p>
+                  )}
+
+                  <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+                    <User className="text-blue-600" size={18} />
+                    Birthdate <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={birthdate}
+                    onChange={(e) => {
+                      setBirthdate(e.target.value);
+                      if (birthdateError) setBirthdateError("");
+                    }}
+                    max={new Date().toISOString().slice(0, 10)}
+                    className={`mt-1 w-full text-gray-700 px-3 py-2 border rounded-md ${birthdateError ? "border-red-500" : ""}`}
+                  />
+                  {birthdateError && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {birthdateError}
+                    </p>
                   )}
 
                   <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">

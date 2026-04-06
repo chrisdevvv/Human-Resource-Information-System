@@ -1,8 +1,6 @@
 (async () => {
   try {
-    require("dotenv").config({
-      path: require("path").join(__dirname, "../../.env"),
-    });
+    require("../config/loadEnv");
     const fetch = globalThis.fetch || (await import("node-fetch")).default;
 
     const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL;

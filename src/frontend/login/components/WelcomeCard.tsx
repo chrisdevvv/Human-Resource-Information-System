@@ -9,7 +9,7 @@ export default function WelcomeCard({ onLogin, onRegister }: Props) {
   return (
     <div className="border-2 border-blue-700 bg-white text-gray-900 w-full max-w-7xl mx-auto p-16 rounded-xl shadow-2xl text-center">
       <h2 id="welcomeMsg" className="text-3xl font-semibold">
-        Welcome to Employee Leave Management System
+        Welcome to Human Resource Information System
       </h2>
       <p id="welcomeSub" className="text-gray-500 mt-3 text-lg">
         Access leave records and management tools.
