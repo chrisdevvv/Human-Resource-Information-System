@@ -26,3 +26,58 @@ body {
   color: var(--foreground);
   font-family: "Poppins", var(--font-poppins), Arial, Helvetica, sans-serif;
 }
+
+/* Global motion primitives for modal/toast polish */
+@keyframes app-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes app-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes app-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+  }
+}
+
+/* Most app modals share this overlay pattern */
+div.fixed.inset-0[class*="bg-black/"] {
+  animation: app-fade-in 140ms ease-out;
+}
+
+/* Animate modal panels that are direct children of the overlay */
+div.fixed.inset-0[class*="bg-black/"] > div {
+  animation: app-modal-in 180ms ease-out;
+}
+
+/* Common toast placement across the app */
+div.fixed.bottom-5.right-5 {
+  animation: app-toast-in 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  div.fixed.inset-0[class*="bg-black/"],
+  div.fixed.inset-0[class*="bg-black/"] > div,
+  div.fixed.bottom-5.right-5 {
+    animation: none !important;
+  }
+}

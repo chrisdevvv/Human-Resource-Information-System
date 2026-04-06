@@ -216,3 +216,72 @@ export async function unarchiveEmployee(
 
   await parseResponse<ApiResponse>(response);
 }
+
+const parseErrorMessage = async (response: Response): Promise<string> => {
+  try {
+    const body = (await response.json()) as { message?: string };
+    return body.message || "Request failed.";
+  } catch {
+    return "Request failed.";
+  }
+};
+
+export async function fetchLeaveCardPdf(employeeId: number): Promise<Blob> {
+  const response = await fetch(
+    `${LEAVE_ENDPOINT}/employee/${employeeId}/leave-card-pdf`,
+    {
+      method: "GET",
+      headers: getAuthHeaders(),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response));
+  }
+
+  return response.blob();
+}
+
+export async function downloadLeaveCardPdfFromServer(
+  employeeId: number,
+  fileName: string,
+): Promise<void> {
+  const pdfBlob = await fetchLeaveCardPdf(employeeId);
+  const objectUrl = window.URL.createObjectURL(pdfBlob);
+
+  try {
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  } finally {
+    window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1500);
+  }
+}
+
+export async function openLeaveCardPdfForPrint(
+  employeeId: number,
+): Promise<void> {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    throw new Error("Popup blocked. Please allow popups and try again.");
+  }
+
+  const pdfBlob = await fetchLeaveCardPdf(employeeId);
+  const objectUrl = window.URL.createObjectURL(pdfBlob);
+  printWindow.location.href = objectUrl;
+
+  // Give the browser PDF viewer time to initialize before invoking print.
+  window.setTimeout(() => {
+    try {
+      printWindow.focus();
+      printWindow.print();
+    } catch {
+      // Ignore print-trigger errors; PDF will still open in a new tab.
+    }
+  }, 700);
+
+  window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 120000);
+}

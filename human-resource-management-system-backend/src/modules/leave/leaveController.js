@@ -1,5 +1,7 @@
 const Leave = require("./leaveModel");
 const Backlog = require("../backlog/backlogModel");
+const Employee = require("../employee/employeeModel");
+const PDFDocument = require("pdfkit");
 
 const MONTHLY_CREDIT = 1.25;
 const ENTRY_KIND_MANUAL = "MANUAL";
@@ -22,6 +24,50 @@ const toBoolean = (v) => {
 const hasValue = (v) => !(v === undefined || v === null || v === "");
 const pickFirstValue = (...values) => values.find(hasValue);
 const isDifferent = (a, b) => Math.abs(parseNum(a) - parseNum(b)) > 0.0001;
+const ROLE_ADMIN = "admin";
+const ROLE_DATA_ENCODER = "data-encoder";
+
+const normalizeRoleKey = (role) =>
+  String(role || "")
+    .trim()
+    .toLowerCase()
+    .replace(/_/g, "-");
+
+const isSchoolScopedWriteRole = (role) => {
+  const normalized = normalizeRoleKey(role);
+  return normalized === ROLE_ADMIN || normalized === ROLE_DATA_ENCODER;
+};
+
+const isSameSchool = (userSchoolId, targetSchoolId) =>
+  Number(userSchoolId) > 0 && Number(userSchoolId) === Number(targetSchoolId);
+
+const toFixed3 = (value) => parseNum(value).toFixed(3);
+
+const formatDateForCard = (value) => {
+  if (!value) return "-";
+
+  const datePart = String(value).split("T")[0].split(" ")[0];
+  if (!datePart) return "-";
+
+  const date = new Date(datePart);
+  if (Number.isNaN(date.getTime())) {
+    return datePart;
+  }
+
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
+const chunkRows = (rows, chunkSize) => {
+  const output = [];
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    output.push(rows.slice(i, i + chunkSize));
+  }
+  return output;
+};
 
 const normalizePeriod = (yearInput, monthInput) => {
   const now = new Date();
@@ -572,7 +618,10 @@ const getLeaveParticulars = async (_req, res) => {
   } catch (err) {
     return res
       .status(500)
-      .json({ message: "Error retrieving leave particulars", error: err.message });
+      .json({
+        message: "Error retrieving leave particulars",
+        error: err.message,
+      });
   }
 };
 
@@ -590,7 +639,9 @@ const createLeaveParticular = async (req, res) => {
       school_id: null,
       employee_id: null,
       leave_id: null,
-      action: result.created ? "LEAVE_PARTICULAR_CREATED" : "LEAVE_PARTICULAR_EXISTS",
+      action: result.created
+        ? "LEAVE_PARTICULAR_CREATED"
+        : "LEAVE_PARTICULAR_EXISTS",
       details: particular,
     });
 
@@ -692,7 +743,8 @@ const createLeaveRequest = async (req, res) => {
     if (validationError)
       return res.status(400).json({ message: validationError });
 
-    const particularValidationError = await validateParticularAllowed(particulars);
+    const particularValidationError =
+      await validateParticularAllowed(particulars);
     if (particularValidationError) {
       return res.status(400).json({
         message: "Validation failed",
@@ -786,6 +838,250 @@ const createLeaveRequest = async (req, res) => {
   }
 };
 
+const drawLeaveCardHeader = (doc) => {
+  const marginX = doc.page.margins.left;
+  const rightX = doc.page.width - doc.page.margins.right;
+
+  doc
+    .font("Times-Bold")
+    .fontSize(12)
+    .text("Republic of the Philippines", { align: "center", lineGap: 1 })
+    .text("Department of Education", { align: "center", lineGap: 1 })
+    .text("Region III", { align: "center", lineGap: 1 })
+    .text("Division of City of San Jose del Monte", { align: "center", lineGap: 1 })
+    .moveDown(0.35)
+    .fontSize(14)
+    .text("EMPLOYEE LEAVE CARD", { align: "center" })
+    .moveDown(0.35);
+
+  const lineY = doc.y;
+  doc.moveTo(marginX, lineY).lineTo(rightX, lineY).stroke();
+  doc.y = lineY + 14;
+  doc.font("Times-Roman");
+};
+
+const drawLeaveCardEmployeeMeta = (doc, employee) => {
+  const marginX = doc.page.margins.left;
+  const contentWidth =
+    doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  const fullName = [
+    employee.first_name,
+    employee.middle_name,
+    employee.last_name,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const employeeTypeLabel =
+    String(employee.employee_type || "").toLowerCase() === "non-teaching"
+      ? "Non-Teaching"
+      : "Teaching";
+
+  const metaY = doc.y;
+
+  doc
+    .fontSize(10)
+    .font("Times-Bold")
+    .text(`Name of Employee: ${fullName || "-"}`, marginX, metaY, {
+      width: contentWidth * 0.55,
+      align: "left",
+    })
+    .text(`Type: ${employeeTypeLabel}`, marginX + contentWidth * 0.56, metaY, {
+      width: contentWidth * 0.44,
+      align: "left",
+    })
+    .font("Times-Roman");
+
+  doc.y = metaY + 24;
+};
+
+const drawLeaveCardTable = (doc, rows) => {
+  const columns = [
+    {
+      key: "period_of_leave",
+      title: "Period of Leave",
+      width: 57,
+      align: "left",
+    },
+    {
+      key: "particulars",
+      title: "Particulars",
+      width: 70,
+      align: "left",
+    },
+    {
+      key: "earned_vl",
+      title: "Earned VL",
+      width: 36,
+      align: "right",
+    },
+    {
+      key: "abs_with_pay_vl",
+      title: "Abs With Pay VL",
+      width: 44,
+      align: "right",
+    },
+    {
+      key: "abs_without_pay_vl",
+      title: "Abs Without Pay VL",
+      width: 52,
+      align: "right",
+    },
+    {
+      key: "bal_vl",
+      title: "Bal VL",
+      width: 36,
+      align: "right",
+    },
+    {
+      key: "earned_sl",
+      title: "Earned SL",
+      width: 36,
+      align: "right",
+    },
+    {
+      key: "abs_with_pay_sl",
+      title: "Abs With Pay SL",
+      width: 44,
+      align: "right",
+    },
+    {
+      key: "abs_without_pay_sl",
+      title: "Abs Without Pay SL",
+      width: 52,
+      align: "right",
+    },
+    {
+      key: "bal_sl",
+      title: "Bal SL",
+      width: 36,
+      align: "right",
+    },
+    {
+      key: "date_of_action",
+      title: "Date and Action Taken / Evaluation",
+      width: 72,
+      align: "left",
+    },
+  ];
+
+  const totalTableWidth = columns.reduce((sum, col) => sum + col.width, 0);
+  const startX = doc.page.margins.left;
+  const headerHeight = 30;
+  const rowHeight = 20;
+  const headerY = doc.y;
+
+  let x = startX;
+  doc.font("Times-Bold").fontSize(8.5);
+  for (const column of columns) {
+    doc
+      .rect(x, headerY, column.width, headerHeight)
+      .fillAndStroke("#f3f4f6", "#000000");
+
+    doc.fillColor("#000000").text(column.title, x + 2, headerY + 8, {
+      width: column.width - 4,
+      align: column.align,
+    });
+
+    x += column.width;
+  }
+
+  let y = headerY + headerHeight;
+  doc.font("Times-Roman").fontSize(9.5);
+
+  if (rows.length === 0) {
+    doc.rect(startX, y, totalTableWidth, rowHeight).stroke("#000000");
+    doc.text("No leave entries available.", startX + 4, y + 6, {
+      width: totalTableWidth - 8,
+      align: "center",
+    });
+    y += rowHeight;
+  } else {
+    rows.forEach((row, rowIndex) => {
+      let colX = startX;
+
+      if (rowIndex % 2 === 1) {
+        doc
+          .rect(startX, y, totalTableWidth, rowHeight)
+          .fillAndStroke("#f3f4f6", "#000000");
+      }
+
+      for (const column of columns) {
+        const rawValue = row[column.key];
+        const value =
+          column.key === "date_of_action"
+            ? formatDateForCard(rawValue)
+            : [
+                  "earned_vl",
+                  "abs_with_pay_vl",
+                  "abs_without_pay_vl",
+                  "bal_vl",
+                  "earned_sl",
+                  "abs_with_pay_sl",
+                  "abs_without_pay_sl",
+                  "bal_sl",
+                ].includes(column.key)
+              ? toFixed3(rawValue)
+              : String(rawValue || "-");
+
+        doc.rect(colX, y, column.width, rowHeight).stroke("#000000");
+        doc.fillColor("#000000").text(value, colX + 2, y + 6, {
+          width: column.width - 4,
+          align: column.align,
+          ellipsis: true,
+        });
+
+        colX += column.width;
+      }
+
+      y += rowHeight;
+    });
+  }
+};
+
+const splitLeaveCardRows = (rows = []) => {
+  const firstPageLimit = 14;
+  const nextPageLimit = 20;
+  if (!rows.length) return [[]];
+
+  const pages = [];
+  pages.push(rows.slice(0, firstPageLimit));
+
+  let cursor = firstPageLimit;
+  while (cursor < rows.length) {
+    pages.push(rows.slice(cursor, cursor + nextPageLimit));
+    cursor += nextPageLimit;
+  }
+
+  return pages;
+};
+
+const buildLeaveCardPdfBuffer = ({ employee, leaveRows }) =>
+  new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ size: "A4", margin: 28 });
+      const chunks = [];
+
+      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      const pageRows = splitLeaveCardRows(leaveRows || []);
+
+      pageRows.forEach((rows, pageIndex) => {
+        if (pageIndex > 0) doc.addPage();
+        if (pageIndex === 0) {
+          drawLeaveCardHeader(doc);
+          drawLeaveCardEmployeeMeta(doc, employee);
+        }
+        drawLeaveCardTable(doc, rows);
+      });
+
+      doc.end();
+    } catch (error) {
+      reject(error);
+    }
+  });
+
 const getAllLeaveRequests = async (req, res) => {
   try {
     const { employee_id, page, pageSize } = req.query;
@@ -855,6 +1151,58 @@ const getLeavesByEmployee = async (req, res) => {
   }
 };
 
+const getLeaveCardPdf = async (req, res) => {
+  try {
+    const employeeId = Number(req.params.employee_id);
+    if (!Number.isInteger(employeeId) || employeeId <= 0) {
+      return res.status(400).json({ message: "Invalid employee id" });
+    }
+
+    const employee = await Employee.getById(employeeId, {
+      includeArchived: true,
+    });
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    if (isSchoolScopedWriteRole(req.user?.role)) {
+      if (!isSameSchool(req.user?.school_id, employee.school_id)) {
+        return res.status(403).json({
+          message:
+            "You can only generate leave card PDFs for employees under your assigned school",
+        });
+      }
+    }
+
+    await recomputeEmployeeLeaveLedger(employeeId);
+    const leaveRows = await Leave.getByEmployeeId(employeeId);
+    const pdfBuffer = await buildLeaveCardPdfBuffer({ employee, leaveRows });
+
+    const fullName = [
+      employee.first_name,
+      employee.middle_name,
+      employee.last_name,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .replace(/[\\/:*?"<>|]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const safeName = fullName || `Employee-${employeeId}`;
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${safeName} - Leave Card.pdf"`,
+    );
+    return res.status(200).send(pdfBuffer);
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Error generating leave card PDF", error: err.message });
+  }
+};
+
 // PUT /api/leave/:id  — corrects a leave entry and recalculates its balance
 const updateLeaveRequest = async (req, res) => {
   try {
@@ -867,8 +1215,11 @@ const updateLeaveRequest = async (req, res) => {
       return res.status(400).json({ message: validationError });
 
     const particularsInput =
-      req.body?.particulars !== undefined ? req.body.particulars : leave.particulars;
-    const particularValidationError = await validateParticularAllowed(particularsInput);
+      req.body?.particulars !== undefined
+        ? req.body.particulars
+        : leave.particulars;
+    const particularValidationError =
+      await validateParticularAllowed(particularsInput);
     if (particularValidationError) {
       return res.status(400).json({
         message: "Validation failed",
@@ -1029,6 +1380,7 @@ module.exports = {
   getAllLeaveRequests,
   getLeaveRequestById,
   getLeavesByEmployee,
+  getLeaveCardPdf,
   updateLeaveRequest,
   deleteLeaveRequest,
   creditMonthly,

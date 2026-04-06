@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Archive,
+  Users,
   Plus,
   CheckCircle2,
   X,
@@ -315,7 +316,10 @@ export default function EmployeesListLayout() {
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          Employees List
+          <span className="inline-flex items-center gap-2">
+            <Users size={16} />
+            Employees List
+          </span>
         </button>
         <button
           onClick={() => setActiveTab("archived")}
@@ -325,13 +329,17 @@ export default function EmployeesListLayout() {
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          Archived Employee
+          <span className="inline-flex items-center gap-2">
+            <Archive size={16} />
+            Archived Employee
+          </span>
         </button>
       </div>
 
       {activeTab === "list" ? (
         <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-3 sm:p-6 sticky top-0 sm:top-4 flex flex-col">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-6 inline-flex items-center gap-2">
+            <Users size={22} className="text-blue-600" />
             Employees List
           </h1>
 
@@ -431,21 +439,21 @@ export default function EmployeesListLayout() {
               </div>
             ) : (
               <table className="w-full">
-                <thead className="sticky top-0 z-10 bg-white">
+                <thead className="sticky top-0 z-10 bg-blue-100">
                   <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
+                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Name
                     </th>
-                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
+                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Employee Type
                     </th>
-                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
+                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Email
                     </th>
-                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
+                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       School
                     </th>
-                    <th className="text-right py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
+                    <th className="text-right py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Action
                     </th>
                   </tr>

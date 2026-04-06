@@ -6,6 +6,7 @@ import {
   ArrowDownAZ,
   ChevronLeft,
   ChevronRight,
+  UserCheck,
   Settings,
   Eye,
 } from "lucide-react";
@@ -294,7 +295,10 @@ export default function UserRolesMobile() {
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          User &amp; Roles
+          <span className="inline-flex items-center gap-1.5">
+            <Settings size={14} />
+            User &amp; Roles
+          </span>
         </button>
         <button
           onClick={() => setActiveTab("pending")}
@@ -304,14 +308,20 @@ export default function UserRolesMobile() {
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          Pending Accounts
+          <span className="inline-flex items-center gap-1.5">
+            <UserCheck size={14} />
+            Pending Accounts
+          </span>
         </button>
       </div>
 
       {/* Users tab */}
       {activeTab === "users" && (
         <div className="bg-white rounded-xl shadow-lg p-4 flex flex-col gap-4">
-          <h1 className="text-lg font-bold text-gray-900">User &amp; Roles</h1>
+          <h1 className="text-lg font-bold text-gray-900 inline-flex items-center gap-2">
+            <Settings size={16} className="text-blue-600" />
+            User &amp; Roles
+          </h1>
 
           {/* Filters */}
           <div className="flex flex-col gap-2">

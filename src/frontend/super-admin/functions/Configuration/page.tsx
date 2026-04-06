@@ -350,7 +350,8 @@ export default function ConfigurationPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-sm font-medium text-blue-100">Configuration</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
+            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl inline-flex items-center gap-2">
+              <ListChecks size={24} />
               Manage dropdown options
             </h1>
             <p className="mt-1 max-w-3xl text-sm text-blue-100">

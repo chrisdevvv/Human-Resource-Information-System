@@ -4,6 +4,7 @@ const {
   getAllLeaveRequests,
   getLeaveRequestById,
   getLeavesByEmployee,
+  getLeaveCardPdf,
   updateLeaveRequest,
   deleteLeaveRequest,
   creditMonthly,
@@ -38,6 +39,12 @@ router.get(
   authMiddleware,
   roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
   getLeavesByEmployee,
+);
+router.get(
+  "/employee/:employee_id/leave-card-pdf",
+  authMiddleware,
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  getLeaveCardPdf,
 );
 router.get(
   "/particulars",

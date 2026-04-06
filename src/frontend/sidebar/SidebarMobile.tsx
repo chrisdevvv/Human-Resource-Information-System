@@ -348,8 +348,10 @@ export default function SidebarMobile({
 
       {/* Overlay */}
       <div
-        className={`fixed inset-0 bg-black/40 z-30 transition-opacity duration-200 ${
-          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        className={`fixed inset-0 z-30 transition-all duration-300 ease-out ${
+          isOpen
+            ? "opacity-100 bg-black/45 backdrop-blur-[1.5px]"
+            : "opacity-0 bg-black/0 backdrop-blur-0 pointer-events-none"
         }`}
         onClick={() => setIsOpen(false)}
       />

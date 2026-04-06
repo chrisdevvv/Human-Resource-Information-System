@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 type ArchiveSuccessMessageProps = {
   isVisible: boolean;
@@ -27,45 +27,40 @@ function ArchiveSuccessMessage({
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 sm:px-4">
-      <div className="relative w-full max-w-md rounded-xl bg-white shadow-2xl p-8">
-        <div className="flex flex-col items-center justify-center text-center">
-          {/* Success Icon with Animation */}
-          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 animate-pulse">
-            <Check className="h-10 w-10 text-green-600" strokeWidth={3} />
-          </div>
+    <div className="fixed bottom-5 right-5 z-50 w-[min(380px,calc(100vw-2rem))] rounded-xl border border-gray-200 bg-white p-4 shadow-lg">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-100">
+          <Check className="h-4 w-4 text-green-600" strokeWidth={3} />
+        </div>
 
-          {/* Success Title */}
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Archive Successful!
+        <div className="flex-1">
+          <h2 className="text-sm font-semibold text-gray-900">
+            Archive Successful
           </h2>
-
-          {/* Success Message */}
-          <p className="text-gray-700 mb-8 leading-relaxed">
+          <p className="mt-1 text-sm text-gray-600 leading-relaxed">
             {employeeName ? (
               <>
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-gray-800">
                   {employeeName}
                 </span>{" "}
-                has been successfully archived. The employee record has been
-                moved to the archived employees section and will no longer
-                appear in the active employee list.
+                has been archived and moved to archived employees.
               </>
             ) : (
-              "The employee record has been successfully archived and moved to the archived employees section."
+              "The employee record has been archived and moved to archived employees."
             )}
           </p>
-
-          {/* Close Button */}
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="cursor-pointer rounded-lg bg-green-600 px-6 py-2 text-sm font-medium text-white transition hover:bg-green-700"
-            >
-              Close
-            </button>
-          )}
         </div>
+
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="cursor-pointer text-gray-400 hover:text-gray-700"
+            aria-label="Close archive success toast"
+          >
+            <X size={16} />
+          </button>
+        )}
       </div>
     </div>
   );

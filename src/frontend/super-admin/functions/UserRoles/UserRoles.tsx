@@ -7,6 +7,7 @@ import {
   ArrowUpAZ,
   ArrowDownAZ,
   Settings,
+  UserCheck,
   Eye,
 } from "lucide-react";
 import PendingAccounts from "./PendingAccounts";
@@ -302,7 +303,10 @@ export default function UserRoles() {
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          User & Roles
+          <span className="inline-flex items-center gap-2">
+            <Settings size={16} />
+            User & Roles
+          </span>
         </button>
         <button
           onClick={() => setActiveTab("pending")}
@@ -312,14 +316,18 @@ export default function UserRoles() {
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          Pending Accounts
+          <span className="inline-flex items-center gap-2">
+            <UserCheck size={16} />
+            Pending Accounts
+          </span>
         </button>
       </div>
 
       {/* Tab Content */}
       {activeTab === "users" && (
         <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-6 sticky top-4 flex flex-col">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-6 inline-flex items-center gap-2">
+            <Settings size={24} className="text-blue-600" />
             User & Roles
           </h1>
 
@@ -454,21 +462,21 @@ export default function UserRoles() {
               </div>
             ) : (
               <table className="w-full">
-                <thead className="sticky top-0 z-10 bg-white">
+                <thead className="sticky top-0 z-10 bg-blue-100">
                   <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
                       Name
                     </th>
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
                       Email
                     </th>
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
                       Role
                     </th>
-                    <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                    <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
                       Status
                     </th>
-                    <th className="text-right py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                    <th className="text-right py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
                       Actions
                     </th>
                   </tr>

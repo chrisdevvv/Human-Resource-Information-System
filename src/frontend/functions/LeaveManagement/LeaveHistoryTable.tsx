@@ -72,7 +72,7 @@ export default function LeaveHistoryTable({
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200">
       <table className="w-full min-w-full border-collapse text-sm">
-        <thead className="bg-gray-50">
+        <thead className="bg-blue-100">
           <tr className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-600 whitespace-nowrap">
             {selectable && (
               <th className="px-3 py-2 text-center">

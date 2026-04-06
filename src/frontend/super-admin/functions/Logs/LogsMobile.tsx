@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import ViewLogsModal from "../../components/ViewLogsModal";
 import LogsReportGeneration, {
   downloadLogsReportPdf,
@@ -585,7 +585,10 @@ export default function LogsMobile() {
 
   return (
     <div className="w-full px-3 py-4">
-      <h1 className="text-lg font-bold text-gray-900 mb-4">Activity Logs</h1>
+      <h1 className="text-lg font-bold text-gray-900 mb-4 inline-flex items-center gap-2">
+        <FileText size={16} className="text-blue-600" />
+        Activity Logs
+      </h1>
 
       {/* Filters */}
       <div className="flex flex-col gap-2 mb-4">

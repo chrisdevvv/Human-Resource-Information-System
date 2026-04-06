@@ -309,7 +309,9 @@ export default function LeaveManagementModal({
     try {
       setActiveTab("card");
       await new Promise((resolve) => window.setTimeout(resolve, 120));
-      if (!cardRef.current) return;
+      if (!cardRef.current) {
+        throw new Error("Leave card preview is not ready yet.");
+      }
       await downloadLeaveCardPdf(cardRef.current, pdfFileName);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to export PDF.");

@@ -6,6 +6,7 @@ import {
   ArrowDownAZ,
   ChevronLeft,
   ChevronRight,
+  UserCheck,
 } from "lucide-react";
 import UserRolesDetailsModal, {
   type RegistrationDetail,
@@ -194,7 +195,10 @@ export default function PendingAccountsMobile({
 
   return (
     <div className="w-full px-3 py-4">
-      <h1 className="text-lg font-bold text-gray-900 mb-4">Pending Accounts</h1>
+      <h1 className="text-lg font-bold text-gray-900 mb-4 inline-flex items-center gap-2">
+        <UserCheck size={16} className="text-blue-600" />
+        Pending Accounts
+      </h1>
 
       {/* Filters */}
       <div className="flex flex-col gap-2 mb-4">

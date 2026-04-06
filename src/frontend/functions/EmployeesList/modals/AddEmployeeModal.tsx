@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { UserPlus } from "lucide-react";
 import ConfirmationModal from "../../../super-admin/components/ConfirmationModal";
 
 type School = {
@@ -464,40 +465,43 @@ export default function AddEmployeeModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl p-8 sm:p-10 relative">
-        <h2 className="text-2xl font-bold text-gray-800">Add Employee</h2>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto relative">
+        <div className="flex items-center gap-2">
+          <UserPlus size={20} className="text-blue-600" />
+          <h2 className="text-xl font-bold text-gray-800">Add Employee</h2>
+        </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-7">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="space-y-2.5">
-              <label className="block text-sm font-medium text-gray-600">
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">
                 First Name
               </label>
               <input
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700"
                 placeholder="Juan"
               />
             </div>
 
-            <div className="space-y-2.5">
-              <label className="block text-sm font-medium text-gray-600">
+            <div>
+              <label className="text-sm font-medium text-gray-700">
                 Last Name
               </label>
               <input
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700"
                 placeholder="Dela Cruz"
               />
             </div>
           </div>
 
-          <div className="space-y-2.5">
-            <label className="block text-sm font-medium text-gray-600">
+          <div>
+            <label className="text-sm font-medium text-gray-700">
               Middle Name
             </label>
             <input
@@ -505,14 +509,14 @@ export default function AddEmployeeModal({
               value={middleName}
               onChange={(e) => setMiddleName(e.target.value)}
               disabled={noMiddleName}
-              className={`w-full px-4 py-3 border border-gray-300 rounded-lg text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm ${
                 noMiddleName
                   ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                   : "text-gray-700"
               }`}
               placeholder={noMiddleName ? "No middle name provided" : "Santos"}
             />
-            <label className="inline-flex items-center gap-2 text-xs text-gray-600">
+            <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
               <input
                 type="checkbox"
                 checked={noMiddleName}
@@ -529,22 +533,20 @@ export default function AddEmployeeModal({
             </label>
           </div>
 
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="space-y-2.5">
-              <label className="block text-sm font-medium text-gray-600">
-                Email
-              </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700"
                 placeholder="employee@email.com"
               />
             </div>
 
-            <div className="space-y-2.5">
-              <label className="block text-sm font-medium text-gray-600">
+            <div>
+              <label className="text-sm font-medium text-gray-700">
                 Birthdate
               </label>
               <input
@@ -552,14 +554,14 @@ export default function AddEmployeeModal({
                 value={birthdate}
                 onChange={(e) => setBirthdate(e.target.value)}
                 max={new Date().toISOString().slice(0, 10)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700"
               />
             </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="space-y-2.5">
-              <label className="block text-sm font-medium text-gray-600">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">
                 Employee Type
               </label>
               <select
@@ -567,20 +569,20 @@ export default function AddEmployeeModal({
                 onChange={(e) =>
                   setEmployeeType(e.target.value as "teaching" | "non-teaching")
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white cursor-pointer"
               >
                 <option value="teaching">Teaching</option>
                 <option value="non-teaching">Non-Teaching</option>
               </select>
             </div>
 
-            <div className="space-y-2.5">
-              <label className="block text-sm font-medium text-gray-600">
+            <div>
+              <label className="text-sm font-medium text-gray-700">
                 School
               </label>
               {["ADMIN", "DATA_ENCODER"].includes(currentUserRole) ? (
                 <>
-                  <div className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+                  <div className="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700">
                     {assignedSchoolName ||
                       (assignedSchoolId
                         ? "Loading assigned school..."
@@ -606,7 +608,7 @@ export default function AddEmployeeModal({
                       setTimeout(() => setShowSchoolDropdown(false), 150);
                     }}
                     disabled={schoolsLoading}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder={
                       schoolsLoading
                         ? "Loading schools..."
@@ -663,11 +665,11 @@ export default function AddEmployeeModal({
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+          <div className="mt-6 flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer"
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium cursor-pointer"
               disabled={submitLoading || isConfirmOpen}
             >
               Cancel
@@ -675,7 +677,7 @@ export default function AddEmployeeModal({
             <button
               type="submit"
               disabled={submitLoading || isConfirmOpen || schoolsLoading}
-              className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition font-medium text-sm cursor-pointer"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition text-sm font-medium cursor-pointer"
             >
               {submitLoading ? "Saving..." : "Add Employee"}
             </button>

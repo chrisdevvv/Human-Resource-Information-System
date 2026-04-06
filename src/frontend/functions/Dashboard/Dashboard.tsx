@@ -9,6 +9,7 @@ import {
   UserMinus,
   Archive,
   Building2,
+  LayoutDashboard,
 } from "lucide-react";
 
 const API_BASE_URL =
@@ -393,7 +394,10 @@ export default function Dashboard({
     <div className="bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900 inline-flex items-center gap-2">
+          <LayoutDashboard className="h-7 w-7 text-blue-600" />
+          Dashboard
+        </h1>
         <p className="text-gray-600 mt-1">
           Welcome back! Here&apos;s your system overview.
         </p>

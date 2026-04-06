@@ -99,6 +99,8 @@ export default function AddUserModal({
 }: AddUserModalProps) {
   const [step, setStep] = useState<FormStep>(1);
   const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [noMiddleName, setNoMiddleName] = useState(false);
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [birthdate, setBirthdate] = useState("");
@@ -109,6 +111,7 @@ export default function AddUserModal({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [firstNameError, setFirstNameError] = useState("");
+  const [middleNameError, setMiddleNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [birthdateError, setBirthdateError] = useState("");
@@ -119,7 +122,6 @@ export default function AddUserModal({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [schoolOptions, setSchoolOptions] = useState<SchoolOption[]>([]);
   const [schoolsLoading, setSchoolsLoading] = useState(false);
 
@@ -205,6 +207,18 @@ export default function AddUserModal({
       hasError = true;
     } else {
       setLastNameError("");
+    }
+
+    if (!noMiddleName && !middleName.trim()) {
+      setMiddleNameError(
+        "Middle name is required. Check 'I don't have a middle name' if applicable.",
+      );
+      hasError = true;
+    } else if (!noMiddleName && !validateName(middleName)) {
+      setMiddleNameError("Middle name must be at least 2 letters");
+      hasError = true;
+    } else {
+      setMiddleNameError("");
     }
 
     if (!email.trim()) {
@@ -313,8 +327,8 @@ export default function AddUserModal({
           body: JSON.stringify({
             first_name: firstName.trim(),
             last_name: lastName.trim(),
-            middle_name: "",
-            no_middle_name: true,
+            middle_name: noMiddleName ? null : middleName.trim(),
+            no_middle_name: noMiddleName,
             email: email.trim(),
             password,
             birthdate,
@@ -374,7 +388,7 @@ export default function AddUserModal({
       addForcedPasswordChangeEmail(email);
 
       setShowConfirm(false);
-      setShowSuccess(true);
+      onSuccess();
     } catch (err) {
       setShowConfirm(false);
       setError(err instanceof Error ? err.message : "An error occurred.");
@@ -441,6 +455,47 @@ export default function AddUserModal({
 
               <div className="md:col-span-2">
                 <label className="text-sm font-medium text-gray-700">
+                  Middle Name
+                </label>
+                <input
+                  value={middleName}
+                  onChange={(e) => {
+                    setMiddleName(e.target.value);
+                    if (middleNameError) setMiddleNameError("");
+                  }}
+                  placeholder={
+                    noMiddleName ? "No middle name provided" : "Middle name"
+                  }
+                  disabled={noMiddleName}
+                  className={`mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm ${
+                    noMiddleName
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "text-gray-700"
+                  }`}
+                />
+                <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={noMiddleName}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setNoMiddleName(checked);
+                      if (checked) {
+                        setMiddleName("");
+                        setMiddleNameError("");
+                      }
+                    }}
+                    className="h-4 w-4 cursor-pointer"
+                  />
+                  I don't have a middle name
+                </label>
+                {middleNameError && (
+                  <p className="text-xs text-red-600 mt-1">{middleNameError}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">
                   Email
                 </label>
                 <input
@@ -457,7 +512,7 @@ export default function AddUserModal({
                 )}
               </div>
 
-              <div className="md:col-span-2">
+              <div>
                 <label className="text-sm font-medium text-gray-700">
                   Birthdate
                 </label>
@@ -622,29 +677,6 @@ export default function AddUserModal({
         onConfirm={handleAddUser}
         onCancel={() => setShowConfirm(false)}
       />
-
-      {showSuccess && (
-        <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/45 px-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 text-center">
-            <h3 className="text-xl font-bold text-gray-800 mb-2">
-              User Added Successfully
-            </h3>
-            <p className="text-sm text-gray-600 mb-5">
-              The user has been added and can now log in as Data Encoder.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setShowSuccess(false);
-                onSuccess();
-              }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer"
-            >
-              Done
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 }

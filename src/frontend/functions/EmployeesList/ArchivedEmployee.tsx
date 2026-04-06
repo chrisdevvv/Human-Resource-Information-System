@@ -4,8 +4,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   ArrowDownAZ,
   ArrowUpAZ,
+  Archive,
+  Check,
   ChevronLeft,
   ChevronRight,
+  Pencil,
+  X,
 } from "lucide-react";
 import UnarchiveConfirmationModal from "./modals/UnarchiveConfirmationModal";
 import { unarchiveEmployee } from "../LeaveManagement/leaveApi";
@@ -354,7 +358,8 @@ export default function ArchivedEmployee() {
 
   return (
     <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-3 sm:p-6 sticky top-0 sm:top-4 flex flex-col">
-      <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-6">
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-6 inline-flex items-center gap-2">
+        <Archive size={22} className="text-blue-600" />
         Archived Employee
       </h1>
 
@@ -387,7 +392,10 @@ export default function ArchivedEmployee() {
                   : "bg-blue-600 text-white hover:bg-blue-700"
               }`}
             >
-              {isEditMode ? "Cancel" : "Edit"}
+              <span className="inline-flex items-center gap-2">
+                {isEditMode ? <X size={14} /> : <Pencil size={14} />}
+                {isEditMode ? "Cancel" : "Edit"}
+              </span>
             </button>
             {isEditMode && (
               <button
@@ -465,10 +473,10 @@ export default function ArchivedEmployee() {
           </div>
         ) : (
           <table className="w-full">
-            <thead className="sticky top-0 z-10 bg-white">
+            <thead className="sticky top-0 z-10 bg-blue-100">
               <tr className="border-b-2 border-gray-200">
                 {isEditMode && (
-                  <th className="text-center py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
+                  <th className="text-center py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                     <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                       <input
                         type="checkbox"
@@ -480,19 +488,19 @@ export default function ArchivedEmployee() {
                     </label>
                   </th>
                 )}
-                <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
+                <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Name
                 </th>
-                <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
+                <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Employee Type
                 </th>
-                <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
+                <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Email
                 </th>
-                <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
+                <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   School
                 </th>
-                <th className="text-center py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
+                <th className="text-center py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Action
                 </th>
               </tr>
@@ -664,48 +672,45 @@ export default function ArchivedEmployee() {
       />
 
       {showUnarchiveSuccess && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 sm:px-4">
-          <div className="relative w-full max-w-md rounded-xl bg-white shadow-2xl p-8">
-            <div className="flex flex-col items-center justify-center text-center">
-              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 animate-pulse">
-                <svg
-                  className="h-10 w-10 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Restore Successful!
+        <div className="fixed bottom-5 right-5 z-50 w-[min(380px,calc(100vw-2rem))] rounded-xl border border-gray-200 bg-white p-4 shadow-lg">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-100">
+              <Check className="h-4 w-4 text-green-600" strokeWidth={3} />
+            </div>
+
+            <div className="flex-1">
+              <h2 className="text-sm font-semibold text-gray-900">
+                Restore Successful
               </h2>
-              <p className="text-gray-700 leading-relaxed">
+              <p className="mt-1 text-sm text-gray-600 leading-relaxed">
                 {lastUnarchivedCount > 1 ? (
                   <>
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-semibold text-gray-800">
                       {lastUnarchivedCount} employees
                     </span>{" "}
-                    have been successfully restored and are now active again.
+                    have been restored and are now active again.
                   </>
                 ) : selectedEmployeeName ? (
                   <>
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-semibold text-gray-800">
                       {selectedEmployeeName}
                     </span>{" "}
-                    has been successfully restored. The employee is now active
-                    again and will appear in the active employee list.
+                    has been restored and is now active again.
                   </>
                 ) : (
-                  "The employee has been successfully restored."
+                  "The employee has been restored and is now active again."
                 )}
               </p>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setShowUnarchiveSuccess(false)}
+              className="cursor-pointer text-gray-400 hover:text-gray-700"
+              aria-label="Close restore success toast"
+            >
+              <X size={16} />
+            </button>
           </div>
         </div>
       )}

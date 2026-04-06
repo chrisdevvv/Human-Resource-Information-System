@@ -134,7 +134,7 @@ export default function ParticularsList({
       <div className="hidden md:block overflow-x-auto overflow-y-auto flex-1 min-h-0">
         <table className="min-w-full">
           <thead>
-            <tr className="border-b border-gray-200 bg-gray-50">
+            <tr className="border-b border-gray-200 bg-blue-100">
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-blue-600 sm:px-6">
                 Name
               </th>

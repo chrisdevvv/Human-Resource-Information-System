@@ -9,6 +9,7 @@ import {
   UserMinus,
   Archive,
   Building2,
+  LayoutDashboard,
 } from "lucide-react";
 
 const API_BASE_URL =
@@ -384,7 +385,10 @@ export default function DashboardMobile({
     <div className="bg-gray-50 min-h-screen pb-16">
       {/* Header */}
       <div className="sticky top-0 z-10 border-b border-gray-200 bg-white px-3 py-3">
-        <h1 className="text-lg font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-lg font-bold text-gray-900 inline-flex items-center gap-2">
+          <LayoutDashboard className="h-4 w-4 text-blue-600" />
+          Dashboard
+        </h1>
         <p className="mt-0.5 text-[11px] text-gray-500">System overview</p>
       </div>
 
