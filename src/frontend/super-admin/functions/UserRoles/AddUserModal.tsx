@@ -101,6 +101,7 @@ export default function AddUserModal({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [birthdate, setBirthdate] = useState("");
   const [schoolId, setSchoolId] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -110,6 +111,7 @@ export default function AddUserModal({
   const [firstNameError, setFirstNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [birthdateError, setBirthdateError] = useState("");
   const [schoolError, setSchoolError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
@@ -215,6 +217,16 @@ export default function AddUserModal({
       setEmailError("");
     }
 
+    if (!birthdate) {
+      setBirthdateError("Birthdate is required");
+      hasError = true;
+    } else if (new Date(birthdate) > new Date()) {
+      setBirthdateError("Birthdate cannot be in the future");
+      hasError = true;
+    } else {
+      setBirthdateError("");
+    }
+
     if (!schoolId) {
       setSchoolError("School is required");
       hasError = true;
@@ -301,8 +313,11 @@ export default function AddUserModal({
           body: JSON.stringify({
             first_name: firstName.trim(),
             last_name: lastName.trim(),
+            middle_name: "",
+            no_middle_name: true,
             email: email.trim(),
             password,
+            birthdate,
             school_name: selectedSchool.school_name,
             requested_role: "DATA_ENCODER",
             suppress_pending_email: true,
@@ -439,6 +454,25 @@ export default function AddUserModal({
                 />
                 {emailError && (
                   <p className="text-xs text-red-600 mt-1">{emailError}</p>
+                )}
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Birthdate
+                </label>
+                <input
+                  type="date"
+                  value={birthdate}
+                  max={new Date().toISOString().split("T")[0]}
+                  onChange={(e) => {
+                    setBirthdate(e.target.value);
+                    if (birthdateError) setBirthdateError("");
+                  }}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700"
+                />
+                {birthdateError && (
+                  <p className="text-xs text-red-600 mt-1">{birthdateError}</p>
                 )}
               </div>
 

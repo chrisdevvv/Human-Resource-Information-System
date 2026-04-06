@@ -50,12 +50,33 @@ const resolveScope = async (user) => {
 
 const getAllRegistrations = async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, search, page, pageSize } = req.query;
     const scope = await resolveScope(req.user);
-    const results = await Registration.getAll(status || null, {
-      schoolName: scope.schoolName,
+    const pagination = page
+      ? { page: Number(page), pageSize: Number(pageSize || 25) }
+      : undefined;
+
+    const results = await Registration.getAll(
+      {
+        status: status || null,
+        search: search || null,
+      },
+      {
+        schoolName: scope.schoolName,
+      },
+      pagination,
+    );
+
+    if (!pagination) {
+      return res.status(200).json({ data: results });
+    }
+
+    return res.status(200).json({
+      data: results.data,
+      total: results.total,
+      page: results.page,
+      pageSize: results.pageSize,
     });
-    res.status(200).json({ data: results });
   } catch (err) {
     const statusCode = err.statusCode || 500;
     res.status(statusCode).json({
@@ -71,9 +92,10 @@ const getAllRegistrations = async (req, res) => {
 const getPendingRegistrations = async (req, res) => {
   try {
     const scope = await resolveScope(req.user);
-    const results = await Registration.getAll("PENDING", {
-      schoolName: scope.schoolName,
-    });
+    const results = await Registration.getAll(
+      { status: "PENDING" },
+      { schoolName: scope.schoolName },
+    );
     res.status(200).json({ data: results });
   } catch (err) {
     const statusCode = err.statusCode || 500;

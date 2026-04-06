@@ -136,6 +136,9 @@ const usersQuerySchema = Joi.object({
 
 const registrationStatusQuerySchema = Joi.object({
   status: Joi.string().valid("PENDING", "APPROVED", "REJECTED"),
+  search: Joi.string().trim().max(255),
+  page: Joi.number().integer().min(1),
+  pageSize: Joi.number().integer().min(1).max(200),
 });
 
 const authRegisterBodySchema = Joi.object({

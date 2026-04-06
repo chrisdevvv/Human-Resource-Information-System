@@ -1,8 +1,9 @@
 const pool = require("../../config/db");
 
 const Registration = {
-  getAll: async (status = null, options = {}) => {
-    let query = `
+  getAll: async (filters = {}, options = {}, pagination) => {
+    const { status = null, search = null } = filters;
+    const baseQuery = `
                  SELECT rr.id, rr.first_name, rr.middle_name, rr.last_name, rr.email, rr.school_name, rr.requested_role,
                    rr.birthdate,
                    rr.approved_role, rr.status, rr.rejection_reason,
@@ -12,6 +13,7 @@ const Registration = {
             FROM registration_requests rr
             LEFT JOIN users u ON rr.reviewed_by = u.id
         `;
+
     const params = [];
     const whereParts = [];
 
@@ -20,18 +22,50 @@ const Registration = {
       params.push(status);
     }
 
+    if (search) {
+      whereParts.push(
+        "(rr.first_name LIKE ? OR rr.middle_name LIKE ? OR rr.last_name LIKE ? OR rr.email LIKE ? OR rr.school_name LIKE ?)",
+      );
+      const keyword = `%${String(search).trim()}%`;
+      params.push(keyword, keyword, keyword, keyword, keyword);
+    }
+
     if (options.schoolName) {
       whereParts.push("LOWER(TRIM(rr.school_name)) = LOWER(TRIM(?))");
       params.push(options.schoolName);
     }
 
-    if (whereParts.length > 0) {
-      query += ` WHERE ${whereParts.join(" AND ")}`;
+    const whereClause =
+      whereParts.length > 0 ? ` WHERE ${whereParts.join(" AND ")}` : "";
+    const orderClause = " ORDER BY rr.created_at DESC";
+
+    if (!pagination || !pagination.page) {
+      const [rows] = await pool
+        .promise()
+        .query(`${baseQuery}${whereClause}${orderClause}`, params);
+      return rows;
     }
 
-    query += " ORDER BY rr.created_at DESC";
-    const [rows] = await pool.promise().query(query, params);
-    return rows;
+    const page = Number(pagination.page) || 1;
+    const pageSize = Math.min(Number(pagination.pageSize) || 25, 200);
+    const offset = (page - 1) * pageSize;
+
+    const countQuery = `
+      SELECT COUNT(1) AS total
+      FROM registration_requests rr
+      ${whereClause}
+    `;
+
+    const [[{ total }]] = await pool.promise().query(countQuery, params);
+
+    const [rows] = await pool
+      .promise()
+      .query(
+        `${baseQuery}${whereClause}${orderClause} LIMIT ? OFFSET ?`,
+        [...params, pageSize, offset],
+      );
+
+    return { data: rows, total: Number(total), page, pageSize };
   },
 
   getById: async (id, options = {}) => {
