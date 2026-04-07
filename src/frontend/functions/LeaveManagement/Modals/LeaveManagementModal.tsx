@@ -482,7 +482,7 @@ export default function LeaveManagementModal({
             <button
               type="button"
               onClick={() => setActiveTab("history")}
-              className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-medium transition ${
+              className={`cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition ${
                 activeTab === "history"
                   ? "hover:bg-blue-700 bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -496,7 +496,7 @@ export default function LeaveManagementModal({
             <button
               type="button"
               onClick={() => setActiveTab("card")}
-              className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-medium transition ${
+              className={`cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition ${
                 activeTab === "card"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -510,7 +510,7 @@ export default function LeaveManagementModal({
             <button
               type="button"
               onClick={handleOpenHistoryInNewTab}
-              className="cursor-pointer rounded-lg px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
+              className="cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
             >
               <span className="inline-flex items-center gap-1">
                 <ExternalLink size={14} />
@@ -521,7 +521,7 @@ export default function LeaveManagementModal({
               type="button"
               onClick={handleDeleteSelectedEntries}
               disabled={activeTab !== "history" || isDeletingEntries}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Trash2 size={14} />
               {isDeleteMode
@@ -533,7 +533,7 @@ export default function LeaveManagementModal({
                 type="button"
                 onClick={handleCancelDeleteMode}
                 disabled={isDeletingEntries}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <span className="inline-flex items-center gap-1">
                   <XCircle size={14} />
@@ -547,7 +547,7 @@ export default function LeaveManagementModal({
                 type="button"
                 onClick={() => setIsAddOpen(true)}
                 disabled={isSaving}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Plus size={14} />
                 Add Leave
@@ -556,7 +556,7 @@ export default function LeaveManagementModal({
                 type="button"
                 onClick={() => fetchHistory(true)}
                 disabled={isSaving}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RefreshCcw size={14} />
                 Refresh
@@ -565,7 +565,7 @@ export default function LeaveManagementModal({
                 type="button"
                 onClick={handleDownloadPdf}
                 disabled={isSaving || pdfCooldownRemaining > 0}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Download size={14} />
                 {pdfCooldownRemaining > 0

@@ -116,7 +116,7 @@ export default function Page() {
           role={role}
           activeTab={activeTab}
           onTabChange={handleTabChange}
-          title="HRIS"
+          title="CHRIS"
         />
       </div>
 

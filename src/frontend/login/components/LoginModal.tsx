@@ -186,7 +186,7 @@ export default function LoginModal({
         <div className="flex gap-3 justify-center mt-4">
           <button
             id="submitLogin"
-            className="inline-flex items-center justify-center gap-1 transition hover:bg-blue-700 hover:cursor-pointer px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center gap-1 transition hover:bg-blue-700 hover:cursor-pointer px-3 py-1.5 bg-blue-600 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={submit}
             disabled={isLoading}
           >
@@ -195,7 +195,7 @@ export default function LoginModal({
           </button>
           <button
             id="cancelLogin"
-            className="inline-flex items-center justify-center gap-1 text-gray-800 transition hover:cursor-pointer hover:bg-gray-400 px-4 py-2 bg-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center gap-1 text-gray-800 transition hover:cursor-pointer hover:bg-gray-400 px-3 py-1.5 bg-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={onClose}
             disabled={isLoading}
           >

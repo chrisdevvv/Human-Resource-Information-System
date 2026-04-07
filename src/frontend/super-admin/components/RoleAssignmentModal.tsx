@@ -131,7 +131,7 @@ export default function RoleAssignmentModal({
               <button
                 onClick={() => setShowConfirm(false)}
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer disabled:opacity-50"
+                className="flex-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer disabled:opacity-50"
               >
                 <span className="inline-flex items-center gap-1">
                   <ArrowLeft size={14} />
@@ -141,7 +141,7 @@ export default function RoleAssignmentModal({
               <button
                 onClick={handleConfirm}
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
+                className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
               >
                 <span className="inline-flex items-center gap-1">
                   <Check size={14} />
@@ -169,7 +169,7 @@ export default function RoleAssignmentModal({
               setSelectedRole(e.target.value as "ADMIN" | "DATA_ENCODER")
             }
             disabled={loading}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer disabled:opacity-50"
+            className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer disabled:opacity-50"
           >
             <option value="DATA_ENCODER">Data Encoder</option>
             <option value="ADMIN">Admin</option>
@@ -217,14 +217,14 @@ export default function RoleAssignmentModal({
           <button
             onClick={onClose}
             disabled={loading}
-            className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer disabled:opacity-50"
+            className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleAssignClick}
             disabled={loading}
-            className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
+            className="px-4 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
           >
             Assign Role
           </button>

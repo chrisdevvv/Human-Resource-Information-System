@@ -6,6 +6,7 @@ import {
   ArrowDownAZ,
   ChevronLeft,
   ChevronRight,
+  Search,
   UserCheck,
 } from "lucide-react";
 import UserRolesDetailsModal, {
@@ -212,12 +213,13 @@ export default function PendingAccountsMobile({
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             onClick={() => setCurrentPage(1)}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer"
+            className="inline-flex items-center gap-1 px-4 py-1 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer"
           >
+            <Search size={14} />
             Search
           </button>
         </div>
@@ -230,7 +232,7 @@ export default function PendingAccountsMobile({
               setStatusFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            className="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
           >
             <option value="ALL">All Status</option>
             <option value="PENDING">Pending</option>
@@ -244,7 +246,7 @@ export default function PendingAccountsMobile({
               setLetterFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            className="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
           >
             <option value="ALL">All Letters</option>
             {alphabet.map((letter) => (
@@ -258,14 +260,14 @@ export default function PendingAccountsMobile({
             onClick={() =>
               setDateSortOrder(dateSortOrder === "newest" ? "oldest" : "newest")
             }
-            className="flex items-center justify-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 transition cursor-pointer"
+            className="flex items-center justify-center gap-1 px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 transition cursor-pointer"
           >
             {dateSortOrder === "newest" ? "Newest" : "Oldest"}
           </button>
 
           <button
             onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-            className="flex items-center justify-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 transition cursor-pointer"
+            className="flex items-center justify-center gap-1 px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 transition cursor-pointer"
           >
             {sortOrder === "asc" ? (
               <>
@@ -324,7 +326,7 @@ export default function PendingAccountsMobile({
                       created_at: item.created_at,
                     })
                   }
-                  className="ml-3 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition cursor-pointer shrink-0"
+                  className="ml-3 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition cursor-pointer shrink-0"
                 >
                   View
                 </button>
@@ -386,7 +388,7 @@ export default function PendingAccountsMobile({
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
               >
                 <ChevronLeft size={15} />
                 Prev
@@ -408,7 +410,7 @@ export default function PendingAccountsMobile({
                   setCurrentPage(Math.min(totalPages, currentPage + 1))
                 }
                 disabled={currentPage === totalPages}
-                className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
               >
                 Next
                 <ChevronRight size={15} />

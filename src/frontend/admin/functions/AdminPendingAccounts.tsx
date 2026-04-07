@@ -6,6 +6,7 @@ import {
   ArrowUpAZ,
   ChevronLeft,
   ChevronRight,
+  Search,
   UserCheck,
 } from "lucide-react";
 import UserRolesDetailsModal, {
@@ -247,8 +248,11 @@ export default function AdminPendingAccounts({
   };
 
   return (
-    <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-6 sticky top-4 flex flex-col">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6 inline-flex items-center gap-2">
+    <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col">
+      <h1
+        style={{ fontSize: "22px" }}
+        className="font-bold text-gray-900 mb-4 inline-flex items-center gap-2"
+      >
         <UserCheck size={24} className="text-blue-600" />
         Pending Accounts
       </h1>
@@ -261,13 +265,14 @@ export default function AdminPendingAccounts({
               placeholder="Search name, email, or school"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="text-gray-500 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="text-gray-500 w-full px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
           </div>
           <button
             onClick={handleSearch}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+            className="inline-flex items-center gap-1 px-5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
           >
+            <Search size={14} />
             Search
           </button>
         </div>
@@ -279,7 +284,7 @@ export default function AdminPendingAccounts({
               setStatusFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
           >
             <option value="ALL">All</option>
             <option value="PENDING">Pending</option>
@@ -293,7 +298,7 @@ export default function AdminPendingAccounts({
               setLetterFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
           >
             <option value="ALL">All Letters</option>
             {alphabet.map((letter) => (
@@ -309,7 +314,7 @@ export default function AdminPendingAccounts({
               setDateSortOrder(e.target.value as "newest" | "oldest");
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
           >
             <option value="newest">Newest</option>
             <option value="oldest">Oldest</option>
@@ -319,7 +324,7 @@ export default function AdminPendingAccounts({
             onClick={() => {
               setSortOrder(sortOrder === "asc" ? "desc" : "asc");
             }}
-            className="text-gray-500 flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
+            className="text-gray-500 flex items-center gap-2 px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
           >
             {sortOrder === "asc" ? (
               <>
@@ -390,7 +395,7 @@ export default function AdminPendingAccounts({
                               created_at: item.created_at,
                             })
                           }
-                          className="px-4 py-1.5 bg-blue-400 text-white rounded hover:bg-blue-500 transition text-sm font-medium cursor-pointer"
+                          className="px-4 py-1 bg-blue-400 text-white rounded hover:bg-blue-500 transition text-sm font-medium cursor-pointer"
                         >
                           Details
                         </button>
@@ -403,7 +408,7 @@ export default function AdminPendingAccounts({
                                   name: `${item.firstName} ${item.lastName}`,
                                 })
                               }
-                              className="px-4 py-1.5 bg-green-400 text-white rounded hover:bg-green-500 transition text-sm font-medium cursor-pointer"
+                              className="px-4 py-1 bg-green-400 text-white rounded hover:bg-green-500 transition text-sm font-medium cursor-pointer"
                             >
                               Assign Role
                             </button>
@@ -414,14 +419,14 @@ export default function AdminPendingAccounts({
                                   name: `${item.firstName} ${item.lastName}`,
                                 })
                               }
-                              className="px-4 py-1.5 bg-red-400 text-white rounded hover:bg-red-500 transition text-sm font-medium cursor-pointer"
+                              className="px-4 py-1 bg-red-400 text-white rounded hover:bg-red-500 transition text-sm font-medium cursor-pointer"
                             >
                               Reject
                             </button>
                           </>
                         ) : (
                           <span
-                            className={`px-4 py-1.5 rounded text-sm font-semibold ${
+                            className={`px-4 py-1 rounded text-sm font-semibold ${
                               item.status === "APPROVED"
                                 ? "bg-green-100 text-green-700"
                                 : "bg-red-100 text-red-700"
@@ -450,7 +455,7 @@ export default function AdminPendingAccounts({
 
       {filteredData.length > 0 && (
         <div className="mt-6 space-y-3">
-          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
             <label className="flex items-center gap-2 text-sm text-gray-600">
               Show
               <select
@@ -471,7 +476,50 @@ export default function AdminPendingAccounts({
               entries
             </label>
 
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center justify-center gap-2 sm:justify-self-center">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                aria-label="Previous page"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              {pageNumberItems.map((item, index) =>
+                item === "ellipsis" ? (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="px-2 text-sm text-gray-400 select-none"
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    onClick={() => setCurrentPage(item)}
+                    className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
+                      currentPage === item
+                        ? "bg-blue-600 text-white"
+                        : "text-gray-500 hover:bg-gray-100"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ),
+              )}
+              <button
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                aria-label="Next page"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-gray-600 sm:justify-self-end">
               <span>Jump to</span>
               <input
                 type="number"
@@ -494,49 +542,6 @@ export default function AdminPendingAccounts({
                 Go
               </button>
             </div>
-          </div>
-
-          <div className="flex items-center justify-center gap-2">
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-              aria-label="Previous page"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            {pageNumberItems.map((item, index) =>
-              item === "ellipsis" ? (
-                <span
-                  key={`ellipsis-${index}`}
-                  className="px-2 text-sm text-gray-400 select-none"
-                >
-                  ...
-                </span>
-              ) : (
-                <button
-                  key={item}
-                  onClick={() => setCurrentPage(item)}
-                  className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
-                    currentPage === item
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-500 hover:bg-gray-100"
-                  }`}
-                >
-                  {item}
-                </button>
-              ),
-            )}
-            <button
-              onClick={() =>
-                setCurrentPage(Math.min(totalPages, currentPage + 1))
-              }
-              disabled={currentPage === totalPages}
-              className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-              aria-label="Next page"
-            >
-              <ChevronRight size={18} />
-            </button>
           </div>
         </div>
       )}

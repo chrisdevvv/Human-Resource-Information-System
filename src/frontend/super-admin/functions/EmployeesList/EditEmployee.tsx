@@ -499,7 +499,7 @@ export default function EditEmployee({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg border border-gray-300 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer"
+          className="rounded-lg border border-gray-300 px-5 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer"
           disabled={isSaving}
         >
           <span className="inline-flex items-center gap-1">
@@ -515,7 +515,7 @@ export default function EditEmployee({
               setErrorMessage(null);
               setIsEditing(true);
             }}
-            className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 transition cursor-pointer"
+            className="rounded-lg bg-blue-600 px-5 py-1.5 text-sm font-medium text-white hover:bg-blue-700 transition cursor-pointer"
           >
             <span className="inline-flex items-center gap-1">
               <Pencil size={14} />
@@ -530,7 +530,7 @@ export default function EditEmployee({
               type="button"
               onClick={handleCancelEdit}
               disabled={isSaving}
-              className="rounded-lg border border-gray-300 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer disabled:opacity-60"
+              className="rounded-lg border border-gray-300 px-5 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer disabled:opacity-60"
             >
               <span className="inline-flex items-center gap-1">
                 <XCircle size={14} />
@@ -541,7 +541,7 @@ export default function EditEmployee({
               type="button"
               onClick={validateBeforeConfirm}
               disabled={isSaving}
-              className="rounded-lg bg-emerald-600 px-6 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition cursor-pointer disabled:opacity-60"
+              className="rounded-lg bg-emerald-600 px-5 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 transition cursor-pointer disabled:opacity-60"
             >
               <span className="inline-flex items-center gap-1">
                 <Save size={14} />

@@ -689,7 +689,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                                 setShowSchoolDropdown(false);
                                 if (schoolError) setSchoolError("");
                               }}
-                              className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-50 transition cursor-pointer ${
+                              className={`w-full px-3 py-1.5 text-left text-sm hover:bg-blue-50 transition cursor-pointer ${
                                 schoolId === schoolOption.id
                                   ? "bg-blue-100 font-medium text-blue-700"
                                   : "text-gray-700"
@@ -719,14 +719,14 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                 <div className="flex flex-col gap-3 items-center mt-6">
                   <button
                     type="submit"
-                    className="cursor-pointer px-6 py-2 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition"
+                    className="cursor-pointer px-5 py-1.5 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition"
                   >
                     Continue
                   </button>
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="text-gray-700 cursor-pointer px-6 py-2 border rounded-md w-full hover:bg-gray-100 transition"
+                    className="text-gray-700 cursor-pointer px-5 py-1.5 border rounded-md w-full hover:bg-gray-100 transition"
                   >
                     Cancel
                   </button>
@@ -830,7 +830,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   <button
                     type="submit"
                     disabled={isLoading || isConfirmOpen}
-                    className="cursor-pointer px-6 py-2 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="cursor-pointer px-5 py-1.5 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? "Submitting..." : "Submit Request"}
                   </button>
@@ -841,7 +841,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                       setError("");
                     }}
                     disabled={isLoading || isConfirmOpen}
-                    className="text-gray-700 cursor-pointer px-6 py-2 border rounded-md w-full hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="text-gray-700 cursor-pointer px-5 py-1.5 border rounded-md w-full hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Back
                   </button>

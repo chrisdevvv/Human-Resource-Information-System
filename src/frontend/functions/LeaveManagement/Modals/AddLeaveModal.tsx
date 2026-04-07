@@ -346,7 +346,7 @@ export default function AddLeaveModal({
         <p className="mt-1 text-sm text-gray-500">Employee: {employeeName}</p>
 
         {formError && (
-          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             {formError}
           </div>
         )}
@@ -400,11 +400,11 @@ export default function AddLeaveModal({
               {showParticularDropdown && (
                 <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-md border border-blue-200 bg-white shadow-lg max-h-64 overflow-y-auto">
                   {particularsLoading ? (
-                    <div className="px-4 py-3 text-center text-sm text-gray-500">
+                    <div className="px-3 py-2 text-center text-sm text-gray-500">
                       Loading particulars...
                     </div>
                   ) : particularOptions.length === 0 ? (
-                    <div className="px-4 py-3 text-center text-sm text-gray-500">
+                    <div className="px-3 py-2 text-center text-sm text-gray-500">
                       No particulars available
                     </div>
                   ) : filteredParticularOptions.length > 0 ? (
@@ -423,7 +423,7 @@ export default function AddLeaveModal({
                             particulars: option,
                           }));
                         }}
-                        className={`w-full px-4 py-2 text-left text-sm transition hover:bg-blue-50 ${
+                        className={`w-full px-3 py-2 text-left text-sm transition hover:bg-blue-50 ${
                           form.particulars === option
                             ? "bg-blue-100 font-medium text-blue-700"
                             : "text-gray-700"
@@ -433,7 +433,7 @@ export default function AddLeaveModal({
                       </button>
                     ))
                   ) : (
-                    <div className="px-4 py-3 text-center text-sm text-gray-500">
+                    <div className="px-3 py-2 text-center text-sm text-gray-500">
                       No particulars match &quot;{particularInputValue}&quot;
                     </div>
                   )}
@@ -643,7 +643,7 @@ export default function AddLeaveModal({
             <button
               type="button"
               onClick={onClose}
-              className="cursor-pointer rounded-lg bg-gray-100 px-5 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
+              className="cursor-pointer rounded-lg bg-gray-100 px-4 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
               disabled={isSaving || isConfirmOpen}
             >
               Cancel
@@ -652,7 +652,7 @@ export default function AddLeaveModal({
             <button
               type="submit"
               disabled={isSaving || isConfirmOpen}
-              className="cursor-pointer rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="cursor-pointer rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? "Saving..." : "Save Leave"}
             </button>

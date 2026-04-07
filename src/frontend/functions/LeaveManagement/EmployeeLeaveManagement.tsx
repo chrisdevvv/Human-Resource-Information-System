@@ -9,7 +9,7 @@ import {
   Info,
   FileText,
   Plus,
-  RotateCcw,
+  Search,
 } from "lucide-react";
 import LeaveManagementModal from "@/frontend/functions/LeaveManagement/Modals/LeaveManagementModal";
 import AddLeaveModal, {
@@ -340,6 +340,14 @@ export default function EmployeeLeaveManagement() {
     setPageJumpInput(String(nextPage));
   };
 
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 ||
+    employeeTypeFilter !== "ALL" ||
+    schoolFilter !== "ALL" ||
+    leaveStatusFilter !== "ALL" ||
+    letterFilter !== "ALL" ||
+    sortOrder !== "asc";
+
   const handleDirectCreate = async (payload: AddLeaveFormValues) => {
     try {
       setIsDirectAdding(true);
@@ -386,8 +394,11 @@ export default function EmployeeLeaveManagement() {
 
   return (
     <div className="w-full">
-      <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-3 sm:p-6 sticky top-0 sm:top-4 flex flex-col">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-6 inline-flex items-center gap-2">
+      <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-0 sm:top-4 flex flex-col">
+        <h1
+          style={{ fontSize: "20px" }}
+          className="font-bold text-gray-900 mb-2 sm:mb-4 inline-flex items-center gap-2"
+        >
           <FileText size={22} className="text-blue-600" />
           Employee Leave Management
         </h1>
@@ -400,13 +411,14 @@ export default function EmployeeLeaveManagement() {
                 placeholder="Search employee"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="text-gray-500 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="text-gray-500 w-full px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
             </div>
             <button
               onClick={handleSearch}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+              className="inline-flex items-center gap-1 px-5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
             >
+              <Search size={14} />
               Search
             </button>
           </div>
@@ -421,7 +433,7 @@ export default function EmployeeLeaveManagement() {
                   );
                   setCurrentPage(1);
                 }}
-                className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                className="w-full sm:w-auto text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
               >
                 <option value="ALL">All Employee Types</option>
                 <option value="teaching">Teaching</option>
@@ -435,7 +447,7 @@ export default function EmployeeLeaveManagement() {
                     setSchoolFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  className="w-full sm:w-auto text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ALL">All Schools</option>
                   {schoolOptions.map((schoolName) => (
@@ -452,7 +464,7 @@ export default function EmployeeLeaveManagement() {
                   setLetterFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                className="w-full sm:w-auto text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
               >
                 <option value="ALL">All Letters</option>
                 {alphabet.map((letter) => (
@@ -470,7 +482,7 @@ export default function EmployeeLeaveManagement() {
                   );
                   setCurrentPage(1);
                 }}
-                className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                className="w-full sm:w-auto text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
               >
                 <option value="ALL">All Leave Status</option>
                 <option value="on-leave">On Leave</option>
@@ -481,7 +493,7 @@ export default function EmployeeLeaveManagement() {
                 onClick={() => {
                   setSortOrder(sortOrder === "asc" ? "desc" : "asc");
                 }}
-                className="w-full sm:w-auto text-gray-500 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
+                className="w-full sm:w-auto text-gray-500 flex items-center justify-center gap-2 px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
               >
                 {sortOrder === "asc" ? (
                   <>
@@ -496,14 +508,15 @@ export default function EmployeeLeaveManagement() {
                 )}
               </button>
 
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="w-full sm:w-auto text-gray-500 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
-              >
-                <RotateCcw size={16} />
-                Reset Filters
-              </button>
+              {hasActiveFilters ? (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="w-full sm:w-auto text-sm text-gray-500 underline hover:text-gray-700 transition cursor-pointer"
+                >
+                  Clear
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
@@ -571,18 +584,20 @@ export default function EmployeeLeaveManagement() {
                               }
                               aria-label="View details"
                               title="Details"
-                              className="p-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer"
+                              className="inline-flex items-center gap-1 rounded bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-200 transition cursor-pointer"
                             >
-                              <Info size={14} />
+                              <Info size={12} />
+                              View
                             </button>
                             <button
                               type="button"
                               onClick={() => setDirectAddTarget(employee)}
                               aria-label="Add leave"
                               title="Add Leave"
-                              className="p-2 bg-amber-100 text-amber-700 rounded hover:bg-amber-200 transition cursor-pointer"
+                              className="inline-flex items-center gap-1 rounded bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200 transition cursor-pointer"
                             >
-                              <Plus size={14} />
+                              <Plus size={12} />
+                              Add
                             </button>
                             <button
                               type="button"
@@ -594,9 +609,10 @@ export default function EmployeeLeaveManagement() {
                               }
                               aria-label="Preview leave PDF"
                               title="Preview PDF"
-                              className="p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition cursor-pointer"
+                              className="inline-flex items-center gap-1 rounded bg-red-100 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-200 transition cursor-pointer"
                             >
-                              <FileText size={14} />
+                              <FileText size={12} />
+                              PDF
                             </button>
                           </div>
                         </td>
@@ -617,7 +633,7 @@ export default function EmployeeLeaveManagement() {
 
         {filteredEmployees.length > 0 && (
           <div className="mt-6 space-y-3">
-            <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+            <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
               <label className="flex items-center gap-2 text-sm text-gray-600">
                 Show
                 <select
@@ -638,7 +654,58 @@ export default function EmployeeLeaveManagement() {
                 entries
               </label>
 
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center justify-center gap-2 sm:justify-self-center">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+
+                {pageNumberItems.map(
+                  (item: number | "ellipsis", index: number) => {
+                    if (item === "ellipsis") {
+                      return (
+                        <span
+                          key={`ellipsis-${index}`}
+                          className="px-2 text-sm text-gray-400 select-none"
+                        >
+                          ...
+                        </span>
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={item}
+                        onClick={() => setCurrentPage(item)}
+                        className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
+                          currentPage === item
+                            ? "bg-blue-600 text-white"
+                            : "text-gray-500 hover:bg-gray-100"
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    );
+                  },
+                )}
+
+                <button
+                  onClick={() =>
+                    setCurrentPage(Math.min(totalPages, currentPage + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                  aria-label="Next page"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm text-gray-600 sm:justify-self-end">
                 <span>Jump to</span>
                 <input
                   type="number"
@@ -661,57 +728,6 @@ export default function EmployeeLeaveManagement() {
                   Go
                 </button>
               </div>
-            </div>
-
-            <div className="flex items-center justify-center gap-2">
-              <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-                aria-label="Previous page"
-              >
-                <ChevronLeft size={18} />
-              </button>
-
-              {pageNumberItems.map(
-                (item: number | "ellipsis", index: number) => {
-                  if (item === "ellipsis") {
-                    return (
-                      <span
-                        key={`ellipsis-${index}`}
-                        className="px-2 text-sm text-gray-400 select-none"
-                      >
-                        ...
-                      </span>
-                    );
-                  }
-
-                  return (
-                    <button
-                      key={item}
-                      onClick={() => setCurrentPage(item)}
-                      className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
-                        currentPage === item
-                          ? "bg-blue-600 text-white"
-                          : "text-gray-500 hover:bg-gray-100"
-                      }`}
-                    >
-                      {item}
-                    </button>
-                  );
-                },
-              )}
-
-              <button
-                onClick={() =>
-                  setCurrentPage(Math.min(totalPages, currentPage + 1))
-                }
-                disabled={currentPage === totalPages}
-                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-                aria-label="Next page"
-              >
-                <ChevronRight size={18} />
-              </button>
             </div>
           </div>
         )}

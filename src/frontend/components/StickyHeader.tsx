@@ -14,9 +14,12 @@ export default function StickyHeader(_: StickyHeaderProps) {
           <p className="text-sm font-medium tracking-wide">
             DEPARTMENT OF EDUCATION
           </p>
-          <h1 className="text-xl font-bold">
-            Human Resource Information System
+          <h1 className="text-xl font-bold leading-tight">
+            CITY OF SAN JOSE DEL MONTE
           </h1>
+          <p className="text-sm font-normal tracking-wide leading-tight">
+            CSJDM Human Resource Information System - CHRIS
+          </p>
         </div>
       </div>
     </header>

@@ -150,7 +150,7 @@ export default function ForgotModal({ visible, onClose }: Props) {
               <>
                 <button
                   id="sendReset"
-                  className="inline-flex items-center justify-center gap-1 hover:cursor-pointer transition hover:bg-blue-700 px-6 py-2 bg-blue-600 text-white rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center justify-center gap-1 hover:cursor-pointer transition hover:bg-blue-700 px-5 py-1.5 bg-blue-600 text-white rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={sendResetEmail}
                   disabled={isLoading}
                 >
@@ -159,7 +159,7 @@ export default function ForgotModal({ visible, onClose }: Props) {
                 </button>
                 <button
                   id="cancelForgot"
-                  className="inline-flex items-center justify-center gap-1 text-black hover:cursor-pointer bg-gray-200 px-6 py-2 border rounded-md w-full hover:bg-gray-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center justify-center gap-1 text-black hover:cursor-pointer bg-gray-200 px-5 py-1.5 border rounded-md w-full hover:bg-gray-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => {
                     resetForm();
                     onClose();

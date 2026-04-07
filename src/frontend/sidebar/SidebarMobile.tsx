@@ -228,7 +228,7 @@ export default function SidebarMobile({
   role,
   activeTab,
   onTabChange,
-  title = "HRIS",
+  title = "CHRIS",
   className = "",
 }: SidebarMobileProps) {
   const [isOpen, setIsOpen] = useState(false);

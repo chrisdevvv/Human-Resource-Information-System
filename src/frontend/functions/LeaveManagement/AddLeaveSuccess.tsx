@@ -106,7 +106,7 @@ export default function AddLeaveSuccess({
           <button
             type="button"
             onClick={handleClose}
-            className="flex-1 cursor-pointer rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700"
+            className="flex-1 cursor-pointer rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-green-700"
           >
             Close
           </button>

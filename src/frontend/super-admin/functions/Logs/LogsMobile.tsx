@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, FileText, RotateCcw } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, Search } from "lucide-react";
 import ViewLogsModal from "../../components/ViewLogsModal";
 import LogsReportGeneration, {
   downloadLogsReportPdf,
@@ -448,6 +448,14 @@ export default function LogsMobile() {
     setPageJumpInput("1");
   };
 
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 ||
+    roleFilter !== "ALL" ||
+    letterFilter !== "ALL" ||
+    sortMode !== "date-desc" ||
+    Boolean(dateFrom) ||
+    Boolean(dateTo);
+
   const formatDateTime = (isoString: string) => {
     if (!isoString) return "N/A";
     const date = new Date(isoString);
@@ -613,23 +621,24 @@ export default function LogsMobile() {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             onClick={() => setCurrentPage(1)}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer"
+            className="inline-flex items-center gap-1 px-4 py-1 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer"
           >
+            <Search size={14} />
             Search
           </button>
           <button
             onClick={openLogsReport}
-            className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition cursor-pointer"
+            className="px-3 py-1.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition cursor-pointer"
           >
             Generate Report
           </button>
           <button
             onClick={openArchiveModal}
-            className="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition cursor-pointer"
+            className="px-3 py-1.5 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition cursor-pointer"
           >
             Archive
           </button>
@@ -643,7 +652,7 @@ export default function LogsMobile() {
               setRoleFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            className="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
           >
             <option value="ALL">All Roles</option>
             <option value="SUPER_ADMIN">Super Admin</option>
@@ -657,7 +666,7 @@ export default function LogsMobile() {
               setLetterFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            className="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
           >
             <option value="ALL">All Letters</option>
             {alphabet.map((letter) => (
@@ -673,7 +682,7 @@ export default function LogsMobile() {
               setSortMode(e.target.value as typeof sortMode);
               setCurrentPage(1);
             }}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            className="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
           >
             <option value="date-desc">Newest First</option>
             <option value="date-asc">Oldest First</option>
@@ -691,7 +700,7 @@ export default function LogsMobile() {
                 setPageJumpInput("1");
               }
             }}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            className="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
           >
             <option value="">Date Range</option>
             <option value="clear">Clear Dates</option>
@@ -709,7 +718,7 @@ export default function LogsMobile() {
               value={dateFrom}
               max={todayStr}
               onChange={(e) => handleDateFrom(e.target.value)}
-              className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             />
           </div>
           <div className="flex gap-2 items-center">
@@ -722,7 +731,7 @@ export default function LogsMobile() {
               min={dateFrom || ""}
               max={todayStr}
               onChange={(e) => handleDateTo(e.target.value)}
-              className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             />
           </div>
         </div>
@@ -731,14 +740,15 @@ export default function LogsMobile() {
           {filteredLogs.length} record{filteredLogs.length !== 1 ? "s" : ""}
         </p>
 
-        <button
-          type="button"
-          onClick={handleResetFilters}
-          className="inline-flex items-center justify-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 transition cursor-pointer"
-        >
-          <RotateCcw size={15} />
-          Reset Filters
-        </button>
+        {hasActiveFilters ? (
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="text-sm text-gray-500 underline hover:text-gray-700 transition cursor-pointer text-center"
+          >
+            Clear
+          </button>
+        ) : null}
       </div>
 
       {/* Logs list */}
@@ -775,7 +785,7 @@ export default function LogsMobile() {
                 </div>
                 <button
                   onClick={() => setSelectedLog(log)}
-                  className="ml-3 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition cursor-pointer shrink-0"
+                  className="ml-3 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition cursor-pointer shrink-0"
                 >
                   View
                 </button>
@@ -837,7 +847,7 @@ export default function LogsMobile() {
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
               >
                 <ChevronLeft size={15} />
                 Prev
@@ -859,7 +869,7 @@ export default function LogsMobile() {
                   setCurrentPage(Math.min(totalPages, currentPage + 1))
                 }
                 disabled={currentPage === totalPages}
-                className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
               >
                 Next
                 <ChevronRight size={15} />
@@ -952,7 +962,7 @@ export default function LogsMobile() {
                 <div className="mt-5 flex flex-wrap justify-end gap-2">
                   <button
                     onClick={closeArchiveModal}
-                    className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer"
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -974,7 +984,7 @@ export default function LogsMobile() {
                       }
                     }}
                     disabled={archiveBusy}
-                    className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Generate Report
                   </button>
@@ -985,7 +995,7 @@ export default function LogsMobile() {
                       setArchiveMessage(null);
                     }}
                     disabled={archiveBusy}
-                    className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Continue to Archive
                   </button>
@@ -1001,7 +1011,7 @@ export default function LogsMobile() {
                 <div className="mt-5 flex flex-wrap justify-end gap-2">
                   <button
                     onClick={() => setArchiveStep("range")}
-                    className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer"
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer"
                   >
                     Back
                   </button>
@@ -1010,7 +1020,7 @@ export default function LogsMobile() {
                       setArchiveShouldGenerateReport(false);
                       setArchiveStep("confirm");
                     }}
-                    className="rounded-lg bg-gray-700 px-3 py-2 text-xs font-medium text-white hover:bg-gray-800 cursor-pointer"
+                    className="rounded-lg bg-gray-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800 cursor-pointer"
                   >
                     No, Archive Only
                   </button>
@@ -1019,7 +1029,7 @@ export default function LogsMobile() {
                       setArchiveShouldGenerateReport(true);
                       setArchiveStep("confirm");
                     }}
-                    className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 cursor-pointer"
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 cursor-pointer"
                   >
                     Yes, Generate Then Archive
                   </button>
@@ -1049,14 +1059,14 @@ export default function LogsMobile() {
                   <button
                     onClick={() => setArchiveStep("range")}
                     disabled={archiveBusy}
-                    className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Back
                   </button>
                   <button
                     onClick={performArchive}
                     disabled={archiveBusy}
-                    className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {archiveBusy ? "Processing..." : "Confirm Archive"}
                   </button>
@@ -1074,7 +1084,7 @@ export default function LogsMobile() {
                 <div className="mt-5 flex justify-end">
                   <button
                     onClick={closeArchiveModal}
-                    className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 cursor-pointer"
+                    className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 cursor-pointer"
                   >
                     Done
                   </button>

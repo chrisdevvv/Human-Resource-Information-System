@@ -569,7 +569,7 @@ export default function AddEmployeeModal({
                 onChange={(e) =>
                   setEmployeeType(e.target.value as "teaching" | "non-teaching")
                 }
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white cursor-pointer"
+                className="mt-1 w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white cursor-pointer"
               >
                 <option value="teaching">Teaching</option>
                 <option value="non-teaching">Non-Teaching</option>
@@ -669,7 +669,7 @@ export default function AddEmployeeModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium cursor-pointer"
+              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium cursor-pointer"
               disabled={submitLoading || isConfirmOpen}
             >
               <span className="inline-flex items-center gap-1">
@@ -680,7 +680,7 @@ export default function AddEmployeeModal({
             <button
               type="submit"
               disabled={submitLoading || isConfirmOpen || schoolsLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition text-sm font-medium cursor-pointer"
+              className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition text-sm font-medium cursor-pointer"
             >
               <span className="inline-flex items-center gap-1">
                 <UserPlus size={14} />

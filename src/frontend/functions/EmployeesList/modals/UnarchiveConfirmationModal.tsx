@@ -77,7 +77,7 @@ function UnarchiveConfirmationModal({
               type="button"
               onClick={handleClose}
               disabled={isLoading}
-              className="cursor-pointer rounded px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-60"
+              className="cursor-pointer rounded px-3 py-1.5 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-60"
             >
               <span className="inline-flex items-center gap-1">
                 <XCircle size={14} />
@@ -87,7 +87,7 @@ function UnarchiveConfirmationModal({
             <button
               type="submit"
               disabled={isLoading || !password}
-              className="cursor-pointer rounded px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+              className="cursor-pointer rounded px-3 py-1.5 text-sm font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
             >
               <span className="inline-flex items-center gap-1">
                 <RotateCcw size={14} />

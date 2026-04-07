@@ -124,14 +124,14 @@ export default function AdminRoleAssignmentModal({
               <button
                 onClick={() => setShowConfirm(false)}
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer disabled:opacity-50"
+                className="flex-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer disabled:opacity-50"
               >
                 Back
               </button>
               <button
                 onClick={handleConfirm}
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
+                className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
               >
                 {loading ? "Assigning..." : "Confirm"}
               </button>
@@ -195,14 +195,14 @@ export default function AdminRoleAssignmentModal({
           <button
             onClick={onClose}
             disabled={loading}
-            className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer disabled:opacity-50"
+            className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleAssignClick}
             disabled={loading}
-            className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
+            className="px-4 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
           >
             Assign Role
           </button>

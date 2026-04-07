@@ -43,7 +43,7 @@ export default function ConfirmationAddEmployee({
           <button
             type="button"
             onClick={onClose}
-            className="cursor-pointer rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700"
+            className="cursor-pointer rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-green-700"
           >
             Close
           </button>
