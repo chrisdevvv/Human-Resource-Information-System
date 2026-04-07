@@ -248,7 +248,7 @@ export default function LoginPageMobile() {
           />
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-5 sm:p-6 w-full max-w-md">
+        <div className="bg-white rounded-lg border border-blue-200 shadow-lg p-5 sm:p-6 w-full max-w-md">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
             Sign in
           </h2>

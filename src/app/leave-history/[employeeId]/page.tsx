@@ -81,7 +81,7 @@ export default function LeaveHistoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 sm:px-6">
-      <div className="mx-auto max-w-7xl rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+      <div className="mx-auto max-w-7xl rounded-xl border border-blue-200 bg-white p-4 shadow-sm sm:p-6">
         <h1 className="text-2xl font-bold text-gray-900 inline-flex items-center gap-2">
           <FileText size={24} className="text-blue-600" />
           Leave History

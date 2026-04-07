@@ -299,7 +299,7 @@ export default function EncoderAddUserModal({
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-        <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto">
+        <div className="bg-white rounded-xl border border-blue-200 shadow-2xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto">
           <div className="flex items-center gap-2 mb-1">
             <UserPlus size={20} className="text-blue-600" />
             <h2 className="text-xl font-bold text-gray-800">Add User</h2>
@@ -524,7 +524,7 @@ export default function EncoderAddUserModal({
 
       {showSuccess && (
         <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/45 px-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 text-center">
+          <div className="bg-white rounded-xl border border-blue-200 shadow-2xl w-full max-w-md p-6 text-center">
             <h3 className="text-xl font-bold text-gray-800 mb-2">
               User Added Successfully
             </h3>

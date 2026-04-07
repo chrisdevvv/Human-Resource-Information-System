@@ -341,7 +341,7 @@ export default function AddLeaveModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl bg-white p-6 shadow-2xl">
+      <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-blue-200 bg-white p-6 shadow-2xl">
         <h2 className="text-xl font-bold text-gray-800">Add Leave Entry</h2>
         <p className="mt-1 text-sm text-gray-500">Employee: {employeeName}</p>
 
@@ -398,7 +398,7 @@ export default function AddLeaveModal({
                 }`}
               />
               {showParticularDropdown && (
-                <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-md border border-gray-300 bg-white shadow-lg max-h-64 overflow-y-auto">
+                <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-md border border-blue-200 bg-white shadow-lg max-h-64 overflow-y-auto">
                   {particularsLoading ? (
                     <div className="px-4 py-3 text-center text-sm text-gray-500">
                       Loading particulars...

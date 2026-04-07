@@ -465,7 +465,7 @@ export default function AddEmployeeModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto relative">
+      <div className="bg-white rounded-xl border border-blue-200 shadow-2xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto relative">
         <div className="flex items-center gap-2">
           <UserPlus size={20} className="text-blue-600" />
           <h2 className="text-xl font-bold text-gray-800">Add Employee</h2>
@@ -616,7 +616,7 @@ export default function AddEmployeeModal({
                     }
                   />
                   {showSchoolDropdown && (
-                    <div className="absolute top-full mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                    <div className="absolute top-full mt-1 w-full bg-white border border-blue-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
                       {schoolsLoading ? (
                         <div className="px-4 py-3 text-sm text-gray-500 text-center">
                           Loading schools...

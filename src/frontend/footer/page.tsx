@@ -40,7 +40,7 @@ export default function AppFooter() {
           aria-label="Contact details"
         >
           <div
-            className="w-full max-w-md rounded-xl bg-white p-4 sm:p-6 shadow-2xl"
+            className="w-full max-w-md rounded-xl border border-blue-200 bg-white p-4 sm:p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3">

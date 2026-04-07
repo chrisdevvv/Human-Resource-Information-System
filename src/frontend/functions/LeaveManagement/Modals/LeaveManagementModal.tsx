@@ -400,7 +400,7 @@ export default function LeaveManagementModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 sm:px-4">
-      <div className="relative flex max-h-[94vh] w-full max-w-screen-2xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+      <div className="relative flex max-h-[94vh] w-full max-w-screen-2xl flex-col overflow-hidden rounded-xl border border-blue-200 bg-white shadow-2xl">
         <div className="border-b border-gray-200 px-5 py-4 sm:px-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>

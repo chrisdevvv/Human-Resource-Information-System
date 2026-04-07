@@ -82,7 +82,7 @@ export default function ParticularsList({
   }, [currentPage, totalPages]);
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white shadow-sm flex h-full min-h-0 flex-col overflow-hidden">
+    <section className="rounded-2xl border border-blue-200 bg-white shadow-sm flex h-full min-h-0 flex-col overflow-hidden">
       <div className="border-b border-gray-200 px-4 py-4 sm:px-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">

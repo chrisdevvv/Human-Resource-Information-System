@@ -283,7 +283,7 @@ export default function PendingAccountsMobile({
       </div>
 
       {/* Account list */}
-      <div className="bg-white rounded-xl shadow-lg p-4 flex flex-col gap-4">
+      <div className="border border-blue-200 bg-white rounded-xl shadow-lg p-4 flex flex-col gap-4">
         {loading ? (
           <p className="text-center text-sm text-gray-500 py-8">
             Loading pending accounts...

@@ -238,7 +238,7 @@ export default function AdminProfileSettings() {
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-4">
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow">
+      <div className="overflow-hidden rounded-xl border border-blue-200 bg-white shadow">
         <div className="bg-blue-800 px-5 py-4 text-white">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-blue-200 bg-blue-600 text-lg font-bold">
@@ -328,7 +328,7 @@ export default function AdminProfileSettings() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="border border-blue-200 bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-bold text-gray-900 mb-4">
           Change Password
         </h3>

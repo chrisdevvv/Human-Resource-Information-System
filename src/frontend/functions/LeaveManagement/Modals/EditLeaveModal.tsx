@@ -147,7 +147,7 @@ export default function EditLeaveModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl bg-white p-6 shadow-2xl">
+      <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-blue-200 bg-white p-6 shadow-2xl">
         <h2 className="text-xl font-bold text-gray-800">Edit Leave</h2>
         <p className="mt-1 text-sm text-gray-500">
           Employee: {currentLeave.fullName || "Employee"}

@@ -28,7 +28,7 @@ export default function DeleteEntryConfirmation({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+      <div className="w-full max-w-md rounded-lg border border-blue-200 bg-white p-6 shadow-lg">
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-lg font-bold text-gray-900">{title}</h3>

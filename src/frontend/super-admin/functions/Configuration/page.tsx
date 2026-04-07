@@ -382,7 +382,7 @@ export default function ConfigurationPage() {
           </div>
         )}
 
-        <div className="mt-3 rounded-2xl border border-gray-200 bg-white p-2 shadow-sm sm:mt-4">
+        <div className="mt-3 rounded-2xl border border-blue-200 bg-white p-2 shadow-sm sm:mt-4">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button
               type="button"
@@ -418,7 +418,7 @@ export default function ConfigurationPage() {
 
       <div className="min-h-0 flex-1">
         {isLoading ? (
-          <div className="h-full rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+          <div className="h-full rounded-2xl border border-blue-200 bg-white p-8 text-center shadow-sm">
             <div className="inline-flex animate-spin">
               <div className="h-6 w-6 rounded-full border-4 border-gray-200 border-t-blue-600" />
             </div>
@@ -628,7 +628,7 @@ export default function ConfigurationPage() {
       ) : null}
 
       {showToast ? (
-        <div className="fixed bottom-5 right-5 z-50 w-[min(360px,calc(100vw-2rem))] rounded-xl border border-gray-200 bg-white p-4 shadow-lg">
+        <div className="fixed bottom-5 right-5 z-50 w-[min(360px,calc(100vw-2rem))] rounded-xl border border-blue-200 bg-white p-4 shadow-lg">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="mt-0.5 text-emerald-600" size={18} />
             <div className="flex-1">

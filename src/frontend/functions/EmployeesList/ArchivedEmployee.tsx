@@ -672,7 +672,7 @@ export default function ArchivedEmployee() {
       />
 
       {showUnarchiveSuccess && (
-        <div className="fixed bottom-5 right-5 z-50 w-[min(380px,calc(100vw-2rem))] rounded-xl border border-gray-200 bg-white p-4 shadow-lg">
+        <div className="fixed bottom-5 right-5 z-50 w-[min(380px,calc(100vw-2rem))] rounded-xl border border-blue-200 bg-white p-4 shadow-lg">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-100">
               <Check className="h-4 w-4 text-green-600" strokeWidth={3} />

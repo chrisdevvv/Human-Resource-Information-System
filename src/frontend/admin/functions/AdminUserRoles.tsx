@@ -707,7 +707,7 @@ function AdminUserDetailsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 relative">
+      <div className="bg-white rounded-xl border border-blue-200 shadow-2xl w-full max-w-md mx-4 p-6 relative">
         <h2 className="text-xl font-bold text-gray-800 mb-5">User Details</h2>
 
         {loading ? (
@@ -866,7 +866,7 @@ function AdminUserSettingModal({
   if (loadingUser) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
+        <div className="bg-white rounded-xl border border-blue-200 shadow-2xl w-full max-w-md mx-4 p-6">
           <p className="text-sm text-gray-500">Loading user settings...</p>
         </div>
       </div>
@@ -875,7 +875,7 @@ function AdminUserSettingModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 relative">
+      <div className="bg-white rounded-xl border border-blue-200 shadow-2xl w-full max-w-md mx-4 p-6 relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 cursor-pointer"
@@ -969,7 +969,7 @@ function ConfirmationModal({
 }: ConfirmationModalProps) {
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-sm mx-4 p-6">
+      <div className="bg-white rounded-lg border border-blue-200 shadow-lg w-full max-w-sm mx-4 p-6">
         <h3 className="text-lg font-bold text-gray-800 mb-2">{title}</h3>
         <p className="text-sm text-gray-600 mb-6">{message}</p>
         <div className="flex gap-3 justify-end">

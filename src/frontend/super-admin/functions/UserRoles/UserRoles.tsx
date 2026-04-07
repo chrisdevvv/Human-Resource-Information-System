@@ -758,7 +758,7 @@ function UserDetailsModalInline({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 relative">
+      <div className="bg-white rounded-xl border border-blue-200 shadow-2xl w-full max-w-md mx-4 p-6 relative">
         <h2 className="text-xl font-bold text-gray-800 mb-5">User Details</h2>
 
         {loading ? (

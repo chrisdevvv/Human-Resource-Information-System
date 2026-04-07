@@ -722,7 +722,7 @@ export default function LogsMobile() {
       </div>
 
       {/* Logs list */}
-      <div className="bg-white rounded-xl shadow-lg p-4 flex flex-col gap-4">
+      <div className="border border-blue-200 bg-white rounded-xl shadow-lg p-4 flex flex-col gap-4">
         {logsLoading ? (
           <p className="text-center text-sm text-gray-500 py-8">
             Loading logs...
@@ -908,7 +908,7 @@ export default function LogsMobile() {
 
       {archiveModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
-          <div className="w-full max-w-md rounded-t-2xl bg-white p-4 shadow-2xl sm:rounded-xl sm:p-5">
+          <div className="w-full max-w-md rounded-t-2xl border border-blue-200 bg-white p-4 shadow-2xl sm:rounded-xl sm:p-5">
             <h2 className="text-base font-bold text-gray-900">Archive Logs</h2>
 
             {archiveStep === "range" && (

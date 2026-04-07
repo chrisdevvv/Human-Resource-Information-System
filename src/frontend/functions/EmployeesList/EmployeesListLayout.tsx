@@ -647,7 +647,7 @@ export default function EmployeesListLayout() {
       />
 
       {showAddSuccessToast ? (
-        <div className="fixed bottom-5 right-5 z-50 w-[min(360px,calc(100vw-2rem))] rounded-xl border border-gray-200 bg-white p-4 shadow-lg">
+        <div className="fixed bottom-5 right-5 z-50 w-[min(360px,calc(100vw-2rem))] rounded-xl border border-blue-200 bg-white p-4 shadow-lg">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="mt-0.5 text-emerald-600" size={18} />
             <div className="flex-1">

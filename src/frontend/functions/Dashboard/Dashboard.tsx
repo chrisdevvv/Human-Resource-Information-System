@@ -416,7 +416,7 @@ export default function Dashboard({
           {statCards.map((stat, index) => (
             <div
               key={index}
-              className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+              className="bg-white border border-blue-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">

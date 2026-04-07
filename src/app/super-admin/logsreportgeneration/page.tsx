@@ -240,7 +240,7 @@ export default function LogsReportGenerationPage() {
           </div>
         )}
 
-        <div className="overflow-hidden rounded-lg bg-white p-2 shadow-sm md:p-4">
+        <div className="overflow-hidden rounded-lg border border-blue-200 bg-white p-2 shadow-sm md:p-4">
           {loading ? (
             <div className="py-16 text-center text-gray-500">
               Loading report...

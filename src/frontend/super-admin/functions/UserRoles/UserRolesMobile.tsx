@@ -317,7 +317,7 @@ export default function UserRolesMobile() {
 
       {/* Users tab */}
       {activeTab === "users" && (
-        <div className="bg-white rounded-xl shadow-lg p-4 flex flex-col gap-4">
+        <div className="border border-blue-200 bg-white rounded-xl shadow-lg p-4 flex flex-col gap-4">
           <h1 className="text-lg font-bold text-gray-900 inline-flex items-center gap-2">
             <Settings size={16} className="text-blue-600" />
             User &amp; Roles

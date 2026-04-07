@@ -30,7 +30,7 @@ export default function ViewLogsModal({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6"
+        className="bg-white rounded-xl border border-blue-200 shadow-2xl w-full max-w-lg p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between mb-5">

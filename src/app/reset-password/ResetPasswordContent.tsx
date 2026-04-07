@@ -152,7 +152,7 @@ export default function ResetPasswordContent() {
   if (generalError && step === "old-password") {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+        <div className="bg-white p-8 rounded-lg border border-blue-200 shadow-lg w-full max-w-md">
           <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-4">
             <p className="text-red-700">{generalError}</p>
           </div>
@@ -169,7 +169,7 @@ export default function ResetPasswordContent() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+      <div className="bg-white p-8 rounded-lg border border-blue-200 shadow-lg w-full max-w-md">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">
           Reset Password
         </h1>

@@ -470,7 +470,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       className={`${visible ? "flex" : "hidden"} fixed inset-0 items-center justify-center bg-black/40 z-50 px-4`}
       aria-hidden={!visible}
     >
-      <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white p-5 shadow sm:p-8 md:p-10">
+      <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-blue-200 bg-white p-5 shadow sm:p-8 md:p-10">
         <div className="flex items-center justify-center mb-6">
           <h2 className="text-3xl font-bold text-sky-800">Registration Form</h2>
           <X size={18} />
@@ -664,7 +664,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                       }
                     />
                     {showSchoolDropdown && (
-                      <div className="absolute top-full mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
+                      <div className="absolute top-full mt-1 w-full bg-white border border-blue-200 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
                         {schoolsLoading ? (
                           <div className="px-4 py-3 text-sm text-gray-500 text-center">
                             Loading schools...
@@ -854,7 +854,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
         {/* Confirmation Modal */}
         {isConfirmOpen && pendingFormData && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="bg-white rounded-lg shadow-lg p-7 sm:p-8 w-full max-w-md mx-4">
+            <div className="border border-blue-200 bg-white rounded-lg shadow-lg p-7 sm:p-8 w-full max-w-md mx-4">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">
                 Confirm Registration
               </h3>

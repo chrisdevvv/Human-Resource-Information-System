@@ -28,7 +28,7 @@ export default function MarkLeaveConfirmationModal({
       className="fixed inset-0 flex items-center justify-center bg-black/50 px-3 sm:px-4"
       style={{ zIndex: 9999 }}
     >
-      <div className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+      <div className="relative w-full max-w-md rounded-xl border border-blue-200 bg-white p-6 shadow-2xl">
         <h2 className="mb-2 text-lg font-bold text-gray-800">
           {isMarkAction ? "Mark Employee On Leave" : "Unmark Employee On Leave"}
         </h2>

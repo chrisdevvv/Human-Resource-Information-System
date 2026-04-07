@@ -973,7 +973,7 @@ export default function Logs() {
 
       {archiveModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-2xl">
+          <div className="w-full max-w-lg rounded-xl border border-blue-200 bg-white p-5 shadow-2xl">
             <h2 className="text-lg font-bold text-gray-900">Archive Logs</h2>
 
             {archiveStep === "range" && (
