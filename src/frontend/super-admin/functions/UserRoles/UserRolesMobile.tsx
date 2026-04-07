@@ -9,6 +9,7 @@ import {
   UserCheck,
   Settings,
   Eye,
+  RotateCcw,
 } from "lucide-react";
 import PendingAccountsMobile from "./PendingAccountsMobile";
 import UserSettingModal from "../../components/UserSettingModal";
@@ -283,6 +284,17 @@ export default function UserRolesMobile() {
     setPageJumpInput(String(nextPage));
   };
 
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setRoleFilter("ALL");
+    setAccountStatusFilter("ACTIVE");
+    setSchoolFilter("ALL");
+    setLetterFilter("ALL");
+    setSortOrder("asc");
+    setCurrentPage(1);
+    setPageJumpInput("1");
+  };
+
   return (
     <div className="w-full px-3 py-4">
       {/* Tabs */}
@@ -440,6 +452,15 @@ export default function UserRolesMobile() {
                   )}
                 </button>
               </div>
+
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="flex items-center justify-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 transition cursor-pointer"
+              >
+                <RotateCcw size={15} />
+                Reset Filters
+              </button>
             </div>
           </div>
 

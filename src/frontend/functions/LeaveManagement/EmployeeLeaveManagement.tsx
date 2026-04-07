@@ -9,6 +9,7 @@ import {
   Info,
   FileText,
   Plus,
+  RotateCcw,
 } from "lucide-react";
 import LeaveManagementModal from "@/frontend/functions/LeaveManagement/Modals/LeaveManagementModal";
 import AddLeaveModal, {
@@ -76,6 +77,19 @@ const getScopedEmployeeEndpoint = () => {
   return "/api/employees/";
 };
 
+const getCurrentUserRole = (): string => {
+  const rawUser = localStorage.getItem("user");
+  if (!rawUser) {
+    return "";
+  }
+  try {
+    const parsed = JSON.parse(rawUser) as SessionUser;
+    return normalizeRole(parsed.role);
+  } catch {
+    return "";
+  }
+};
+
 const toBoolean = (value: unknown) => {
   if (value === true || value === 1 || value === "1") return true;
   if (typeof value === "string") {
@@ -116,6 +130,7 @@ export default function EmployeeLeaveManagement() {
   const [employeeTypeFilter, setEmployeeTypeFilter] = useState<
     "ALL" | "teaching" | "non-teaching"
   >("ALL");
+  const [schoolFilter, setSchoolFilter] = useState("ALL");
   const [leaveStatusFilter, setLeaveStatusFilter] = useState<
     "ALL" | "on-leave" | "not-on-leave"
   >("ALL");
@@ -128,6 +143,7 @@ export default function EmployeeLeaveManagement() {
   const [employeeData, setEmployeeData] = useState<EmployeeRecord[]>([]);
   const [employeeLoading, setEmployeeLoading] = useState(true);
   const [employeeError, setEmployeeError] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState("");
 
   const [leaveModalTarget, setLeaveModalTarget] =
     useState<LeaveModalRecord | null>(null);
@@ -140,6 +156,10 @@ export default function EmployeeLeaveManagement() {
   const [isDirectAdding, setIsDirectAdding] = useState(false);
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+  useEffect(() => {
+    setCurrentUserRole(getCurrentUserRole());
+  }, []);
 
   const fetchEmployees = async (showSpinner = true) => {
     try {
@@ -209,6 +229,9 @@ export default function EmployeeLeaveManagement() {
           employeeTypeFilter === "ALL" ||
           employee.employeeType === employeeTypeFilter;
 
+        const matchesSchool =
+          schoolFilter === "ALL" || employee.schoolName === schoolFilter;
+
         const matchesLeaveStatus =
           leaveStatusFilter === "ALL" ||
           (leaveStatusFilter === "on-leave"
@@ -222,6 +245,7 @@ export default function EmployeeLeaveManagement() {
         return (
           matchesSearch &&
           matchesEmployeeType &&
+          matchesSchool &&
           matchesLeaveStatus &&
           matchesLetter
         );
@@ -237,10 +261,20 @@ export default function EmployeeLeaveManagement() {
     employeeData,
     searchQuery,
     employeeTypeFilter,
+    schoolFilter,
     leaveStatusFilter,
     letterFilter,
     sortOrder,
   ]);
+
+  const schoolOptions = useMemo(() => {
+    const unique = new Set(
+      employeeData
+        .map((employee) => employee.schoolName.trim())
+        .filter((name) => Boolean(name)),
+    );
+    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+  }, [employeeData]);
 
   const totalPages = Math.max(
     1,
@@ -279,6 +313,17 @@ export default function EmployeeLeaveManagement() {
   }, [currentPage, totalPages]);
 
   const handleSearch = () => {
+    setCurrentPage(1);
+    setPageJumpInput("1");
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setEmployeeTypeFilter("ALL");
+    setSchoolFilter("ALL");
+    setLeaveStatusFilter("ALL");
+    setLetterFilter("ALL");
+    setSortOrder("asc");
     setCurrentPage(1);
     setPageJumpInput("1");
   };
@@ -383,6 +428,24 @@ export default function EmployeeLeaveManagement() {
                 <option value="non-teaching">Non-Teaching</option>
               </select>
 
+              {currentUserRole === "SUPER_ADMIN" ? (
+                <select
+                  value={schoolFilter}
+                  onChange={(e) => {
+                    setSchoolFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                >
+                  <option value="ALL">All Schools</option>
+                  {schoolOptions.map((schoolName) => (
+                    <option key={schoolName} value={schoolName}>
+                      {schoolName}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+
               <select
                 value={letterFilter}
                 onChange={(e) => {
@@ -431,6 +494,15 @@ export default function EmployeeLeaveManagement() {
                     Z-A
                   </>
                 )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="w-full sm:w-auto text-gray-500 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
+              >
+                <RotateCcw size={16} />
+                Reset Filters
               </button>
             </div>
           </div>

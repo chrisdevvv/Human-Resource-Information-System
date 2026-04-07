@@ -10,6 +10,7 @@ import {
   UserPlus,
   UserCheck,
   Eye,
+  RotateCcw,
 } from "lucide-react";
 import PendingAccounts from "./PendingAccounts";
 import UserSettingModal from "../../components/UserSettingModal";
@@ -280,6 +281,17 @@ export default function UserRoles() {
     setPageJumpInput("1");
   };
 
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setRoleFilter("ALL");
+    setAccountStatusFilter("ACTIVE");
+    setSchoolFilter("ALL");
+    setLetterFilter("ALL");
+    setSortOrder("asc");
+    setCurrentPage(1);
+    setPageJumpInput("1");
+  };
+
   const handleJumpToPage = () => {
     const parsed = Number.parseInt(pageJumpInput, 10);
     if (Number.isNaN(parsed)) {
@@ -447,6 +459,15 @@ export default function UserRoles() {
                       Z-A
                     </>
                   )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="text-gray-500 flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
+                >
+                  <RotateCcw size={16} />
+                  Reset Filters
                 </button>
               </div>
             </div>

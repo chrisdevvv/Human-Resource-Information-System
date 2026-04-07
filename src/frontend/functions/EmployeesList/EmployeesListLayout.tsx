@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   X,
   Eye,
+  RotateCcw,
 } from "lucide-react";
 import AddEmployeeModal from "./modals/AddEmployeeModal";
 import ArchivedEmployee from "./ArchivedEmployee";
@@ -131,6 +132,7 @@ export default function EmployeesListLayout() {
   const [employeeTypeFilter, setEmployeeTypeFilter] = useState<
     "ALL" | "teaching" | "non-teaching"
   >("ALL");
+  const [schoolFilter, setSchoolFilter] = useState("ALL");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [letterFilter, setLetterFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
@@ -239,11 +241,16 @@ export default function EmployeesListLayout() {
           employeeTypeFilter === "ALL" ||
           employee.employeeType === employeeTypeFilter;
 
+        const matchesSchool =
+          schoolFilter === "ALL" || employee.schoolName === schoolFilter;
+
         const matchesLetter =
           letterFilter === "ALL" ||
           employee.fullName.charAt(0).toUpperCase() === letterFilter;
 
-        return matchesSearch && matchesEmployeeType && matchesLetter;
+        return (
+          matchesSearch && matchesEmployeeType && matchesSchool && matchesLetter
+        );
       })
       .sort((a, b) => {
         if (sortOrder === "asc") {
@@ -251,7 +258,23 @@ export default function EmployeesListLayout() {
         }
         return b.fullName.localeCompare(a.fullName);
       });
-  }, [employeeData, searchQuery, employeeTypeFilter, letterFilter, sortOrder]);
+  }, [
+    employeeData,
+    searchQuery,
+    employeeTypeFilter,
+    schoolFilter,
+    letterFilter,
+    sortOrder,
+  ]);
+
+  const schoolOptions = useMemo(() => {
+    const unique = new Set(
+      employeeData
+        .map((employee) => employee.schoolName.trim())
+        .filter((name) => Boolean(name)),
+    );
+    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+  }, [employeeData]);
 
   const totalPages = Math.max(
     1,
@@ -291,6 +314,16 @@ export default function EmployeesListLayout() {
   }, [currentPage, totalPages]);
 
   const handleSearch = () => {
+    setCurrentPage(1);
+    setPageJumpInput("1");
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setEmployeeTypeFilter("ALL");
+    setSchoolFilter("ALL");
+    setLetterFilter("ALL");
+    setSortOrder("asc");
     setCurrentPage(1);
     setPageJumpInput("1");
   };
@@ -440,6 +473,24 @@ export default function EmployeesListLayout() {
                   <option value="non-teaching">Non-Teaching</option>
                 </select>
 
+                {currentUserRole === "SUPER_ADMIN" ? (
+                  <select
+                    value={schoolFilter}
+                    onChange={(e) => {
+                      setSchoolFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  >
+                    <option value="ALL">All Schools</option>
+                    {schoolOptions.map((schoolName) => (
+                      <option key={schoolName} value={schoolName}>
+                        {schoolName}
+                      </option>
+                    ))}
+                  </select>
+                ) : null}
+
                 <select
                   value={letterFilter}
                   onChange={(e) => {
@@ -473,6 +524,15 @@ export default function EmployeesListLayout() {
                       Z-A
                     </>
                   )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="w-full sm:w-auto text-gray-500 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
+                >
+                  <RotateCcw size={16} />
+                  Reset Filters
                 </button>
               </div>
             </div>

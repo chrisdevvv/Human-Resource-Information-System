@@ -2,7 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Eye, FileText } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  FileText,
+  RotateCcw,
+} from "lucide-react";
 import ViewLogsModal from "../../components/ViewLogsModal";
 import LogsReportGeneration, {
   downloadLogsReportPdf,
@@ -462,6 +468,17 @@ export default function Logs() {
     setPageJumpInput(String(nextPage));
   };
 
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setRoleFilter("ALL");
+    setLetterFilter("ALL");
+    setSortMode("date-desc");
+    setDateFrom("");
+    setDateTo("");
+    setCurrentPage(1);
+    setPageJumpInput("1");
+  };
+
   const formatDateTime = (isoString: string) => {
     if (!isoString) return "N/A";
     const date = new Date(isoString);
@@ -764,6 +781,15 @@ export default function Logs() {
           <span className="text-sm text-gray-400 sm:ml-auto">
             {filteredLogs.length} record{filteredLogs.length !== 1 ? "s" : ""}
           </span>
+
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 transition cursor-pointer"
+          >
+            <RotateCcw size={16} />
+            Reset Filters
+          </button>
         </div>
       </div>
 
