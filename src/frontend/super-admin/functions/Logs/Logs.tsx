@@ -556,6 +556,22 @@ export default function Logs() {
           : "Updated an employee record.";
       case "EMPLOYEE_DELETED":
         return d ? `Removed ${d} from the system.` : "Removed an employee.";
+      case "EMPLOYEE_ARCHIVED":
+        return d
+          ? `Archived ${d} from the active employee list.`
+          : "Archived an employee.";
+      case "EMPLOYEE_UNARCHIVED":
+        return d
+          ? `Restored ${d} to the active employee list.`
+          : "Restored an employee.";
+      case "EMPLOYEE_MARKED_ON_LEAVE":
+        return d
+          ? `Marked ${d} as currently on leave.`
+          : "Marked an employee as on leave.";
+      case "EMPLOYEE_MARKED_AVAILABLE":
+        return d
+          ? `Marked ${d} as available for work.`
+          : "Marked an employee as available.";
       case "LEAVE_CREATED":
         return d ? `Filed a leave request for ${d}.` : "Filed a leave request.";
       case "LEAVE_UPDATED":
@@ -566,6 +582,24 @@ export default function Logs() {
         return d
           ? `Deleted the leave request for ${d}.`
           : "Deleted a leave request.";
+      case "SCHOOL_CREATED":
+        return d ? `Added ${d} as a new school.` : "Added a new school.";
+      case "SCHOOL_UPDATED":
+        return d ? `Updated the school details for ${d}.` : "Updated a school.";
+      case "SCHOOL_DELETED":
+        return d ? `Removed ${d} from the school list.` : "Removed a school.";
+      case "LEAVE_PARTICULAR_CREATED":
+        return d
+          ? `Added ${d} as a leave particular.`
+          : "Added a leave particular.";
+      case "LEAVE_PARTICULAR_UPDATED":
+        return d
+          ? `Updated the leave particular ${d}.`
+          : "Updated a leave particular.";
+      case "LEAVE_PARTICULAR_DELETED":
+        return d
+          ? `Removed ${d} from the leave particulars list.`
+          : "Removed a leave particular.";
       case "LEAVE_MONTHLY_CREDIT": {
         // d: "Name — Period"
         const sep = d.indexOf(" \u2014 ");

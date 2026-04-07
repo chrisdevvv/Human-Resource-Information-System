@@ -1,5 +1,8 @@
 const pool = require("../../config/db");
 
+const EMPLOYEE_SELECT_WITH_AGE =
+  "employees.*, schools.school_name, COALESCE(employees.age, TIMESTAMPDIFF(YEAR, employees.birthdate, CURDATE())) AS age";
+
 const Employee = {
   // Supports optional pagination: if `pagination` omitted, returns full rows for compatibility.
   getAll: async (filters = {}) => {
@@ -35,7 +38,7 @@ const Employee = {
       const [rows] = await pool
         .promise()
         .query(
-          `SELECT employees.*, schools.school_name ${baseQuery} ORDER BY employees.id ASC`,
+          `SELECT ${EMPLOYEE_SELECT_WITH_AGE} ${baseQuery} ORDER BY employees.id ASC`,
           params,
         );
       return rows;
@@ -50,7 +53,7 @@ const Employee = {
     const [rows] = await pool
       .promise()
       .query(
-        `SELECT employees.*, schools.school_name ${baseQuery} ORDER BY employees.id ASC LIMIT ? OFFSET ?`,
+        `SELECT ${EMPLOYEE_SELECT_WITH_AGE} ${baseQuery} ORDER BY employees.id ASC LIMIT ? OFFSET ?`,
         [...params, pageSize, offset],
       );
 
@@ -64,7 +67,7 @@ const Employee = {
       : "AND employees.is_archived = 0";
     const [rows] = await pool.promise().query(
       `
-            SELECT employees.*, schools.school_name
+            SELECT ${EMPLOYEE_SELECT_WITH_AGE}
             FROM employees
             JOIN schools ON employees.school_id = schools.id
             WHERE employees.id = ?
@@ -91,7 +94,7 @@ const Employee = {
 
     const whereClause = whereParts.join(" AND ");
     const [rows] = await pool.promise().query(
-      `SELECT employees.*, schools.school_name
+      `SELECT ${EMPLOYEE_SELECT_WITH_AGE}
        FROM employees
        JOIN schools ON employees.school_id = schools.id
        WHERE ${whereClause}`,
@@ -106,21 +109,45 @@ const Employee = {
       middle_name,
       last_name,
       email,
+      personal_email,
+      middle_initial,
+      mobile_number,
+      home_address,
       employee_type,
       school_id,
+      employee_no,
+      work_email,
+      district,
+      work_district,
+      position,
+      plantilla_no,
+      age,
       birthdate,
     } = data;
+    const personalEmail = personal_email || email || null;
+    const middleInitial =
+      middle_initial || (middle_name ? String(middle_name).trim().charAt(0) : null);
+    const resolvedDistrict = district || work_district || null;
     const [result] = await pool
       .promise()
       .query(
-        "INSERT INTO employees (first_name, middle_name, last_name, email, employee_type, school_id, birthdate) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO employees (first_name, middle_name, last_name, middle_initial, email, mobile_number, home_address, employee_type, school_id, employee_no, work_email, district, `position`, plantilla_no, age, birthdate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           first_name,
           middle_name || null,
           last_name,
-          email,
+          middleInitial || null,
+          personalEmail,
+          mobile_number || null,
+          home_address || null,
           employee_type,
           school_id,
+          employee_no || null,
+          work_email || null,
+          resolvedDistrict,
+          position || null,
+          plantilla_no || null,
+          age || null,
           birthdate,
         ],
       );
@@ -133,21 +160,45 @@ const Employee = {
       middle_name,
       last_name,
       email,
+      personal_email,
+      middle_initial,
+      mobile_number,
+      home_address,
       employee_type,
       school_id,
+      employee_no,
+      work_email,
+      district,
+      work_district,
+      position,
+      plantilla_no,
+      age,
       birthdate,
     } = data;
+    const personalEmail = personal_email || email || null;
+    const middleInitial =
+      middle_initial || (middle_name ? String(middle_name).trim().charAt(0) : null);
+    const resolvedDistrict = district || work_district || null;
     const [result] = await pool
       .promise()
       .query(
-        "UPDATE employees SET first_name = ?, middle_name = ?, last_name = ?, email = ?, employee_type = ?, school_id = ?, birthdate = ? WHERE id = ? AND is_archived = 0",
+        "UPDATE employees SET first_name = ?, middle_name = ?, last_name = ?, middle_initial = ?, email = ?, mobile_number = ?, home_address = ?, employee_type = ?, school_id = ?, employee_no = ?, work_email = ?, district = ?, `position` = ?, plantilla_no = ?, age = ?, birthdate = ? WHERE id = ? AND is_archived = 0",
         [
           first_name,
           middle_name || null,
           last_name,
-          email,
+          middleInitial || null,
+          personalEmail,
+          mobile_number || null,
+          home_address || null,
           employee_type,
           school_id,
+          employee_no || null,
+          work_email || null,
+          resolvedDistrict,
+          position || null,
+          plantilla_no || null,
+          age || null,
           birthdate || null,
           id,
         ],
