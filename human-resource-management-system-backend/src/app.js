@@ -288,6 +288,47 @@ const ensureMiddleNameSchema = async () => {
   `);
 };
 
+const ensureEmployeeProfileSchema = async () => {
+  await pool.promise().query(`
+    ALTER TABLE employees
+    ADD COLUMN IF NOT EXISTS middle_initial VARCHAR(10) NULL AFTER middle_name,
+    ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(30) NULL AFTER email,
+    ADD COLUMN IF NOT EXISTS home_address VARCHAR(255) NULL AFTER mobile_number,
+    ADD COLUMN IF NOT EXISTS employee_no VARCHAR(100) NULL AFTER school_id,
+    ADD COLUMN IF NOT EXISTS work_email VARCHAR(255) NULL AFTER employee_no,
+    ADD COLUMN IF NOT EXISTS district VARCHAR(255) NULL AFTER work_email,
+    ADD COLUMN IF NOT EXISTS work_district VARCHAR(255) NULL AFTER work_email,
+    ADD COLUMN IF NOT EXISTS \`position\` VARCHAR(255) NULL AFTER district,
+    ADD COLUMN IF NOT EXISTS plantilla_no VARCHAR(100) NULL AFTER \`position\`,
+    ADD COLUMN IF NOT EXISTS age INT NULL AFTER plantilla_no;
+  `);
+
+  await pool.promise().query(`
+    UPDATE employees
+    SET district = work_district
+    WHERE district IS NULL
+      AND work_district IS NOT NULL
+      AND work_district <> '';
+  `);
+
+  const indexStatements = [
+    `CREATE INDEX idx_employees_employee_no ON employees (employee_no)`,
+    `CREATE INDEX idx_employees_work_email ON employees (work_email)`,
+    `CREATE INDEX idx_employees_district ON employees (district)`,
+    `CREATE INDEX idx_employees_work_district ON employees (work_district)`,
+  ];
+
+  for (const sql of indexStatements) {
+    try {
+      await pool.promise().query(sql);
+    } catch (err) {
+      if (!/Duplicate|exists/i.test(err.message)) {
+        console.warn("Employee profile index warning:", err.message);
+      }
+    }
+  }
+};
+
 const ensureBacklogArchiveSchema = async () => {
   await pool.promise().query(`
     ALTER TABLE backlogs
@@ -410,6 +451,9 @@ app.listen(PORT, async () => {
 
     await ensureMiddleNameSchema();
     console.log("✔  Middle name schema is ready");
+
+    await ensureEmployeeProfileSchema();
+    console.log("✔  Employee profile schema is ready");
 
     await ensureBacklogArchiveSchema();
     console.log("✔  Backlog archive schema is ready");

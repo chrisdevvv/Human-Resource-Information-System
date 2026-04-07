@@ -16,6 +16,18 @@ const noMiddleNameSchema = Joi.alternatives().try(
 );
 
 const middleNameSchema = Joi.string().trim().max(100).allow(null, "");
+const middleInitialSchema = Joi.string().trim().max(10).allow(null, "");
+const mobileNumberSchema = Joi.string().trim().max(30).allow(null, "");
+const homeAddressSchema = Joi.string().trim().max(255).allow(null, "");
+const employeeNoSchema = Joi.string().trim().max(100).allow(null, "");
+const workEmailSchema = Joi.string()
+  .trim()
+  .email({ tlds: { allow: false } })
+  .allow(null, "");
+const districtSchema = Joi.string().trim().max(255).allow(null, "");
+const positionSchema = Joi.string().trim().max(255).allow(null, "");
+const plantillaNoSchema = Joi.string().trim().max(100).allow(null, "");
+const ageSchema = Joi.number().integer().min(0).max(150).allow(null);
 
 const requiredMiddleNameWhenApplicable = middleNameSchema.when(
   "no_middle_name",
@@ -35,13 +47,27 @@ const employeeCreateBodySchema = Joi.object({
   middle_name: requiredMiddleNameWhenApplicable,
   no_middle_name: noMiddleNameSchema,
   last_name: Joi.string().trim().min(1).max(100).required(),
+  middle_initial: middleInitialSchema,
+  personal_email: Joi.string()
+    .trim()
+    .email({ tlds: { allow: false } })
+    .allow(null, ""),
   email: Joi.string()
     .trim()
     .email({ tlds: { allow: false } })
     .allow(null, ""),
+  mobile_number: mobileNumberSchema,
+  home_address: homeAddressSchema,
   employee_type: Joi.string().valid("teaching", "non-teaching").required(),
   school_id: Joi.number().integer().positive().required(),
+  employee_no: employeeNoSchema,
+  work_email: workEmailSchema,
+  district: districtSchema,
+  work_district: districtSchema,
+  position: positionSchema,
+  plantilla_no: plantillaNoSchema,
   birthdate: birthdateSchema.required(),
+  age: ageSchema,
 });
 
 const employeeUpdateBodySchema = Joi.object({
@@ -49,13 +75,27 @@ const employeeUpdateBodySchema = Joi.object({
   middle_name: requiredMiddleNameWhenApplicable,
   no_middle_name: noMiddleNameSchema,
   last_name: Joi.string().trim().min(1).max(100).required(),
+  middle_initial: middleInitialSchema,
+  personal_email: Joi.string()
+    .trim()
+    .email({ tlds: { allow: false } })
+    .allow(null, ""),
   email: Joi.string()
     .trim()
     .email({ tlds: { allow: false } })
     .allow(null, ""),
+  mobile_number: mobileNumberSchema,
+  home_address: homeAddressSchema,
   employee_type: Joi.string().valid("teaching", "non-teaching").required(),
   school_id: Joi.number().integer().positive().required(),
+  employee_no: employeeNoSchema,
+  work_email: workEmailSchema,
+  district: districtSchema,
+  work_district: districtSchema,
+  position: positionSchema,
+  plantilla_no: plantillaNoSchema,
   birthdate: birthdateSchema.allow(null),
+  age: ageSchema,
 });
 
 const employeeListQuerySchema = Joi.object({
