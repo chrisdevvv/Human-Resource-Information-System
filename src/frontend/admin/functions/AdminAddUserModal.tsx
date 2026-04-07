@@ -1,7 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, EyeOff, UserPlus } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  UserPlus,
+  XCircle,
+} from "lucide-react";
 import ConfirmationModal from "../../super-admin/components/ConfirmationModal";
 
 const API_BASE_URL =
@@ -457,7 +465,10 @@ export default function AdminAddUserModal({
               disabled={loading}
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium cursor-pointer disabled:opacity-60"
             >
-              {step === 1 ? "Cancel" : "Back"}
+              <span className="inline-flex items-center gap-1">
+                <XCircle size={14} />
+                {step === 1 ? "Cancel" : "Back"}
+              </span>
             </button>
 
             {step === 1 ? (
@@ -467,7 +478,10 @@ export default function AdminAddUserModal({
                 disabled={loading}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer disabled:opacity-60"
               >
-                Next
+                <span className="inline-flex items-center gap-1">
+                  <ArrowRight size={14} />
+                  Next
+                </span>
               </button>
             ) : (
               <button
@@ -476,7 +490,10 @@ export default function AdminAddUserModal({
                 disabled={loading}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer disabled:opacity-60"
               >
-                Add User
+                <span className="inline-flex items-center gap-1">
+                  <UserPlus size={14} />
+                  Add User
+                </span>
               </button>
             )}
           </div>
@@ -513,7 +530,10 @@ export default function AdminAddUserModal({
               }}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer"
             >
-              Done
+              <span className="inline-flex items-center gap-1">
+                <CheckCircle2 size={14} />
+                Done
+              </span>
             </button>
           </div>
         </div>

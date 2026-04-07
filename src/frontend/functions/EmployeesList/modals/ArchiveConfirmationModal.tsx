@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Archive, XCircle } from "lucide-react";
 
 type ArchiveConfirmationModalProps = {
   isOpen: boolean;
@@ -70,14 +71,20 @@ function ArchiveConfirmationModal({
               disabled={isLoading}
               className="cursor-pointer rounded px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-60"
             >
-              Cancel
+              <span className="inline-flex items-center gap-1">
+                <XCircle size={14} />
+                Cancel
+              </span>
             </button>
             <button
               type="submit"
               disabled={isLoading || !password}
               className="cursor-pointer rounded px-4 py-2 text-sm font-medium bg-gray-800 text-white hover:bg-gray-900 disabled:opacity-60"
             >
-              {isLoading ? "Archiving..." : "Confirm Archive"}
+              <span className="inline-flex items-center gap-1">
+                <Archive size={14} />
+                {isLoading ? "Archiving..." : "Confirm Archive"}
+              </span>
             </button>
           </div>
         </form>

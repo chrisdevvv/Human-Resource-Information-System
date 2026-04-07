@@ -11,11 +11,13 @@ import {
   Plus,
   CheckCircle2,
   X,
+  Eye,
 } from "lucide-react";
 import AddEmployeeModal from "./modals/AddEmployeeModal";
 import ArchivedEmployee from "./ArchivedEmployee";
 import ArchiveConfirmationModal from "./modals/ArchiveConfirmationModal";
 import ArchiveSuccessMessage from "../LeaveManagement/ArchiveSuccessMessage";
+import ViewEmployeeModal from "./modals/ViewEmployeeModal";
 import { archiveEmployee } from "../LeaveManagement/leaveApi";
 
 type EmployeeRecordApi = {
@@ -25,15 +27,22 @@ type EmployeeRecordApi = {
   last_name: string;
   email?: string | null;
   school_name?: string | null;
+  school_id?: number | null;
   employee_type?: "teaching" | "non-teaching";
+  birthdate?: string | null;
 };
 
 type EmployeeRecord = {
   id: number;
+  firstName: string;
+  middleName: string;
+  lastName: string;
   email: string;
   fullName: string;
   employeeType: "teaching" | "non-teaching";
+  schoolId: number | null;
   schoolName: string;
+  birthdate: string;
 };
 
 type EmployeeApiResponse = {
@@ -81,6 +90,19 @@ const getScopedEmployeeEndpoint = () => {
   return "/api/employees/";
 };
 
+const getCurrentUserRole = (): string => {
+  const rawUser = localStorage.getItem("user");
+  if (!rawUser) {
+    return "";
+  }
+  try {
+    const parsed = JSON.parse(rawUser) as SessionUser;
+    return normalizeRole(parsed.role);
+  } catch {
+    return "";
+  }
+};
+
 const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
   const firstName = item.first_name?.trim() || "Unknown";
   const middleName = item.middle_name?.trim() || "";
@@ -89,10 +111,16 @@ const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
 
   return {
     id: item.id,
+    firstName,
+    middleName,
+    lastName,
     fullName,
     employeeType: item.employee_type || "non-teaching",
     email: item.email?.trim() || "",
+    schoolId:
+      typeof item.school_id === "number" ? item.school_id || null : null,
     schoolName: item.school_name?.trim() || "",
+    birthdate: typeof item.birthdate === "string" ? item.birthdate || "" : "",
   };
 };
 
@@ -113,6 +141,9 @@ export default function EmployeesListLayout() {
   const [employeeLoading, setEmployeeLoading] = useState(true);
   const [employeeError, setEmployeeError] = useState<string | null>(null);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+  const [selectedViewEmployee, setSelectedViewEmployee] =
+    useState<EmployeeRecord | null>(null);
   const [isArchiving, setIsArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
   const [showArchiveSuccess, setShowArchiveSuccess] = useState(false);
@@ -120,6 +151,11 @@ export default function EmployeesListLayout() {
     useState<EmployeeRecord | null>(null);
   const [showAddSuccessToast, setShowAddSuccessToast] = useState(false);
   const [addSuccessMessage, setAddSuccessMessage] = useState("");
+  const [currentUserRole, setCurrentUserRole] = useState("");
+
+  useEffect(() => {
+    setCurrentUserRole(getCurrentUserRole());
+  }, []);
 
   useEffect(() => {
     if (!showAddSuccessToast) {
@@ -277,6 +313,11 @@ export default function EmployeesListLayout() {
     setIsArchiveOpen(true);
   };
 
+  const handleOpenView = (employee: EmployeeRecord) => {
+    setSelectedViewEmployee(employee);
+    setIsViewOpen(true);
+  };
+
   const handleArchiveConfirm = async (password: string) => {
     if (!selectedArchiveEmployee) {
       return;
@@ -303,6 +344,15 @@ export default function EmployeesListLayout() {
   const handleArchiveSuccessClose = () => {
     setShowArchiveSuccess(false);
     setSelectedArchiveEmployee(null);
+  };
+
+  const handleEmployeeUpdated = (updatedEmployee: EmployeeRecord) => {
+    setEmployeeData((prev) =>
+      prev.map((employee) =>
+        employee.id === updatedEmployee.id ? updatedEmployee : employee,
+      ),
+    );
+    setSelectedViewEmployee(updatedEmployee);
   };
 
   return (
@@ -482,14 +532,26 @@ export default function EmployeesListLayout() {
                             <div className="flex items-center justify-end gap-2">
                               <button
                                 type="button"
-                                onClick={() => handleOpenArchive(employee)}
-                                className="inline-flex items-center gap-1 rounded bg-gray-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-900 transition cursor-pointer"
-                                aria-label="Archive employee"
-                                title="Archive"
+                                onClick={() => handleOpenView(employee)}
+                                className="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition cursor-pointer"
+                                aria-label="View employee"
+                                title="View"
                               >
-                                <Archive size={12} />
-                                Archive
+                                <Eye size={12} />
+                                View
                               </button>
+                              {currentUserRole === "SUPER_ADMIN" ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenArchive(employee)}
+                                  className="inline-flex items-center gap-1 rounded bg-gray-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-900 transition cursor-pointer"
+                                  aria-label="Archive employee"
+                                  title="Archive"
+                                >
+                                  <Archive size={12} />
+                                  Archive
+                                </button>
+                              ) : null}
                             </div>
                           </td>
                         </tr>
@@ -644,6 +706,17 @@ export default function EmployeesListLayout() {
         employeeName={selectedArchiveEmployee?.fullName}
         onClose={handleArchiveSuccessClose}
         autoCloseDuration={2000}
+      />
+
+      <ViewEmployeeModal
+        visible={isViewOpen}
+        employee={selectedViewEmployee}
+        canEdit={currentUserRole === "SUPER_ADMIN"}
+        onEmployeeUpdated={handleEmployeeUpdated}
+        onClose={() => {
+          setIsViewOpen(false);
+          setSelectedViewEmployee(null);
+        }}
       />
 
       {showAddSuccessToast ? (

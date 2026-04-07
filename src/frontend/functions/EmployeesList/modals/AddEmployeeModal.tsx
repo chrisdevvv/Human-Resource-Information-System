@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { UserPlus } from "lucide-react";
+import { PlusCircle, UserPlus, XCircle } from "lucide-react";
 import ConfirmationModal from "../../../super-admin/components/ConfirmationModal";
 
 type School = {
@@ -672,14 +672,20 @@ export default function AddEmployeeModal({
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium cursor-pointer"
               disabled={submitLoading || isConfirmOpen}
             >
-              Cancel
+              <span className="inline-flex items-center gap-1">
+                <XCircle size={14} />
+                Cancel
+              </span>
             </button>
             <button
               type="submit"
               disabled={submitLoading || isConfirmOpen || schoolsLoading}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition text-sm font-medium cursor-pointer"
             >
-              {submitLoading ? "Saving..." : "Add Employee"}
+              <span className="inline-flex items-center gap-1">
+                <UserPlus size={14} />
+                {submitLoading ? "Saving..." : "Add Employee"}
+              </span>
             </button>
           </div>
         </form>

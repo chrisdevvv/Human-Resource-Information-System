@@ -1,4 +1,5 @@
 import React from "react";
+import { Check, XCircle } from "lucide-react";
 
 type MarkLeaveConfirmationModalProps = {
   isOpen: boolean;
@@ -53,7 +54,10 @@ export default function MarkLeaveConfirmationModal({
             disabled={isLoading}
             className="cursor-pointer rounded bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-60"
           >
-            Cancel
+            <span className="inline-flex items-center gap-2">
+              <XCircle size={14} />
+              Cancel
+            </span>
           </button>
           <button
             type="button"
@@ -61,7 +65,10 @@ export default function MarkLeaveConfirmationModal({
             disabled={isLoading}
             className="cursor-pointer rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
           >
-            {isLoading ? "Processing..." : "Yes"}
+            <span className="inline-flex items-center gap-2">
+              <Check size={14} />
+              {isLoading ? "Processing..." : "Yes"}
+            </span>
           </button>
         </div>
       </div>

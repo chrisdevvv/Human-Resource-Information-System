@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Check, Eye, EyeOff, X } from "lucide-react";
 
 type Props = {
   accountId: number;
@@ -133,14 +133,20 @@ export default function RoleAssignmentModal({
                 disabled={loading}
                 className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer disabled:opacity-50"
               >
-                Back
+                <span className="inline-flex items-center gap-1">
+                  <ArrowLeft size={14} />
+                  Back
+                </span>
               </button>
               <button
                 onClick={handleConfirm}
                 disabled={loading}
                 className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
               >
-                {loading ? "Assigning…" : "Confirm"}
+                <span className="inline-flex items-center gap-1">
+                  <Check size={14} />
+                  {loading ? "Assigning…" : "Confirm"}
+                </span>
               </button>
             </div>
           </div>

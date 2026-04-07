@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Save } from "lucide-react";
 import ConfirmationModal from "../../super-admin/components/ConfirmationModal";
 import { logoutNow } from "@/frontend/auth/session";
 
@@ -71,6 +71,12 @@ const toAccountStatusLabel = (raw: unknown) => {
   if (["active", "1", "true"].includes(value)) return "Active";
   if (["inactive", "0", "false"].includes(value)) return "Inactive";
   return "N/A";
+};
+
+const toMiddleNamePart = (raw: string) => {
+  const value = String(raw || "").trim();
+  if (!value || value.toLowerCase() === "n/a") return "";
+  return value;
 };
 
 export default function AdminProfileSettings() {
@@ -269,7 +275,7 @@ export default function AdminProfileSettings() {
             </p>
             <input
               readOnly
-              value={`${profile.firstName} ${profile.middleName || ""} ${profile.lastName}`
+              value={`${profile.firstName} ${toMiddleNamePart(profile.middleName)} ${profile.lastName}`
                 .replace(/\s+/g, " ")
                 .trim()}
               className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500"
@@ -287,11 +293,11 @@ export default function AdminProfileSettings() {
           </div>
           <div className="border-b border-gray-200 px-5 py-3 sm:border-r">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-              School
+              Birthday
             </p>
             <input
               readOnly
-              value={profile.school}
+              value={profile.birthdate}
               className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500"
             />
           </div>
@@ -325,6 +331,17 @@ export default function AdminProfileSettings() {
               className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500"
             />
           </div>
+        </div>
+
+        <div className="border-t border-gray-200 px-5 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+            School
+          </p>
+          <input
+            readOnly
+            value={profile.school}
+            className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500"
+          />
         </div>
       </div>
 
@@ -421,7 +438,10 @@ export default function AdminProfileSettings() {
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
           >
-            {savingPassword ? "Saving..." : "Save Changes"}
+            <span className="inline-flex items-center gap-1">
+              <Save size={14} />
+              {savingPassword ? "Saving..." : "Save Changes"}
+            </span>
           </button>
         </div>
 

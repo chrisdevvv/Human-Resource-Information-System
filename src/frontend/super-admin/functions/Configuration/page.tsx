@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   ListChecks,
   Plus,
+  Trash2,
   ShieldCheck,
   X,
   AlertCircle,
@@ -548,7 +549,10 @@ export default function ConfigurationPage() {
                 className="cursor-pointer rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
                 disabled={isSaving}
               >
-                Cancel
+                <span className="inline-flex items-center gap-1">
+                  <X size={14} />
+                  Cancel
+                </span>
               </button>
               <button
                 type="button"
@@ -556,7 +560,10 @@ export default function ConfigurationPage() {
                 disabled={isSaving}
                 className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                {isSaving ? "Saving..." : "Confirm Add"}
+                <span className="inline-flex items-center gap-1">
+                  <CheckCircle2 size={14} />
+                  {isSaving ? "Saving..." : "Confirm Add"}
+                </span>
               </button>
             </div>
           </div>
@@ -591,7 +598,10 @@ export default function ConfigurationPage() {
                 className="cursor-pointer rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
                 disabled={isDeleting}
               >
-                Cancel
+                <span className="inline-flex items-center gap-1">
+                  <X size={14} />
+                  Cancel
+                </span>
               </button>
               <button
                 type="button"
@@ -605,7 +615,10 @@ export default function ConfigurationPage() {
                     Deleting...
                   </>
                 ) : (
-                  "Delete"
+                  <span className="inline-flex items-center gap-1">
+                    <Trash2 size={14} />
+                    Delete
+                  </span>
                 )}
               </button>
             </div>

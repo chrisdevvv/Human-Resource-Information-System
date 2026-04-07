@@ -3,6 +3,7 @@
 // Filename: LoginModal.tsx
 // Purpose: Modal UI for signing in; performs basic validation and reports errors to parent
 import React, { useEffect, useState } from "react";
+import { LogIn, XCircle } from "lucide-react";
 import { Mail, Lock, Eye, EyeOff } from "../../assets/icons";
 
 const API_BASE_URL =
@@ -185,18 +186,20 @@ export default function LoginModal({
         <div className="flex gap-3 justify-center mt-4">
           <button
             id="submitLogin"
-            className="transition hover:bg-blue-700 hover:cursor-pointer px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center gap-1 transition hover:bg-blue-700 hover:cursor-pointer px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={submit}
             disabled={isLoading}
           >
+            <LogIn size={14} />
             {isLoading ? "Signing in..." : "Sign in"}
           </button>
           <button
             id="cancelLogin"
-            className="text-gray-800 transition hover:cursor-pointer hover:bg-gray-400 px-4 py-2 bg-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center gap-1 text-gray-800 transition hover:cursor-pointer hover:bg-gray-400 px-4 py-2 bg-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={onClose}
             disabled={isLoading}
           >
+            <XCircle size={14} />
             Cancel
           </button>
         </div>

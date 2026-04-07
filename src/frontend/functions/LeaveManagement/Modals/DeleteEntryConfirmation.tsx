@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Trash2, X } from "lucide-react";
+import { Trash2, XCircle } from "lucide-react";
 
 type DeleteEntryConfirmationProps = {
   isOpen: boolean;
@@ -43,7 +43,10 @@ export default function DeleteEntryConfirmation({
             disabled={isLoading}
             className="cursor-pointer rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {cancelLabel}
+            <span className="inline-flex items-center gap-2">
+              <XCircle size={14} />
+              {cancelLabel}
+            </span>
           </button>
           <button
             type="button"

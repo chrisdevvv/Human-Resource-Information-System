@@ -9,6 +9,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Pencil,
+  Search,
+  Undo2,
   X,
 } from "lucide-react";
 import UnarchiveConfirmationModal from "./modals/UnarchiveConfirmationModal";
@@ -376,8 +378,9 @@ export default function ArchivedEmployee() {
           </div>
           <button
             onClick={handleSearch}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+            className="inline-flex items-center gap-1 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
           >
+            <Search size={14} />
             Search
           </button>
         </div>
@@ -401,8 +404,9 @@ export default function ArchivedEmployee() {
               <button
                 onClick={handleBulkUnarchiveClick}
                 disabled={selectedEmployeeIds.size === 0 || isUnarchiving}
-                className="px-4 py-2 rounded-lg transition font-medium text-sm cursor-pointer bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1 px-4 py-2 rounded-lg transition font-medium text-sm cursor-pointer bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
               >
+                <Undo2 size={14} />
                 Unarchive Selected ({selectedEmployeeIds.size})
               </button>
             )}

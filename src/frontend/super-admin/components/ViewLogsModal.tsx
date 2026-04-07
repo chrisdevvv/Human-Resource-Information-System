@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { XCircle } from "lucide-react";
 
 export type ViewLogDetails = {
   name: string;
@@ -98,7 +99,10 @@ export default function ViewLogsModal({
             onClick={onClose}
             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium cursor-pointer"
           >
-            Close
+            <span className="inline-flex items-center gap-1">
+              <XCircle size={14} />
+              Close
+            </span>
           </button>
         </div>
       </div>

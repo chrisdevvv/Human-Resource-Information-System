@@ -69,7 +69,7 @@ router.post(
 router.put(
   "/:id",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   validateRequest({ params: idParamSchema, body: employeeUpdateBodySchema }),
   updateEmployee,
 );

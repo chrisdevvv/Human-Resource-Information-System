@@ -1,7 +1,17 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Download, Plus, RefreshCcw, Trash2, X } from "lucide-react";
+import {
+  Download,
+  ExternalLink,
+  FileText,
+  IdCard,
+  Plus,
+  RefreshCcw,
+  Trash2,
+  X,
+  XCircle,
+} from "lucide-react";
 import DeleteEntryConfirmation from "./DeleteEntryConfirmation";
 import MarkLeaveConfirmationModal from "./MarkLeaveConfirmationModal";
 import type { LeaveModalRecord } from "../leaveTypes";
@@ -478,7 +488,10 @@ export default function LeaveManagementModal({
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              Leave History
+              <span className="inline-flex items-center gap-1">
+                <FileText size={14} />
+                Leave History
+              </span>
             </button>
             <button
               type="button"
@@ -489,14 +502,20 @@ export default function LeaveManagementModal({
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              Printable Leave Card
+              <span className="inline-flex items-center gap-1">
+                <IdCard size={14} />
+                Printable Leave Card
+              </span>
             </button>
             <button
               type="button"
               onClick={handleOpenHistoryInNewTab}
               className="cursor-pointer rounded-lg px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
             >
-              Open in Another Tab
+              <span className="inline-flex items-center gap-1">
+                <ExternalLink size={14} />
+                Open in Another Tab
+              </span>
             </button>
             <button
               type="button"
@@ -516,7 +535,10 @@ export default function LeaveManagementModal({
                 disabled={isDeletingEntries}
                 className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Cancel
+                <span className="inline-flex items-center gap-1">
+                  <XCircle size={14} />
+                  Cancel
+                </span>
               </button>
             ) : null}
 

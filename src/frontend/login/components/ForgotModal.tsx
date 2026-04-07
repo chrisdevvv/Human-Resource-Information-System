@@ -3,6 +3,7 @@
 // Filename: ForgotModal.tsx
 // Purpose: Send password reset email
 import React, { useEffect, useState } from "react";
+import { Send, XCircle } from "lucide-react";
 import { Mail } from "../../assets/icons";
 
 const API_BASE_URL =
@@ -149,21 +150,23 @@ export default function ForgotModal({ visible, onClose }: Props) {
               <>
                 <button
                   id="sendReset"
-                  className="hover:cursor-pointer transition hover:bg-blue-700 px-6 py-2 bg-blue-600 text-white rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center justify-center gap-1 hover:cursor-pointer transition hover:bg-blue-700 px-6 py-2 bg-blue-600 text-white rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={sendResetEmail}
                   disabled={isLoading}
                 >
+                  <Send size={14} />
                   {isLoading ? "Sending..." : "Send reset email"}
                 </button>
                 <button
                   id="cancelForgot"
-                  className="text-black hover:cursor-pointer bg-gray-200 px-6 py-2 border rounded-md w-full hover:bg-gray-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center justify-center gap-1 text-black hover:cursor-pointer bg-gray-200 px-6 py-2 border rounded-md w-full hover:bg-gray-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => {
                     resetForm();
                     onClose();
                   }}
                   disabled={isLoading}
                 >
+                  <XCircle size={14} />
                   Cancel
                 </button>
               </>
