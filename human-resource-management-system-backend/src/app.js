@@ -312,6 +312,7 @@ const ensureBacklogArchiveSchema = async () => {
 };
 
 const archiveOldBacklogs = async () => {
+  // Archive logs older than 1 month
   const oneMonthAgo = new Date();
   oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
   const cutoffDate = oneMonthAgo.toISOString().slice(0, 19).replace("T", " ");
@@ -345,6 +346,10 @@ const ensureIndexes = async () => {
     `CREATE INDEX idx_users_first_last_email ON users (first_name, last_name, email)`,
     `CREATE INDEX idx_users_email ON users (email)`,
     `CREATE INDEX idx_employees_school_id ON employees (school_id)`,
+    // Optimized backlogs indexes for performance
+    `CREATE INDEX idx_backlogs_is_archived_created_at ON backlogs (is_archived, created_at DESC)`,
+    `CREATE INDEX idx_backlogs_user_id ON backlogs (user_id)`,
+    `CREATE INDEX idx_backlogs_school_id ON backlogs (school_id)`,
     `CREATE INDEX idx_backlogs_created_at ON backlogs (created_at)`,
   ];
 

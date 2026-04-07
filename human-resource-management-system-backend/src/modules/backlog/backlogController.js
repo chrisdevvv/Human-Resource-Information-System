@@ -173,9 +173,10 @@ const buildPdfBuffer = (rows, filters = {}) => {
 const getAllBacklogs = async (req, res) => {
   try {
     const { page, pageSize } = req.query;
+    // Default to NOT including archived logs for better performance
     const includeArchived = req.query.include_archived
       ? toBoolean(req.query.include_archived)
-      : true;
+      : false;
     const pagination = page
       ? { page: Number(page), pageSize: Number(pageSize || 25) }
       : undefined;
