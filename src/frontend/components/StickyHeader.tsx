@@ -7,7 +7,9 @@ type StickyHeaderProps = {
   isSidebarCollapsed?: boolean;
 };
 
-export default function StickyHeader({ isSidebarCollapsed = false }: StickyHeaderProps) {
+export default function StickyHeader({
+  isSidebarCollapsed = false,
+}: StickyHeaderProps) {
   const sidebarOffsetClass = isSidebarCollapsed ? "md:left-16" : "md:left-64";
 
   return (
