@@ -310,6 +310,47 @@ const Leave = {
     return rows.length > 0;
   },
 
+  getMonthlyCreditEntriesByPeriod: async (
+    period_of_leave,
+    entry_kind = "MONTHLY_CREDIT",
+    earned_vl = 1.25,
+    earned_sl = 1.25,
+  ) => {
+    const [rows] = await pool.promise().query(
+      `SELECT id, employee_id, period_of_leave
+       FROM leaves
+       WHERE period_of_leave = ?
+         AND (
+              entry_kind = ?
+              OR (
+                entry_kind IS NULL
+                AND earned_vl = ?
+                AND earned_sl = ?
+                AND abs_with_pay_vl = 0
+                AND abs_without_pay_vl = 0
+                AND abs_with_pay_sl = 0
+                AND abs_without_pay_sl = 0
+                AND (particulars = 'Leave Credit' OR particulars IS NULL)
+              )
+         )
+       ORDER BY employee_id ASC, id ASC`,
+      [period_of_leave, entry_kind, earned_vl, earned_sl],
+    );
+    return rows;
+  },
+
+  deleteByIds: async (ids) => {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return { affectedRows: 0 };
+    }
+
+    const placeholders = ids.map(() => "?").join(",");
+    const [result] = await pool
+      .promise()
+      .query(`DELETE FROM leaves WHERE id IN (${placeholders})`, ids);
+    return result;
+  },
+
   // Returns all non-teaching employees for batch monthly crediting
   getAllNonTeachingEmployees: async () => {
     const [rows] = await pool.promise().query(
@@ -317,6 +358,16 @@ const Leave = {
              FROM employees
              WHERE is_archived = 0
                AND LOWER(REPLACE(employee_type, '_', '-')) = 'non-teaching'`,
+    );
+    return rows;
+  },
+
+  getAllTeachingEmployees: async () => {
+    const [rows] = await pool.promise().query(
+      `SELECT id, first_name, last_name, employee_type, on_leave, on_leave_from, on_leave_until
+             FROM employees
+             WHERE is_archived = 0
+               AND LOWER(REPLACE(employee_type, '_', '-')) = 'teaching'`,
     );
     return rows;
   },

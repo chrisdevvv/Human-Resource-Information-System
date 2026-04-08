@@ -305,4 +305,92 @@ Support both manual age entry and automatic age calculation from date of birth.
 
 ---
 
+## Addendum (April 7, 2026): Monthly Credit Simulation + Rollback
+
+### Objective
+Provide a safe preview flow before applying monthly non-teaching leave credit, and add an immediate rollback path if applied by mistake.
+
+### Backend Changes
+
+#### 1) Monthly Credit Simulation Endpoint
+- Added endpoint: `POST /api/leave/credit-monthly/simulate`
+- Access: `ADMIN`, `SUPER_ADMIN`
+- Behavior:
+   - Uses the same eligibility logic as real apply
+   - Returns who would be credited/skipped and projected balances
+   - Does not insert/update leave rows
+
+#### 2) Monthly Credit Apply Endpoint (existing)
+- Endpoint: `POST /api/leave/credit-monthly`
+- Access: `ADMIN`, `SUPER_ADMIN`
+- Behavior:
+   - Applies monthly credit rows (`entry_kind = MONTHLY_CREDIT`)
+   - Recomputes leave ledger balances per employee
+
+#### 3) Monthly Credit Delete/Rollback Endpoint
+- Added endpoint: `POST /api/leave/credit-monthly/delete`
+- Access: `ADMIN`, `SUPER_ADMIN`
+- Body: `{ year, month }`
+- Behavior:
+   - Resolves period via shared period normalizer
+   - Deletes only rows matching selected period and `entry_kind = MONTHLY_CREDIT`
+   - Recomputes ledgers for all affected employees
+   - Records audit action: `LEAVE_MONTHLY_CREDIT_DELETE`
+
+### Frontend Changes (Super Admin)
+
+#### New Monthly Credit Tab
+- Added a dedicated Super Admin view: Monthly Credit Simulation
+- Added to desktop and mobile sidebar navigation
+- Added to role-access matrix and super-admin allowed tabs
+
+#### UI Flow
+1. Select year/month
+2. Click **Simulate**
+3. Review:
+    - `would_credit`
+    - `would_skip`
+    - employee list with projected balances
+    - skipped employee reasons
+4. Click **Apply Real Credit** to persist
+5. Click **Delete Applied Credit** to rollback selected period (with confirmation)
+
+### Files Modified (This Addendum)
+
+#### Backend
+- [human-resource-management-system-backend/src/modules/leave/leaveController.js](human-resource-management-system-backend/src/modules/leave/leaveController.js)
+   - Added simulation handler
+   - Added delete monthly credit handler
+   - Extended monthly credit logic to support simulation mode
+- [human-resource-management-system-backend/src/modules/leave/leaveModel.js](human-resource-management-system-backend/src/modules/leave/leaveModel.js)
+   - Added helper to fetch monthly credit entries by period
+   - Added helper to delete leave rows by id list
+- [human-resource-management-system-backend/src/modules/leave/leaveRoutes.js](human-resource-management-system-backend/src/modules/leave/leaveRoutes.js)
+   - Added simulate route
+   - Added delete/rollback route
+
+#### Frontend
+- [src/frontend/super-admin/functions/MonthlyCreditSimulation.tsx](src/frontend/super-admin/functions/MonthlyCreditSimulation.tsx)
+   - New page for simulate/apply/delete workflow
+- [src/frontend/super-admin/SuperAdminIndex.tsx](src/frontend/super-admin/SuperAdminIndex.tsx)
+   - Added tab render case for monthly credit simulation
+- [src/app/super-admin/page.tsx](src/app/super-admin/page.tsx)
+   - Added tab id to allowed tab set
+- [src/frontend/sidebar/SidebarIndex.tsx](src/frontend/sidebar/SidebarIndex.tsx)
+   - Added desktop sidebar item
+- [src/frontend/sidebar/SidebarMobile.tsx](src/frontend/sidebar/SidebarMobile.tsx)
+   - Added mobile sidebar item
+- [src/frontend/auth/roleAccess.ts](src/frontend/auth/roleAccess.ts)
+   - Added feature permission for super-admin
+
+### Testing Checklist (Monthly Credit)
+- [ ] Simulate for a selected month and verify summary counts
+- [ ] Apply real credit and verify leave rows are created with `MONTHLY_CREDIT`
+- [ ] Verify ledger balances recompute correctly after apply
+- [ ] Delete applied credit for same month and verify rows are removed
+- [ ] Verify ledger balances recompute correctly after delete
+- [ ] Confirm audit logs are created for apply and delete actions
+
+---
+
 **End of Summary**
