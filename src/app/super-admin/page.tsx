@@ -121,7 +121,7 @@ export default function Page() {
         />
       </div>
 
-      <div className="hidden md:flex min-h-screen">
+      <div className="hidden md:flex min-h-screen items-stretch">
         <SidebarIndex
           role={role}
           activeTab={activeTab}
@@ -130,10 +130,13 @@ export default function Page() {
           onToggleCollapse={setSidebarCollapsed}
         />
 
-        <div className="flex-1 min-w-0 flex flex-col min-h-screen">
-          <StickyHeader onMenuClick={handleToggleSidebar} />
+        <div className="flex min-w-0 flex-1 flex-col min-h-screen">
+          <StickyHeader
+            onMenuClick={handleToggleSidebar}
+            isSidebarCollapsed={sidebarCollapsed}
+          />
           <main
-            className={`bg-white flex-1 w-full transition-all duration-300 ${
+            className={`bg-white flex-1 min-w-0 w-full transition-all duration-300 ${
               activeTab === "employees-list" ? "p-3 sm:p-4" : "p-6"
             }`}
           >

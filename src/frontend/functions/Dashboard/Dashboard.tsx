@@ -390,7 +390,7 @@ export default function Dashboard({
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-8">
+      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-6 py-8">
         <h1 className="text-3xl font-bold text-gray-900 inline-flex items-center gap-2">
           <LayoutDashboard className="h-7 w-7 text-blue-600" />
           Dashboard

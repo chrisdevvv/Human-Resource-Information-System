@@ -369,8 +369,8 @@ export default function ArchivedEmployee() {
       </h1>
 
       <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex-1 relative">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex-1 relative min-w-0">
             <input
               type="text"
               placeholder="Search employee"
@@ -381,15 +381,15 @@ export default function ArchivedEmployee() {
           </div>
           <button
             onClick={handleSearch}
-            className="inline-flex items-center gap-1 px-5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+            className="inline-flex shrink-0 items-center gap-1 px-4 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer sm:px-5"
           >
             <Search size={14} />
             Search
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
+          <div className="col-span-2 flex items-center gap-2 sm:col-span-1">
             <button
               onClick={handleEditToggle}
               className={`px-3 py-1.5 rounded-lg transition font-medium text-sm cursor-pointer ${
@@ -415,7 +415,7 @@ export default function ArchivedEmployee() {
             )}
           </div>
 
-          <div className="w-full sm:w-auto flex flex-wrap items-center gap-3">
+          <div className="col-span-2 grid grid-cols-2 gap-2 sm:col-span-1 sm:w-auto sm:flex sm:flex-wrap sm:items-center sm:gap-3">
             <select
               value={employeeTypeFilter}
               onChange={(e) => {
@@ -469,7 +469,7 @@ export default function ArchivedEmployee() {
         </div>
       </div>
 
-      <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
+      <div className="overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
         {employeeLoading ? (
           <div className="flex items-center justify-center py-10">
             <p className="text-gray-500">Loading archived employees...</p>
@@ -479,69 +479,56 @@ export default function ArchivedEmployee() {
             <p className="text-red-500">Error: {employeeError}</p>
           </div>
         ) : (
-          <table className="w-full">
-            <thead className="sticky top-0 z-10 bg-blue-100">
-              <tr className="border-b-2 border-gray-200">
-                {isEditMode && (
-                  <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                    <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={areAllFilteredSelected}
-                        onChange={handleSelectAllFiltered}
-                        className="h-4 w-4 cursor-pointer rounded border-gray-300"
-                      />
-                      <span>Select All</span>
-                    </label>
-                  </th>
-                )}
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                  Name
-                </th>
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                  Employee Type
-                </th>
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                  Email
-                </th>
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                  School
-                </th>
-                <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            <div className="mb-2 flex items-center justify-between sm:hidden">
+              {isEditMode ? (
+                <label className="inline-flex items-center gap-2 cursor-pointer select-none text-xs text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={areAllFilteredSelected}
+                    onChange={handleSelectAllFiltered}
+                    className="h-4 w-4 cursor-pointer rounded border-gray-300"
+                  />
+                  <span>Select All</span>
+                </label>
+              ) : (
+                <span className="text-xs text-gray-400">&nbsp;</span>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2 sm:hidden">
               {paginatedEmployees.length > 0 ? (
                 paginatedEmployees.map((employee) => (
-                  <tr
+                  <div
                     key={employee.id}
-                    className="border-b border-gray-100 hover:bg-gray-50 transition"
+                    className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
                   >
-                    {isEditMode && (
-                      <td className="py-1 px-3 text-center">
+                    {isEditMode ? (
+                      <label className="mb-1 inline-flex items-center gap-2 cursor-pointer select-none text-xs text-gray-600">
                         <input
                           type="checkbox"
                           checked={selectedEmployeeIds.has(employee.id)}
                           onChange={() => handleSelectEmployee(employee.id)}
                           className="h-4 w-4 cursor-pointer rounded border-gray-300"
                         />
-                      </td>
-                    )}
-                    <td className="py-1 px-3 text-gray-900 text-sm font-medium">
+                        <span>Select</span>
+                      </label>
+                    ) : null}
+
+                    <p className="text-sm font-semibold text-gray-900 truncate">
                       {employee.fullName}
-                    </td>
-                    <td className="py-1 px-3 text-gray-500 text-sm capitalize">
+                    </p>
+                    <p className="text-xs text-gray-500 capitalize">
                       {employee.employeeType}
-                    </td>
-                    <td className="py-1 px-3 text-gray-500 text-sm">
-                      {employee.email}
-                    </td>
-                    <td className="py-1 px-3 text-gray-500 text-sm">
-                      {employee.schoolName}
-                    </td>
-                    <td className="py-1 px-3 text-center">
+                    </p>
+                    <p className="mt-1 text-xs text-gray-600 truncate">
+                      {employee.email || "N/A"}
+                    </p>
+                    <p className="text-xs text-gray-600 truncate">
+                      {employee.schoolName || "N/A"}
+                    </p>
+
+                    <div className="mt-2 flex items-center justify-end gap-2">
                       <button
                         onClick={() =>
                           handleUnarchiveClick(employee.id, employee.fullName)
@@ -549,25 +536,117 @@ export default function ArchivedEmployee() {
                         disabled={
                           isUnarchiving || showUnarchiveSuccess || isEditMode
                         }
-                        className="cursor-pointer rounded px-3 py-1 text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="cursor-pointer rounded bg-red-600 px-3 py-1 text-xs font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Unarchive
                       </button>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 ))
               ) : (
-                <tr>
-                  <td
-                    colSpan={isEditMode ? 6 : 5}
-                    className="py-8 text-center text-gray-500"
-                  >
-                    No archived employees found.
-                  </td>
-                </tr>
+                <p className="py-8 text-center text-gray-500 text-sm">
+                  No archived employees found.
+                </p>
               )}
-            </tbody>
-          </table>
+            </div>
+
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="sticky top-0 z-10 bg-blue-100">
+                  <tr className="border-b-2 border-gray-200">
+                    {isEditMode && (
+                      <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={areAllFilteredSelected}
+                            onChange={handleSelectAllFiltered}
+                            className="h-4 w-4 cursor-pointer rounded border-gray-300"
+                          />
+                          <span>Select All</span>
+                        </label>
+                      </th>
+                    )}
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                      Name
+                    </th>
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                      Employee Type
+                    </th>
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                      Email
+                    </th>
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                      School
+                    </th>
+                    <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedEmployees.length > 0 ? (
+                    paginatedEmployees.map((employee) => (
+                      <tr
+                        key={employee.id}
+                        className="border-b border-gray-100 hover:bg-gray-50 transition"
+                      >
+                        {isEditMode && (
+                          <td className="py-1 px-3 text-center">
+                            <input
+                              type="checkbox"
+                              checked={selectedEmployeeIds.has(employee.id)}
+                              onChange={() => handleSelectEmployee(employee.id)}
+                              className="h-4 w-4 cursor-pointer rounded border-gray-300"
+                            />
+                          </td>
+                        )}
+                        <td className="py-1 px-3 text-gray-900 text-sm font-medium">
+                          {employee.fullName}
+                        </td>
+                        <td className="py-1 px-3 text-gray-500 text-sm capitalize">
+                          {employee.employeeType}
+                        </td>
+                        <td className="py-1 px-3 text-gray-500 text-sm">
+                          {employee.email}
+                        </td>
+                        <td className="py-1 px-3 text-gray-500 text-sm">
+                          {employee.schoolName}
+                        </td>
+                        <td className="py-1 px-3 text-center">
+                          <button
+                            onClick={() =>
+                              handleUnarchiveClick(
+                                employee.id,
+                                employee.fullName,
+                              )
+                            }
+                            disabled={
+                              isUnarchiving ||
+                              showUnarchiveSuccess ||
+                              isEditMode
+                            }
+                            className="cursor-pointer rounded px-3 py-1 text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            Unarchive
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={isEditMode ? 6 : 5}
+                        className="py-8 text-center text-gray-500"
+                      >
+                        No archived employees found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

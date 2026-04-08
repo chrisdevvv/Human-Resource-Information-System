@@ -303,7 +303,7 @@ export default function PendingAccountsMobile({
             {paginatedData.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg border border-gray-100"
+                className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-100"
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-gray-900 truncate">
@@ -311,25 +311,27 @@ export default function PendingAccountsMobile({
                   </p>
                   <p className="text-xs text-gray-500 truncate">{item.email}</p>
                 </div>
-                <button
-                  onClick={() =>
-                    setViewTarget({
-                      id: item.id,
-                      firstName: item.firstName,
-                      lastName: item.lastName,
-                      email: item.email,
-                      school: item.school,
-                      approved_role: item.approved_role,
-                      rejection_reason: item.rejection_reason,
-                      reviewed_at: item.reviewed_at,
-                      status: item.status,
-                      created_at: item.created_at,
-                    })
-                  }
-                  className="ml-3 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition cursor-pointer shrink-0"
-                >
-                  View
-                </button>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    onClick={() =>
+                      setViewTarget({
+                        id: item.id,
+                        firstName: item.firstName,
+                        lastName: item.lastName,
+                        email: item.email,
+                        school: item.school,
+                        approved_role: item.approved_role,
+                        rejection_reason: item.rejection_reason,
+                        reviewed_at: item.reviewed_at,
+                        status: item.status,
+                        created_at: item.created_at,
+                      })
+                    }
+                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition cursor-pointer shrink-0"
+                  >
+                    View
+                  </button>
+                </div>
               </div>
             ))}
           </div>

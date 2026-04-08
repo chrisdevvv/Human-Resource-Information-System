@@ -444,52 +444,52 @@ export default function LeaveManagementModal({
               <h2 className="text-xl font-bold text-gray-800">
                 Leave Management Details
               </h2>
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3">
                 <label className="flex flex-col gap-1">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:text-xs">
                     Employee Name
                   </span>
                   <input
                     type="text"
                     value={employeeNameDisplay}
                     readOnly
-                    className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-700"
+                    className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1.5 text-xs text-gray-700 sm:px-3 sm:py-2 sm:text-sm"
                   />
                 </label>
 
                 <label className="flex flex-col gap-1">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:text-xs">
                     Email Address
                   </span>
                   <input
                     type="text"
                     value={employeeEmailDisplay}
                     readOnly
-                    className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-700"
+                    className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1.5 text-xs text-gray-700 sm:px-3 sm:py-2 sm:text-sm"
                   />
                 </label>
 
                 <label className="flex flex-col gap-1">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:text-xs">
                     Employee Type
                   </span>
                   <input
                     type="text"
                     value={employeeTypeLabel}
                     readOnly
-                    className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-700"
+                    className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1.5 text-xs text-gray-700 sm:px-3 sm:py-2 sm:text-sm"
                   />
                 </label>
 
                 <label className="flex flex-col gap-1">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:text-xs">
                     School
                   </span>
                   <input
                     type="text"
                     value={employeeSchool}
                     readOnly
-                    className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-700"
+                    className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1.5 text-xs text-gray-700 sm:px-3 sm:py-2 sm:text-sm"
                   />
                 </label>
               </div>
@@ -546,11 +546,11 @@ export default function LeaveManagementModal({
             </button>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
             <button
               type="button"
               onClick={() => setActiveTab("history")}
-              className={`cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+              className={`w-full cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition sm:w-auto ${
                 activeTab === "history"
                   ? "hover:bg-blue-700 bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -564,7 +564,7 @@ export default function LeaveManagementModal({
             <button
               type="button"
               onClick={() => setActiveTab("card")}
-              className={`cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+              className={`w-full cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition sm:w-auto ${
                 activeTab === "card"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -578,7 +578,7 @@ export default function LeaveManagementModal({
             <button
               type="button"
               onClick={handleOpenHistoryInNewTab}
-              className="cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
+              className="w-full cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition sm:w-auto"
             >
               <span className="inline-flex items-center gap-1">
                 <ExternalLink size={14} />
@@ -589,7 +589,7 @@ export default function LeaveManagementModal({
               type="button"
               onClick={handleDeleteSelectedEntries}
               disabled={activeTab !== "history" || isDeletingEntries}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               <Trash2 size={14} />
               {isDeleteMode
@@ -601,7 +601,7 @@ export default function LeaveManagementModal({
                 type="button"
                 onClick={handleCancelDeleteMode}
                 disabled={isDeletingEntries}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
                 <span className="inline-flex items-center gap-1">
                   <XCircle size={14} />
@@ -610,12 +610,12 @@ export default function LeaveManagementModal({
               </button>
             ) : null}
 
-            <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap items-center gap-2">
+            <div className="col-span-2 grid w-full grid-cols-2 gap-2 sm:col-span-1 sm:ml-auto sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
               <button
                 type="button"
                 onClick={() => setIsAddOpen(true)}
                 disabled={isSaving}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
                 <Plus size={14} />
                 Add Leave
@@ -624,7 +624,7 @@ export default function LeaveManagementModal({
                 type="button"
                 onClick={() => fetchHistory(true)}
                 disabled={isSaving}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
                 <RefreshCcw size={14} />
                 Refresh
@@ -633,7 +633,7 @@ export default function LeaveManagementModal({
                 type="button"
                 onClick={handleDownloadPdf}
                 disabled={isSaving || pdfCooldownRemaining > 0}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="col-span-2 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-red-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1 sm:w-auto"
               >
                 <Download size={14} />
                 {pdfCooldownRemaining > 0

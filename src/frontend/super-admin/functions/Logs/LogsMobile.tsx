@@ -813,7 +813,7 @@ export default function LogsMobile() {
             {paginatedLogs.map((log) => (
               <div
                 key={log.id}
-                className="flex items-start justify-between px-4 py-3 bg-gray-50 rounded-lg border border-gray-100"
+                className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-100"
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-gray-400 truncate">
@@ -826,12 +826,14 @@ export default function LogsMobile() {
                     {formatAction(log.action, log.details)}
                   </p>
                 </div>
-                <button
-                  onClick={() => setSelectedLog(log)}
-                  className="ml-3 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition cursor-pointer shrink-0"
-                >
-                  View
-                </button>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    onClick={() => setSelectedLog(log)}
+                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition cursor-pointer shrink-0"
+                  >
+                    View
+                  </button>
+                </div>
               </div>
             ))}
           </div>

@@ -70,6 +70,7 @@ const SIDEBAR_TABS: SidebarTab[] = [
 
 function normalizeRole(role: string): SidebarRole {
   const value = role.trim().toLowerCase();
+
   if (
     value === "data_encoder" ||
     value === "data-encoder" ||
@@ -77,6 +78,7 @@ function normalizeRole(role: string): SidebarRole {
   ) {
     return "data-encoder";
   }
+
   if (
     value === "super_admin" ||
     value === "super-admin" ||
@@ -84,9 +86,11 @@ function normalizeRole(role: string): SidebarRole {
   ) {
     return "super-admin";
   }
+
   if (value === "admin") {
     return "admin";
   }
+
   return "data-encoder";
 }
 
@@ -104,44 +108,49 @@ function getFirstNameFromStoredUser(userStr: string | null): string {
     return "";
   }
 
-  const parsed = JSON.parse(userStr) as unknown;
-  if (!parsed || typeof parsed !== "object") {
-    return "";
-  }
-
-  const root = parsed as Record<string, unknown>;
-  const nestedCandidates = [root, root.user, root.data, root.profile].filter(
-    (item): item is Record<string, unknown> =>
-      typeof item === "object" && item !== null,
-  );
-
-  for (const candidate of nestedCandidates) {
-    const fullName =
-      safeValue(candidate.fullName) ||
-      safeValue(candidate.full_name) ||
-      safeValue(candidate.name);
-    const firstName =
-      safeValue(candidate.firstName) || safeValue(candidate.first_name);
-    const lastName =
-      safeValue(candidate.lastName) || safeValue(candidate.last_name);
-    const email = safeValue(candidate.email);
-
-    const combinedName = [firstName, lastName].filter(Boolean).join(" ").trim();
-    const nameSource = fullName || combinedName || firstName;
-
-    if (nameSource) {
-      return nameSource.split(/\s+/)[0];
+  try {
+    const parsed = JSON.parse(userStr) as unknown;
+    if (!parsed || typeof parsed !== "object") {
+      return "";
     }
 
-    if (email.includes("@")) {
-      const emailName = email
-        .split("@")[0]
-        .replace(/[._-]+/g, " ")
-        .trim();
-      if (emailName) {
-        return emailName.split(/\s+/)[0];
+    const root = parsed as Record<string, unknown>;
+    const nestedCandidates = [root, root.user, root.data, root.profile].filter(
+      (item): item is Record<string, unknown> =>
+        typeof item === "object" && item !== null,
+    );
+
+    for (const candidate of nestedCandidates) {
+      const fullName =
+        safeValue(candidate.fullName) ||
+        safeValue(candidate.full_name) ||
+        safeValue(candidate.name);
+      const firstName =
+        safeValue(candidate.firstName) || safeValue(candidate.first_name);
+      const lastName =
+        safeValue(candidate.lastName) || safeValue(candidate.last_name);
+      const email = safeValue(candidate.email);
+
+      const combinedName = [firstName, lastName].filter(Boolean).join(" ").trim();
+      const nameSource = fullName || combinedName || firstName;
+
+      if (nameSource) {
+        return nameSource.split(/\s+/)[0];
+      }
+
+      if (email.includes("@")) {
+        const emailName = email
+          .split("@")[0]
+          .replace(/[._-]+/g, " ")
+          .trim();
+
+        if (emailName) {
+          return emailName.split(/\s+/)[0];
+        }
       }
     }
+  } catch {
+    return "";
   }
 
   return "";
@@ -163,57 +172,62 @@ function getSchoolContextFromStoredUser(userStr: string | null): {
     return { schoolName: "", schoolId: null };
   }
 
-  const parsed = JSON.parse(userStr) as unknown;
-  if (!parsed || typeof parsed !== "object") {
-    return { schoolName: "", schoolId: null };
-  }
+  try {
+    const parsed = JSON.parse(userStr) as unknown;
+    if (!parsed || typeof parsed !== "object") {
+      return { schoolName: "", schoolId: null };
+    }
 
-  const root = parsed as Record<string, unknown>;
-  const nestedCandidates = [root, root.user, root.data, root.profile].filter(
-    (item): item is Record<string, unknown> =>
-      typeof item === "object" && item !== null,
-  );
-
-  let fallbackSchoolId: number | null = null;
-
-  for (const candidate of nestedCandidates) {
-    const directSchoolName =
-      safeValue(candidate.school_name) || safeValue(candidate.schoolName);
-    const directSchoolId = toPositiveNumber(
-      candidate.school_id ?? candidate.schoolId,
+    const root = parsed as Record<string, unknown>;
+    const nestedCandidates = [root, root.user, root.data, root.profile].filter(
+      (item): item is Record<string, unknown> =>
+        typeof item === "object" && item !== null,
     );
 
-    const schoolObj =
-      typeof candidate.school === "object" && candidate.school !== null
-        ? (candidate.school as Record<string, unknown>)
+    let fallbackSchoolId: number | null = null;
+
+    for (const candidate of nestedCandidates) {
+      const directSchoolName =
+        safeValue(candidate.school_name) || safeValue(candidate.schoolName);
+      const directSchoolId = toPositiveNumber(
+        candidate.school_id ?? candidate.schoolId,
+      );
+
+      const schoolObj =
+        typeof candidate.school === "object" && candidate.school !== null
+          ? (candidate.school as Record<string, unknown>)
+          : null;
+
+      const nestedSchoolName = schoolObj
+        ? safeValue(schoolObj.school_name) ||
+          safeValue(schoolObj.schoolName) ||
+          safeValue(schoolObj.name)
+        : "";
+
+      const nestedSchoolId = schoolObj
+        ? toPositiveNumber(schoolObj.id ?? schoolObj.school_id)
         : null;
 
-    const nestedSchoolName = schoolObj
-      ? safeValue(schoolObj.school_name) ||
-        safeValue(schoolObj.schoolName) ||
-        safeValue(schoolObj.name)
-      : "";
-    const nestedSchoolId = schoolObj
-      ? toPositiveNumber(schoolObj.id ?? schoolObj.school_id)
-      : null;
+      const resolvedSchoolName =
+        directSchoolName || nestedSchoolName || safeValue(candidate.school);
+      const resolvedSchoolId = directSchoolId ?? nestedSchoolId;
 
-    const resolvedSchoolName =
-      directSchoolName || nestedSchoolName || safeValue(candidate.school);
-    const resolvedSchoolId = directSchoolId ?? nestedSchoolId;
+      if (!fallbackSchoolId && resolvedSchoolId) {
+        fallbackSchoolId = resolvedSchoolId;
+      }
 
-    if (!fallbackSchoolId && resolvedSchoolId) {
-      fallbackSchoolId = resolvedSchoolId;
+      if (resolvedSchoolName) {
+        return {
+          schoolName: resolvedSchoolName,
+          schoolId: resolvedSchoolId ?? fallbackSchoolId,
+        };
+      }
     }
 
-    if (resolvedSchoolName) {
-      return {
-        schoolName: resolvedSchoolName,
-        schoolId: resolvedSchoolId ?? fallbackSchoolId,
-      };
-    }
+    return { schoolName: "", schoolId: fallbackSchoolId };
+  } catch {
+    return { schoolName: "", schoolId: null };
   }
-
-  return { schoolName: "", schoolId: fallbackSchoolId };
 }
 
 type SidebarProps = {
@@ -240,6 +254,7 @@ export default function SidebarIndex({
   const [internalCollapsed, setInternalCollapsed] = useState(defaultCollapsed);
   const [firstName, setFirstName] = useState("");
   const [schoolLabel, setSchoolLabel] = useState("");
+
   const normalizedRole = useMemo(() => normalizeRole(role), [role]);
   const tabs = useMemo(() => getSidebarTabsByRole(role), [role]);
   const isCollapsed = collapsed ?? internalCollapsed;
@@ -266,6 +281,7 @@ export default function SidebarIndex({
         }
 
         setSchoolLabel("Assigned School");
+
         if (!schoolId) {
           return;
         }
@@ -275,16 +291,13 @@ export default function SidebarIndex({
           return;
         }
 
-        const response = await fetch(
-          `${API_BASE_URL}/api/schools/${schoolId}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
+        const response = await fetch(`${API_BASE_URL}/api/schools/${schoolId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-        );
+        });
 
         const body = (await response.json().catch(() => ({}))) as {
           data?: { school_name?: unknown };
@@ -317,12 +330,12 @@ export default function SidebarIndex({
 
   const handleToggle = () => {
     const next = !isCollapsed;
+
     if (collapsed === undefined) {
       setInternalCollapsed(next);
     }
-    if (onToggleCollapse) {
-      onToggleCollapse(next);
-    }
+
+    onToggleCollapse?.(next);
   };
 
   const handleLogout = async () => {
@@ -334,111 +347,122 @@ export default function SidebarIndex({
     onTabChange("profile-settings");
   };
 
+  const sidebarWidthClass = isCollapsed ? "w-16" : "w-64";
+
   return (
-    <aside
-      className={`hidden md:flex md:sticky md:top-0 h-screen shrink-0 bg-blue-700 text-white border-r border-blue-800 transition-[width] duration-300 ${
-        isCollapsed ? "w-16" : "w-64"
-      } ${className}`}
-    >
-      <div className="h-full w-full flex flex-col">
-        <div
-          className={`px-4 border-b border-blue-800 py-4 min-h-36 flex ${isCollapsed ? "flex-col items-center justify-center" : "flex-row items-center justify-between"}`}
-        >
-          {!isCollapsed && (
-            <div className="flex flex-col items-center justify-center flex-1">
+    <>
+      {/* Spacer para hindi matakpan ng fixed sidebar ang content */}
+      <div
+        className={`hidden md:block shrink-0 transition-[width] duration-300 ${sidebarWidthClass}`}
+        aria-hidden="true"
+      />
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 hidden md:flex ${sidebarWidthClass} flex-col border-r border-blue-800 bg-blue-700 text-white transition-[width] duration-300 ${className}`}
+      >
+        <div className="flex h-full min-h-0 w-full flex-col">
+          <div
+            className={`border-b border-blue-800 px-4 py-4 ${
+              isCollapsed
+                ? "flex min-h-36 flex-col items-center justify-center"
+                : "flex min-h-36 flex-row items-center justify-between"
+            }`}
+          >
+            {!isCollapsed && (
+              <div className="flex flex-1 flex-col items-center justify-center">
+                <img
+                  src="/images/[DEPED] ELMS Logo.svg"
+                  alt="ELMS Logo"
+                  className="mb-2 h-24 w-auto"
+                />
+                <p className="text-center text-xs uppercase tracking-widest text-blue-100">
+                  Welcome, {firstName}
+                </p>
+                <h2 className="text-center text-lg font-semibold leading-tight">
+                  {title}
+                </h2>
+                <p className="mt-1 max-h-8 max-w-55 overflow-hidden whitespace-normal text-center text-xs leading-tight text-blue-100">
+                  {schoolLabel}
+                </p>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleToggle}
+              className="shrink-0 rounded-md p-2 transition hover:bg-blue-800 cursor-pointer"
+              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            </button>
+
+            {isCollapsed && (
               <img
                 src="/images/[DEPED] ELMS Logo.svg"
                 alt="ELMS Logo"
-                className="h-24 w-auto mb-2"
+                className="h-16 w-auto"
               />
-              <p className="text-xs uppercase tracking-widest text-blue-100 text-center">
-                Welcome, {firstName}
-              </p>
-              <h2 className="text-lg font-semibold leading-tight text-center">
-                {title}
-              </h2>
-              <p className="mt-1 max-w-55 text-xs leading-tight text-blue-100 text-center whitespace-normal overflow-hidden max-h-8">
-                {schoolLabel}
-              </p>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={handleToggle}
-            className="cursor-pointer p-2 rounded-md hover:bg-blue-800 transition shrink-0"
-            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {isCollapsed ? (
-              <ChevronRight size={18} />
-            ) : (
-              <ChevronLeft size={18} />
             )}
-          </button>
+          </div>
 
-          {isCollapsed && (
-            <img
-              src="/images/[DEPED] ELMS Logo.svg"
-              alt="ELMS Logo"
-              className="h-16 w-auto"
-            />
-          )}
-        </div>
+          <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
 
-        <nav className="p-3 flex-1 space-y-1 overflow-y-auto">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => onTabChange(tab.id)}
+                  title={isCollapsed ? tab.label : undefined}
+                  className={`w-full cursor-pointer rounded-lg px-3 py-2 text-left transition flex items-center gap-3 ${
+                    isActive
+                      ? "bg-blue-900 text-white"
+                      : "text-blue-50 hover:bg-blue-800"
+                  }`}
+                >
+                  <Icon size={18} className="shrink-0" />
+                  {!isCollapsed ? (
+                    <span className="text-xs font-medium">{tab.label}</span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </nav>
 
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => onTabChange(tab.id)}
-                title={isCollapsed ? tab.label : undefined}
-                className={`cursor-pointer w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-left transition ${
-                  isActive
-                    ? "bg-blue-900 text-white"
-                    : "text-blue-50 hover:bg-blue-800"
-                }`}
-              >
-                <Icon size={18} className="shrink-0" />
-                {!isCollapsed ? (
-                  <span className="text-xs font-medium">{tab.label}</span>
-                ) : null}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div
-          className={`p-3 border-t border-blue-800 ${isCollapsed ? "flex flex-col gap-2" : "flex items-center gap-2"}`}
-        >
-          <button
-            type="button"
-            onClick={handleLogout}
-            title={isCollapsed ? "Logout" : undefined}
-            className={`cursor-pointer ${isCollapsed ? "w-full" : "flex-1"} flex items-center gap-3 px-3 py-1.5 rounded-lg text-left transition text-blue-50 hover:bg-red-600`}
-          >
-            <LogOut size={18} className="shrink-0" />
-            {!isCollapsed && (
-              <span className="text-xs font-medium">Logout</span>
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={handleOpenSettings}
-            title="Settings"
-            className={`cursor-pointer p-2 rounded-lg transition flex items-center justify-center ${
-              activeTab === "profile-settings"
-                ? "bg-blue-900 text-white"
-                : "text-blue-50 hover:bg-blue-800"
+          <div
+            className={`border-t border-blue-800 p-3 ${
+              isCollapsed ? "flex flex-col gap-2" : "flex items-center gap-2"
             }`}
           >
-            <CircleUser size={18} className="shrink-0" />
-          </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              title={isCollapsed ? "Logout" : undefined}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-left text-blue-50 transition hover:bg-red-600 cursor-pointer ${
+                isCollapsed ? "w-full" : "flex-1"
+              }`}
+            >
+              <LogOut size={18} className="shrink-0" />
+              {!isCollapsed && <span className="text-xs font-medium">Logout</span>}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenSettings}
+              title="Settings"
+              className={`flex items-center justify-center rounded-lg p-2 transition cursor-pointer ${
+                activeTab === "profile-settings"
+                  ? "bg-blue-900 text-white"
+                  : "text-blue-50 hover:bg-blue-800"
+              }`}
+            >
+              <CircleUser size={18} className="shrink-0" />
+            </button>
+          </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }
