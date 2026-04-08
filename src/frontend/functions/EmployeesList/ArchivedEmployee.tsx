@@ -359,7 +359,7 @@ export default function ArchivedEmployee() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-0 sm:top-4 flex flex-col">
+    <div className="w-full min-w-0 bg-white rounded-lg shadow-lg p-2 sm:p-3 flex flex-col">
       <h1
         style={{ fontSize: "20px" }}
         className="font-bold text-gray-900 mb-2 sm:mb-4 inline-flex items-center gap-2"
@@ -483,7 +483,7 @@ export default function ArchivedEmployee() {
             <thead className="sticky top-0 z-10 bg-blue-100">
               <tr className="border-b-2 border-gray-200">
                 {isEditMode && (
-                  <th className="text-center py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                  <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                     <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                       <input
                         type="checkbox"
@@ -495,19 +495,19 @@ export default function ArchivedEmployee() {
                     </label>
                   </th>
                 )}
-                <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Name
                 </th>
-                <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Employee Type
                 </th>
-                <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Email
                 </th>
-                <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   School
                 </th>
-                <th className="text-center py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Action
                 </th>
               </tr>
@@ -520,7 +520,7 @@ export default function ArchivedEmployee() {
                     className="border-b border-gray-100 hover:bg-gray-50 transition"
                   >
                     {isEditMode && (
-                      <td className="py-2 px-3 text-center">
+                      <td className="py-1 px-3 text-center">
                         <input
                           type="checkbox"
                           checked={selectedEmployeeIds.has(employee.id)}
@@ -529,19 +529,19 @@ export default function ArchivedEmployee() {
                         />
                       </td>
                     )}
-                    <td className="py-2 px-3 text-gray-900 text-sm font-medium">
+                    <td className="py-1 px-3 text-gray-900 text-sm font-medium">
                       {employee.fullName}
                     </td>
-                    <td className="py-2 px-3 text-gray-500 text-sm capitalize">
+                    <td className="py-1 px-3 text-gray-500 text-sm capitalize">
                       {employee.employeeType}
                     </td>
-                    <td className="py-2 px-3 text-gray-500 text-sm">
+                    <td className="py-1 px-3 text-gray-500 text-sm">
                       {employee.email}
                     </td>
-                    <td className="py-2 px-3 text-gray-500 text-sm">
+                    <td className="py-1 px-3 text-gray-500 text-sm">
                       {employee.schoolName}
                     </td>
-                    <td className="py-2 px-3 text-center">
+                    <td className="py-1 px-3 text-center">
                       <button
                         onClick={() =>
                           handleUnarchiveClick(employee.id, employee.fullName)
@@ -726,4 +726,3 @@ export default function ArchivedEmployee() {
     </div>
   );
 }
-

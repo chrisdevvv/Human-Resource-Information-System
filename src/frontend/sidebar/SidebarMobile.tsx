@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
-  Calculator,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -39,7 +38,7 @@ const SIDEBAR_TABS: SidebarTab[] = [
   },
   {
     id: "employees-list",
-    label: "Employees List",
+    label: "Employees Profile",
     icon: Users,
     roles: ["admin", "super-admin"],
   },
@@ -65,12 +64,6 @@ const SIDEBAR_TABS: SidebarTab[] = [
     id: "configuration",
     label: "Configuration",
     icon: SlidersHorizontal,
-    roles: ["super-admin"],
-  },
-  {
-    id: "monthly-credit-simulation",
-    label: "Monthly Credit",
-    icon: Calculator,
     roles: ["super-admin"],
   },
 ];

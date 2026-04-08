@@ -343,13 +343,13 @@ export default function PendingAccounts({
           <table className="w-full">
             <thead className="sticky top-0 z-10 bg-blue-100">
               <tr className="border-b-2 border-gray-200">
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
+                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Name
                 </th>
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
+                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Email
                 </th>
-                <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
+                <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Actions
                 </th>
               </tr>
@@ -361,13 +361,13 @@ export default function PendingAccounts({
                     key={item.id}
                     className="border-b border-gray-100 hover:bg-gray-50 transition"
                   >
-                    <td className="py-1 px-3 text-gray-900 text-sm font-medium">
+                    <td className="py-0.5 px-3 text-gray-900 text-sm font-medium">
                       {item.firstName} {item.lastName}
                     </td>
-                    <td className="py-1 px-3 text-gray-500 text-sm">
+                    <td className="py-0.5 px-3 text-gray-500 text-sm">
                       {item.email}
                     </td>
-                    <td className="py-1 px-3">
+                    <td className="py-0.5 px-3">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() =>
@@ -384,7 +384,7 @@ export default function PendingAccounts({
                               created_at: item.created_at,
                             })
                           }
-                          className="px-4 py-1 bg-blue-400 text-white rounded hover:bg-blue-500 transition text-sm font-medium cursor-pointer"
+                          className="px-3 py-0.5 bg-blue-400 text-white rounded hover:bg-blue-500 transition text-sm font-medium cursor-pointer"
                         >
                           Details
                         </button>
@@ -397,7 +397,7 @@ export default function PendingAccounts({
                                   name: `${item.firstName} ${item.lastName}`,
                                 })
                               }
-                              className="px-4 py-1 bg-green-400 text-white rounded hover:bg-green-500 transition text-sm font-medium cursor-pointer"
+                              className="px-3 py-0.5 bg-green-400 text-white rounded hover:bg-green-500 transition text-sm font-medium cursor-pointer"
                             >
                               Assign Role
                             </button>
@@ -408,14 +408,14 @@ export default function PendingAccounts({
                                   name: `${item.firstName} ${item.lastName}`,
                                 })
                               }
-                              className="px-4 py-1 bg-red-400 text-white rounded hover:bg-red-500 transition text-sm font-medium cursor-pointer"
+                              className="px-3 py-0.5 bg-red-400 text-white rounded hover:bg-red-500 transition text-sm font-medium cursor-pointer"
                             >
                               Reject
                             </button>
                           </>
                         ) : (
                           <span
-                            className={`px-4 py-1 rounded text-sm font-semibold ${
+                            className={`px-3 py-0.5 rounded text-sm font-semibold ${
                               item.status === "APPROVED"
                                 ? "bg-green-100 text-green-700"
                                 : "bg-red-100 text-red-700"

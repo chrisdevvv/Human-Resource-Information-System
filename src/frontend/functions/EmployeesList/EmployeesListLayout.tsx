@@ -413,7 +413,7 @@ export default function EmployeesListLayout() {
     sortOrder !== "asc";
 
   return (
-    <div className="w-full">
+    <div className="w-full min-w-0">
       <div className="flex justify-start gap-2 mb-4">
         <button
           onClick={() => setActiveTab("list")}
@@ -425,7 +425,7 @@ export default function EmployeesListLayout() {
         >
           <span className="inline-flex items-center gap-2">
             <Users size={16} />
-            Employees List
+            Employees Profile
           </span>
         </button>
         <button
@@ -444,13 +444,13 @@ export default function EmployeesListLayout() {
       </div>
 
       {activeTab === "list" ? (
-        <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-0 sm:top-4 flex flex-col">
+        <div className="w-full min-w-0 bg-white rounded-lg shadow-lg p-2 sm:p-3 flex flex-col">
           <h1
             style={{ fontSize: "20px" }}
             className="font-bold text-gray-900 mb-2 sm:mb-4 inline-flex items-center gap-2"
           >
             <Users size={22} className="text-blue-600" />
-            Employees List
+            Employees Profile
           </h1>
 
           <div className="mb-4 flex items-center justify-start">
@@ -580,19 +580,19 @@ export default function EmployeesListLayout() {
               <table className="w-full">
                 <thead className="sticky top-0 z-10 bg-blue-100">
                   <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Name
                     </th>
-                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Employee Type
                     </th>
-                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Email
                     </th>
-                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       School
                     </th>
-                    <th className="text-right py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                    <th className="text-right py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Action
                     </th>
                   </tr>
@@ -605,19 +605,19 @@ export default function EmployeesListLayout() {
                           key={employee.id}
                           className="border-b border-gray-100 hover:bg-gray-50 transition"
                         >
-                          <td className="py-2 px-3 text-gray-900 text-sm font-medium">
+                          <td className="py-1 px-3 text-gray-900 text-sm font-medium">
                             {employee.fullName}
                           </td>
-                          <td className="py-2 px-3 text-gray-500 text-sm capitalize">
+                          <td className="py-1 px-3 text-gray-500 text-sm capitalize">
                             {employee.employeeType}
                           </td>
-                          <td className="py-2 px-3 text-gray-500 text-sm">
+                          <td className="py-1 px-3 text-gray-500 text-sm">
                             {employee.email || "N/A"}
                           </td>
-                          <td className="py-2 px-3 text-gray-500 text-sm">
+                          <td className="py-1 px-3 text-gray-500 text-sm">
                             {employee.schoolName || "N/A"}
                           </td>
-                          <td className="py-2 px-3">
+                          <td className="py-1 px-3">
                             <div className="flex items-center justify-end gap-2">
                               <button
                                 type="button"

@@ -132,7 +132,11 @@ export default function Page() {
 
         <div className="flex-1 min-w-0 flex flex-col min-h-screen">
           <StickyHeader onMenuClick={handleToggleSidebar} />
-          <main className="p-6 bg-white flex-1 w-full transition-all duration-300">
+          <main
+            className={`bg-white flex-1 w-full transition-all duration-300 ${
+              activeTab === "employees-list" ? "p-3 sm:p-4" : "p-6"
+            }`}
+          >
             <SuperAdmin activeTab={activeTab} onTabChange={handleTabChange} />
           </main>
           <AppFooter />
@@ -140,7 +144,11 @@ export default function Page() {
       </div>
 
       <div className="md:hidden min-h-screen flex flex-col">
-        <main className="p-4 bg-white flex-1 w-full">
+        <main
+          className={`bg-white flex-1 w-full ${
+            activeTab === "employees-list" ? "p-3" : "p-4"
+          }`}
+        >
           <SuperAdmin activeTab={activeTab} onTabChange={handleTabChange} />
         </main>
         <AppFooter />
