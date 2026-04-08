@@ -161,14 +161,14 @@ export default function SchoolsList({
         </div>
       </div>
 
-      <div className="hidden md:block overflow-x-auto overflow-y-auto flex-1 min-h-0">
+      <div className="hidden max-h-[42vh] overflow-x-auto overflow-y-auto md:block sm:max-h-[50vh]">
         <table className="min-w-full">
           <thead>
             <tr className="border-b border-gray-200 bg-blue-100">
-              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-blue-600">
+              <th className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wide text-blue-600">
                 Name
               </th>
-              <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-blue-600">
+              <th className="px-3 py-1 text-right text-xs font-semibold uppercase tracking-wide text-blue-600">
                 Actions
               </th>
             </tr>
@@ -176,18 +176,20 @@ export default function SchoolsList({
           <tbody>
             {paginatedItems.map((item) => (
               <tr key={item.id} className="border-b border-gray-100">
-                <td className="px-3 py-2 text-sm font-medium text-gray-900">
+                <td className="px-3 py-1 text-sm font-medium text-gray-900">
                   {item.school_name}
                 </td>
-                <td className="px-3 py-2">
+                <td className="px-3 py-1">
                   <div className="flex justify-end gap-2">
                     <button
                       type="button"
                       onClick={() => onDelete(item.id, item.school_name)}
-                      className="cursor-pointer rounded-md bg-red-100 p-2 text-red-700 transition hover:bg-red-200"
+                      className="inline-flex cursor-pointer items-center gap-1 rounded bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700 transition hover:bg-red-200"
                       aria-label="Delete school"
+                      title="Delete"
                     >
-                      <Trash2 size={15} />
+                      <Trash2 size={12} />
+                      Delete
                     </button>
                   </div>
                 </td>
@@ -210,10 +212,12 @@ export default function SchoolsList({
               <button
                 type="button"
                 onClick={() => onDelete(item.id, item.school_name)}
-                className="cursor-pointer rounded-md bg-red-100 p-2 text-red-700 transition hover:bg-red-200"
+                className="inline-flex cursor-pointer items-center gap-1 rounded bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700 transition hover:bg-red-200"
                 aria-label="Delete school"
+                title="Delete"
               >
                 <Trash2 size={14} />
+                Delete
               </button>
             </div>
           </article>

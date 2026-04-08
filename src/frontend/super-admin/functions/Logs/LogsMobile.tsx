@@ -2,7 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, FileText, Search } from "lucide-react";
+import {
+  Archive,
+  ChevronLeft,
+  ChevronRight,
+  FileDown,
+  FileText,
+  Search,
+} from "lucide-react";
 import ViewLogsModal from "../../components/ViewLogsModal";
 import LogsReportGeneration, {
   downloadLogsReportPdf,
@@ -666,14 +673,16 @@ export default function LogsMobile() {
           </button>
           <button
             onClick={openLogsReport}
-            className="px-3 py-1.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition cursor-pointer"
+            className="inline-flex items-center gap-1 px-4 py-1 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition cursor-pointer"
           >
+            <FileDown size={14} />
             Generate Report
           </button>
           <button
             onClick={openArchiveModal}
-            className="px-3 py-1.5 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition cursor-pointer"
+            className="inline-flex items-center gap-1 px-4 py-1 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition cursor-pointer"
           >
+            <Archive size={14} />
             Archive
           </button>
         </div>

@@ -2,7 +2,6 @@
 // Maps roles to accessible features
 
 export type UserRole = "data-encoder" | "admin" | "super-admin";
-
 export interface AccessibleFeature {
   id: string;
   label: string;
@@ -22,7 +21,7 @@ export const ACCESSIBLE_FEATURES: AccessibleFeature[] = [
   },
   {
     id: "employees-list",
-    label: "Employees List",
+    label: "Employees Profile",
     roles: ["admin", "super-admin"],
   },
   {

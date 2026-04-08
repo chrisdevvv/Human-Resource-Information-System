@@ -455,29 +455,62 @@ export default function DashboardMobile({
               </button>
             </div>
 
-            <div className="space-y-1.5">
-              {recentLogs.length === 0 ? (
-                <p className="text-[11px] text-gray-500">
-                  No recent logs found.
-                </p>
-              ) : (
-                recentLogs.map((log, index) => (
-                  <div
-                    key={log.id || index}
-                    className="rounded border border-gray-200 p-2"
-                  >
-                    <p className="text-[11px] font-semibold text-gray-900">
-                      {(log.action || "Activity").replaceAll("_", " ")}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-gray-600">
-                      {log.details || "No details available."}
-                    </p>
-                    <p className="mt-1 text-[10px] text-gray-500">
-                      {getLogActor(log)} • {formatLogDate(log.created_at)}
-                    </p>
-                  </div>
-                ))
-              )}
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-130 border-collapse text-[11px]">
+                <thead className="bg-blue-100">
+                  <tr className="border-b-2 border-gray-200">
+                    <th className="px-2 py-1 text-left font-semibold uppercase tracking-wide text-blue-600">
+                      Date &amp; Time
+                    </th>
+                    <th className="px-2 py-1 text-left font-semibold uppercase tracking-wide text-blue-600">
+                      Name
+                    </th>
+                    <th className="px-2 py-1 text-left font-semibold uppercase tracking-wide text-blue-600">
+                      Action Taken
+                    </th>
+                    <th className="px-2 py-1 text-left font-semibold uppercase tracking-wide text-blue-600">
+                      Details
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentLogs.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-2 py-4 text-center text-gray-500"
+                      >
+                        No recent logs found.
+                      </td>
+                    </tr>
+                  ) : (
+                    recentLogs.map((log, index) => (
+                      <tr
+                        key={log.id || index}
+                        className="border-b border-gray-100 hover:bg-gray-50 transition"
+                      >
+                        <td className="px-2 py-1 text-[10px] text-gray-500 whitespace-nowrap">
+                          {formatLogDate(log.created_at)}
+                        </td>
+                        <td className="px-2 py-1 text-[10px] font-medium text-gray-900 whitespace-nowrap">
+                          {getLogActor(log)}
+                        </td>
+                        <td className="px-2 py-1 text-[10px] text-gray-700 whitespace-nowrap">
+                          {(log.action || "Activity").replaceAll("_", " ")}
+                        </td>
+                        <td className="px-2 py-1 text-[10px] text-gray-600">
+                          <span
+                            className="block max-w-[18rem] truncate"
+                            title={log.details || "No details available."}
+                          >
+                            {log.details || "No details available."}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

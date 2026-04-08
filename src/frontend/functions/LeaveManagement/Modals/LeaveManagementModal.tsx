@@ -77,6 +77,9 @@ export default function LeaveManagementModal({
   const employeeSchool =
     employeeSchoolFromApi || (leave?.schoolName || "").trim() || "N/A";
   const [activeTab, setActiveTab] = useState<"history" | "card">("history");
+  const [historyViewTab, setHistoryViewTab] = useState<
+    "leave-records" | "monthly-credit"
+  >("leave-records");
   const [historyRows, setHistoryRows] = useState<LeaveHistoryRecord[]>([]);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<Set<number>>(
@@ -87,6 +90,21 @@ export default function LeaveManagementModal({
 
   const employeeTypeLabel =
     employeeType === "non-teaching" ? "Non-Teaching" : "Teaching";
+
+  const isMonthlyCreditRow = (row: LeaveHistoryRecord) => {
+    const particulars = String(row.particulars || "")
+      .trim()
+      .toLowerCase();
+    return particulars.includes("monthly") && particulars.includes("credit");
+  };
+
+  const filteredHistoryRows = useMemo(() => {
+    if (historyViewTab === "monthly-credit") {
+      return historyRows.filter((row) => isMonthlyCreditRow(row));
+    }
+
+    return historyRows.filter((row) => !isMonthlyCreditRow(row));
+  }, [historyRows, historyViewTab]);
 
   const toBool = (value: unknown) => {
     if (value === true || value === 1 || value === "1") return true;
@@ -250,6 +268,7 @@ export default function LeaveManagementModal({
   useEffect(() => {
     if (!isOpen || !employeeId) return;
     setActiveTab(initialTab);
+    setHistoryViewTab("leave-records");
     setIsDeleteMode(false);
     setSelectedHistoryIds(new Set());
     setEmployeeSchoolFromApi("");
@@ -266,6 +285,11 @@ export default function LeaveManagementModal({
   }, [activeTab]);
 
   useEffect(() => {
+    setIsDeleteMode(false);
+    setSelectedHistoryIds(new Set());
+  }, [historyViewTab]);
+
+  useEffect(() => {
     return () => {
       if (pdfCooldownIntervalRef.current !== null) {
         window.clearInterval(pdfCooldownIntervalRef.current);
@@ -276,6 +300,9 @@ export default function LeaveManagementModal({
   if (!isOpen || !leave || !employeeId) {
     return null;
   }
+
+  const employeeNameDisplay = leave.fullName?.trim() || "N/A";
+  const employeeEmailDisplay = employeeEmail || "No email provided";
 
   const handleCreate = async (payload: AddLeaveFormValues) => {
     try {
@@ -349,7 +376,7 @@ export default function LeaveManagementModal({
   };
 
   const handleToggleAllHistoryRows = () => {
-    const allRowIds = historyRows.map((row) => row.id);
+    const allRowIds = filteredHistoryRows.map((row) => row.id);
     const areAllSelected =
       allRowIds.length > 0 &&
       allRowIds.every((rowId) => selectedHistoryIds.has(rowId));
@@ -413,18 +440,59 @@ export default function LeaveManagementModal({
       <div className="relative flex max-h-[94vh] w-full max-w-screen-2xl flex-col overflow-hidden rounded-xl border border-blue-200 bg-white shadow-2xl">
         <div className="border-b border-gray-200 px-5 py-4 sm:px-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0 flex-1">
               <h2 className="text-xl font-bold text-gray-800">
                 Leave Management Details
               </h2>
-              <p className="mt-1 text-sm text-gray-600">
-                Employee: {leave.fullName}
-              </p>
-              <p className="text-sm text-gray-500">Email: {employeeEmail}</p>
-              <p className="text-sm text-gray-500">
-                Employee Type: {employeeTypeLabel}
-              </p>
-              <p className="text-sm text-gray-500">School: {employeeSchool}</p>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Employee Name
+                  </span>
+                  <input
+                    type="text"
+                    value={employeeNameDisplay}
+                    readOnly
+                    className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-700"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Email Address
+                  </span>
+                  <input
+                    type="text"
+                    value={employeeEmailDisplay}
+                    readOnly
+                    className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-700"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Employee Type
+                  </span>
+                  <input
+                    type="text"
+                    value={employeeTypeLabel}
+                    readOnly
+                    className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-700"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    School
+                  </span>
+                  <input
+                    type="text"
+                    value={employeeSchool}
+                    readOnly
+                    className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-700"
+                  />
+                </label>
+              </div>
               <div className="mt-3 flex items-start gap-3">
                 <input
                   id="mark-on-leave"
@@ -578,15 +646,42 @@ export default function LeaveManagementModal({
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 sm:p-6">
           {activeTab === "history" ? (
-            <LeaveHistoryTable
-              rows={historyRows}
-              loading={loading}
-              error={error}
-              selectable={isDeleteMode}
-              selectedIds={selectedHistoryIds}
-              onToggleRow={handleToggleHistoryRow}
-              onToggleAll={handleToggleAllHistoryRows}
-            />
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setHistoryViewTab("leave-records")}
+                  className={`cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                    historyViewTab === "leave-records"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  Leave Records
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryViewTab("monthly-credit")}
+                  className={`cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                    historyViewTab === "monthly-credit"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  Monthly Credit
+                </button>
+              </div>
+
+              <LeaveHistoryTable
+                rows={filteredHistoryRows}
+                loading={loading}
+                error={error}
+                selectable={isDeleteMode}
+                selectedIds={selectedHistoryIds}
+                onToggleRow={handleToggleHistoryRow}
+                onToggleAll={handleToggleAllHistoryRows}
+              />
+            </div>
           ) : (
             <PrintableLeaveCard
               ref={cardRef}

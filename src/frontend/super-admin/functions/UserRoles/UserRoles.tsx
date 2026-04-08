@@ -517,19 +517,19 @@ export default function UserRoles() {
               <table className="w-full">
                 <thead className="sticky top-0 z-10 bg-blue-100">
                   <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Name
                     </th>
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Email
                     </th>
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Role
                     </th>
-                    <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
+                    <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Status
                     </th>
-                    <th className="text-right py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
+                    <th className="text-right py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Actions
                     </th>
                   </tr>
@@ -541,18 +541,18 @@ export default function UserRoles() {
                         key={user.id}
                         className="border-b border-gray-100 hover:bg-gray-50 transition"
                       >
-                        <td className="py-1 px-3 text-gray-900 text-sm font-medium">
+                        <td className="py-0.5 px-3 text-gray-900 text-sm font-medium">
                           {user.firstName} {user.lastName}
                         </td>
-                        <td className="py-1 px-3 text-gray-500 text-sm">
+                        <td className="py-0.5 px-3 text-gray-500 text-sm">
                           {user.email}
                         </td>
-                        <td className="py-1 px-3 text-gray-500 text-sm">
+                        <td className="py-0.5 px-3 text-gray-500 text-sm">
                           {user.role.replace(/_/g, " ")}
                         </td>
-                        <td className="py-1 px-3 text-center">
+                        <td className="py-0.5 px-3 text-center">
                           <span
-                            className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                            className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                               user.isActive
                                 ? "bg-green-100 text-green-800"
                                 : "bg-red-100 text-red-800"
@@ -561,23 +561,23 @@ export default function UserRoles() {
                             {user.isActive ? "Active" : "Inactive"}
                           </span>
                         </td>
-                        <td className="py-1 px-3">
+                        <td className="py-0.5 px-3">
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => setDetailsTargetId(user.id)}
-                              className="p-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer"
+                              className="p-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer"
                               aria-label={`View details for ${user.firstName} ${user.lastName}`}
                               title="View details"
                             >
-                              <Eye size={14} />
+                              <Eye size={12} />
                             </button>
                             <button
                               onClick={() => setSettingsTarget(user)}
-                              className="p-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition cursor-pointer"
+                              className="p-1.5 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition cursor-pointer"
                               aria-label={`Open settings for ${user.firstName} ${user.lastName}`}
                               title="User settings"
                             >
-                              <Settings size={14} />
+                              <Settings size={12} />
                             </button>
                           </div>
                         </td>
