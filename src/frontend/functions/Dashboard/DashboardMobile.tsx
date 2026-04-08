@@ -443,20 +443,20 @@ export default function DashboardMobile({
         {showRecentLogs && (
           <div className="rounded border border-gray-200 bg-white p-2.5">
             <div className="mb-2 flex items-center justify-between gap-2">
-              <h2 className="text-[11px] font-bold uppercase tracking-wide text-yellow-600">
+              <h2 className="text-xs font-bold uppercase tracking-wide text-yellow-600">
                 Recent Logs
               </h2>
               <button
                 type="button"
                 onClick={handleViewLogs}
-                className="cursor-pointer rounded-md bg-gray-100 px-2 py-1 text-[10px] font-semibold text-gray-700 transition hover:bg-gray-200"
+                className="cursor-pointer rounded-md bg-gray-100 px-2 py-1 text-[11px] font-semibold text-gray-700 transition hover:bg-gray-200"
               >
                 View Logs
               </button>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-130 border-collapse text-[11px]">
+              <table className="w-full min-w-130 border-collapse text-xs">
                 <thead className="bg-blue-100">
                   <tr className="border-b-2 border-gray-200">
                     <th className="px-2 py-1 text-left font-semibold uppercase tracking-wide text-blue-600">
@@ -489,16 +489,16 @@ export default function DashboardMobile({
                         key={log.id || index}
                         className="border-b border-gray-100 hover:bg-gray-50 transition"
                       >
-                        <td className="px-2 py-1 text-[10px] text-gray-500 whitespace-nowrap">
+                        <td className="px-2 py-1 text-[11px] text-gray-500 whitespace-nowrap">
                           {formatLogDate(log.created_at)}
                         </td>
-                        <td className="px-2 py-1 text-[10px] font-medium text-gray-900 whitespace-nowrap">
+                        <td className="px-2 py-1 text-[11px] font-medium text-gray-900 whitespace-nowrap">
                           {getLogActor(log)}
                         </td>
-                        <td className="px-2 py-1 text-[10px] text-gray-700 whitespace-nowrap">
+                        <td className="px-2 py-1 text-[11px] text-gray-700 whitespace-nowrap">
                           {(log.action || "Activity").replaceAll("_", " ")}
                         </td>
-                        <td className="px-2 py-1 text-[10px] text-gray-600">
+                        <td className="px-2 py-1 text-[11px] text-gray-600">
                           <span
                             className="block max-w-[18rem] truncate"
                             title={log.details || "No details available."}

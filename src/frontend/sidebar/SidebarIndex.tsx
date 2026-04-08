@@ -4,12 +4,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
+  CircleUser,
   ChevronLeft,
   ChevronRight,
   SlidersHorizontal,
   LayoutDashboard,
   LogOut,
-  SettingsIcon,
   ShieldCheck,
   Users,
 } from "lucide-react";
@@ -337,7 +337,7 @@ export default function SidebarIndex({
   return (
     <aside
       className={`hidden md:flex md:sticky md:top-0 h-screen shrink-0 bg-blue-700 text-white border-r border-blue-800 transition-[width] duration-300 ${
-        isCollapsed ? "w-16" : "w-72"
+        isCollapsed ? "w-16" : "w-64"
       } ${className}`}
     >
       <div className="h-full w-full flex flex-col">
@@ -404,7 +404,7 @@ export default function SidebarIndex({
               >
                 <Icon size={18} className="shrink-0" />
                 {!isCollapsed ? (
-                  <span className="text-sm font-medium">{tab.label}</span>
+                  <span className="text-xs font-medium">{tab.label}</span>
                 ) : null}
               </button>
             );
@@ -422,7 +422,7 @@ export default function SidebarIndex({
           >
             <LogOut size={18} className="shrink-0" />
             {!isCollapsed && (
-              <span className="text-sm font-medium">Logout</span>
+              <span className="text-xs font-medium">Logout</span>
             )}
           </button>
           <button
@@ -435,7 +435,7 @@ export default function SidebarIndex({
                 : "text-blue-50 hover:bg-blue-800"
             }`}
           >
-            <SettingsIcon size={18} className="shrink-0" />
+            <CircleUser size={18} className="shrink-0" />
           </button>
         </div>
       </div>

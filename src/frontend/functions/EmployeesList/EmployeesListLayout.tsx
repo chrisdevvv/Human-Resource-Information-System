@@ -14,7 +14,7 @@ import {
   X,
   Eye,
 } from "lucide-react";
-import AddEmployeeModal from "./modals/AddEmployeeModal";
+import AddEmployeeModal from "@/frontend/functions/EmployeesList/modals/AddEmployeeModal";
 import ArchivedEmployee from "./ArchivedEmployee";
 import ArchiveConfirmationModal from "./modals/ArchiveConfirmationModal";
 import ArchiveSuccessMessage from "../LeaveManagement/ArchiveSuccessMessage";
@@ -445,19 +445,19 @@ export default function EmployeesListLayout() {
 
       {activeTab === "list" ? (
         <div className="w-full min-w-0 bg-white rounded-lg shadow-lg p-2 sm:p-3 flex flex-col">
-          <h1
-            style={{ fontSize: "20px" }}
-            className="font-bold text-gray-900 mb-2 sm:mb-4 inline-flex items-center gap-2"
-          >
-            <Users size={22} className="text-blue-600" />
-            Employees Profile
-          </h1>
+          <div className="mb-3 sm:mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h1
+              style={{ fontSize: "20px" }}
+              className="font-bold text-gray-900 inline-flex items-center gap-2"
+            >
+              <Users size={22} className="text-blue-600" />
+              Employees Profile
+            </h1>
 
-          <div className="mb-4 flex items-center justify-start">
             <button
               type="button"
               onClick={() => setIsAddEmployeeOpen(true)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+              className="inline-flex items-center gap-1 px-5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer self-start sm:self-auto"
             >
               <Plus size={14} />
               Add Employee
@@ -767,7 +767,7 @@ export default function EmployeesListLayout() {
       <AddEmployeeModal
         isOpen={isAddEmployeeOpen}
         onClose={() => setIsAddEmployeeOpen(false)}
-        onSuccess={(employeeName) => {
+        onSuccess={(employeeName: string) => {
           setIsAddEmployeeOpen(false);
           setAddSuccessMessage(
             employeeName

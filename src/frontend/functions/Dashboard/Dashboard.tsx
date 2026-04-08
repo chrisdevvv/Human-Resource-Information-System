@@ -451,26 +451,26 @@ export default function Dashboard({
               <button
                 type="button"
                 onClick={handleViewLogs}
-                className="cursor-pointer rounded-md bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-200"
+                className="cursor-pointer rounded-md bg-gray-100 px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-200"
               >
                 View Logs
               </button>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] border-collapse text-sm">
+              <table className="w-full min-w-180 border-collapse text-sm">
                 <thead className="bg-blue-100">
                   <tr className="border-b-2 border-gray-200">
-                    <th className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-blue-600">
+                    <th className="px-3 py-1.5 text-left text-sm font-semibold uppercase tracking-wide text-blue-600">
                       Date &amp; Time
                     </th>
-                    <th className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-blue-600">
+                    <th className="px-3 py-1.5 text-left text-sm font-semibold uppercase tracking-wide text-blue-600">
                       Name
                     </th>
-                    <th className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-blue-600">
+                    <th className="px-3 py-1.5 text-left text-sm font-semibold uppercase tracking-wide text-blue-600">
                       Action Taken
                     </th>
-                    <th className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-blue-600">
+                    <th className="px-3 py-1.5 text-left text-sm font-semibold uppercase tracking-wide text-blue-600">
                       Details
                     </th>
                   </tr>
@@ -491,18 +491,18 @@ export default function Dashboard({
                         key={log.id || index}
                         className="border-b border-gray-100 hover:bg-gray-50 transition"
                       >
-                        <td className="px-3 py-1.5 whitespace-nowrap text-xs text-gray-500">
+                        <td className="px-3 py-1.5 whitespace-nowrap text-sm text-gray-500">
                           {formatLogDate(log.created_at)}
                         </td>
-                        <td className="px-3 py-1.5 text-xs font-medium text-gray-900 whitespace-nowrap">
+                        <td className="px-3 py-1.5 text-sm font-medium text-gray-900 whitespace-nowrap">
                           {getLogActor(log)}
                         </td>
-                        <td className="px-3 py-1.5 text-xs text-gray-700 whitespace-nowrap">
+                        <td className="px-3 py-1.5 text-sm text-gray-700 whitespace-nowrap">
                           {(log.action || "Activity").replaceAll("_", " ")}
                         </td>
-                        <td className="px-3 py-1.5 text-xs text-gray-600">
+                        <td className="px-3 py-1.5 text-sm text-gray-600">
                           <span
-                            className="block max-w-[28rem] truncate"
+                            className="block max-w-md truncate"
                             title={log.details || "No details available."}
                           >
                             {log.details || "No details available."}

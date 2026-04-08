@@ -4,12 +4,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
+  CircleUser,
   LayoutDashboard,
   LogOut,
   Menu,
   SlidersHorizontal,
   X,
-  SettingsIcon,
   ShieldCheck,
   Users,
 } from "lucide-react";
@@ -398,7 +398,7 @@ export default function SidebarMobile({
                 }`}
               >
                 <Icon size={20} className="shrink-0" />
-                <span className="text-sm font-medium">{tab.label}</span>
+                <span className="text-xs font-medium">{tab.label}</span>
               </button>
             );
           })}
@@ -412,7 +412,7 @@ export default function SidebarMobile({
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition text-blue-50 hover:bg-red-600"
           >
             <LogOut size={20} className="shrink-0" />
-            <span className="text-sm font-medium">Logout</span>
+            <span className="text-xs font-medium">Logout</span>
           </button>
           <button
             type="button"
@@ -423,8 +423,8 @@ export default function SidebarMobile({
                 : "text-blue-50 hover:bg-blue-700"
             }`}
           >
-            <SettingsIcon size={20} className="shrink-0" />
-            <span className="text-sm font-medium">Settings</span>
+            <CircleUser size={20} className="shrink-0" />
+            <span className="text-xs font-medium">Settings</span>
           </button>
         </div>
       </nav>
