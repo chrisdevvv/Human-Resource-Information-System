@@ -501,7 +501,12 @@ const isOnLeaveDuringPeriod = (employee, periodStart, periodEnd) => {
   return leaveFrom <= periodEnd && leaveUntil >= periodStart;
 };
 
-const applyMonthlyCredit = async ({ year, month, actorUserId = null } = {}) => {
+const applyMonthlyCredit = async ({
+  year,
+  month,
+  actorUserId = null,
+  simulate = false,
+} = {}) => {
   const {
     period,
     year: normalizedYear,
@@ -514,22 +519,41 @@ const applyMonthlyCredit = async ({ year, month, actorUserId = null } = {}) => {
   );
 
   const employees = await Leave.getAllNonTeachingEmployees();
+  const teachingEmployees = await Leave.getAllTeachingEmployees();
   const expectedCredit = getMonthlyCreditByEmployeeType("non-teaching");
   let credited = 0;
   let skipped = 0;
   const skippedNames = [];
+  const creditedEmployees = [];
+  const skippedEmployees = [];
 
   for (const emp of employees) {
+    const fullName = `${emp.first_name} ${emp.last_name}`;
+
     if (isOnLeaveDuringPeriod(emp, monthStart, monthEnd)) {
       skipped++;
-      skippedNames.push(`${emp.first_name} ${emp.last_name}`);
+      skippedNames.push(fullName);
+      if (simulate) {
+        skippedEmployees.push({
+          employee_id: emp.id,
+          employee_name: fullName,
+          reason: "ON_LEAVE_DURING_PERIOD",
+        });
+      }
       continue;
     }
 
     const monthlyCredit = getMonthlyCreditByEmployeeType(emp.employee_type);
     if (monthlyCredit.earnedVL <= 0 && monthlyCredit.earnedSL <= 0) {
       skipped++;
-      skippedNames.push(`${emp.first_name} ${emp.last_name}`);
+      skippedNames.push(fullName);
+      if (simulate) {
+        skippedEmployees.push({
+          employee_id: emp.id,
+          employee_name: fullName,
+          reason: "NOT_ELIGIBLE_FOR_MONTHLY_CREDIT",
+        });
+      }
       continue;
     }
 
@@ -542,7 +566,14 @@ const applyMonthlyCredit = async ({ year, month, actorUserId = null } = {}) => {
     );
     if (alreadyCredited) {
       skipped++;
-      skippedNames.push(`${emp.first_name} ${emp.last_name}`);
+      skippedNames.push(fullName);
+      if (simulate) {
+        skippedEmployees.push({
+          employee_id: emp.id,
+          employee_name: fullName,
+          reason: "ALREADY_CREDITED_FOR_PERIOD",
+        });
+      }
       continue;
     }
 
@@ -563,6 +594,28 @@ const applyMonthlyCredit = async ({ year, month, actorUserId = null } = {}) => {
       { bal_vl: prev_bal_vl, bal_sl: prev_bal_sl },
       effect,
     );
+
+    if (simulate) {
+      creditedEmployees.push({
+        employee_id: emp.id,
+        employee_name: fullName,
+        period,
+        credit: {
+          earned_vl: effect.earned_vl,
+          earned_sl: effect.earned_sl,
+        },
+        previous_balance: {
+          bal_vl: round2(prev_bal_vl),
+          bal_sl: round2(prev_bal_sl),
+        },
+        projected_balance: {
+          bal_vl: round2(bal_vl),
+          bal_sl: round2(bal_sl),
+        },
+      });
+      credited++;
+      continue;
+    }
 
     await Leave.create({
       employee_id: emp.id,
@@ -590,11 +643,42 @@ const applyMonthlyCredit = async ({ year, month, actorUserId = null } = {}) => {
         employee_id: emp.id,
         leave_id: null,
         action: "LEAVE_MONTHLY_CREDIT",
-        details: `${emp.first_name} ${emp.last_name} — ${period}`,
+        details: `${fullName} — ${period}`,
       });
     }
 
     credited++;
+  }
+
+  if (teachingEmployees.length > 0) {
+    for (const emp of teachingEmployees) {
+      const fullName = `${emp.first_name} ${emp.last_name}`;
+      skipped++;
+      skippedNames.push(fullName);
+      if (simulate) {
+        skippedEmployees.push({
+          employee_id: emp.id,
+          employee_name: fullName,
+          reason: "TEACHING_EMPLOYEE",
+        });
+      }
+    }
+  }
+
+  if (simulate) {
+    return {
+      message: `Monthly leave credit simulation completed for ${period}.`,
+      period,
+      would_credit: credited,
+      would_skip: skipped,
+      ...(creditedEmployees.length > 0 && {
+        would_credit_employees: creditedEmployees,
+      }),
+      ...(skippedEmployees.length > 0 && {
+        would_skip_employees: skippedEmployees,
+      }),
+      ...(skippedNames.length > 0 && { skipped_employees: skippedNames }),
+    };
   }
 
   return {
@@ -1376,6 +1460,86 @@ const creditMonthly = async (req, res) => {
   }
 };
 
+const deleteMonthlyCredit = async (req, res) => {
+  try {
+    if (!["SUPER_ADMIN", "ADMIN"].includes(req.user.role)) {
+      return res.status(403).json({
+        message: "Only Admin or Super Admin can delete monthly leave credit",
+      });
+    }
+
+    const { period } = normalizePeriod(req.body.year, req.body.month);
+    const entries = await Leave.getMonthlyCreditEntriesByPeriod(
+      period,
+      ENTRY_KIND_MONTHLY_CREDIT,
+    );
+
+    if (entries.length === 0) {
+      return res.status(200).json({
+        message: `No applied monthly credit found for ${period}.`,
+        period,
+        deleted_entries: 0,
+        affected_employees: 0,
+      });
+    }
+
+    const entryIds = entries.map((entry) => entry.id);
+    const affectedEmployeeIds = [...new Set(entries.map((e) => e.employee_id))];
+
+    const result = await Leave.deleteByIds(entryIds);
+
+    // Recompute each affected employee to restore correct downstream balances.
+    for (const employeeId of affectedEmployeeIds) {
+      await recomputeEmployeeLeaveLedger(employeeId);
+    }
+
+    await Backlog.record({
+      user_id: req.user.id,
+      school_id: null,
+      employee_id: null,
+      leave_id: null,
+      action: "LEAVE_MONTHLY_CREDIT_DELETE",
+      details: `${period} — deleted ${Number(result.affectedRows || 0)} monthly credit entries`,
+    });
+
+    return res.status(200).json({
+      message: `Monthly leave credit deleted for ${period}.`,
+      period,
+      deleted_entries: Number(result.affectedRows || 0),
+      affected_employees: affectedEmployeeIds.length,
+    });
+  } catch (err) {
+    const status = err.statusCode || 500;
+    const message =
+      status === 500 ? "Error deleting monthly credit" : err.message;
+    return res.status(status).json({ message, error: err.message });
+  }
+};
+
+const simulateMonthlyCredit = async (req, res) => {
+  try {
+    if (!["SUPER_ADMIN", "ADMIN"].includes(req.user.role)) {
+      return res.status(403).json({
+        message:
+          "Only Admin or Super Admin can simulate monthly leave credit",
+      });
+    }
+
+    const result = await applyMonthlyCredit({
+      year: req.body.year,
+      month: req.body.month,
+      simulate: true,
+    });
+
+    res.status(200).json(result);
+  } catch (err) {
+    const status = err.statusCode || 500;
+    const message =
+      status === 500 ? "Error simulating monthly credit" : err.message;
+    res.status(status).json({ message, error: err.message });
+  }
+};
+
 module.exports = {
   createLeaveRequest,
   getAllLeaveRequests,
@@ -1385,6 +1549,8 @@ module.exports = {
   updateLeaveRequest,
   deleteLeaveRequest,
   creditMonthly,
+  deleteMonthlyCredit,
+  simulateMonthlyCredit,
   autoCreditCurrentMonth,
   getLeaveParticulars,
   createLeaveParticular,

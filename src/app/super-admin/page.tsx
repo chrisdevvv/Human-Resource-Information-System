@@ -16,6 +16,7 @@ const ALLOWED_TABS = new Set([
   "user-roles",
   "logs",
   "configuration",
+  "monthly-credit-simulation",
   "profile-settings",
 ]);
 

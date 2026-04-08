@@ -8,6 +8,8 @@ const {
   updateLeaveRequest,
   deleteLeaveRequest,
   creditMonthly,
+  deleteMonthlyCredit,
+  simulateMonthlyCredit,
   getLeaveParticulars,
   createLeaveParticular,
   updateLeaveParticular,
@@ -108,6 +110,18 @@ router.delete(
   roleAuthMiddleware(["admin", "super-admin"]),
   validateRequest({ params: idParamSchema }),
   deleteLeaveRequest,
+);
+router.post(
+  "/credit-monthly/simulate",
+  authMiddleware,
+  roleAuthMiddleware(["admin", "super-admin"]),
+  simulateMonthlyCredit,
+);
+router.post(
+  "/credit-monthly/delete",
+  authMiddleware,
+  roleAuthMiddleware(["admin", "super-admin"]),
+  deleteMonthlyCredit,
 );
 router.post(
   "/credit-monthly",
