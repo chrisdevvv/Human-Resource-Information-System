@@ -19,6 +19,9 @@ const middleNameSchema = Joi.string().trim().max(100).allow(null, "");
 const middleInitialSchema = Joi.string().trim().max(10).allow(null, "");
 const mobileNumberSchema = Joi.string().trim().max(30).allow(null, "");
 const homeAddressSchema = Joi.string().trim().max(255).allow(null, "");
+const placeOfBirthSchema = Joi.string().trim().max(255).allow(null, "");
+const civilStatusSchema = Joi.string().trim().max(50).allow(null, "");
+const sexSchema = Joi.string().trim().max(20).allow(null, "");
 const employeeNoSchema = Joi.string().trim().max(100).allow(null, "");
 const workEmailSchema = Joi.string()
   .trim()
@@ -59,6 +62,11 @@ const employeeCreateBodySchema = Joi.object({
     .allow(null, ""),
   mobile_number: mobileNumberSchema,
   home_address: homeAddressSchema,
+  place_of_birth: placeOfBirthSchema,
+  civil_status: civilStatusSchema,
+  civil_status_id: Joi.number().integer().positive().allow(null, ""),
+  sex: sexSchema,
+  sex_id: Joi.number().integer().positive().allow(null, ""),
   employee_type: Joi.string().valid("teaching", "non-teaching").required(),
   school_id: Joi.number().integer().positive().required(),
   employee_no: employeeNoSchema,
@@ -89,6 +97,11 @@ const employeeUpdateBodySchema = Joi.object({
     .allow(null, ""),
   mobile_number: mobileNumberSchema,
   home_address: homeAddressSchema,
+  place_of_birth: placeOfBirthSchema,
+  civil_status: civilStatusSchema,
+  civil_status_id: Joi.number().integer().positive().allow(null, ""),
+  sex: sexSchema,
+  sex_id: Joi.number().integer().positive().allow(null, ""),
   employee_type: Joi.string().valid("teaching", "non-teaching").required(),
   school_id: Joi.number().integer().positive().required(),
   employee_no: employeeNoSchema,

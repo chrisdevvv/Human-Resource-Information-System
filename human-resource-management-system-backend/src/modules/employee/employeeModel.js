@@ -113,6 +113,11 @@ const Employee = {
       middle_initial,
       mobile_number,
       home_address,
+      place_of_birth,
+      civil_status,
+      civil_status_id,
+      sex,
+      sex_id,
       employee_type,
       school_id,
       employee_no,
@@ -133,7 +138,7 @@ const Employee = {
     const [result] = await pool
       .promise()
       .query(
-        "INSERT INTO employees (first_name, middle_name, last_name, middle_initial, email, mobile_number, home_address, employee_type, school_id, employee_no, work_email, district, `position`, position_id, plantilla_no, prc_license_no, age, birthdate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO employees (first_name, middle_name, last_name, middle_initial, email, mobile_number, home_address, place_of_birth, civil_status, civil_status_id, sex, sex_id, employee_type, school_id, employee_no, work_email, district, `position`, position_id, plantilla_no, prc_license_no, age, birthdate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           first_name,
           middle_name || null,
@@ -142,6 +147,11 @@ const Employee = {
           personalEmail,
           mobile_number || null,
           home_address || null,
+          place_of_birth || null,
+          civil_status || null,
+          civil_status_id || null,
+          sex || null,
+          sex_id || null,
           employee_type,
           school_id,
           employee_no || null,
@@ -168,6 +178,11 @@ const Employee = {
       middle_initial,
       mobile_number,
       home_address,
+      place_of_birth,
+      civil_status,
+      civil_status_id,
+      sex,
+      sex_id,
       employee_type,
       school_id,
       employee_no,
@@ -188,7 +203,7 @@ const Employee = {
     const [result] = await pool
       .promise()
       .query(
-        "UPDATE employees SET first_name = ?, middle_name = ?, last_name = ?, middle_initial = ?, email = ?, mobile_number = ?, home_address = ?, employee_type = ?, school_id = ?, employee_no = ?, work_email = ?, district = ?, `position` = ?, position_id = ?, plantilla_no = ?, prc_license_no = ?, age = ?, birthdate = ? WHERE id = ? AND is_archived = 0",
+        "UPDATE employees SET first_name = ?, middle_name = ?, last_name = ?, middle_initial = ?, email = ?, mobile_number = ?, home_address = ?, place_of_birth = ?, civil_status = ?, civil_status_id = ?, sex = ?, sex_id = ?, employee_type = ?, school_id = ?, employee_no = ?, work_email = ?, district = ?, `position` = ?, position_id = ?, plantilla_no = ?, prc_license_no = ?, age = ?, birthdate = ? WHERE id = ? AND is_archived = 0",
         [
           first_name,
           middle_name || null,
@@ -197,6 +212,11 @@ const Employee = {
           personalEmail,
           mobile_number || null,
           home_address || null,
+          place_of_birth || null,
+          civil_status || null,
+          civil_status_id || null,
+          sex || null,
+          sex_id || null,
           employee_type,
           school_id,
           employee_no || null,
