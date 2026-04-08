@@ -301,12 +301,12 @@ export default function MonthlyCredit() {
           </select>
         </label>
 
-        <div className="md:col-span-2 flex flex-col items-stretch gap-2 sm:flex-row sm:items-end sm:flex-wrap">
+        <div className="md:col-span-2 grid grid-cols-2 gap-2 sm:flex sm:items-end sm:flex-wrap">
           <button
             type="button"
             onClick={simulate}
             disabled={loading}
-            className="cursor-pointer rounded-md bg-blue-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs"
+            className="col-span-1 cursor-pointer rounded-md bg-blue-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1 sm:text-xs"
           >
             {loading ? "Processing..." : "Simulate"}
           </button>
@@ -315,7 +315,7 @@ export default function MonthlyCredit() {
             type="button"
             onClick={() => handleOpenAction("apply")}
             disabled={loading || !simulationResult}
-            className="cursor-pointer rounded-md bg-emerald-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs"
+            className="col-span-1 cursor-pointer rounded-md bg-emerald-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1 sm:text-xs"
           >
             Apply Real Credit
           </button>
@@ -324,7 +324,7 @@ export default function MonthlyCredit() {
             type="button"
             onClick={() => handleOpenAction("delete")}
             disabled={loading || !simulationResult}
-            className="cursor-pointer rounded-md bg-rose-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs"
+            className="col-span-2 cursor-pointer rounded-md bg-rose-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1 sm:text-xs"
           >
             Delete Applied Credit
           </button>
@@ -366,55 +366,95 @@ export default function MonthlyCredit() {
                 Employees To Credit
               </div>
               <div className="max-h-80 overflow-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-gray-600">
-                    <tr>
-                      <th className="px-3 py-1 text-left text-xs">Employee</th>
-                      <th className="px-3 py-1 text-left text-xs">
-                        Projected VL
-                      </th>
-                      <th className="px-3 py-1 text-left text-xs">
-                        Projected SL
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(simulationResult.would_credit_employees || []).map(
-                      (row, index) => {
-                        const rowBackgroundClass =
-                          index % 2 === 0 ? "bg-gray-100" : "bg-white";
-
-                        return (
-                          <tr
-                            key={row.employee_id}
-                            className={`border-t border-gray-100 ${rowBackgroundClass}`}
-                          >
-                            <td className="px-3 py-1 text-xs text-gray-800">
-                              {row.employee_name}
-                            </td>
-                            <td className="px-3 py-1 text-xs text-gray-700">
-                              {row.projected_balance?.bal_vl ?? "-"}
-                            </td>
-                            <td className="px-3 py-1 text-xs text-gray-700">
-                              {row.projected_balance?.bal_sl ?? "-"}
-                            </td>
-                          </tr>
-                        );
-                      },
-                    )}
-                    {(simulationResult.would_credit_employees || []).length ===
-                    0 ? (
-                      <tr>
-                        <td
-                          className="px-3 py-2 text-xs text-gray-500"
-                          colSpan={3}
+                <div className="flex flex-col gap-2 p-2 sm:hidden">
+                  {(simulationResult.would_credit_employees || []).length >
+                  0 ? (
+                    (simulationResult.would_credit_employees || []).map(
+                      (row) => (
+                        <div
+                          key={row.employee_id}
+                          className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
                         >
-                          No employees will be credited.
-                        </td>
+                          <p className="text-sm font-semibold text-gray-900 truncate">
+                            {row.employee_name}
+                          </p>
+                          <div className="mt-1 grid grid-cols-2 gap-2 text-xs">
+                            <p className="text-gray-600">
+                              VL:{" "}
+                              <span className="font-semibold text-gray-800">
+                                {row.projected_balance?.bal_vl ?? "-"}
+                              </span>
+                            </p>
+                            <p className="text-gray-600">
+                              SL:{" "}
+                              <span className="font-semibold text-gray-800">
+                                {row.projected_balance?.bal_sl ?? "-"}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      ),
+                    )
+                  ) : (
+                    <p className="px-1 py-2 text-xs text-gray-500">
+                      No employees will be credited.
+                    </p>
+                  )}
+                </div>
+
+                <div className="hidden sm:block">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 text-gray-600">
+                      <tr>
+                        <th className="px-3 py-1 text-left text-xs">
+                          Employee
+                        </th>
+                        <th className="px-3 py-1 text-left text-xs">
+                          Projected VL
+                        </th>
+                        <th className="px-3 py-1 text-left text-xs">
+                          Projected SL
+                        </th>
                       </tr>
-                    ) : null}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {(simulationResult.would_credit_employees || []).map(
+                        (row, index) => {
+                          const rowBackgroundClass =
+                            index % 2 === 0 ? "bg-gray-100" : "bg-white";
+
+                          return (
+                            <tr
+                              key={row.employee_id}
+                              className={`border-t border-gray-100 ${rowBackgroundClass}`}
+                            >
+                              <td className="px-3 py-1 text-xs text-gray-800">
+                                {row.employee_name}
+                              </td>
+                              <td className="px-3 py-1 text-xs text-gray-700">
+                                {row.projected_balance?.bal_vl ?? "-"}
+                              </td>
+                              <td className="px-3 py-1 text-xs text-gray-700">
+                                {row.projected_balance?.bal_sl ?? "-"}
+                              </td>
+                            </tr>
+                          );
+                        },
+                      )}
+                      {(simulationResult.would_credit_employees || [])
+                        .length === 0 ? (
+                        <tr>
+                          <td
+                            className="px-3 py-2 text-xs text-gray-500"
+                            colSpan={3}
+                          >
+                            No employees will be credited.
+                          </td>
+                        </tr>
+                      ) : null}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
@@ -423,47 +463,73 @@ export default function MonthlyCredit() {
                 Employees To Skip
               </div>
               <div className="max-h-80 overflow-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-gray-600">
-                    <tr>
-                      <th className="px-3 py-1 text-left text-xs">Employee</th>
-                      <th className="px-3 py-1 text-left text-xs">Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(simulationResult.would_skip_employees || []).map(
-                      (row, index) => {
-                        const rowBackgroundClass =
-                          index % 2 === 0 ? "bg-gray-100" : "bg-white";
+                <div className="flex flex-col gap-2 p-2 sm:hidden">
+                  {(simulationResult.would_skip_employees || []).length > 0 ? (
+                    (simulationResult.would_skip_employees || []).map((row) => (
+                      <div
+                        key={`${row.employee_id}-${row.reason}`}
+                        className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
+                      >
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {row.employee_name}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-600 line-clamp-2">
+                          {reasonLabel(row.reason)}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="px-1 py-2 text-xs text-gray-500">
+                      No employees will be skipped.
+                    </p>
+                  )}
+                </div>
 
-                        return (
-                          <tr
-                            key={`${row.employee_id}-${row.reason}`}
-                            className={`border-t border-gray-100 ${rowBackgroundClass}`}
-                          >
-                            <td className="px-3 py-1 text-xs text-gray-800">
-                              {row.employee_name}
-                            </td>
-                            <td className="px-3 py-1 text-xs text-gray-700">
-                              {reasonLabel(row.reason)}
-                            </td>
-                          </tr>
-                        );
-                      },
-                    )}
-                    {(simulationResult.would_skip_employees || []).length ===
-                    0 ? (
+                <div className="hidden sm:block">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 text-gray-600">
                       <tr>
-                        <td
-                          className="px-3 py-2 text-xs text-gray-500"
-                          colSpan={2}
-                        >
-                          No employees will be skipped.
-                        </td>
+                        <th className="px-3 py-1 text-left text-xs">
+                          Employee
+                        </th>
+                        <th className="px-3 py-1 text-left text-xs">Reason</th>
                       </tr>
-                    ) : null}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {(simulationResult.would_skip_employees || []).map(
+                        (row, index) => {
+                          const rowBackgroundClass =
+                            index % 2 === 0 ? "bg-gray-100" : "bg-white";
+
+                          return (
+                            <tr
+                              key={`${row.employee_id}-${row.reason}`}
+                              className={`border-t border-gray-100 ${rowBackgroundClass}`}
+                            >
+                              <td className="px-3 py-1 text-xs text-gray-800">
+                                {row.employee_name}
+                              </td>
+                              <td className="px-3 py-1 text-xs text-gray-700">
+                                {reasonLabel(row.reason)}
+                              </td>
+                            </tr>
+                          );
+                        },
+                      )}
+                      {(simulationResult.would_skip_employees || []).length ===
+                      0 ? (
+                        <tr>
+                          <td
+                            className="px-3 py-2 text-xs text-gray-500"
+                            colSpan={2}
+                          >
+                            No employees will be skipped.
+                          </td>
+                        </tr>
+                      ) : null}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>

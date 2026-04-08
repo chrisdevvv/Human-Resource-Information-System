@@ -509,7 +509,7 @@ export default function UserRolesMobile() {
               {paginatedUsers.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg border border-gray-100"
+                  className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-100"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-gray-900 truncate">
@@ -519,14 +519,16 @@ export default function UserRolesMobile() {
                       {user.email}
                     </p>
                   </div>
-                  <button
-                    onClick={() => setViewTarget(user)}
-                    className="ml-3 p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition cursor-pointer shrink-0"
-                    aria-label={`View details for ${user.firstName} ${user.lastName}`}
-                    title="View details"
-                  >
-                    <Eye size={14} />
-                  </button>
+                  <div className="mt-2 flex justify-end">
+                    <button
+                      onClick={() => setViewTarget(user)}
+                      className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition cursor-pointer shrink-0"
+                      aria-label={`View details for ${user.firstName} ${user.lastName}`}
+                      title="View details"
+                    >
+                      <Eye size={14} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -441,8 +441,8 @@ export default function EmployeeLeaveManagement() {
           </h1>
 
           <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="flex-1 relative">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="flex-1 relative min-w-0">
                 <input
                   type="text"
                   placeholder="Search employee"
@@ -453,15 +453,15 @@ export default function EmployeeLeaveManagement() {
               </div>
               <button
                 onClick={handleSearch}
-                className="inline-flex items-center gap-1 px-5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+                className="inline-flex shrink-0 items-center gap-1 px-4 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer sm:px-5"
               >
                 <Search size={14} />
                 Search
               </button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="w-full sm:w-auto flex flex-wrap items-center gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-4">
+              <div className="col-span-2 grid grid-cols-2 gap-2 sm:col-span-1 sm:w-auto sm:flex sm:flex-wrap sm:items-center sm:gap-3">
                 <select
                   value={employeeTypeFilter}
                   onChange={(e) => {
@@ -549,7 +549,7 @@ export default function EmployeeLeaveManagement() {
                   <button
                     type="button"
                     onClick={handleResetFilters}
-                    className="w-full sm:w-auto text-sm text-gray-500 underline hover:text-gray-700 transition cursor-pointer"
+                    className="col-span-2 sm:col-span-1 sm:w-auto text-sm text-gray-500 underline hover:text-gray-700 transition cursor-pointer text-right sm:text-left"
                   >
                     Clear
                   </button>
@@ -558,7 +558,7 @@ export default function EmployeeLeaveManagement() {
             </div>
           </div>
 
-          <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
+          <div className="overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
             {employeeLoading ? (
               <div className="flex items-center justify-center py-10">
                 <p className="text-gray-500">Loading employees...</p>
@@ -568,42 +568,26 @@ export default function EmployeeLeaveManagement() {
                 <p className="text-red-500">Error: {employeeError}</p>
               </div>
             ) : (
-              <table className="w-full">
-                <thead className="sticky top-0 z-10 bg-blue-100">
-                  <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                      Name
-                    </th>
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                      Employee Type
-                    </th>
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                      Leave Status
-                    </th>
-                    <th className="text-right py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
+              <>
+                <div className="flex flex-col gap-2 sm:hidden">
                   {paginatedEmployees.length > 0 ? (
                     paginatedEmployees.map((employee) => {
                       const isOnLeave = employee.onLeave;
 
                       return (
-                        <tr
+                        <div
                           key={employee.id}
-                          className="border-b border-gray-100 hover:bg-gray-50 transition"
+                          className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
                         >
-                          <td className="py-1 px-3 text-gray-900 text-sm font-medium">
+                          <p className="text-sm font-semibold text-gray-900 truncate">
                             {employee.fullName}
-                          </td>
-                          <td className="py-1 px-3 text-gray-500 text-sm capitalize">
+                          </p>
+                          <p className="text-xs text-gray-500 capitalize">
                             {employee.employeeType}
-                          </td>
-                          <td className="py-1 px-3 text-gray-500 text-sm">
+                          </p>
+                          <div className="mt-1">
                             <span
-                              className={`inline-flex rounded-full px-2.5 py-0.5 text-sm font-semibold ${
+                              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
                                 isOnLeave
                                   ? "bg-red-100 text-red-700"
                                   : "bg-green-100 text-green-700"
@@ -611,63 +595,160 @@ export default function EmployeeLeaveManagement() {
                             >
                               {isOnLeave ? "On leave" : "Not on leave"}
                             </span>
-                          </td>
-                          <td className="py-1 px-3">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  openLeaveModal(employee, "history")
-                                }
-                                aria-label="View details"
-                                title="Details"
-                                className="inline-flex items-center gap-1 rounded bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-200 transition cursor-pointer"
-                              >
-                                <Info size={12} />
-                                View
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setDirectAddTarget(employee)}
-                                aria-label="Add leave"
-                                title="Add Leave"
-                                className="inline-flex items-center gap-1 rounded bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200 transition cursor-pointer"
-                              >
-                                <Plus size={12} />
-                                Add
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  window.open(
-                                    `/leave-card/${employee.id}`,
-                                    "_blank",
-                                  )
-                                }
-                                aria-label="Preview leave PDF"
-                                title="Preview PDF"
-                                className="inline-flex items-center gap-1 rounded bg-red-100 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-200 transition cursor-pointer"
-                              >
-                                <FileText size={12} />
-                                PDF
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
+                          </div>
+
+                          <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openLeaveModal(employee, "history")
+                              }
+                              aria-label="View details"
+                              title="Details"
+                              className="inline-flex items-center gap-1 rounded bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-200 transition cursor-pointer"
+                            >
+                              <Info size={12} />
+                              View
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDirectAddTarget(employee)}
+                              aria-label="Add leave"
+                              title="Add Leave"
+                              className="inline-flex items-center gap-1 rounded bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200 transition cursor-pointer"
+                            >
+                              <Plus size={12} />
+                              Add
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                window.open(
+                                  `/leave-card/${employee.id}`,
+                                  "_blank",
+                                )
+                              }
+                              aria-label="Preview leave PDF"
+                              title="Preview PDF"
+                              className="inline-flex items-center gap-1 rounded bg-red-100 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-200 transition cursor-pointer"
+                            >
+                              <FileText size={12} />
+                              PDF
+                            </button>
+                          </div>
+                        </div>
                       );
                     })
                   ) : (
-                    <tr>
-                      <td
-                        colSpan={4}
-                        className="py-8 text-center text-gray-500"
-                      >
-                        No employees found.
-                      </td>
-                    </tr>
+                    <p className="py-8 text-center text-gray-500 text-sm">
+                      No employees found.
+                    </p>
                   )}
-                </tbody>
-              </table>
+                </div>
+
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="sticky top-0 z-10 bg-blue-100">
+                      <tr className="border-b-2 border-gray-200">
+                        <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                          Name
+                        </th>
+                        <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                          Employee Type
+                        </th>
+                        <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                          Leave Status
+                        </th>
+                        <th className="text-right py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedEmployees.length > 0 ? (
+                        paginatedEmployees.map((employee) => {
+                          const isOnLeave = employee.onLeave;
+
+                          return (
+                            <tr
+                              key={employee.id}
+                              className="border-b border-gray-100 hover:bg-gray-50 transition"
+                            >
+                              <td className="py-1 px-3 text-gray-900 text-sm font-medium">
+                                {employee.fullName}
+                              </td>
+                              <td className="py-1 px-3 text-gray-500 text-sm capitalize">
+                                {employee.employeeType}
+                              </td>
+                              <td className="py-1 px-3 text-gray-500 text-sm">
+                                <span
+                                  className={`inline-flex rounded-full px-2.5 py-0.5 text-sm font-semibold ${
+                                    isOnLeave
+                                      ? "bg-red-100 text-red-700"
+                                      : "bg-green-100 text-green-700"
+                                  }`}
+                                >
+                                  {isOnLeave ? "On leave" : "Not on leave"}
+                                </span>
+                              </td>
+                              <td className="py-1 px-3">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      openLeaveModal(employee, "history")
+                                    }
+                                    aria-label="View details"
+                                    title="Details"
+                                    className="inline-flex items-center gap-1 rounded bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-200 transition cursor-pointer"
+                                  >
+                                    <Info size={12} />
+                                    View
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setDirectAddTarget(employee)}
+                                    aria-label="Add leave"
+                                    title="Add Leave"
+                                    className="inline-flex items-center gap-1 rounded bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200 transition cursor-pointer"
+                                  >
+                                    <Plus size={12} />
+                                    Add
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      window.open(
+                                        `/leave-card/${employee.id}`,
+                                        "_blank",
+                                      )
+                                    }
+                                    aria-label="Preview leave PDF"
+                                    title="Preview PDF"
+                                    className="inline-flex items-center gap-1 rounded bg-red-100 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-200 transition cursor-pointer"
+                                  >
+                                    <FileText size={12} />
+                                    PDF
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={4}
+                            className="py-8 text-center text-gray-500"
+                          >
+                            No employees found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
 

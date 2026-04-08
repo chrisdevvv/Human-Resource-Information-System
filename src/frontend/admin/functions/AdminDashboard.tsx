@@ -222,7 +222,7 @@ export default function AdminDashboard({ onTabChange }: AdminDashboardProps) {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-6">
+      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-6 py-6">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600 mt-1">
           Welcome back! Here&apos;s your system overview.

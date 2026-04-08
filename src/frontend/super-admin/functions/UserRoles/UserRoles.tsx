@@ -332,10 +332,10 @@ export default function UserRoles() {
   return (
     <div className="w-full">
       {/* Tabs */}
-      <div className="flex justify-start gap-2 mb-4">
+      <div className="flex flex-col sm:flex-row justify-start gap-2 mb-4">
         <button
           onClick={() => setActiveTab("users")}
-          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-4 py-2 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "users"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -348,7 +348,7 @@ export default function UserRoles() {
         </button>
         <button
           onClick={() => setActiveTab("pending")}
-          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-4 py-2 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "pending"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -375,7 +375,7 @@ export default function UserRoles() {
           {/* Header with search and controls */}
           <div className="flex flex-col gap-4 mb-6">
             {/* Search and Status Row */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="grid gap-3 sm:flex sm:flex-row sm:items-center">
               <div className="flex-1 relative">
                 <input
                   type="text"
@@ -387,7 +387,7 @@ export default function UserRoles() {
               </div>
               <button
                 onClick={handleSearch}
-                className="inline-flex items-center gap-1 px-5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-1 px-5 py-2 sm:py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
               >
                 <Search size={14} />
                 Search
@@ -395,11 +395,11 @@ export default function UserRoles() {
             </div>
 
             {/* Filters Row */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="grid gap-3 sm:grid-cols-2 lg:flex lg:flex-row lg:items-center">
                 <button
                   onClick={() => setShowAddUserModal(true)}
-                  className="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer"
+                  className="inline-flex items-center justify-center gap-1 px-3 py-2 sm:py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer"
                 >
                   <UserPlus size={14} />
                   Add User
@@ -426,7 +426,7 @@ export default function UserRoles() {
                       setSchoolFilter(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="w-full sm:w-56 lg:w-64 text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                    className="w-full sm:w-56 lg:w-64 text-gray-500 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                     disabled={schoolsLoading}
                   >
                     <option value="ALL">All Schools</option>
@@ -439,7 +439,7 @@ export default function UserRoles() {
                 )}
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="grid gap-3 sm:grid-cols-2 lg:flex lg:flex-row lg:items-center">
                 <select
                   value={accountStatusFilter}
                   onChange={(e) => {
@@ -448,7 +448,7 @@ export default function UserRoles() {
                     );
                     setCurrentPage(1);
                   }}
-                  className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  className="text-gray-500 w-full px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ACTIVE">Active Accounts</option>
                   <option value="INACTIVE">Inactive Accounts</option>
@@ -461,7 +461,7 @@ export default function UserRoles() {
                     setLetterFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  className="text-gray-500 w-full px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ALL">All Letters</option>
                   {alphabet.map((letter) => (
@@ -475,7 +475,7 @@ export default function UserRoles() {
                   onClick={() => {
                     setSortOrder(sortOrder === "asc" ? "desc" : "asc");
                   }}
-                  className="text-gray-500 flex items-center gap-2 px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
+                  className="text-gray-500 flex items-center justify-center gap-2 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
                 >
                   {sortOrder === "asc" ? (
                     <>
@@ -494,7 +494,7 @@ export default function UserRoles() {
                   <button
                     type="button"
                     onClick={handleResetFilters}
-                    className="text-sm text-gray-500 underline hover:text-gray-700 transition cursor-pointer"
+                    className="text-sm text-gray-500 underline hover:text-gray-700 transition cursor-pointer lg:self-center"
                   >
                     Clear
                   </button>
@@ -859,11 +859,13 @@ function UserDetailsModalInline({
 
 function DetailsRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between items-start py-2 border-b border-gray-100">
-      <span className="text-sm font-medium text-gray-500 shrink-0 mr-4">
+    <div className="flex flex-col gap-1 py-2 border-b border-gray-100 sm:flex-row sm:items-start sm:justify-between">
+      <span className="text-sm font-medium text-gray-500 shrink-0 sm:mr-4">
         {label}
       </span>
-      <span className="text-sm text-gray-800 text-right">{value}</span>
+      <span className="text-sm text-gray-800 text-left sm:text-right wrap-break-word">
+        {value}
+      </span>
     </div>
   );
 }

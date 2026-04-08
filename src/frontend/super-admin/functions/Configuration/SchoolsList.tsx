@@ -118,9 +118,9 @@ export default function SchoolsList({
             </div>
           </div>
 
-          <div className="flex w-full flex-col gap-2 sm:w-full sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end">
-            <div className="flex w-full flex-col gap-1.5 sm:w-auto sm:flex-row sm:items-center sm:gap-1.5">
-              <div className="relative w-full sm:w-64 lg:w-80">
+          <div className="grid w-full grid-cols-2 gap-2 sm:w-full sm:flex sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end">
+            <div className="col-span-2 grid w-full grid-cols-2 gap-2 sm:col-span-1 sm:w-auto sm:flex sm:flex-row sm:items-center sm:gap-1.5">
+              <div className="relative col-span-2 w-full sm:w-64 lg:w-80">
                 <Search
                   size={16}
                   className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -144,7 +144,7 @@ export default function SchoolsList({
                 <button
                   type="button"
                   onClick={onClearFilters}
-                  className="w-full text-left text-sm text-gray-500 underline transition hover:text-gray-700 sm:w-auto"
+                  className="col-span-2 w-full text-right text-sm text-gray-500 underline transition hover:text-gray-700 sm:col-span-1 sm:w-auto sm:text-left"
                 >
                   Clear
                 </button>
@@ -153,7 +153,7 @@ export default function SchoolsList({
             <button
               type="button"
               onClick={onAdd}
-              className="w-full cursor-pointer rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-white transition hover:bg-blue-700 sm:w-auto"
+              className="col-span-2 w-full cursor-pointer rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-white transition hover:bg-blue-700 sm:col-span-1 sm:w-auto"
             >
               Add School
             </button>

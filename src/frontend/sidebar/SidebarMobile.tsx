@@ -56,7 +56,7 @@ const SIDEBAR_TABS: SidebarTab[] = [
   },
   {
     id: "logs",
-    label: "Logs",
+    label: "Activity Logs",
     icon: Activity,
     roles: ["super-admin"],
   },

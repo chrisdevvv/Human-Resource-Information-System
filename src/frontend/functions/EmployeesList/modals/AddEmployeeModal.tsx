@@ -73,6 +73,7 @@ type PendingEmployeePayload = {
   plantilla_no: string;
   age: number;
   birthdate: string;
+  license_no_prc: string;
 };
 
 type StepKey = "personal" | "work";
@@ -138,6 +139,7 @@ export default function AddEmployeeModal({
   const [lastName, setLastName] = useState("");
   const [middleName, setMiddleName] = useState("");
   const [middleInitial, setMiddleInitial] = useState("");
+  const [noMiddleName, setNoMiddleName] = useState(false);
   const [birthdate, setBirthdate] = useState("");
   const [personalEmail, setPersonalEmail] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
@@ -166,6 +168,7 @@ export default function AddEmployeeModal({
   const [currentUserRole, setCurrentUserRole] = useState("");
   const [assignedSchoolId, setAssignedSchoolId] = useState<number | null>(null);
   const [assignedSchoolName, setAssignedSchoolName] = useState("");
+  const [licenseNoPrc, setLicenseNoPrc] = useState("");
 
   const [schools, setSchools] = useState<School[]>([]);
   const [schoolsLoading, setSchoolsLoading] = useState(false);
@@ -258,6 +261,7 @@ export default function AddEmployeeModal({
     setLastName("");
     setMiddleName("");
     setMiddleInitial("");
+    setNoMiddleName(false);
     setBirthdate("");
     setPersonalEmail("");
     setMobileNumber("");
@@ -281,6 +285,8 @@ export default function AddEmployeeModal({
     setCurrentUserRole("");
     setAssignedSchoolId(null);
     setAssignedSchoolName("");
+
+    setLicenseNoPrc("");
 
     setSchools([]);
     setSchoolsLoading(false);
@@ -553,9 +559,14 @@ export default function AddEmployeeModal({
     const mobile = mobileNumber.trim();
     const address = homeAddress.trim();
 
-    if (!first || !last || !middle || !mi) {
+    if (!first || !last) {
+      setErrorMessage("First name and last name are required.");
+      return false;
+    }
+
+    if (!noMiddleName && (!middle || !mi)) {
       setErrorMessage(
-        "First name, last name, middle name, and middle initial are required.",
+        "Middle name and M.I. are required unless not applicable.",
       );
       return false;
     }
@@ -563,14 +574,14 @@ export default function AddEmployeeModal({
     if (
       !NAME_PATTERN.test(first) ||
       !NAME_PATTERN.test(last) ||
-      !NAME_PATTERN.test(middle)
+      (!noMiddleName && !NAME_PATTERN.test(middle))
     ) {
       setErrorMessage("Names must use letters, spaces, or dots only.");
       return false;
     }
 
-    if (!MIDDLE_INITIAL_PATTERN.test(mi)) {
-      setErrorMessage("Middle initial must use letters, spaces, or dots only.");
+    if (!noMiddleName && !MIDDLE_INITIAL_PATTERN.test(mi)) {
+      setErrorMessage("M.I. must use letters, spaces, or dots only.");
       return false;
     }
 
@@ -724,10 +735,10 @@ export default function AddEmployeeModal({
 
     setPendingPayload({
       first_name: firstName.trim(),
-      middle_name: middleName.trim(),
-      no_middle_name: false,
+      middle_name: noMiddleName ? "N/A" : middleName.trim(),
+      no_middle_name: noMiddleName,
       last_name: lastName.trim(),
-      middle_initial: middleInitial.trim(),
+      middle_initial: noMiddleName ? "N/A" : middleInitial.trim(),
       personal_email: personalEmail.trim(),
       email: personalEmail.trim(),
       mobile_number: mobileNumber.trim(),
@@ -743,6 +754,7 @@ export default function AddEmployeeModal({
       plantilla_no: plantillaNo.trim(),
       age,
       birthdate,
+      license_no_prc: licenseNoPrc.trim(),
     });
     setIsConfirmOpen(true);
   };
@@ -787,6 +799,7 @@ export default function AddEmployeeModal({
           plantilla_no: pendingPayload.plantilla_no,
           age: pendingPayload.age,
           birthdate: pendingPayload.birthdate,
+          license_no_prc: pendingPayload.license_no_prc,
         }),
       });
 
@@ -861,20 +874,7 @@ export default function AddEmployeeModal({
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           {step === "personal" && (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  First Name
-                </label>
-                <input
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
-                  placeholder="Juan"
-                />
-              </div>
-
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-700">
                   Last Name
@@ -890,85 +890,61 @@ export default function AddEmployeeModal({
 
               <div>
                 <label className="text-sm font-medium text-gray-700">
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                  placeholder="Juan"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">
                   Middle Name
                 </label>
                 <input
                   type="text"
                   value={middleName}
                   onChange={(e) => setMiddleName(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                  disabled={noMiddleName}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-100"
                   placeholder="Santos"
                 />
+                <label className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={noMiddleName}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setNoMiddleName(checked);
+                      if (checked) {
+                        setMiddleName("N/A");
+                        setMiddleInitial("N/A");
+                      } else {
+                        setMiddleName("");
+                        setMiddleInitial("");
+                      }
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  I don&apos;t have a middle name
+                </label>
               </div>
 
               <div>
                 <label className="text-sm font-medium text-gray-700">
-                  Middle Initial
+                  M.I.
                 </label>
                 <input
                   type="text"
                   value={middleInitial}
                   onChange={(e) => setMiddleInitial(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                  disabled={noMiddleName}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-100"
                   placeholder="S"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Date of Birth
-                </label>
-                <input
-                  type="date"
-                  value={birthdate}
-                  onChange={(e) => setBirthdate(e.target.value)}
-                  max={new Date().toISOString().slice(0, 10)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700">Age</label>
-                <input
-                  type="number"
-                  value={age || ""}
-                  readOnly
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700"
-                  placeholder="Auto computed"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Personal Email
-                </label>
-                <input
-                  type="email"
-                  value={personalEmail}
-                  onChange={(e) => setPersonalEmail(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
-                  placeholder="name@email.com"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Mobile Number
-                </label>
-                <input
-                  type="text"
-                  value={mobileNumber}
-                  onChange={(e) => {
-                    const digitsOnly = e.target.value
-                      .replace(/\D/g, "")
-                      .slice(0, 11);
-                    setMobileNumber(digitsOnly);
-                  }}
-                  inputMode="numeric"
-                  pattern="[0-9]{11}"
-                  maxLength={11}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
-                  placeholder="09123456789"
                 />
               </div>
 
@@ -976,53 +952,83 @@ export default function AddEmployeeModal({
                 <label className="text-sm font-medium text-gray-700">
                   Home Address
                 </label>
-                <input
-                  type="text"
+                <textarea
                   value={homeAddress}
                   onChange={(e) => setHomeAddress(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                  rows={2}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 whitespace-pre-wrap wrap-break-word"
                   placeholder="Street, Barangay, City"
                 />
+              </div>
+
+              <div className="sm:col-span-2 lg:col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Date of Birth
+                  </label>
+                  <input
+                    type="date"
+                    value={birthdate}
+                    onChange={(e) => setBirthdate(e.target.value)}
+                    max={new Date().toISOString().slice(0, 10)}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Age
+                  </label>
+                  <input
+                    type="number"
+                    value={age || ""}
+                    readOnly
+                    className="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                    placeholder="Auto computed"
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-2 lg:col-span-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Personal Email
+                  </label>
+                  <input
+                    type="email"
+                    value={personalEmail}
+                    onChange={(e) => setPersonalEmail(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                    placeholder="name@email.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Mobile Number
+                  </label>
+                  <input
+                    type="text"
+                    value={mobileNumber}
+                    onChange={(e) => {
+                      const digitsOnly = e.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 11);
+                      setMobileNumber(digitsOnly);
+                    }}
+                    inputMode="numeric"
+                    pattern="[0-9]{11}"
+                    maxLength={11}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                    placeholder="09123456789"
+                  />
+                </div>
               </div>
             </div>
           )}
 
           {step === "work" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Employee Number
-                </label>
-                <input
-                  type="text"
-                  value={employeeNo}
-                  onChange={(e) => {
-                    const digitsOnly = e.target.value
-                      .replace(/\D/g, "")
-                      .slice(0, 7);
-                    setEmployeeNo(digitsOnly);
-                  }}
-                  inputMode="numeric"
-                  pattern="[0-9]{7}"
-                  maxLength={7}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
-                  placeholder="1234567"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Work Email
-                </label>
-                <input
-                  type="email"
-                  value={workEmail}
-                  onChange={(e) => setWorkEmail(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
-                  placeholder="employee@deped.gov.ph"
-                />
-              </div>
-
               <div>
                 <label className="text-sm font-medium text-gray-700">
                   District
@@ -1085,75 +1091,6 @@ export default function AddEmployeeModal({
                       ) : (
                         <div className="px-4 py-3 text-center text-sm text-gray-500">
                           No districts match &quot;{districtSearch}&quot;
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Position
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={positionSearch}
-                    onChange={(e) => {
-                      setPositionSearch(e.target.value);
-                      setShowPositionDropdown(true);
-                      setSelectedPositionId(null);
-                    }}
-                    onFocus={() => setShowPositionDropdown(true)}
-                    onBlur={() => {
-                      window.setTimeout(
-                        () => setShowPositionDropdown(false),
-                        150,
-                      );
-                    }}
-                    disabled={positionsLoading}
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 disabled:cursor-not-allowed disabled:bg-gray-100"
-                    placeholder={
-                      positionsLoading
-                        ? "Loading positions..."
-                        : "Type to search position..."
-                    }
-                  />
-
-                  {showPositionDropdown && (
-                    <div className="absolute top-full z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-blue-200 bg-white shadow-lg">
-                      {positionsLoading ? (
-                        <div className="px-4 py-3 text-center text-sm text-gray-500">
-                          Loading positions...
-                        </div>
-                      ) : sortedPositions.length === 0 ? (
-                        <div className="px-4 py-3 text-center text-sm text-gray-500">
-                          No positions available
-                        </div>
-                      ) : filteredPositions.length > 0 ? (
-                        filteredPositions.map((item) => (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onMouseDown={(event) => event.preventDefault()}
-                            onClick={() => {
-                              setSelectedPositionId(item.id);
-                              setPositionSearch(item.position_name);
-                              setShowPositionDropdown(false);
-                            }}
-                            className={`w-full px-4 py-2 text-left text-sm transition hover:bg-blue-50 ${
-                              selectedPositionId === item.id
-                                ? "bg-blue-100 font-medium text-blue-700"
-                                : "text-gray-700"
-                            }`}
-                          >
-                            {item.position_name}
-                          </button>
-                        ))
-                      ) : (
-                        <div className="px-4 py-3 text-center text-sm text-gray-500">
-                          No positions match &quot;{positionSearch}&quot;
                         </div>
                       )}
                     </div>
@@ -1263,6 +1200,109 @@ export default function AddEmployeeModal({
 
               <div>
                 <label className="text-sm font-medium text-gray-700">
+                  Position
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={positionSearch}
+                    onChange={(e) => {
+                      setPositionSearch(e.target.value);
+                      setShowPositionDropdown(true);
+                      setSelectedPositionId(null);
+                    }}
+                    onFocus={() => setShowPositionDropdown(true)}
+                    onBlur={() => {
+                      window.setTimeout(
+                        () => setShowPositionDropdown(false),
+                        150,
+                      );
+                    }}
+                    disabled={positionsLoading}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 disabled:cursor-not-allowed disabled:bg-gray-100"
+                    placeholder={
+                      positionsLoading
+                        ? "Loading positions..."
+                        : "Type to search position..."
+                    }
+                  />
+
+                  {showPositionDropdown && (
+                    <div className="absolute top-full z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-blue-200 bg-white shadow-lg">
+                      {positionsLoading ? (
+                        <div className="px-4 py-3 text-center text-sm text-gray-500">
+                          Loading positions...
+                        </div>
+                      ) : sortedPositions.length === 0 ? (
+                        <div className="px-4 py-3 text-center text-sm text-gray-500">
+                          No positions available
+                        </div>
+                      ) : filteredPositions.length > 0 ? (
+                        filteredPositions.map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => {
+                              setSelectedPositionId(item.id);
+                              setPositionSearch(item.position_name);
+                              setShowPositionDropdown(false);
+                            }}
+                            className={`w-full px-4 py-2 text-left text-sm transition hover:bg-blue-50 ${
+                              selectedPositionId === item.id
+                                ? "bg-blue-100 font-medium text-blue-700"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            {item.position_name}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-center text-sm text-gray-500">
+                          No positions match &quot;{positionSearch}&quot;
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Employee Number
+                </label>
+                <input
+                  type="text"
+                  value={employeeNo}
+                  onChange={(e) => {
+                    const digitsOnly = e.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 7);
+                    setEmployeeNo(digitsOnly);
+                  }}
+                  inputMode="numeric"
+                  pattern="[0-9]{7}"
+                  maxLength={7}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                  placeholder="1234567"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Work Email
+                </label>
+                <input
+                  type="email"
+                  value={workEmail}
+                  onChange={(e) => setWorkEmail(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                  placeholder="employee@deped.gov.ph"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">
                   Employee Type
                 </label>
                 <select
@@ -1277,6 +1317,19 @@ export default function AddEmployeeModal({
                   <option value="teaching">Teaching</option>
                   <option value="non-teaching">Non-Teaching</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  License No PRC
+                </label>
+                <input
+                  type="text"
+                  value={licenseNoPrc}
+                  onChange={(e) => setLicenseNoPrc(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                  placeholder="PRC License Number"
+                />
               </div>
             </div>
           )}

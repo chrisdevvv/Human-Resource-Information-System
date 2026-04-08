@@ -485,7 +485,7 @@ export default function EmployeesListLayout() {
             </div>
 
             <div className="flex flex-wrap items-center gap-4">
-              <div className="w-full sm:w-auto flex flex-wrap items-center gap-3">
+              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-3">
                 <select
                   value={employeeTypeFilter}
                   onChange={(e) => {
@@ -558,7 +558,7 @@ export default function EmployeesListLayout() {
                   <button
                     type="button"
                     onClick={handleResetFilters}
-                    className="w-full sm:w-auto text-sm text-gray-500 underline hover:text-gray-700 transition cursor-pointer"
+                    className="col-span-2 sm:col-span-1 sm:w-auto text-sm text-gray-500 underline hover:text-gray-700 transition cursor-pointer text-right sm:text-left"
                   >
                     Clear
                   </button>
@@ -567,7 +567,7 @@ export default function EmployeesListLayout() {
             </div>
           </div>
 
-          <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
+          <div className="overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
             {employeeLoading ? (
               <div className="flex items-center justify-center py-10">
                 <p className="text-gray-500">Loading employees...</p>
@@ -577,87 +577,146 @@ export default function EmployeesListLayout() {
                 <p className="text-red-500">Error: {employeeError}</p>
               </div>
             ) : (
-              <table className="w-full">
-                <thead className="sticky top-0 z-10 bg-blue-100">
-                  <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                      Name
-                    </th>
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                      Employee Type
-                    </th>
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                      Email
-                    </th>
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                      School
-                    </th>
-                    <th className="text-right py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
+              <>
+                <div className="flex flex-col gap-2 sm:hidden">
                   {paginatedEmployees.length > 0 ? (
-                    paginatedEmployees.map((employee) => {
-                      return (
-                        <tr
-                          key={employee.id}
-                          className="border-b border-gray-100 hover:bg-gray-50 transition"
-                        >
-                          <td className="py-1 px-3 text-gray-900 text-sm font-medium">
-                            {employee.fullName}
-                          </td>
-                          <td className="py-1 px-3 text-gray-500 text-sm capitalize">
-                            {employee.employeeType}
-                          </td>
-                          <td className="py-1 px-3 text-gray-500 text-sm">
-                            {employee.email || "N/A"}
-                          </td>
-                          <td className="py-1 px-3 text-gray-500 text-sm">
-                            {employee.schoolName || "N/A"}
-                          </td>
-                          <td className="py-1 px-3">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleOpenView(employee)}
-                                className="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 transition cursor-pointer"
-                                aria-label="View employee"
-                                title="View"
-                              >
-                                <Eye size={12} />
-                                View
-                              </button>
-                              {currentUserRole === "SUPER_ADMIN" ? (
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenArchive(employee)}
-                                  className="inline-flex items-center gap-1 rounded bg-gray-800 px-3 py-1 text-xs font-medium text-white hover:bg-gray-900 transition cursor-pointer"
-                                  aria-label="Archive employee"
-                                  title="Archive"
-                                >
-                                  <Archive size={12} />
-                                  Archive
-                                </button>
-                              ) : null}
-                            </div>
+                    paginatedEmployees.map((employee) => (
+                      <div
+                        key={employee.id}
+                        className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
+                      >
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {employee.fullName}
+                        </p>
+                        <p className="text-xs text-gray-500 capitalize">
+                          {employee.employeeType}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-600 truncate">
+                          {employee.email || "N/A"}
+                        </p>
+                        <p className="text-xs text-gray-600 truncate">
+                          {employee.schoolName || "N/A"}
+                        </p>
+
+                        <div className="mt-2 flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenView(employee)}
+                            className="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 transition cursor-pointer"
+                            aria-label="View employee"
+                            title="View"
+                          >
+                            <Eye size={12} />
+                            View
+                          </button>
+                          {currentUserRole === "SUPER_ADMIN" ? (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenArchive(employee)}
+                              className="inline-flex items-center gap-1 rounded bg-gray-800 px-3 py-1 text-xs font-medium text-white hover:bg-gray-900 transition cursor-pointer"
+                              aria-label="Archive employee"
+                              title="Archive"
+                            >
+                              <Archive size={12} />
+                              Archive
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="py-8 text-center text-gray-500 text-sm">
+                      No employees found.
+                    </p>
+                  )}
+                </div>
+
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="sticky top-0 z-10 bg-blue-100">
+                      <tr className="border-b-2 border-gray-200">
+                        <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                          Name
+                        </th>
+                        <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                          Employee Type
+                        </th>
+                        <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                          Email
+                        </th>
+                        <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                          School
+                        </th>
+                        <th className="text-right py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedEmployees.length > 0 ? (
+                        paginatedEmployees.map((employee) => {
+                          return (
+                            <tr
+                              key={employee.id}
+                              className="border-b border-gray-100 hover:bg-gray-50 transition"
+                            >
+                              <td className="py-1 px-3 text-gray-900 text-sm font-medium">
+                                {employee.fullName}
+                              </td>
+                              <td className="py-1 px-3 text-gray-500 text-sm capitalize">
+                                {employee.employeeType}
+                              </td>
+                              <td className="py-1 px-3 text-gray-500 text-sm">
+                                {employee.email || "N/A"}
+                              </td>
+                              <td className="py-1 px-3 text-gray-500 text-sm">
+                                {employee.schoolName || "N/A"}
+                              </td>
+                              <td className="py-1 px-3">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenView(employee)}
+                                    className="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 transition cursor-pointer"
+                                    aria-label="View employee"
+                                    title="View"
+                                  >
+                                    <Eye size={12} />
+                                    View
+                                  </button>
+                                  {currentUserRole === "SUPER_ADMIN" ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleOpenArchive(employee)
+                                      }
+                                      className="inline-flex items-center gap-1 rounded bg-gray-800 px-3 py-1 text-xs font-medium text-white hover:bg-gray-900 transition cursor-pointer"
+                                      aria-label="Archive employee"
+                                      title="Archive"
+                                    >
+                                      <Archive size={12} />
+                                      Archive
+                                    </button>
+                                  ) : null}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="py-8 text-center text-gray-500"
+                          >
+                            No employees found.
                           </td>
                         </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="py-8 text-center text-gray-500"
-                      >
-                        No employees found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
 
