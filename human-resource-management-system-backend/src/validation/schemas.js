@@ -27,6 +27,7 @@ const workEmailSchema = Joi.string()
 const districtSchema = Joi.string().trim().max(255).allow(null, "");
 const positionSchema = Joi.string().trim().max(255).allow(null, "");
 const plantillaNoSchema = Joi.string().trim().max(100).allow(null, "");
+const prcLicenseNoSchema = Joi.string().trim().max(100).allow(null, "");
 const ageSchema = Joi.number().integer().min(0).max(150).allow(null);
 
 const requiredMiddleNameWhenApplicable = middleNameSchema.when(
@@ -67,6 +68,7 @@ const employeeCreateBodySchema = Joi.object({
   position: positionSchema,
   position_id: Joi.number().integer().positive().allow(null, ""),
   plantilla_no: plantillaNoSchema,
+  prc_license_no: prcLicenseNoSchema,
   birthdate: birthdateSchema.required(),
   age: ageSchema,
 });
@@ -96,6 +98,7 @@ const employeeUpdateBodySchema = Joi.object({
   position: positionSchema,
   position_id: Joi.number().integer().positive().allow(null, ""),
   plantilla_no: plantillaNoSchema,
+  prc_license_no: prcLicenseNoSchema,
   birthdate: birthdateSchema.allow(null),
   age: ageSchema,
 });

@@ -53,6 +53,7 @@ CREATE TABLE `employees` (
   `middle_name` varchar(75) DEFAULT NULL,
   `last_name` varchar(75) NOT NULL,
   `email` varchar(191) DEFAULT NULL,
+  `prc_license_no` varchar(100) DEFAULT NULL,
   `employee_type` enum('teaching','non-teaching') NOT NULL,
   `school_id` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()

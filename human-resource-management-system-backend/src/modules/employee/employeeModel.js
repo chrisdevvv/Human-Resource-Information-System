@@ -122,6 +122,7 @@ const Employee = {
       position,
       position_id,
       plantilla_no,
+      prc_license_no,
       age,
       birthdate,
     } = data;
@@ -132,7 +133,7 @@ const Employee = {
     const [result] = await pool
       .promise()
       .query(
-        "INSERT INTO employees (first_name, middle_name, last_name, middle_initial, email, mobile_number, home_address, employee_type, school_id, employee_no, work_email, district, `position`, position_id, plantilla_no, age, birthdate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO employees (first_name, middle_name, last_name, middle_initial, email, mobile_number, home_address, employee_type, school_id, employee_no, work_email, district, `position`, position_id, plantilla_no, prc_license_no, age, birthdate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           first_name,
           middle_name || null,
@@ -149,6 +150,7 @@ const Employee = {
           position || null,
           position_id || null,
           plantilla_no || null,
+          prc_license_no || null,
           age || null,
           birthdate,
         ],
@@ -175,6 +177,7 @@ const Employee = {
       position,
       position_id,
       plantilla_no,
+      prc_license_no,
       age,
       birthdate,
     } = data;
@@ -185,7 +188,7 @@ const Employee = {
     const [result] = await pool
       .promise()
       .query(
-        "UPDATE employees SET first_name = ?, middle_name = ?, last_name = ?, middle_initial = ?, email = ?, mobile_number = ?, home_address = ?, employee_type = ?, school_id = ?, employee_no = ?, work_email = ?, district = ?, `position` = ?, position_id = ?, plantilla_no = ?, age = ?, birthdate = ? WHERE id = ? AND is_archived = 0",
+        "UPDATE employees SET first_name = ?, middle_name = ?, last_name = ?, middle_initial = ?, email = ?, mobile_number = ?, home_address = ?, employee_type = ?, school_id = ?, employee_no = ?, work_email = ?, district = ?, `position` = ?, position_id = ?, plantilla_no = ?, prc_license_no = ?, age = ?, birthdate = ? WHERE id = ? AND is_archived = 0",
         [
           first_name,
           middle_name || null,
@@ -202,6 +205,7 @@ const Employee = {
           position || null,
           position_id || null,
           plantilla_no || null,
+          prc_license_no || null,
           age || null,
           birthdate || null,
           id,
