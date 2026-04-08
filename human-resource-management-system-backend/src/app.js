@@ -379,6 +379,43 @@ const archiveOldBacklogs = async () => {
   }
 };
 
+const ensurePositionsTable = async () => {
+  await pool.promise().query(`
+    CREATE TABLE IF NOT EXISTS positions (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      position_name VARCHAR(255) NOT NULL UNIQUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `);
+
+  try {
+    await pool
+      .promise()
+      .query(`CREATE INDEX idx_positions_name ON positions (position_name)`);
+  } catch (err) {
+    if (!/Duplicate|exists/i.test(err.message)) {
+      console.warn("Positions index warning:", err.message);
+    }
+  }
+};
+
+const ensureEmployeePositionFK = async () => {
+  // Check if position_id column exists
+  const [columns] = await pool.promise().query(`
+    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_NAME = 'employees' AND COLUMN_NAME = 'position_id'
+  `);
+
+  if (columns.length === 0) {
+    // Add position_id column
+    await pool.promise().query(`
+      ALTER TABLE employees
+      ADD COLUMN position_id INT NULL AFTER \`position\`,
+      ADD CONSTRAINT fk_employees_position_id FOREIGN KEY (position_id) REFERENCES positions(id) ON DELETE SET NULL;
+    `);
+  }
+};
+
 const ensureIndexes = async () => {
   // Create helpful indexes for common filters/sorts. Errors ignored if index already exists.
   const stmts = [
@@ -387,6 +424,7 @@ const ensureIndexes = async () => {
     `CREATE INDEX idx_users_first_last_email ON users (first_name, last_name, email)`,
     `CREATE INDEX idx_users_email ON users (email)`,
     `CREATE INDEX idx_employees_school_id ON employees (school_id)`,
+    `CREATE INDEX idx_employees_position_id ON employees (position_id)`,
     // Optimized backlogs indexes for performance
     `CREATE INDEX idx_backlogs_is_archived_created_at ON backlogs (is_archived, created_at DESC)`,
     `CREATE INDEX idx_backlogs_user_id ON backlogs (user_id)`,
@@ -457,6 +495,12 @@ app.listen(PORT, async () => {
 
     await ensureBacklogArchiveSchema();
     console.log("✔  Backlog archive schema is ready");
+
+    await ensurePositionsTable();
+    console.log("✔  Positions table is ready");
+
+    await ensureEmployeePositionFK();
+    console.log("✔  Employee position foreign key is ready");
 
     await ensureIndexes();
     console.log("✔  Database indexes ensured (best-effort)");
