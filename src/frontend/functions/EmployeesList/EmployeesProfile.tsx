@@ -413,7 +413,7 @@ export default function EmployeesListLayout() {
     sortOrder !== "asc";
 
   return (
-    <div className="w-full min-w-0">
+    <div className="w-full min-w-0" >
       <div className="flex justify-start gap-2 mb-4">
         <button
           onClick={() => setActiveTab("list")}
@@ -567,7 +567,7 @@ export default function EmployeesListLayout() {
             </div>
           </div>
 
-          <div className="overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
+          <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
             {employeeLoading ? (
               <div className="flex items-center justify-center py-10">
                 <p className="text-gray-500">Loading employees...</p>
@@ -631,7 +631,7 @@ export default function EmployeesListLayout() {
                   )}
                 </div>
 
-                <div className="hidden sm:block overflow-x-auto">
+                <div className="hidden sm:block">
                   <table className="w-full">
                     <thead className="sticky top-0 z-10 bg-blue-100">
                       <tr className="border-b-2 border-gray-200">
