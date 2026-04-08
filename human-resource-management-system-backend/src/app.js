@@ -297,13 +297,17 @@ const ensureEmployeeProfileSchema = async () => {
     ADD COLUMN IF NOT EXISTS middle_initial VARCHAR(10) NULL AFTER middle_name,
     ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(30) NULL AFTER email,
     ADD COLUMN IF NOT EXISTS home_address VARCHAR(255) NULL AFTER mobile_number,
+    ADD COLUMN IF NOT EXISTS place_of_birth VARCHAR(255) NULL AFTER home_address,
+    ADD COLUMN IF NOT EXISTS civil_status VARCHAR(50) NULL AFTER place_of_birth,
+    ADD COLUMN IF NOT EXISTS sex VARCHAR(20) NULL AFTER civil_status,
     ADD COLUMN IF NOT EXISTS employee_no VARCHAR(100) NULL AFTER school_id,
     ADD COLUMN IF NOT EXISTS work_email VARCHAR(255) NULL AFTER employee_no,
     ADD COLUMN IF NOT EXISTS district VARCHAR(255) NULL AFTER work_email,
     ADD COLUMN IF NOT EXISTS work_district VARCHAR(255) NULL AFTER work_email,
     ADD COLUMN IF NOT EXISTS \`position\` VARCHAR(255) NULL AFTER district,
     ADD COLUMN IF NOT EXISTS plantilla_no VARCHAR(100) NULL AFTER \`position\`,
-    ADD COLUMN IF NOT EXISTS age INT NULL AFTER plantilla_no;
+    ADD COLUMN IF NOT EXISTS prc_license_no VARCHAR(100) NULL AFTER plantilla_no,
+    ADD COLUMN IF NOT EXISTS age INT NULL AFTER prc_license_no;
   `);
 
   await pool.promise().query(`
@@ -402,6 +406,68 @@ const ensurePositionsTable = async () => {
   }
 };
 
+const ensureCivilStatusesTable = async () => {
+  await pool.promise().query(`
+    CREATE TABLE IF NOT EXISTS civil_statuses (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      civil_status_name VARCHAR(50) NOT NULL UNIQUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `);
+
+  const civilStatuses = ["Single", "Married", "Separated", "Widowed"];
+  await pool
+    .promise()
+    .query(
+      `INSERT IGNORE INTO civil_statuses (civil_status_name) VALUES ${civilStatuses
+        .map(() => "(?)")
+        .join(",")}`,
+      civilStatuses,
+    );
+
+  try {
+    await pool
+      .promise()
+      .query(
+        `CREATE INDEX idx_civil_statuses_name ON civil_statuses (civil_status_name)`,
+      );
+  } catch (err) {
+    if (!/Duplicate|exists/i.test(err.message)) {
+      console.warn("Civil statuses index warning:", err.message);
+    }
+  }
+};
+
+const ensureSexesTable = async () => {
+  await pool.promise().query(`
+    CREATE TABLE IF NOT EXISTS sexes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      sex_name VARCHAR(20) NOT NULL UNIQUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `);
+
+  const sexes = ["M", "F"];
+  await pool
+    .promise()
+    .query(
+      `INSERT IGNORE INTO sexes (sex_name) VALUES ${sexes
+        .map(() => "(?)")
+        .join(",")}`,
+      sexes,
+    );
+
+  try {
+    await pool
+      .promise()
+      .query(`CREATE INDEX idx_sexes_name ON sexes (sex_name)`);
+  } catch (err) {
+    if (!/Duplicate|exists/i.test(err.message)) {
+      console.warn("Sexes index warning:", err.message);
+    }
+  }
+};
+
 const ensureDistrictsTable = async () => {
   await pool.promise().query(`
     CREATE TABLE IF NOT EXISTS districts (
@@ -452,6 +518,34 @@ const ensureEmployeePositionFK = async () => {
   }
 };
 
+const ensureEmployeeCivilStatusSexFK = async () => {
+  const [civilStatusColumns] = await pool.promise().query(`
+    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = 'employees' AND COLUMN_NAME = 'civil_status_id'
+  `);
+
+  if (civilStatusColumns.length === 0) {
+    await pool.promise().query(`
+      ALTER TABLE employees
+      ADD COLUMN civil_status_id INT NULL AFTER civil_status,
+      ADD CONSTRAINT fk_employees_civil_status_id FOREIGN KEY (civil_status_id) REFERENCES civil_statuses(id) ON DELETE SET NULL;
+    `);
+  }
+
+  const [sexColumns] = await pool.promise().query(`
+    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = 'employees' AND COLUMN_NAME = 'sex_id'
+  `);
+
+  if (sexColumns.length === 0) {
+    await pool.promise().query(`
+      ALTER TABLE employees
+      ADD COLUMN sex_id INT NULL AFTER sex,
+      ADD CONSTRAINT fk_employees_sex_id FOREIGN KEY (sex_id) REFERENCES sexes(id) ON DELETE SET NULL;
+    `);
+  }
+};
+
 const ensureIndexes = async () => {
   // Create helpful indexes for common filters/sorts. Errors ignored if index already exists.
   const stmts = [
@@ -461,6 +555,8 @@ const ensureIndexes = async () => {
     `CREATE INDEX idx_users_email ON users (email)`,
     `CREATE INDEX idx_employees_school_id ON employees (school_id)`,
     `CREATE INDEX idx_employees_position_id ON employees (position_id)`,
+    `CREATE INDEX idx_employees_civil_status_id ON employees (civil_status_id)`,
+    `CREATE INDEX idx_employees_sex_id ON employees (sex_id)`,
     // Optimized backlogs indexes for performance
     `CREATE INDEX idx_backlogs_is_archived_created_at ON backlogs (is_archived, created_at DESC)`,
     `CREATE INDEX idx_backlogs_user_id ON backlogs (user_id)`,
@@ -536,6 +632,44 @@ app.get(
   },
 );
 
+app.get(
+  "/api/civil-statuses",
+  authMiddleware,
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  async (_req, res) => {
+    try {
+      const [rows] = await pool
+        .promise()
+        .query("SELECT id, civil_status_name FROM civil_statuses ORDER BY id ASC");
+      return res.status(200).json({ data: rows });
+    } catch (err) {
+      return res.status(500).json({
+        message: "Error retrieving civil statuses",
+        error: err.message,
+      });
+    }
+  },
+);
+
+app.get(
+  "/api/sexes",
+  authMiddleware,
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  async (_req, res) => {
+    try {
+      const [rows] = await pool
+        .promise()
+        .query("SELECT id, sex_name FROM sexes ORDER BY id ASC");
+      return res.status(200).json({ data: rows });
+    } catch (err) {
+      return res.status(500).json({
+        message: "Error retrieving sexes",
+        error: err.message,
+      });
+    }
+  },
+);
+
 // Start the server
 app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);
@@ -571,11 +705,20 @@ app.listen(PORT, async () => {
     await ensurePositionsTable();
     console.log("✔  Positions table is ready");
 
+    await ensureCivilStatusesTable();
+    console.log("✔  Civil statuses table is ready");
+
+    await ensureSexesTable();
+    console.log("✔  Sexes table is ready");
+
     await ensureDistrictsTable();
     console.log("✔  Districts table is ready");
 
     await ensureEmployeePositionFK();
     console.log("✔  Employee position foreign key is ready");
+
+    await ensureEmployeeCivilStatusSexFK();
+    console.log("✔  Employee civil status and sex foreign keys are ready");
 
     await ensureIndexes();
     console.log("✔  Database indexes ensured (best-effort)");

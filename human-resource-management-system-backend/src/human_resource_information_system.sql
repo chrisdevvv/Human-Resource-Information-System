@@ -53,8 +53,38 @@ CREATE TABLE `employees` (
   `middle_name` varchar(75) DEFAULT NULL,
   `last_name` varchar(75) NOT NULL,
   `email` varchar(191) DEFAULT NULL,
+  `prc_license_no` varchar(100) DEFAULT NULL,
+  `place_of_birth` varchar(255) DEFAULT NULL,
+  `civil_status` varchar(50) DEFAULT NULL,
+  `civil_status_id` int(11) DEFAULT NULL,
+  `sex` varchar(20) DEFAULT NULL,
+  `sex_id` int(11) DEFAULT NULL,
   `employee_type` enum('teaching','non-teaching') NOT NULL,
   `school_id` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `civil_statuses`
+--
+
+CREATE TABLE `civil_statuses` (
+  `id` int(11) NOT NULL,
+  `civil_status_name` varchar(50) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `sexes`
+--
+
+CREATE TABLE `sexes` (
+  `id` int(11) NOT NULL,
+  `sex_name` varchar(20) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
