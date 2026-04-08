@@ -233,8 +233,11 @@ export default function LoginPageMobile() {
               DEPARTMENT OF EDUCATION
             </p>
             <h1 className="text-sm sm:text-base font-bold leading-tight">
-              Human Resource Information System
+              CITY OF SAN JOSE DEL MONTE
             </h1>
+            <p className="text-[10px] sm:text-xs font-normal tracking-wider leading-tight">
+              CSJDM Human Resource Information System - CHRIS
+            </p>
           </div>
         </div>
       </header>

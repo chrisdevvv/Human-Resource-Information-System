@@ -10,7 +10,7 @@ import {
   UserPlus,
   UserCheck,
   Eye,
-  RotateCcw,
+  Search,
 } from "lucide-react";
 import PendingAccounts from "./PendingAccounts";
 import UserSettingModal from "../../components/UserSettingModal";
@@ -59,9 +59,26 @@ const normalizeRole = (value: unknown): string => {
 };
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+const USER_ROLES_TAB_KEY = "userRoles:activeTab";
+
+const getInitialUserRolesTab = (): "users" | "pending" => {
+  if (typeof window === "undefined") {
+    return "users";
+  }
+
+  const storedTab = window.localStorage.getItem(USER_ROLES_TAB_KEY);
+  if (storedTab === "pending") {
+    window.localStorage.removeItem(USER_ROLES_TAB_KEY);
+    return "pending";
+  }
+
+  return "users";
+};
 
 export default function UserRoles() {
-  const [activeTab, setActiveTab] = useState<"users" | "pending">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "pending">(
+    getInitialUserRolesTab,
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [accountStatusFilter, setAccountStatusFilter] = useState<
@@ -304,13 +321,21 @@ export default function UserRoles() {
     setPageJumpInput(String(nextPage));
   };
 
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 ||
+    roleFilter !== "ALL" ||
+    accountStatusFilter !== "ACTIVE" ||
+    schoolFilter !== "ALL" ||
+    letterFilter !== "ALL" ||
+    sortOrder !== "asc";
+
   return (
     <div className="w-full">
       {/* Tabs */}
-      <div className="flex justify-center gap-2 mb-4">
+      <div className="flex justify-start gap-2 mb-4">
         <button
           onClick={() => setActiveTab("users")}
-          className={`px-6 py-2 font-medium text-sm rounded-t-lg transition cursor-pointer ${
+          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
             activeTab === "users"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -323,7 +348,7 @@ export default function UserRoles() {
         </button>
         <button
           onClick={() => setActiveTab("pending")}
-          className={`px-6 py-2 font-medium text-sm rounded-t-lg transition cursor-pointer ${
+          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
             activeTab === "pending"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -338,8 +363,11 @@ export default function UserRoles() {
 
       {/* Tab Content */}
       {activeTab === "users" && (
-        <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-6 sticky top-4 flex flex-col">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6 inline-flex items-center gap-2">
+        <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col">
+          <h1
+            style={{ fontSize: "20px" }}
+            className="font-bold text-gray-900 mb-4 inline-flex items-center gap-2"
+          >
             <Settings size={24} className="text-blue-600" />
             User & Roles
           </h1>
@@ -354,13 +382,14 @@ export default function UserRoles() {
                   placeholder="Search name, email, or school"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="text-gray-500 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="text-gray-500 w-full px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
               <button
                 onClick={handleSearch}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+                className="inline-flex items-center gap-1 px-5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
               >
+                <Search size={14} />
                 Search
               </button>
             </div>
@@ -370,9 +399,9 @@ export default function UserRoles() {
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <button
                   onClick={() => setShowAddUserModal(true)}
-                  className="inline-flex items-center justify-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer"
+                  className="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer"
                 >
-                  <UserPlus size={16} />
+                  <UserPlus size={14} />
                   Add User
                 </button>
 
@@ -382,7 +411,7 @@ export default function UserRoles() {
                     setRoleFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ALL">All Roles</option>
                   <option value="SUPER_ADMIN">Super Admin</option>
@@ -397,7 +426,7 @@ export default function UserRoles() {
                       setSchoolFilter(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="w-full sm:w-56 lg:w-64 text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                    className="w-full sm:w-56 lg:w-64 text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                     disabled={schoolsLoading}
                   >
                     <option value="ALL">All Schools</option>
@@ -419,7 +448,7 @@ export default function UserRoles() {
                     );
                     setCurrentPage(1);
                   }}
-                  className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ACTIVE">Active Accounts</option>
                   <option value="INACTIVE">Inactive Accounts</option>
@@ -432,7 +461,7 @@ export default function UserRoles() {
                     setLetterFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ALL">All Letters</option>
                   {alphabet.map((letter) => (
@@ -446,7 +475,7 @@ export default function UserRoles() {
                   onClick={() => {
                     setSortOrder(sortOrder === "asc" ? "desc" : "asc");
                   }}
-                  className="text-gray-500 flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
+                  className="text-gray-500 flex items-center gap-2 px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
                 >
                   {sortOrder === "asc" ? (
                     <>
@@ -461,14 +490,15 @@ export default function UserRoles() {
                   )}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="text-gray-500 flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
-                >
-                  <RotateCcw size={16} />
-                  Reset Filters
-                </button>
+                {hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="text-sm text-gray-500 underline hover:text-gray-700 transition cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>
@@ -571,7 +601,7 @@ export default function UserRoles() {
           {/* Pagination */}
           {filteredUsers.length > 0 && (
             <div className="mt-6 space-y-3">
-              <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+              <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
                 <label className="flex items-center gap-2 text-sm text-gray-600">
                   Show
                   <select
@@ -592,7 +622,50 @@ export default function UserRoles() {
                   entries
                 </label>
 
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center justify-center gap-2 sm:justify-self-center">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  {pageNumberItems.map((item, index) =>
+                    item === "ellipsis" ? (
+                      <span
+                        key={`ellipsis-${index}`}
+                        className="px-2 text-sm text-gray-400 select-none"
+                      >
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={item}
+                        onClick={() => setCurrentPage(item)}
+                        className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
+                          currentPage === item
+                            ? "bg-blue-600 text-white"
+                            : "text-gray-500 hover:bg-gray-100"
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    ),
+                  )}
+                  <button
+                    onClick={() =>
+                      setCurrentPage(Math.min(totalPages, currentPage + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2 text-sm text-gray-600 sm:justify-self-end">
                   <span>Jump to</span>
                   <input
                     type="number"
@@ -615,49 +688,6 @@ export default function UserRoles() {
                     Go
                   </button>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-center gap-2">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                {pageNumberItems.map((item, index) =>
-                  item === "ellipsis" ? (
-                    <span
-                      key={`ellipsis-${index}`}
-                      className="px-2 text-sm text-gray-400 select-none"
-                    >
-                      ...
-                    </span>
-                  ) : (
-                    <button
-                      key={item}
-                      onClick={() => setCurrentPage(item)}
-                      className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
-                        currentPage === item
-                          ? "bg-blue-600 text-white"
-                          : "text-gray-500 hover:bg-gray-100"
-                      }`}
-                    >
-                      {item}
-                    </button>
-                  ),
-                )}
-                <button
-                  onClick={() =>
-                    setCurrentPage(Math.min(totalPages, currentPage + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-                  aria-label="Next page"
-                >
-                  <ChevronRight size={18} />
-                </button>
               </div>
             </div>
           )}
@@ -817,7 +847,7 @@ function UserDetailsModalInline({
         <div className="mt-6 flex justify-end">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer"
+            className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer"
           >
             Close
           </button>

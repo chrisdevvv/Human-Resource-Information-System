@@ -32,7 +32,7 @@ export default function SidebarPreviewPage() {
           role={role}
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          title="HRIS Preview"
+          title="CHRIS Preview"
         />
 
         <main className="flex-1 p-6 md:p-10">

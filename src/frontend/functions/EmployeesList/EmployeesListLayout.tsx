@@ -10,9 +10,9 @@ import {
   Users,
   Plus,
   CheckCircle2,
+  Search,
   X,
   Eye,
-  RotateCcw,
 } from "lucide-react";
 import AddEmployeeModal from "./modals/AddEmployeeModal";
 import ArchivedEmployee from "./ArchivedEmployee";
@@ -61,6 +61,21 @@ const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+const EMPLOYEES_LIST_TAB_KEY = "employeesList:activeTab";
+
+const getInitialEmployeesTab = (): "list" | "archived" => {
+  if (typeof window === "undefined") {
+    return "list";
+  }
+
+  const storedTab = window.localStorage.getItem(EMPLOYEES_LIST_TAB_KEY);
+  if (storedTab === "archived") {
+    window.localStorage.removeItem(EMPLOYEES_LIST_TAB_KEY);
+    return "archived";
+  }
+
+  return "list";
+};
 
 const normalizeRole = (role: unknown) =>
   String(role || "")
@@ -127,7 +142,9 @@ const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
 
 export default function EmployeesListLayout() {
   const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"list" | "archived">("list");
+  const [activeTab, setActiveTab] = useState<"list" | "archived">(
+    getInitialEmployeesTab,
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [employeeTypeFilter, setEmployeeTypeFilter] = useState<
     "ALL" | "teaching" | "non-teaching"
@@ -388,12 +405,19 @@ export default function EmployeesListLayout() {
     setSelectedViewEmployee(updatedEmployee);
   };
 
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 ||
+    employeeTypeFilter !== "ALL" ||
+    schoolFilter !== "ALL" ||
+    letterFilter !== "ALL" ||
+    sortOrder !== "asc";
+
   return (
     <div className="w-full">
-      <div className="flex justify-center gap-2 mb-4">
+      <div className="flex justify-start gap-2 mb-4">
         <button
           onClick={() => setActiveTab("list")}
-          className={`px-6 py-2 font-medium text-sm rounded-t-lg transition cursor-pointer ${
+          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
             activeTab === "list"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -406,7 +430,7 @@ export default function EmployeesListLayout() {
         </button>
         <button
           onClick={() => setActiveTab("archived")}
-          className={`px-6 py-2 font-medium text-sm rounded-t-lg transition cursor-pointer ${
+          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
             activeTab === "archived"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -420,8 +444,11 @@ export default function EmployeesListLayout() {
       </div>
 
       {activeTab === "list" ? (
-        <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-3 sm:p-6 sticky top-0 sm:top-4 flex flex-col">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-6 inline-flex items-center gap-2">
+        <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-0 sm:top-4 flex flex-col">
+          <h1
+            style={{ fontSize: "20px" }}
+            className="font-bold text-gray-900 mb-2 sm:mb-4 inline-flex items-center gap-2"
+          >
             <Users size={22} className="text-blue-600" />
             Employees List
           </h1>
@@ -430,9 +457,9 @@ export default function EmployeesListLayout() {
             <button
               type="button"
               onClick={() => setIsAddEmployeeOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+              className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
             >
-              <Plus size={16} />
+              <Plus size={14} />
               Add Employee
             </button>
           </div>
@@ -445,13 +472,14 @@ export default function EmployeesListLayout() {
                   placeholder="Search employee"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="text-gray-500 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="text-gray-500 w-full px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
               <button
                 onClick={handleSearch}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+                className="inline-flex items-center gap-1 px-5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
               >
+                <Search size={14} />
                 Search
               </button>
             </div>
@@ -466,7 +494,7 @@ export default function EmployeesListLayout() {
                     );
                     setCurrentPage(1);
                   }}
-                  className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  className="w-full sm:w-auto text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ALL">All Employee Types</option>
                   <option value="teaching">Teaching</option>
@@ -480,7 +508,7 @@ export default function EmployeesListLayout() {
                       setSchoolFilter(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                    className="w-full sm:w-auto text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                   >
                     <option value="ALL">All Schools</option>
                     {schoolOptions.map((schoolName) => (
@@ -497,7 +525,7 @@ export default function EmployeesListLayout() {
                     setLetterFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  className="w-full sm:w-auto text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ALL">All Letters</option>
                   {alphabet.map((letter) => (
@@ -511,7 +539,7 @@ export default function EmployeesListLayout() {
                   onClick={() => {
                     setSortOrder(sortOrder === "asc" ? "desc" : "asc");
                   }}
-                  className="w-full sm:w-auto text-gray-500 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
+                  className="w-full sm:w-auto text-gray-500 flex items-center justify-center gap-2 px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
                 >
                   {sortOrder === "asc" ? (
                     <>
@@ -526,14 +554,15 @@ export default function EmployeesListLayout() {
                   )}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="w-full sm:w-auto text-gray-500 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
-                >
-                  <RotateCcw size={16} />
-                  Reset Filters
-                </button>
+                {hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="w-full sm:w-auto text-sm text-gray-500 underline hover:text-gray-700 transition cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>
@@ -593,7 +622,7 @@ export default function EmployeesListLayout() {
                               <button
                                 type="button"
                                 onClick={() => handleOpenView(employee)}
-                                className="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition cursor-pointer"
+                                className="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 transition cursor-pointer"
                                 aria-label="View employee"
                                 title="View"
                               >
@@ -604,7 +633,7 @@ export default function EmployeesListLayout() {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenArchive(employee)}
-                                  className="inline-flex items-center gap-1 rounded bg-gray-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-900 transition cursor-pointer"
+                                  className="inline-flex items-center gap-1 rounded bg-gray-800 px-3 py-1 text-xs font-medium text-white hover:bg-gray-900 transition cursor-pointer"
                                   aria-label="Archive employee"
                                   title="Archive"
                                 >
@@ -634,7 +663,7 @@ export default function EmployeesListLayout() {
 
           {filteredEmployees.length > 0 && (
             <div className="mt-6 space-y-3">
-              <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+              <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
                 <label className="flex items-center gap-2 text-sm text-gray-600">
                   Show
                   <select
@@ -655,7 +684,56 @@ export default function EmployeesListLayout() {
                   entries
                 </label>
 
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center justify-center gap-2 sm:justify-self-center">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+
+                  {pageNumberItems.map((item, index) => {
+                    if (item === "ellipsis") {
+                      return (
+                        <span
+                          key={`ellipsis-${index}`}
+                          className="px-2 text-sm text-gray-400 select-none"
+                        >
+                          ...
+                        </span>
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={item}
+                        onClick={() => setCurrentPage(item)}
+                        className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
+                          currentPage === item
+                            ? "bg-blue-600 text-white"
+                            : "text-gray-500 hover:bg-gray-100"
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    onClick={() =>
+                      setCurrentPage(Math.min(totalPages, currentPage + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2 text-sm text-gray-600 sm:justify-self-end">
                   <span>Jump to</span>
                   <input
                     type="number"
@@ -678,55 +756,6 @@ export default function EmployeesListLayout() {
                     Go
                   </button>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-center gap-2">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-
-                {pageNumberItems.map((item, index) => {
-                  if (item === "ellipsis") {
-                    return (
-                      <span
-                        key={`ellipsis-${index}`}
-                        className="px-2 text-sm text-gray-400 select-none"
-                      >
-                        ...
-                      </span>
-                    );
-                  }
-
-                  return (
-                    <button
-                      key={item}
-                      onClick={() => setCurrentPage(item)}
-                      className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
-                        currentPage === item
-                          ? "bg-blue-600 text-white"
-                          : "text-gray-500 hover:bg-gray-100"
-                      }`}
-                    >
-                      {item}
-                    </button>
-                  );
-                })}
-
-                <button
-                  onClick={() =>
-                    setCurrentPage(Math.min(totalPages, currentPage + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-                  aria-label="Next page"
-                >
-                  <ChevronRight size={18} />
-                </button>
               </div>
             </div>
           )}

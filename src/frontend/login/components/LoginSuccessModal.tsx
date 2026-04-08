@@ -101,7 +101,7 @@ export default function LoginSuccessModal({ visible, user, onClose }: Props) {
           <button
             type="button"
             onClick={handleContinue}
-            className="cursor-pointer mt-3 px-5 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+            className="cursor-pointer mt-3 px-4 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
           >
             Continue
           </button>

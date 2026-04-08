@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import {
   Users,
   FileText,
-  Settings,
   UserCheck,
   UserMinus,
   Archive,
@@ -91,13 +90,15 @@ type StatCard = {
   value: number | string;
   icon: React.ReactNode;
   textColor: string;
+  tab?: string;
+  intent?: {
+    key: string;
+    value: string;
+  };
 };
 
-type Shortcut = {
-  label: string;
-  icon: React.ReactNode;
-  tab: string;
-};
+const EMPLOYEES_LIST_TAB_KEY = "employeesList:activeTab";
+const USER_ROLES_TAB_KEY = "userRoles:activeTab";
 
 type DashboardMobileProps = {
   onTabChange?: (tab: string) => void;
@@ -284,12 +285,14 @@ export default function DashboardMobile({
       value: stats.totalEmployees,
       icon: <Users className="w-4 h-4" />,
       textColor: "text-blue-700",
+      tab: "employees-list",
     },
     {
       title: "Total Users",
       value: stats.totalUsers,
       icon: <UserCheck className="w-4 h-4" />,
       textColor: "text-green-700",
+      tab: "user-roles",
     },
     ...(isSuperAdmin
       ? [
@@ -298,6 +301,7 @@ export default function DashboardMobile({
             value: stats.totalSchools,
             icon: <Building2 className="w-4 h-4" />,
             textColor: "text-cyan-700",
+            tab: "configuration",
           } as StatCard,
         ]
       : []),
@@ -306,37 +310,33 @@ export default function DashboardMobile({
       value: stats.employeesOnLeave,
       icon: <UserMinus className="w-4 h-4" />,
       textColor: "text-amber-700",
+      tab: "employee-management",
     },
     {
       title: "Archived Employees",
       value: stats.archivedEmployees,
       icon: <Archive className="w-4 h-4" />,
       textColor: "text-rose-700",
+      tab: "employees-list",
+      intent: { key: EMPLOYEES_LIST_TAB_KEY, value: "archived" },
     },
     {
       title: "Pending Registrations",
       value: stats.pendingRegistrations,
       icon: <FileText className="w-4 h-4" />,
       textColor: "text-purple-700",
-    },
-  ];
-
-  const shortcuts: Shortcut[] = [
-    {
-      label: "Employee Management",
-      icon: <Users className="w-4 h-4" />,
-      tab: "employee-management",
-    },
-    {
-      label: "User & Roles",
-      icon: <Settings className="w-4 h-4" />,
       tab: "user-roles",
+      intent: { key: USER_ROLES_TAB_KEY, value: "pending" },
     },
   ];
 
-  const handleShortcutClick = (tab: string) => {
-    if (onTabChange) {
-      onTabChange(tab);
+  const handleCardClick = (card: StatCard) => {
+    if (card.intent && typeof window !== "undefined") {
+      window.localStorage.setItem(card.intent.key, card.intent.value);
+    }
+
+    if (card.tab && onTabChange) {
+      onTabChange(card.tab);
     }
   };
 
@@ -409,7 +409,16 @@ export default function DashboardMobile({
             {statCards.map((stat, index) => (
               <div
                 key={index}
-                className="rounded border border-gray-200 bg-white p-2"
+                role="button"
+                tabIndex={0}
+                onClick={() => handleCardClick(stat)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    handleCardClick(stat);
+                  }
+                }}
+                className="cursor-pointer rounded border border-gray-200 bg-white p-2"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -472,27 +481,6 @@ export default function DashboardMobile({
             </div>
           </div>
         )}
-
-        {/* Shortcuts */}
-        <div className="rounded border border-gray-200 bg-white p-2.5">
-          <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-700">
-            Shortcuts
-          </h2>
-          <div className="flex flex-col gap-1.5">
-            {shortcuts.map((shortcut, index) => (
-              <button
-                key={index}
-                onClick={() => handleShortcutClick(shortcut.tab)}
-                className="cursor-pointer flex items-center gap-2 rounded border border-blue-200 bg-linear-to-b from-blue-50 to-blue-100 p-2.5 text-left transition-all hover:border-blue-400 hover:shadow active:bg-blue-200"
-              >
-                <div className="text-blue-700">{shortcut.icon}</div>
-                <p className="text-xs font-medium leading-tight text-gray-900">
-                  {shortcut.label}
-                </p>
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

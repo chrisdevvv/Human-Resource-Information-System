@@ -95,7 +95,7 @@ export default function UserRolesDetailsModal({ account, onClose }: Props) {
         <div className="mt-6 flex justify-end">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer"
+            className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer"
           >
             <span className="inline-flex items-center gap-1">
               <XCircle size={14} />

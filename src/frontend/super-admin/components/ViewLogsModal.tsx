@@ -97,7 +97,7 @@ export default function ViewLogsModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium cursor-pointer"
+            className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium cursor-pointer"
           >
             <span className="inline-flex items-center gap-1">
               <XCircle size={14} />

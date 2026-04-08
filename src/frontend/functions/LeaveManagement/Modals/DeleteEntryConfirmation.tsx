@@ -41,7 +41,7 @@ export default function DeleteEntryConfirmation({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="cursor-pointer rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
+            className="cursor-pointer rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span className="inline-flex items-center gap-2">
               <XCircle size={14} />
@@ -52,7 +52,7 @@ export default function DeleteEntryConfirmation({
             type="button"
             onClick={() => void onConfirm()}
             disabled={isLoading}
-            className="cursor-pointer hover:bg-red-900 inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="cursor-pointer hover:bg-red-900 inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Trash2 size={14} />
             {isLoading ? "Deleting..." : confirmLabel}

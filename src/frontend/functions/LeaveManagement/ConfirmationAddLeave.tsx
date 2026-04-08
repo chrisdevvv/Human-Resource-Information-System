@@ -137,7 +137,7 @@ export default function ConfirmationAddLeave({
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="cursor-pointer rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
+            className="cursor-pointer rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Back
           </button>
@@ -146,7 +146,7 @@ export default function ConfirmationAddLeave({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="cursor-pointer rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? "Saving..." : "Confirm Save"}
           </button>

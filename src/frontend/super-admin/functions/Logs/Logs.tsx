@@ -2,13 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  FileText,
-  RotateCcw,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, FileText, Search } from "lucide-react";
 import ViewLogsModal from "../../components/ViewLogsModal";
 import LogsReportGeneration, {
   downloadLogsReportPdf,
@@ -479,6 +473,14 @@ export default function Logs() {
     setPageJumpInput("1");
   };
 
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 ||
+    roleFilter !== "ALL" ||
+    letterFilter !== "ALL" ||
+    sortMode !== "date-desc" ||
+    Boolean(dateFrom) ||
+    Boolean(dateTo);
+
   const formatDateTime = (isoString: string) => {
     if (!isoString) return "N/A";
     const date = new Date(isoString);
@@ -681,8 +683,11 @@ export default function Logs() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-6 sticky top-4 flex flex-col">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6 inline-flex items-center gap-2">
+    <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col">
+      <h1
+        style={{ fontSize: "20px" }}
+        className="font-bold text-gray-900 mb-4 inline-flex items-center gap-2"
+      >
         <FileText size={24} className="text-blue-600" />
         Activity Logs
       </h1>
@@ -700,25 +705,26 @@ export default function Logs() {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="text-gray-500 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="text-gray-500 w-full px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage(1)}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+              className="inline-flex items-center gap-1 px-5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
             >
+              <Search size={14} />
               Search
             </button>
             <button
               onClick={openLogsReport}
-              className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium text-sm cursor-pointer"
+              className="px-5 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium text-sm cursor-pointer"
             >
               Generate Report
             </button>
             <button
               onClick={openArchiveModal}
-              className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition font-medium text-sm cursor-pointer"
+              className="px-5 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition font-medium text-sm cursor-pointer"
             >
               Archive
             </button>
@@ -734,7 +740,7 @@ export default function Logs() {
               setRoleFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
           >
             <option value="ALL">All Roles</option>
             <option value="SUPER_ADMIN">Super Admin</option>
@@ -749,7 +755,7 @@ export default function Logs() {
               setLetterFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
           >
             <option value="ALL">All Letters</option>
             {alphabet.map((letter) => (
@@ -766,7 +772,7 @@ export default function Logs() {
               setSortMode(e.target.value as typeof sortMode);
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
           >
             <option value="date-desc">Newest First</option>
             <option value="date-asc">Oldest First</option>
@@ -784,7 +790,7 @@ export default function Logs() {
               value={dateFrom}
               max={todayStr}
               onChange={(e) => handleDateFrom(e.target.value)}
-              className="text-gray-500 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+              className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
             />
             <label className="text-sm text-gray-500 whitespace-nowrap">
               To
@@ -795,7 +801,7 @@ export default function Logs() {
               min={dateFrom || ""}
               max={todayStr}
               onChange={(e) => handleDateTo(e.target.value)}
-              className="text-gray-500 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+              className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
             />
             {(dateFrom || dateTo) && (
               <button
@@ -816,14 +822,15 @@ export default function Logs() {
             {filteredLogs.length} record{filteredLogs.length !== 1 ? "s" : ""}
           </span>
 
-          <button
-            type="button"
-            onClick={handleResetFilters}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 transition cursor-pointer"
-          >
-            <RotateCcw size={16} />
-            Reset Filters
-          </button>
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="text-sm text-gray-500 underline hover:text-gray-700 transition cursor-pointer"
+            >
+              Clear
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -904,7 +911,7 @@ export default function Logs() {
       {/* Pagination */}
       {filteredLogs.length > 0 && (
         <div className="mt-6 space-y-3">
-          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
             <label className="flex items-center gap-2 text-sm text-gray-600">
               Show
               <select
@@ -925,7 +932,50 @@ export default function Logs() {
               entries
             </label>
 
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center justify-center gap-2 sm:justify-self-center">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                aria-label="Previous page"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              {pageNumberItems.map((item, index) =>
+                item === "ellipsis" ? (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="px-2 text-sm text-gray-400 select-none"
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    onClick={() => setCurrentPage(item)}
+                    className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
+                      currentPage === item
+                        ? "bg-blue-600 text-white"
+                        : "text-gray-500 hover:bg-gray-100"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ),
+              )}
+              <button
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                aria-label="Next page"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-gray-600 sm:justify-self-end">
               <span>Jump to</span>
               <input
                 type="number"
@@ -948,49 +998,6 @@ export default function Logs() {
                 Go
               </button>
             </div>
-          </div>
-
-          <div className="flex items-center justify-center gap-2">
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-              aria-label="Previous page"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            {pageNumberItems.map((item, index) =>
-              item === "ellipsis" ? (
-                <span
-                  key={`ellipsis-${index}`}
-                  className="px-2 text-sm text-gray-400 select-none"
-                >
-                  ...
-                </span>
-              ) : (
-                <button
-                  key={item}
-                  onClick={() => setCurrentPage(item)}
-                  className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
-                    currentPage === item
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-500 hover:bg-gray-100"
-                  }`}
-                >
-                  {item}
-                </button>
-              ),
-            )}
-            <button
-              onClick={() =>
-                setCurrentPage(Math.min(totalPages, currentPage + 1))
-              }
-              disabled={currentPage === totalPages}
-              className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-              aria-label="Next page"
-            >
-              <ChevronRight size={18} />
-            </button>
           </div>
         </div>
       )}
@@ -1057,7 +1064,7 @@ export default function Logs() {
                 <div className="mt-5 flex flex-wrap justify-end gap-2">
                   <button
                     onClick={closeArchiveModal}
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -1079,7 +1086,7 @@ export default function Logs() {
                       }
                     }}
                     disabled={archiveBusy}
-                    className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Generate Report
                   </button>
@@ -1090,7 +1097,7 @@ export default function Logs() {
                       setArchiveMessage(null);
                     }}
                     disabled={archiveBusy}
-                    className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Continue to Archive
                   </button>
@@ -1106,7 +1113,7 @@ export default function Logs() {
                 <div className="mt-5 flex flex-wrap justify-end gap-2">
                   <button
                     onClick={() => setArchiveStep("range")}
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
                   >
                     Back
                   </button>
@@ -1115,7 +1122,7 @@ export default function Logs() {
                       setArchiveShouldGenerateReport(false);
                       setArchiveStep("confirm");
                     }}
-                    className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 cursor-pointer"
+                    className="rounded-lg bg-gray-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800 cursor-pointer"
                   >
                     No, Archive Only
                   </button>
@@ -1124,7 +1131,7 @@ export default function Logs() {
                       setArchiveShouldGenerateReport(true);
                       setArchiveStep("confirm");
                     }}
-                    className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 cursor-pointer"
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 cursor-pointer"
                   >
                     Yes, Generate Then Archive
                   </button>
@@ -1154,14 +1161,14 @@ export default function Logs() {
                   <button
                     onClick={() => setArchiveStep("range")}
                     disabled={archiveBusy}
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Back
                   </button>
                   <button
                     onClick={performArchive}
                     disabled={archiveBusy}
-                    className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {archiveBusy ? "Processing..." : "Confirm Archive"}
                   </button>
@@ -1179,7 +1186,7 @@ export default function Logs() {
                 <div className="mt-5 flex justify-end">
                   <button
                     onClick={closeArchiveModal}
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 cursor-pointer"
+                    className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 cursor-pointer"
                   >
                     Done
                   </button>

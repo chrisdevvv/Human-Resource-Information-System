@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const FROM = process.env.SMTP_FROM || "DepEd HRIS <noreply@deped.gov.ph>";
+const FROM = process.env.SMTP_FROM || "DepEd CHRIS <noreply@deped.gov.ph>";
 const FRONTEND_URL =
   process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3001";
 const RESET_LINK_LABEL =
@@ -91,7 +91,7 @@ function baseTemplate(bodyContent) {
         <tr>
           <td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #e5e7eb;">
             <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
-              This is an automated message from DepEd HRIS. Please do not reply to this email.
+              This is an automated message from DepEd CHRIS. Please do not reply to this email.
             </p>
           </td>
         </tr>
@@ -152,7 +152,7 @@ async function sendRegistrationReceived(to, firstName) {
 
   await sendMail({
     to,
-    subject: "Registration Request Received — DepEd HRIS",
+    subject: "Registration Request Received — DepEd CHRIS",
     html,
   });
 }
@@ -194,7 +194,7 @@ async function sendRegistrationApproved(to, firstName, role) {
 
   await sendMail({
     to,
-    subject: "Registration Approved — Welcome to DepEd HRIS",
+    subject: "Registration Approved — Welcome to DepEd CHRIS",
     html,
   });
 }
@@ -232,7 +232,7 @@ async function sendRegistrationRejected(to, firstName, reason) {
 
   await sendMail({
     to,
-    subject: "Registration Request Update — DepEd HRIS",
+    subject: "Registration Request Update — DepEd CHRIS",
     html,
   });
 }
@@ -276,7 +276,7 @@ async function sendPasswordResetLink(to, firstName, resetLink) {
 
   await sendMail({
     to,
-    subject: "Reset Your Password \u2014 DepEd HRIS",
+    subject: "Reset Your Password \u2014 DepEd CHRIS",
     html,
   });
 }
@@ -312,7 +312,7 @@ async function sendPasswordChanged(to, firstName) {
 
   await sendMail({
     to,
-    subject: "Your Password Has Been Changed \u2014 DepEd HRIS",
+    subject: "Your Password Has Been Changed \u2014 DepEd CHRIS",
     html,
   });
 }
@@ -363,7 +363,7 @@ async function sendRoleChanged(to, firstName, oldRole, newRole) {
 
   await sendMail({
     to,
-    subject: "Your Account Role Has Been Updated — DepEd HRIS",
+    subject: "Your Account Role Has Been Updated — DepEd CHRIS",
     html,
   });
 }
@@ -411,7 +411,7 @@ async function sendAccountStatusChanged(to, firstName, isActive) {
 
   await sendMail({
     to,
-    subject: `Your Account Has Been ${statusLabel} — DepEd HRIS`,
+    subject: `Your Account Has Been ${statusLabel} — DepEd CHRIS`,
     html,
   });
 }
@@ -463,7 +463,7 @@ async function sendAccountCreatedCredentials(
 
   await sendMail({
     to,
-    subject: "Your Account Credentials — DepEd HRIS",
+    subject: "Your Account Credentials — DepEd CHRIS",
     html,
   });
 }

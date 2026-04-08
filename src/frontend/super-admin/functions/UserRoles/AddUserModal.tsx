@@ -542,7 +542,7 @@ export default function AddUserModal({
                     if (schoolError) setSchoolError("");
                   }}
                   disabled={schoolsLoading}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white cursor-pointer disabled:cursor-not-allowed"
+                  className="mt-1 w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white cursor-pointer disabled:cursor-not-allowed"
                 >
                   <option value="">
                     {schoolsLoading ? "Loading schools..." : "Select a school"}
@@ -637,7 +637,7 @@ export default function AddUserModal({
                 setStep(1);
               }}
               disabled={loading}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium cursor-pointer disabled:opacity-60"
+              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium cursor-pointer disabled:opacity-60"
             >
               {step === 1 ? "Cancel" : "Back"}
             </button>
@@ -647,7 +647,7 @@ export default function AddUserModal({
                 type="button"
                 onClick={handleNext}
                 disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer disabled:opacity-60"
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer disabled:opacity-60"
               >
                 Next
               </button>
@@ -656,7 +656,7 @@ export default function AddUserModal({
                 type="button"
                 onClick={handleOpenConfirm}
                 disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer disabled:opacity-60"
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer disabled:opacity-60"
               >
                 Add User
               </button>

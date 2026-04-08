@@ -235,7 +235,7 @@ export default function UserSettingModal({
                   setConfirmAction("role");
                 }}
                 disabled={savingRole || savingStatus}
-                className="mt-3 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
+                className="mt-3 w-full px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
               >
                 Save Role
               </button>
@@ -264,7 +264,7 @@ export default function UserSettingModal({
                   savingRole ||
                   (isActive && currentRole === "SUPER_ADMIN")
                 }
-                className={`w-full px-4 py-2 rounded-lg transition font-medium text-sm cursor-pointer disabled:opacity-60 ${
+                className={`w-full px-3 py-1.5 rounded-lg transition font-medium text-sm cursor-pointer disabled:opacity-60 ${
                   isActive && currentRole === "SUPER_ADMIN"
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : isActive

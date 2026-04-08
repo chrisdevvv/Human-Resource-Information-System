@@ -13,6 +13,8 @@ type ParticularsListProps = {
   items: Array<{ id: number | string; name: string }>;
   searchValue: string;
   onSearchChange: (value: string) => void;
+  hasActiveFilters: boolean;
+  onClearFilters: () => void;
   onAdd: () => void;
   onDelete: (id: number | string, name: string) => void;
   sortValue: "a-z" | "z-a";
@@ -23,6 +25,8 @@ export default function ParticularsList({
   items,
   searchValue,
   onSearchChange,
+  hasActiveFilters,
+  onClearFilters,
   onAdd,
   onDelete,
   sortValue,
@@ -31,17 +35,22 @@ export default function ParticularsList({
   const PAGE_SIZE_OPTIONS = [10, 20, 50];
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(PAGE_SIZE_OPTIONS[0]);
+  const [pageJumpInput, setPageJumpInput] = useState("1");
 
   const totalPages = Math.max(1, Math.ceil(items.length / itemsPerPage));
 
   useEffect(() => {
     setCurrentPage(1);
+    setPageJumpInput("1");
   }, [searchValue, sortValue, itemsPerPage]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
+      return;
     }
+
+    setPageJumpInput(String(currentPage));
   }, [currentPage, totalPages]);
 
   const paginatedItems = useMemo(() => {
@@ -81,6 +90,18 @@ export default function ParticularsList({
     ] as const;
   }, [currentPage, totalPages]);
 
+  const handleJumpToPage = () => {
+    const parsed = Number.parseInt(pageJumpInput, 10);
+    if (Number.isNaN(parsed)) {
+      setPageJumpInput(String(currentPage));
+      return;
+    }
+
+    const nextPage = Math.min(totalPages, Math.max(1, parsed));
+    setCurrentPage(nextPage);
+    setPageJumpInput(String(nextPage));
+  };
+
   return (
     <section className="rounded-2xl border border-blue-200 bg-white shadow-sm flex h-full min-h-0 flex-col overflow-hidden">
       <div className="border-b border-gray-200 px-4 py-4 sm:px-6">
@@ -108,22 +129,31 @@ export default function ParticularsList({
                   value={searchValue}
                   onChange={(event) => onSearchChange(event.target.value)}
                   placeholder="Search particulars..."
-                  className="h-10 w-full rounded-lg border border-gray-300 pl-9 pr-3 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="h-8 w-full rounded-lg border border-gray-300 pl-9 pr-3 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
               <select
                 value={sortValue}
                 onChange={(e) => onSortChange(e.target.value as "a-z" | "z-a")}
-                className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:w-auto"
+                className="h-8 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:w-auto"
               >
                 <option value="a-z">A - Z</option>
                 <option value="z-a">Z - A</option>
               </select>
+              {hasActiveFilters ? (
+                <button
+                  type="button"
+                  onClick={onClearFilters}
+                  className="w-full text-left text-sm text-gray-500 underline transition hover:text-gray-700 sm:w-auto"
+                >
+                  Clear
+                </button>
+              ) : null}
             </div>
             <button
               type="button"
               onClick={onAdd}
-              className="w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium whitespace-nowrap text-white transition hover:bg-blue-700 sm:w-auto"
+              className="w-full cursor-pointer rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-white transition hover:bg-blue-700 sm:w-auto"
             >
               Add Particular
             </button>
@@ -135,10 +165,10 @@ export default function ParticularsList({
         <table className="min-w-full">
           <thead>
             <tr className="border-b border-gray-200 bg-blue-100">
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-blue-600 sm:px-6">
+              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-blue-600">
                 Name
               </th>
-              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-blue-600 sm:px-6">
+              <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-blue-600">
                 Actions
               </th>
             </tr>
@@ -146,10 +176,10 @@ export default function ParticularsList({
           <tbody>
             {paginatedItems.map((item) => (
               <tr key={item.id} className="border-b border-gray-100">
-                <td className="px-4 py-3 text-sm font-medium text-gray-900 sm:px-6">
+                <td className="px-3 py-2 text-sm font-medium text-gray-900">
                   {item.name}
                 </td>
-                <td className="px-4 py-3 sm:px-6">
+                <td className="px-3 py-2">
                   <div className="flex justify-end gap-2">
                     <button
                       type="button"
@@ -167,14 +197,14 @@ export default function ParticularsList({
         </table>
       </div>
 
-      <div className="space-y-3 overflow-y-auto flex-1 min-h-0 p-4 md:hidden">
+      <div className="space-y-2 overflow-y-auto flex-1 min-h-0 p-3 md:hidden">
         {paginatedItems.map((item) => (
           <article
             key={item.id}
-            className="rounded-xl border border-gray-200 bg-white p-4"
+            className="rounded-xl border border-gray-200 bg-white p-3"
           >
             <p className="text-sm font-semibold text-gray-900">{item.name}</p>
-            <div className="mt-3 flex justify-end gap-2">
+            <div className="mt-2 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => onDelete(item.id, item.name)}
@@ -190,14 +220,16 @@ export default function ParticularsList({
 
       {items.length > 0 && (
         <div className="border-t border-gray-200 px-4 py-3 sm:px-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
             <label className="flex items-center gap-2 text-sm text-gray-600">
               Show
               <select
                 value={itemsPerPage}
-                onChange={(event) =>
-                  setItemsPerPage(Number(event.target.value))
-                }
+                onChange={(event) => {
+                  setItemsPerPage(Number(event.target.value));
+                  setCurrentPage(1);
+                  setPageJumpInput("1");
+                }}
                 className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
               >
                 {PAGE_SIZE_OPTIONS.map((option) => (
@@ -209,7 +241,7 @@ export default function ParticularsList({
               entries
             </label>
 
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-2 sm:justify-self-center">
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
@@ -251,6 +283,31 @@ export default function ParticularsList({
                 aria-label="Next page"
               >
                 <ChevronRight size={18} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-gray-600 sm:justify-self-end">
+              <span>Jump to</span>
+              <input
+                type="number"
+                min={1}
+                max={totalPages}
+                value={pageJumpInput}
+                onChange={(event) => setPageJumpInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    handleJumpToPage();
+                  }
+                }}
+                className="w-16 rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+              />
+              <button
+                type="button"
+                onClick={handleJumpToPage}
+                className="rounded bg-gray-100 px-2 py-1 text-sm text-gray-700 hover:bg-gray-200"
+              >
+                Go
               </button>
             </div>
           </div>

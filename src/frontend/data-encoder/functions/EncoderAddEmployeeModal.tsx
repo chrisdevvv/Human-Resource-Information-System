@@ -488,7 +488,7 @@ export default function EncoderAddUserModal({
                 setStep(1);
               }}
               disabled={loading}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium cursor-pointer disabled:opacity-60"
+              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium cursor-pointer disabled:opacity-60"
             >
               <span className="inline-flex items-center gap-1">
                 <XCircle size={14} />
@@ -501,7 +501,7 @@ export default function EncoderAddUserModal({
                 type="button"
                 onClick={handleNext}
                 disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer disabled:opacity-60"
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer disabled:opacity-60"
               >
                 <span className="inline-flex items-center gap-1">
                   <ArrowRight size={14} />
@@ -513,7 +513,7 @@ export default function EncoderAddUserModal({
                 type="button"
                 onClick={handleOpenConfirm}
                 disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer disabled:opacity-60"
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer disabled:opacity-60"
               >
                 <span className="inline-flex items-center gap-1">
                   <UserPlus size={14} />
@@ -553,7 +553,7 @@ export default function EncoderAddUserModal({
                 setShowSuccess(false);
                 onSuccess();
               }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer"
+              className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer"
             >
               <span className="inline-flex items-center gap-1">
                 <CheckCircle2 size={14} />

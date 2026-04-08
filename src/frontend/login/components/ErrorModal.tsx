@@ -48,7 +48,7 @@ export default function ErrorModal({ error, onClose }: Props) {
           <div className="mt-4">
             <button
               id="errorOk"
-              className="inline-flex items-center justify-center gap-1 transition hover:cursor-pointer px-4 py-2 hover:bg-blue-700 bg-blue-600 text-white rounded-md"
+              className="inline-flex items-center justify-center gap-1 transition hover:cursor-pointer px-3 py-1.5 hover:bg-blue-700 bg-blue-600 text-white rounded-md"
               onClick={onClose}
             >
               <XCircle size={14} />

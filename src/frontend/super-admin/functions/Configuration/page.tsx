@@ -7,10 +7,8 @@ import {
   ListChecks,
   Plus,
   Trash2,
-  ShieldCheck,
   X,
   AlertCircle,
-  ArrowUpAZ,
 } from "lucide-react";
 
 import SchoolsList from "./SchoolsList";
@@ -254,6 +252,21 @@ export default function ConfigurationPage() {
     );
   }, [particularSearch, particulars, particularSort]);
 
+  const hasActiveSchoolFilters =
+    schoolSearch.trim().length > 0 || schoolSort !== "a-z";
+  const hasActiveParticularFilters =
+    particularSearch.trim().length > 0 || particularSort !== "a-z";
+
+  const handleClearSchoolFilters = () => {
+    setSchoolSearch("");
+    setSchoolSort("a-z");
+  };
+
+  const handleClearParticularFilters = () => {
+    setParticularSearch("");
+    setParticularSort("a-z");
+  };
+
   const requestAddItem = () => {
     if (!modalInput.trim()) {
       setToastMessage("Please enter a name");
@@ -346,78 +359,59 @@ export default function ConfigurationPage() {
   };
 
   return (
-    <section className="w-full h-[calc(100vh-7rem)] flex flex-col gap-4 sm:gap-6 overflow-hidden">
-      <div className="rounded-2xl bg-linear-to-r from-blue-700 to-blue-500 p-4 text-white shadow-sm sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-sm font-medium text-blue-100">Configuration</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl inline-flex items-center gap-2">
-              <ListChecks size={24} />
-              Manage dropdown options
-            </h1>
-            <p className="mt-1 max-w-3xl text-sm text-blue-100">
-              Organize schools and particulars used across forms.
-            </p>
-          </div>
+    <section className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col gap-4">
+      <h1
+        style={{ fontSize: "20px" }}
+        className="font-bold text-gray-900 inline-flex items-center gap-2"
+      >
+        <ListChecks size={24} className="text-blue-600" />
+        Configuration
+      </h1>
 
-          <div className="w-full rounded-xl border border-white/20 bg-white/10 p-3 lg:w-auto">
-            <div className="flex items-center gap-2 text-sm text-blue-50">
-              <ShieldCheck size={16} />
-              Signed in as <span className="font-semibold">Super Admin</span>
-            </div>
-            <p className="mt-1 text-xs text-blue-100">
-              You can manage configuration items.
-            </p>
-          </div>
-        </div>
-
-        {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="mt-0.5 text-red-600" size={18} />
-              <div>
-                <p className="text-sm font-semibold text-red-900">Error</p>
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 text-red-600" size={18} />
+            <div>
+              <p className="text-sm font-semibold text-red-900">Error</p>
+              <p className="text-sm text-red-700">{error}</p>
             </div>
           </div>
-        )}
-
-        <div className="mt-3 rounded-2xl border border-blue-200 bg-white p-2 shadow-sm sm:mt-4">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => setActiveTab("schools")}
-              className={`cursor-pointer rounded-xl px-3 py-2 text-sm font-medium transition sm:px-4 ${
-                activeTab === "schools"
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              <span className="inline-flex items-center justify-center gap-2">
-                <Building2 size={16} />
-                Schools
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("particulars")}
-              className={`cursor-pointer rounded-xl px-3 py-2 text-sm font-medium transition sm:px-4 ${
-                activeTab === "particulars"
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              <span className="inline-flex items-center justify-center gap-2">
-                <ListChecks size={16} />
-                Particulars
-              </span>
-            </button>
-          </div>
         </div>
+      )}
+
+      <div className="flex justify-start gap-2 mb-1">
+        <button
+          type="button"
+          onClick={() => setActiveTab("schools")}
+          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
+            activeTab === "schools"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          <span className="inline-flex items-center justify-center gap-2">
+            <Building2 size={16} />
+            Schools
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("particulars")}
+          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
+            activeTab === "particulars"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          <span className="inline-flex items-center justify-center gap-2">
+            <ListChecks size={16} />
+            Particulars
+          </span>
+        </button>
       </div>
 
-      <div className="min-h-0 flex-1">
+      <div className="min-h-[62vh]">
         {isLoading ? (
           <div className="h-full rounded-2xl border border-blue-200 bg-white p-8 text-center shadow-sm">
             <div className="inline-flex animate-spin">
@@ -432,6 +426,8 @@ export default function ConfigurationPage() {
             items={filteredSchools}
             searchValue={schoolSearch}
             onSearchChange={setSchoolSearch}
+            hasActiveFilters={hasActiveSchoolFilters}
+            onClearFilters={handleClearSchoolFilters}
             onAdd={() => setShowEntryModal(true)}
             onDelete={handleDeleteSchool}
             sortValue={schoolSort}
@@ -445,6 +441,8 @@ export default function ConfigurationPage() {
             }))}
             searchValue={particularSearch}
             onSearchChange={setParticularSearch}
+            hasActiveFilters={hasActiveParticularFilters}
+            onClearFilters={handleClearParticularFilters}
             onAdd={() => setShowEntryModal(true)}
             onDelete={handleDeleteParticular}
             sortValue={particularSort}
@@ -497,7 +495,7 @@ export default function ConfigurationPage() {
                   setShowEntryModal(false);
                   setModalInput("");
                 }}
-                className="cursor-pointer rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                className="cursor-pointer rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
                 disabled={isSaving}
               >
                 Cancel
@@ -506,7 +504,7 @@ export default function ConfigurationPage() {
                 type="button"
                 onClick={requestAddItem}
                 disabled={isSaving}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
                 {isSaving ? (
                   <>
@@ -546,7 +544,7 @@ export default function ConfigurationPage() {
               <button
                 type="button"
                 onClick={() => setShowAddConfirm(false)}
-                className="cursor-pointer rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                className="cursor-pointer rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
                 disabled={isSaving}
               >
                 <span className="inline-flex items-center gap-1">
@@ -558,7 +556,7 @@ export default function ConfigurationPage() {
                 type="button"
                 onClick={handleAddItem}
                 disabled={isSaving}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
                 <span className="inline-flex items-center gap-1">
                   <CheckCircle2 size={14} />
@@ -595,7 +593,7 @@ export default function ConfigurationPage() {
                   setShowDeleteConfirm(false);
                   setDeleteTarget(null);
                 }}
-                className="cursor-pointer rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                className="cursor-pointer rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
                 disabled={isDeleting}
               >
                 <span className="inline-flex items-center gap-1">
@@ -607,7 +605,7 @@ export default function ConfigurationPage() {
                 type="button"
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
               >
                 {isDeleting ? (
                   <>

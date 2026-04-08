@@ -238,7 +238,7 @@ export default function SidebarIndex({
   role,
   activeTab,
   onTabChange,
-  title = "HRIS",
+  title = "CHRIS",
   collapsed,
   defaultCollapsed = false,
   onToggleCollapse,
@@ -403,7 +403,7 @@ export default function SidebarIndex({
                 type="button"
                 onClick={() => onTabChange(tab.id)}
                 title={isCollapsed ? tab.label : undefined}
-                className={`cursor-pointer w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition ${
+                className={`cursor-pointer w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-left transition ${
                   isActive
                     ? "bg-blue-900 text-white"
                     : "text-blue-50 hover:bg-blue-800"
@@ -425,7 +425,7 @@ export default function SidebarIndex({
             type="button"
             onClick={handleLogout}
             title={isCollapsed ? "Logout" : undefined}
-            className={`cursor-pointer ${isCollapsed ? "w-full" : "flex-1"} flex items-center gap-3 px-3 py-2 rounded-lg text-left transition text-blue-50 hover:bg-red-600`}
+            className={`cursor-pointer ${isCollapsed ? "w-full" : "flex-1"} flex items-center gap-3 px-3 py-1.5 rounded-lg text-left transition text-blue-50 hover:bg-red-600`}
           >
             <LogOut size={18} className="shrink-0" />
             {!isCollapsed && (
