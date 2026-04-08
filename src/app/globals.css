@@ -46,16 +46,30 @@ html {
   box-sizing: border-box;
 }
 
-/* Keep scrolling behavior but hide visible scrollbars across pages/modals. */
+/* Keep scrollbars visible globally for all scrollable areas. */
 * {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  -ms-overflow-style: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #e5e7eb;
 }
 
 *::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;
+  width: 10px;
+  height: 10px;
+  display: block;
+}
+
+*::-webkit-scrollbar-track {
+  background: #e5e7eb;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 
 .no-scrollbar {
@@ -91,6 +105,22 @@ html {
 
 .show-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #64748b !important;
+}
+
+/* Ensure sticky positioning works for table headers on all web pages. */
+thead {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 20 !important;
+}
+
+/* Exclude PDF-rendered tables from sticky behavior. */
+[data-leave-card-page="true"] thead,
+[data-logs-report-page="true"] thead,
+.leave-card-root thead {
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
 }
 
 /* Global motion primitives for modal/toast polish */
@@ -145,5 +175,13 @@ div.fixed.bottom-5.right-5 {
   div.fixed.inset-0[class*="bg-black/"] > div,
   div.fixed.bottom-5.right-5 {
     animation: none !important;
+  }
+}
+
+@media print {
+  table thead {
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
   }
 }

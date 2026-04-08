@@ -9,7 +9,7 @@ import SuperAdminProfileSettings from "./functions/SuperAdminProfileSettings";
 import ConfigurationPage from "./functions/Configuration/page";
 import MonthlyCreditSimulation from "./functions/MonthlyCreditSimulation";
 import EmployeeLeaveManagement from "../functions/LeaveManagement/EmployeeLeaveManagement";
-import EmployeesListLayout from "../functions/EmployeesList/EmployeesListLayout";
+import EmployeesListLayout from "../functions/EmployeesList/EmployeesProfile";
 import Dashboard from "../functions/Dashboard/Dashboard";
 import DashboardMobile from "../functions/Dashboard/DashboardMobile";
 import styles from "./styles.module.css";
