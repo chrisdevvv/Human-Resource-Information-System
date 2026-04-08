@@ -2,6 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Loader2, Pencil, XCircle, Save, X, AlertCircle } from "lucide-react";
+import ChangesToast from "./ChangesToast";
+import ChangesConfirmation from "./ChangesConfirmation";
 
 type School = {
   id: number;
@@ -44,6 +46,7 @@ type EmployeeDetailsResponse = {
   plantilla_no?: string | null;
   age?: number | null;
   birthdate?: string | null;
+  license_no_prc?: string | null;
 };
 
 type ViewEmployeeModalProps = {
@@ -196,6 +199,7 @@ export default function ViewEmployeeModal({
   const [editSchoolId, setEditSchoolId] = useState<number | null>(null);
   const [editSchoolName, setEditSchoolName] = useState("");
   const [editPositionId, setEditPositionId] = useState<number | null>(null);
+  const [editLicenseNoPrc, setEditLicenseNoPrc] = useState("");
 
   const [schools, setSchools] = useState<School[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -209,6 +213,14 @@ export default function ViewEmployeeModal({
 
   const [editError, setEditError] = useState<string | null>(null);
   const [errors, setErrors] = useState<ValidationError[]>([]);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<"success" | "error">("success");
+  const [isSaveConfirmOpen, setIsSaveConfirmOpen] = useState(false);
+
+  const showToast = (message: string, type: "success" | "error") => {
+    setToastMessage(message);
+    setToastType(type);
+  };
 
   const fallbackDetails = useMemo<EmployeeDetailsResponse | null>(() => {
     if (!employee) return null;
@@ -287,6 +299,7 @@ export default function ViewEmployeeModal({
             setEditEmployeeType(data.employee_type || "non-teaching");
             setEditSchoolId(data.school_id || null);
             setEditSchoolName(data.school_name || "");
+            setEditLicenseNoPrc(data.license_no_prc || "");
           }
         }
       } catch (err) {
@@ -380,6 +393,18 @@ export default function ViewEmployeeModal({
 
     loadDropdownData();
   }, [visible]);
+
+  useEffect(() => {
+    if (!toastMessage) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [toastMessage]);
 
   if (!visible || !employee) {
     return null;
@@ -488,6 +513,7 @@ export default function ViewEmployeeModal({
 
     if (newErrors.length > 0) {
       setErrors(newErrors);
+      showToast("Please fix the highlighted fields before saving.", "error");
       return;
     }
 
@@ -525,6 +551,7 @@ export default function ViewEmployeeModal({
           plantilla_no: editPlantillaNo.trim(),
           employee_type: editEmployeeType,
           school_id: editSchoolId,
+          license_no_prc: editLicenseNoPrc.trim(),
         }),
       });
 
@@ -555,6 +582,7 @@ export default function ViewEmployeeModal({
               school_id: editSchoolId,
               school_name: editSchoolName,
               age: computeAge(editBirthdate),
+              license_no_prc: editLicenseNoPrc.trim(),
             }
           : null,
       );
@@ -573,13 +601,29 @@ export default function ViewEmployeeModal({
       });
 
       setIsEditing(false);
+      showToast("Employee details updated successfully.", "success");
     } catch (err) {
       setEditError(
         err instanceof Error ? err.message : "Failed to update employee",
       );
+      showToast("Failed to update employee details.", "error");
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleOpenSaveConfirmation = () => {
+    setIsSaveConfirmOpen(true);
+  };
+
+  const handleConfirmSave = () => {
+    setIsSaveConfirmOpen(false);
+    void handleSaveChanges();
+  };
+
+  const handleCancelSave = () => {
+    if (isSaving) return;
+    setIsSaveConfirmOpen(false);
   };
 
   const tabClass = (tab: "personal" | "work") =>
@@ -591,8 +635,11 @@ export default function ViewEmployeeModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-5">
-      <div className="relative h-dvh w-full overflow-hidden rounded-none border border-blue-200 bg-white shadow-2xl sm:h-auto sm:max-h-[92vh] sm:max-w-4xl sm:rounded-2xl">
-        <div className="no-scrollbar h-full overflow-y-auto px-3 py-3 sm:px-5 sm:py-5">
+      {toastMessage ? (
+        <ChangesToast message={toastMessage} type={toastType} />
+      ) : null}
+      <div className="relative flex w-full flex-col overflow-hidden rounded-none border border-blue-200 bg-white shadow-2xl max-h-[92vh] sm:max-w-5xl sm:rounded-2xl">
+        <div className="show-scrollbar overflow-y-auto px-3 py-3 sm:px-5 sm:py-5">
           <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
             <div>
               <h2 className="text-xl font-bold text-gray-800 sm:text-2xl">
@@ -696,20 +743,7 @@ export default function ViewEmployeeModal({
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                <InfoField
-                  label="First Name"
-                  value={formatValue(editFirstName)}
-                  isEditing={isEditing}
-                >
-                  <input
-                    type="text"
-                    value={editFirstName}
-                    onChange={(e) => setEditFirstName(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-                  />
-                </InfoField>
-
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
                 <InfoField
                   label="Last Name"
                   value={formatValue(editLastName)}
@@ -719,6 +753,19 @@ export default function ViewEmployeeModal({
                     type="text"
                     value={editLastName}
                     onChange={(e) => setEditLastName(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                  />
+                </InfoField>
+
+                <InfoField
+                  label="First Name"
+                  value={formatValue(editFirstName)}
+                  isEditing={isEditing}
+                >
+                  <input
+                    type="text"
+                    value={editFirstName}
+                    onChange={(e) => setEditFirstName(e.target.value)}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
                   />
                 </InfoField>
@@ -737,7 +784,7 @@ export default function ViewEmployeeModal({
                 </InfoField>
 
                 <InfoField
-                  label="Middle Initial"
+                  label="M.I."
                   value={formatValue(editMiddleInitial)}
                   isEditing={isEditing}
                 >
@@ -745,56 +792,6 @@ export default function ViewEmployeeModal({
                     type="text"
                     value={editMiddleInitial}
                     onChange={(e) => setEditMiddleInitial(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-                  />
-                </InfoField>
-
-                <InfoField
-                  label="Date of Birth"
-                  value={formatDate(editBirthdate)}
-                  isEditing={isEditing}
-                >
-                  <input
-                    type="date"
-                    value={editBirthdate}
-                    onChange={(e) => setEditBirthdate(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-                  />
-                </InfoField>
-
-                <InfoField
-                  label="Age"
-                  value={ageValue ? String(ageValue) : "N/A"}
-                />
-
-                <InfoField
-                  label="Personal Email"
-                  value={formatValue(editPersonalEmail)}
-                  isEditing={isEditing}
-                >
-                  <input
-                    type="email"
-                    value={editPersonalEmail}
-                    onChange={(e) => setEditPersonalEmail(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-                  />
-                </InfoField>
-
-                <InfoField
-                  label="Mobile Number"
-                  value={formatValue(editMobileNumber)}
-                  isEditing={isEditing}
-                >
-                  <input
-                    type="text"
-                    value={editMobileNumber}
-                    onChange={(e) => {
-                      const digitsOnly = e.target.value
-                        .replace(/\D/g, "")
-                        .slice(0, 11);
-                      setEditMobileNumber(digitsOnly);
-                    }}
-                    maxLength={11}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
                   />
                 </InfoField>
@@ -812,6 +809,60 @@ export default function ViewEmployeeModal({
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
                   />
                 </InfoField>
+
+                <div className="sm:col-span-2 lg:col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                  <InfoField
+                    label="Date of Birth"
+                    value={formatDate(editBirthdate)}
+                    isEditing={isEditing}
+                  >
+                    <input
+                      type="date"
+                      value={editBirthdate}
+                      onChange={(e) => setEditBirthdate(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                    />
+                  </InfoField>
+
+                  <InfoField
+                    label="Age"
+                    value={ageValue ? String(ageValue) : "N/A"}
+                  />
+                </div>
+
+                <div className="sm:col-span-2 lg:col-span-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                  <InfoField
+                    label="Personal Email"
+                    value={formatValue(editPersonalEmail)}
+                    isEditing={isEditing}
+                  >
+                    <input
+                      type="email"
+                      value={editPersonalEmail}
+                      onChange={(e) => setEditPersonalEmail(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                    />
+                  </InfoField>
+
+                  <InfoField
+                    label="Mobile Number"
+                    value={formatValue(editMobileNumber)}
+                    isEditing={isEditing}
+                  >
+                    <input
+                      type="text"
+                      value={editMobileNumber}
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 11);
+                        setEditMobileNumber(digitsOnly);
+                      }}
+                      maxLength={11}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                    />
+                  </InfoField>
+                </div>
               </div>
             </div>
           )}
@@ -831,38 +882,6 @@ export default function ViewEmployeeModal({
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                 <InfoField
-                  label="Employee Number"
-                  value={formatValue(editEmployeeNo)}
-                  isEditing={isEditing}
-                >
-                  <input
-                    type="text"
-                    value={editEmployeeNo}
-                    onChange={(e) => {
-                      const digitsOnly = e.target.value
-                        .replace(/\D/g, "")
-                        .slice(0, 7);
-                      setEditEmployeeNo(digitsOnly);
-                    }}
-                    maxLength={7}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-                  />
-                </InfoField>
-
-                <InfoField
-                  label="Work Email"
-                  value={formatValue(editWorkEmail)}
-                  isEditing={isEditing}
-                >
-                  <input
-                    type="email"
-                    value={editWorkEmail}
-                    onChange={(e) => setEditWorkEmail(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-                  />
-                </InfoField>
-
-                <InfoField
                   label="District"
                   value={formatValue(editDistrict)}
                   isEditing={isEditing}
@@ -874,7 +893,7 @@ export default function ViewEmployeeModal({
                       onChange={(e) => setDistrictSearch(e.target.value)}
                       onFocus={() => setShowDistrictDropdown(true)}
                       onBlur={() => setShowDistrictDropdown(false)}
-                      placeholder="Search district..."
+                      placeholder="District"
                       className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-xs outline-none focus:border-blue-500"
                     />
                     {showDistrictDropdown && (
@@ -905,49 +924,6 @@ export default function ViewEmployeeModal({
                 </InfoField>
 
                 <InfoField
-                  label="Position"
-                  value={formatValue(editPosition)}
-                  isEditing={isEditing}
-                >
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={positionSearch}
-                      onChange={(e) => setPositionSearch(e.target.value)}
-                      onFocus={() => setShowPositionDropdown(true)}
-                      onBlur={() => setShowPositionDropdown(false)}
-                      placeholder="Search position..."
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-xs outline-none focus:border-blue-500"
-                    />
-                    {showPositionDropdown && (
-                      <div className="no-scrollbar absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-sm">
-                        {positions
-                          .filter((p) =>
-                            p.position_name
-                              .toLowerCase()
-                              .includes(positionSearch.toLowerCase()),
-                          )
-                          .map((position) => (
-                            <button
-                              key={position.id}
-                              type="button"
-                              onMouseDown={() => {
-                                setEditPositionId(position.id);
-                                setEditPosition(position.position_name);
-                                setPositionSearch(position.position_name);
-                                setShowPositionDropdown(false);
-                              }}
-                              className="block w-full cursor-pointer border-t border-gray-100 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 first:border-t-0"
-                            >
-                              {position.position_name}
-                            </button>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                </InfoField>
-
-                <InfoField
                   label="School"
                   value={formatValue(editSchoolName)}
                   isEditing={isEditing}
@@ -959,7 +935,7 @@ export default function ViewEmployeeModal({
                       onChange={(e) => setSchoolSearch(e.target.value)}
                       onFocus={() => setShowSchoolDropdown(true)}
                       onBlur={() => setShowSchoolDropdown(false)}
-                      placeholder="Search school..."
+                      placeholder="School"
                       className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-xs outline-none focus:border-blue-500"
                     />
                     {showSchoolDropdown && (
@@ -1004,10 +980,84 @@ export default function ViewEmployeeModal({
                 </InfoField>
 
                 <InfoField
+                  label="Position"
+                  value={formatValue(editPosition)}
+                  isEditing={isEditing}
+                >
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={positionSearch}
+                      onChange={(e) => setPositionSearch(e.target.value)}
+                      onFocus={() => setShowPositionDropdown(true)}
+                      onBlur={() => setShowPositionDropdown(false)}
+                      placeholder="Position"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-xs outline-none focus:border-blue-500"
+                    />
+                    {showPositionDropdown && (
+                      <div className="no-scrollbar absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-sm">
+                        {positions
+                          .filter((p) =>
+                            p.position_name
+                              .toLowerCase()
+                              .includes(positionSearch.toLowerCase()),
+                          )
+                          .map((position) => (
+                            <button
+                              key={position.id}
+                              type="button"
+                              onMouseDown={() => {
+                                setEditPositionId(position.id);
+                                setEditPosition(position.position_name);
+                                setPositionSearch(position.position_name);
+                                setShowPositionDropdown(false);
+                              }}
+                              className="block w-full cursor-pointer border-t border-gray-100 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 first:border-t-0"
+                            >
+                              {position.position_name}
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                </InfoField>
+
+                <InfoField
+                  label="Employee Number"
+                  value={formatValue(editEmployeeNo)}
+                  isEditing={isEditing}
+                >
+                  <input
+                    type="text"
+                    value={editEmployeeNo}
+                    onChange={(e) => {
+                      const digitsOnly = e.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 7);
+                      setEditEmployeeNo(digitsOnly);
+                    }}
+                    maxLength={7}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                  />
+                </InfoField>
+
+                <InfoField
+                  label="Work Email"
+                  value={formatValue(editWorkEmail)}
+                  isEditing={isEditing}
+                >
+                  <input
+                    type="email"
+                    value={editWorkEmail}
+                    onChange={(e) => setEditWorkEmail(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                  />
+                </InfoField>
+
+                <InfoField
                   label="Employee Type"
                   value={formatEmployeeType(editEmployeeType)}
                   isEditing={isEditing}
-                  fullWidth
                 >
                   <select
                     value={editEmployeeType}
@@ -1021,6 +1071,19 @@ export default function ViewEmployeeModal({
                     <option value="teaching">Teaching</option>
                     <option value="non-teaching">Non-Teaching</option>
                   </select>
+                </InfoField>
+
+                <InfoField
+                  label="License No PRC"
+                  value={formatValue(editLicenseNoPrc)}
+                  isEditing={isEditing}
+                >
+                  <input
+                    type="text"
+                    value={editLicenseNoPrc}
+                    onChange={(e) => setEditLicenseNoPrc(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                  />
                 </InfoField>
               </div>
             </div>
@@ -1052,7 +1115,7 @@ export default function ViewEmployeeModal({
 
                 <button
                   type="button"
-                  onClick={handleSaveChanges}
+                  onClick={handleOpenSaveConfirmation}
                   disabled={isSaving}
                   className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -1064,6 +1127,12 @@ export default function ViewEmployeeModal({
           </div>
         </div>
       </div>
+      <ChangesConfirmation
+        visible={isSaveConfirmOpen}
+        onConfirm={handleConfirmSave}
+        onCancel={handleCancelSave}
+        isLoading={isSaving}
+      />
     </div>
   );
 }
