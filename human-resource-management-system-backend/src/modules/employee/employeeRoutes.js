@@ -73,6 +73,13 @@ router.put(
   validateRequest({ params: idParamSchema, body: employeeUpdateBodySchema }),
   updateEmployee,
 );
+router.patch(
+  "/:id",
+  authMiddleware,
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  validateRequest({ params: idParamSchema, body: employeeUpdateBodySchema }),
+  updateEmployee,
+);
 router.delete(
   "/:id",
   authMiddleware,

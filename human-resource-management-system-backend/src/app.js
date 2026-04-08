@@ -8,10 +8,13 @@ const authRoutes = require("./modules/auth/authRoutes");
 const leaveRoutes = require("./modules/leave/leaveRoutes");
 const employeeRoutes = require("./modules/employee/employeeRoutes");
 const schoolRoutes = require("./modules/school/schoolRoutes");
+const Position = require("./modules/position/positionModel");
 const backlogRoutes = require("./modules/backlog/backlogRoutes");
 const registrationRoutes = require("./modules/registration/registrationRoutes");
 const userRoutes = require("./modules/user/userRoutes");
 const { autoCreditCurrentMonth } = require("./modules/leave/leaveController");
+const authMiddleware = require("./middleware/authMiddleware");
+const { roleAuthMiddleware } = require("./middleware/roleAuthMiddleware");
 const pool = require("./config/db");
 
 const app = express();
@@ -399,6 +402,39 @@ const ensurePositionsTable = async () => {
   }
 };
 
+const ensureDistrictsTable = async () => {
+  await pool.promise().query(`
+    CREATE TABLE IF NOT EXISTS districts (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      district_name VARCHAR(50) NOT NULL UNIQUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `);
+
+  const districts = Array.from({ length: 10 }, (_, index) => [
+    `District ${index + 1}`,
+  ]);
+
+  await pool
+    .promise()
+    .query(
+      `INSERT IGNORE INTO districts (district_name) VALUES ${districts
+        .map(() => "(?)")
+        .join(",")}`,
+      districts,
+    );
+
+  try {
+    await pool
+      .promise()
+      .query(`CREATE INDEX idx_districts_name ON districts (district_name)`);
+  } catch (err) {
+    if (!/Duplicate|exists/i.test(err.message)) {
+      console.warn("Districts index warning:", err.message);
+    }
+  }
+};
+
 const ensureEmployeePositionFK = async () => {
   // Check if position_id column exists
   const [columns] = await pool.promise().query(`
@@ -464,6 +500,42 @@ app.use("/api/backlogs", backlogRoutes);
 app.use("/api/registrations", registrationRoutes);
 app.use("/api/users", userRoutes);
 
+app.get(
+  "/api/districts",
+  authMiddleware,
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  async (req, res) => {
+    try {
+      const [rows] = await pool
+        .promise()
+        .query("SELECT id, district_name FROM districts ORDER BY id ASC");
+      return res.status(200).json({ data: rows });
+    } catch (err) {
+      return res.status(500).json({
+        message: "Error retrieving districts",
+        error: err.message,
+      });
+    }
+  },
+);
+
+app.get(
+  "/api/positions",
+  authMiddleware,
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  async (req, res) => {
+    try {
+      const positions = await Position.getAll();
+      return res.status(200).json({ data: positions });
+    } catch (err) {
+      return res.status(500).json({
+        message: "Error retrieving positions",
+        error: err.message,
+      });
+    }
+  },
+);
+
 // Start the server
 app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);
@@ -498,6 +570,9 @@ app.listen(PORT, async () => {
 
     await ensurePositionsTable();
     console.log("✔  Positions table is ready");
+
+    await ensureDistrictsTable();
+    console.log("✔  Districts table is ready");
 
     await ensureEmployeePositionFK();
     console.log("✔  Employee position foreign key is ready");

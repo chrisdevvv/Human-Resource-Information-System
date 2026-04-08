@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import ConfirmationCredit from "./ConfirmationCredit";
+import SuccessCredit from "./SuccessCredit";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -43,6 +45,14 @@ type DeleteResponse = {
   affected_employees: number;
 };
 
+type ToastState = {
+  variant: "success" | "failed";
+  title: string;
+  message: string;
+};
+
+type ActionType = "apply" | "delete" | null;
+
 const reasonLabel = (reason: string) => {
   switch (reason) {
     case "ON_LEAVE_DURING_PERIOD":
@@ -80,9 +90,9 @@ export default function MonthlyCredit() {
   const [loading, setLoading] = useState(false);
   const [simulationResult, setSimulationResult] =
     useState<SimulationResponse | null>(null);
-  const [applyResult, setApplyResult] = useState<ApplyResponse | null>(null);
-  const [deleteResult, setDeleteResult] = useState<DeleteResponse | null>(null);
   const [error, setError] = useState<string>("");
+  const [activeAction, setActiveAction] = useState<ActionType>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
 
   const requestBody = { year, month };
 
@@ -94,7 +104,6 @@ export default function MonthlyCredit() {
   const simulate = async () => {
     setLoading(true);
     setError("");
-    setApplyResult(null);
 
     try {
       const token = getAuthToken();
@@ -131,10 +140,13 @@ export default function MonthlyCredit() {
     }
   };
 
-  const applyMonthlyCredit = async () => {
+  const openToast = (state: ToastState) => {
+    setToast(state);
+  };
+
+  const runApplyMonthlyCredit = async () => {
     setLoading(true);
     setError("");
-    setDeleteResult(null);
 
     try {
       const token = getAuthToken();
@@ -159,25 +171,26 @@ export default function MonthlyCredit() {
         throw new Error(data?.message || "Monthly credit apply failed");
       }
 
-      setApplyResult(data as ApplyResponse);
+      const result = data as ApplyResponse;
+      openToast({
+        variant: "success",
+        title: "Monthly credit applied",
+        message: `${result.message} Credited: ${result.credited}, Skipped: ${result.skipped}.`,
+      });
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Monthly credit apply failed",
-      );
+      const message =
+        err instanceof Error ? err.message : "Monthly credit apply failed";
+      openToast({
+        variant: "failed",
+        title: "Apply failed",
+        message,
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const deleteAppliedMonthlyCredit = async () => {
-    const proceed = window.confirm(
-      "Delete applied monthly credit for this period? This will recompute affected balances.",
-    );
-
-    if (!proceed) {
-      return;
-    }
-
+  const runDeleteAppliedMonthlyCredit = async () => {
     setLoading(true);
     setError("");
 
@@ -207,16 +220,42 @@ export default function MonthlyCredit() {
         throw new Error(data?.message || "Delete monthly credit failed");
       }
 
-      setDeleteResult(data as DeleteResponse);
-      setApplyResult(null);
+      const result = data as DeleteResponse;
+      openToast({
+        variant: "success",
+        title: "Applied credit deleted",
+        message: `${result.message} Deleted entries: ${result.deleted_entries}, Affected employees: ${result.affected_employees}.`,
+      });
       await simulate();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Delete monthly credit failed",
-      );
+      const message =
+        err instanceof Error ? err.message : "Delete monthly credit failed";
+      openToast({
+        variant: "failed",
+        title: "Delete failed",
+        message,
+      });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleConfirmAction = async () => {
+    const action = activeAction;
+    setActiveAction(null);
+
+    if (action === "apply") {
+      await runApplyMonthlyCredit();
+      return;
+    }
+
+    if (action === "delete") {
+      await runDeleteAppliedMonthlyCredit();
+    }
+  };
+
+  const handleOpenAction = (action: ActionType) => {
+    setActiveAction(action);
   };
 
   return (
@@ -274,7 +313,7 @@ export default function MonthlyCredit() {
 
           <button
             type="button"
-            onClick={applyMonthlyCredit}
+            onClick={() => handleOpenAction("apply")}
             disabled={loading || !simulationResult}
             className="cursor-pointer rounded-md bg-emerald-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs"
           >
@@ -283,7 +322,7 @@ export default function MonthlyCredit() {
 
           <button
             type="button"
-            onClick={deleteAppliedMonthlyCredit}
+            onClick={() => handleOpenAction("delete")}
             disabled={loading || !simulationResult}
             className="cursor-pointer rounded-md bg-rose-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs"
           >
@@ -431,19 +470,34 @@ export default function MonthlyCredit() {
         </div>
       ) : null}
 
-      {applyResult ? (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
-          {applyResult.message} Credited: {applyResult.credited}, Skipped:{" "}
-          {applyResult.skipped}.
-        </div>
-      ) : null}
+      <ConfirmationCredit
+        isOpen={activeAction !== null}
+        title={
+          activeAction === "apply"
+            ? "Apply real monthly credit?"
+            : "Delete applied monthly credit?"
+        }
+        message={
+          activeAction === "apply"
+            ? "This will apply the credit for the selected month and update balances."
+            : "This will delete the applied credit for the selected month and recompute affected balances."
+        }
+        confirmLabel={
+          activeAction === "apply" ? "Apply Credit" : "Delete Credit"
+        }
+        confirmVariant={activeAction === "delete" ? "rose" : "blue"}
+        isLoading={loading}
+        onClose={() => setActiveAction(null)}
+        onConfirm={handleConfirmAction}
+      />
 
-      {deleteResult ? (
-        <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
-          {deleteResult.message} Deleted entries: {deleteResult.deleted_entries}
-          , Affected employees: {deleteResult.affected_employees}.
-        </div>
-      ) : null}
+      <SuccessCredit
+        isOpen={Boolean(toast)}
+        variant={toast?.variant ?? "success"}
+        title={toast?.title ?? ""}
+        message={toast?.message ?? ""}
+        onClose={() => setToast(null)}
+      />
     </div>
   );
 }
