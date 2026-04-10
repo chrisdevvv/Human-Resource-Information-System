@@ -357,7 +357,10 @@ export default function EmployeesListLayout() {
     setIsViewOpen(true);
   };
 
-  const handleArchiveConfirm = async (password: string) => {
+  const handleArchiveConfirm = async (
+    password: string,
+    archiveReason: string,
+  ) => {
     if (!selectedArchiveEmployee) {
       return;
     }
@@ -365,7 +368,11 @@ export default function EmployeesListLayout() {
     setIsArchiving(true);
     setArchiveError(null);
     try {
-      await archiveEmployee(selectedArchiveEmployee.id, password);
+      await archiveEmployee(
+        selectedArchiveEmployee.id,
+        password,
+        archiveReason,
+      );
       setIsArchiveOpen(false);
       setShowArchiveSuccess(true);
       await fetchEmployees(false);
@@ -403,31 +410,31 @@ export default function EmployeesListLayout() {
 
   return (
     <div className="w-full min-w-0">
-      <div className="flex justify-start gap-2 mb-4">
+      <div className="grid grid-cols-2 gap-2 mb-4 sm:flex sm:flex-wrap sm:justify-start">
         <button
           onClick={() => setActiveTab("list")}
-          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "list"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          <span className="inline-flex items-center gap-2">
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
             <Users size={16} />
             Employees Profile
           </span>
         </button>
         <button
           onClick={() => setActiveTab("archived")}
-          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "archived"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          <span className="inline-flex items-center gap-2">
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
             <Archive size={16} />
-            Archived Employee
+            Inactive Employees
           </span>
         </button>
       </div>

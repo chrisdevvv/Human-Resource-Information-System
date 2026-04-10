@@ -77,8 +77,30 @@ const getAllEmployees = async (req, res) => {
 
 const getEmployeeById = async (req, res) => {
   try {
-    const result = await Employee.getById(req.params.id);
+    const result = await Employee.getById(req.params.id, {
+      includeArchived: true,
+    });
     if (!result) return res.status(404).json({ message: "Employee not found" });
+
+    if (result.is_archived && result.archived_by) {
+      const [archiverRows] = await pool
+        .promise()
+        .query(
+          "SELECT id, first_name, last_name, email FROM users WHERE id = ? LIMIT 1",
+          [result.archived_by],
+        );
+
+      if (archiverRows[0]) {
+        result.archived_by_name = [
+          archiverRows[0].first_name,
+          archiverRows[0].last_name,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+        result.archived_by_email = archiverRows[0].email || null;
+      }
+    }
 
     if (isSchoolScopedWriteRole(req.user?.role)) {
       if (!isSameSchool(req.user?.school_id, result.school_id)) {
@@ -305,9 +327,7 @@ const archiveEmployee = async (req, res) => {
 
     const archiveReason = String(archive_reason || "").trim();
     if (!archiveReason) {
-      return res
-        .status(400)
-        .json({ message: "Archive reason is required" });
+      return res.status(400).json({ message: "Archive reason is required" });
     }
 
     const employee = await Employee.getById(req.params.id, {
@@ -339,7 +359,11 @@ const archiveEmployee = async (req, res) => {
       return res.status(401).json({ message: "Password is incorrect" });
     }
 
-    const result = await Employee.archive(req.params.id, req.user.id, archiveReason);
+    const result = await Employee.archive(
+      req.params.id,
+      req.user.id,
+      archiveReason,
+    );
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Employee not found" });
     }

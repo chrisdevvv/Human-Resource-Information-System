@@ -192,12 +192,13 @@ export async function creditMonthlyLeave(
 export async function archiveEmployee(
   employeeId: number,
   password: string,
+  archiveReason: string,
 ): Promise<void> {
   const EMPLOYEE_ENDPOINT = `${API_BASE_URL}/api/employees`;
   const response = await fetch(`${EMPLOYEE_ENDPOINT}/${employeeId}/archive`, {
     method: "PATCH",
     headers: getAuthHeaders(),
-    body: JSON.stringify({ password }),
+    body: JSON.stringify({ password, archive_reason: archiveReason }),
   });
 
   await parseResponse<ApiResponse>(response);

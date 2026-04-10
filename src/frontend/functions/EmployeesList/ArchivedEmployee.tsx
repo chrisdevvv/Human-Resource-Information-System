@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import ToastMessage from "../../components/ToastMessage";
+import ViewEmployeeModal from "./modals/ViewEmployeeModal";
 import UnarchiveConfirmationModal from "./modals/UnarchiveConfirmationModal";
 import { unarchiveEmployee } from "../LeaveManagement/leaveApi";
 
@@ -23,17 +24,24 @@ type EmployeeRecordApi = {
   last_name: string;
   email?: string | null;
   school_name?: string | null;
+  school_id?: number | null;
   employee_type?: "teaching" | "non-teaching";
   created_at?: string | null;
+  birthdate?: string | null;
   is_archived?: number;
 };
 
 type EmployeeRecord = {
   id: number;
+  firstName: string;
+  middleName: string;
+  lastName: string;
   fullName: string;
   employeeType: "teaching" | "non-teaching";
   email: string;
   schoolName: string;
+  schoolId: number | null;
+  birthdate: string;
   createdAt?: string;
 };
 
@@ -83,10 +91,15 @@ const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
   const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
   return {
     id: item.id,
+    firstName,
+    middleName,
+    lastName,
     fullName,
     employeeType: item.employee_type || "non-teaching",
     email: item.email?.trim() || "",
     schoolName: item.school_name?.trim() || "",
+    schoolId: item.school_id ?? null,
+    birthdate: item.birthdate || "",
     createdAt: item.created_at || undefined,
   };
 };
@@ -122,6 +135,9 @@ export default function ArchivedEmployee() {
     null,
   );
   const [selectedEmployeeName, setSelectedEmployeeName] = useState<string>("");
+  const [selectedViewEmployee, setSelectedViewEmployee] =
+    useState<EmployeeRecord | null>(null);
+  const [isViewOpen, setIsViewOpen] = useState(false);
   const [isUnarchiving, setIsUnarchiving] = useState(false);
   const [unarchiveError, setUnarchiveError] = useState<string | null>(null);
   const [showUnarchiveSuccess, setShowUnarchiveSuccess] = useState(false);
@@ -134,6 +150,11 @@ export default function ArchivedEmployee() {
     setSelectedEmployeeName(fullName);
     setIsUnarchiveOpen(true);
     setUnarchiveError(null);
+  };
+
+  const handleViewEmployee = (employee: EmployeeRecord) => {
+    setSelectedViewEmployee(employee);
+    setIsViewOpen(true);
   };
 
   const handleEditToggle = () => {
@@ -365,7 +386,7 @@ export default function ArchivedEmployee() {
         className="font-bold text-gray-900 mb-2 sm:mb-4 inline-flex items-center gap-2"
       >
         <Archive size={22} className="text-blue-600" />
-        Archived Employee
+        Inactive Employees
       </h1>
 
       <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-6">
@@ -530,6 +551,14 @@ export default function ArchivedEmployee() {
 
                     <div className="mt-2 flex items-center justify-end gap-2">
                       <button
+                        type="button"
+                        onClick={() => handleViewEmployee(employee)}
+                        className="cursor-pointer rounded border border-blue-200 bg-white px-3 py-1 text-xs font-medium text-blue-700 transition hover:bg-blue-50"
+                      >
+                        View
+                      </button>
+                      <button
+                        type="button"
                         onClick={() =>
                           handleUnarchiveClick(employee.id, employee.fullName)
                         }
@@ -614,22 +643,32 @@ export default function ArchivedEmployee() {
                           {employee.schoolName}
                         </td>
                         <td className="py-1 px-3 text-center">
-                          <button
-                            onClick={() =>
-                              handleUnarchiveClick(
-                                employee.id,
-                                employee.fullName,
-                              )
-                            }
-                            disabled={
-                              isUnarchiving ||
-                              showUnarchiveSuccess ||
-                              isEditMode
-                            }
-                            className="cursor-pointer rounded px-3 py-1 text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                          >
-                            Unarchive
-                          </button>
+                          <div className="inline-flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleViewEmployee(employee)}
+                              className="cursor-pointer rounded border border-blue-200 bg-white px-3 py-1 text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+                            >
+                              View
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleUnarchiveClick(
+                                  employee.id,
+                                  employee.fullName,
+                                )
+                              }
+                              disabled={
+                                isUnarchiving ||
+                                showUnarchiveSuccess ||
+                                isEditMode
+                              }
+                              className="cursor-pointer rounded px-3 py-1 text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                              Unarchive
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -784,6 +823,17 @@ export default function ArchivedEmployee() {
         variant="success"
         onClose={() => setShowUnarchiveSuccess(false)}
         autoCloseDuration={2000}
+      />
+
+      <ViewEmployeeModal
+        visible={isViewOpen}
+        employee={selectedViewEmployee}
+        canEdit={false}
+        onEmployeeUpdated={() => undefined}
+        onClose={() => {
+          setIsViewOpen(false);
+          setSelectedViewEmployee(null);
+        }}
       />
     </div>
   );

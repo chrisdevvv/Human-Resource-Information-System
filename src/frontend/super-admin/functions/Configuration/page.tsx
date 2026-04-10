@@ -380,17 +380,17 @@ export default function ConfigurationPage() {
         </div>
       )}
 
-      <div className="flex justify-start gap-2 mb-1">
+      <div className="grid grid-cols-2 gap-2 mb-1 sm:flex sm:flex-wrap sm:justify-start">
         <button
           type="button"
           onClick={() => setActiveTab("civil-status")}
-          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "civil-status"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          <span className="inline-flex items-center justify-center gap-2">
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
             <Users size={16} />
             Civil Status
           </span>
@@ -398,13 +398,13 @@ export default function ConfigurationPage() {
         <button
           type="button"
           onClick={() => setActiveTab("district")}
-          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "district"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          <span className="inline-flex items-center justify-center gap-2">
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
             <MapPinned size={16} />
             District
           </span>
@@ -412,13 +412,13 @@ export default function ConfigurationPage() {
         <button
           type="button"
           onClick={() => setActiveTab("particulars")}
-          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "particulars"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          <span className="inline-flex items-center justify-center gap-2">
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
             <ListChecks size={16} />
             Particulars
           </span>
@@ -426,13 +426,13 @@ export default function ConfigurationPage() {
         <button
           type="button"
           onClick={() => setActiveTab("positions")}
-          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "positions"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          <span className="inline-flex items-center justify-center gap-2">
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
             <Briefcase size={16} />
             Positions
           </span>
@@ -440,13 +440,13 @@ export default function ConfigurationPage() {
         <button
           type="button"
           onClick={() => setActiveTab("schools")}
-          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "schools"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          <span className="inline-flex items-center justify-center gap-2">
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
             <Building2 size={16} />
             Schools
           </span>
@@ -454,13 +454,13 @@ export default function ConfigurationPage() {
         <button
           type="button"
           onClick={() => setActiveTab("sex")}
-          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "sex"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          <span className="inline-flex items-center justify-center gap-2">
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
             <Users size={16} />
             Sex
           </span>

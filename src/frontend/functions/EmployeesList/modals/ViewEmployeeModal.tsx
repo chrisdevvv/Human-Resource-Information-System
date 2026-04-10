@@ -63,6 +63,12 @@ type EmployeeDetailsResponse = {
   birthdate?: string | null;
   prc_license_no?: string | null;
   license_no_prc?: string | null;
+  is_archived?: number | boolean | null;
+  archived_at?: string | null;
+  archived_by?: number | null;
+  archived_by_name?: string | null;
+  archived_by_email?: string | null;
+  archived_reason?: string | null;
 };
 
 type ViewEmployeeModalProps = {
@@ -517,6 +523,12 @@ export default function ViewEmployeeModal({
   const ageValue =
     resolvedDetails?.age ??
     computeAge(resolvedDetails?.birthdate || employee.birthdate);
+  const isArchived = Boolean(resolvedDetails?.is_archived);
+  const archivedByLabel =
+    resolvedDetails?.archived_by_name ||
+    (resolvedDetails?.archived_by
+      ? `User #${resolvedDetails.archived_by}`
+      : "N/A");
 
   const getValidationError = (field: string): string | null =>
     errors.find((error) => error.field === field)?.message ?? null;
@@ -893,6 +905,29 @@ export default function ViewEmployeeModal({
           {editError ? (
             <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
               {editError}
+            </div>
+          ) : null}
+
+          {isArchived ? (
+            <div className="mb-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 sm:p-4">
+              <h3 className="text-lg font-bold text-amber-900">
+                Archive Information
+              </h3>
+              <p className="mt-1 text-sm text-amber-800">
+                This employee is currently archived.
+              </p>
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <InfoField
+                  label="Archived At"
+                  value={formatDate(resolvedDetails?.archived_at)}
+                />
+                <InfoField label="Archived By" value={archivedByLabel} />
+                <InfoField
+                  label="Archive Reason"
+                  value={formatValue(resolvedDetails?.archived_reason)}
+                  fullWidth
+                />
+              </div>
             </div>
           ) : null}
 

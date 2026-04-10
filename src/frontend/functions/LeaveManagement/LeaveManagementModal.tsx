@@ -60,14 +60,14 @@ export default function LeaveManagementModal({
   const [pdfCooldownRemaining, setPdfCooldownRemaining] = useState(0);
   const pdfCooldownIntervalRef = useRef<number | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
-  const handleArchive = async (password: string) => {
+  const handleArchive = async (password: string, archiveReason: string) => {
     setIsArchiving(true);
     setArchiveError(null);
     try {
       if (!employeeId) {
         throw new Error("Employee ID not found");
       }
-      await archiveEmployee(employeeId, password);
+      await archiveEmployee(employeeId, password, archiveReason);
       setIsArchiveOpen(false);
       setShowArchiveSuccess(true);
     } catch (err) {
