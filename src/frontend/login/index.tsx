@@ -9,6 +9,9 @@ export default function Login() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    const previousTitle = document.title;
+    document.title = "DepEd Human Resource Information System";
+
     const mediaQuery = window.matchMedia("(max-width: 767px)");
 
     const updateView = () => {
@@ -20,11 +23,17 @@ export default function Login() {
 
     if (typeof mediaQuery.addEventListener === "function") {
       mediaQuery.addEventListener("change", updateView);
-      return () => mediaQuery.removeEventListener("change", updateView);
+      return () => {
+        mediaQuery.removeEventListener("change", updateView);
+        document.title = previousTitle;
+      };
     }
 
     mediaQuery.addListener(updateView);
-    return () => mediaQuery.removeListener(updateView);
+    return () => {
+      mediaQuery.removeListener(updateView);
+      document.title = previousTitle;
+    };
   }, []);
 
   if (!mounted) {

@@ -239,7 +239,7 @@ export default function LoginPage() {
               CITY OF SAN JOSE DEL MONTE
             </h1>
             <p className="text-sm font-normal tracking-wide leading-tight">
-              CSJDM Human Resource Information System - CHRIS
+              CSJDM DepEd Human Resource Information System - CHRIS
             </p>
           </div>
         </div>
