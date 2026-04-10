@@ -249,6 +249,11 @@ const registrationRejectBodySchema = Joi.object({
 
 const employeeArchiveBodySchema = Joi.object({
   password: Joi.string().min(1).max(128).required(),
+  archive_reason: Joi.string().trim().min(1).max(500).required(),
+});
+
+const employeeUnarchiveBodySchema = Joi.object({
+  password: Joi.string().min(1).max(128).required(),
 });
 
 const leaveParticularBodySchema = Joi.object({
@@ -318,6 +323,7 @@ module.exports = {
   employeeMarkOnLeaveBodySchema,
   employeeStatusCountsQuerySchema,
   employeeArchiveBodySchema,
+  employeeUnarchiveBodySchema,
   schoolBodySchema,
   civilStatusBodySchema,
   districtBodySchema,
