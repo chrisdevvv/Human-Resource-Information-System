@@ -24,6 +24,7 @@ const {
   employeeMarkOnLeaveBodySchema,
   employeeStatusCountsQuerySchema,
   employeeArchiveBodySchema,
+  employeeUnarchiveBodySchema,
 } = require("../../validation/schemas");
 
 const router = express.Router();
@@ -98,7 +99,7 @@ router.patch(
   "/:id/unarchive",
   authMiddleware,
   roleAuthMiddleware(["admin", "super-admin"]),
-  validateRequest({ params: idParamSchema, body: employeeArchiveBodySchema }),
+  validateRequest({ params: idParamSchema, body: employeeUnarchiveBodySchema }),
   unarchiveEmployee,
 );
 router.patch(

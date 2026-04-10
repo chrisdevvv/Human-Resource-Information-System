@@ -234,12 +234,12 @@ const Employee = {
     return result;
   },
 
-  archive: async (id, archivedBy) => {
+  archive: async (id, archivedBy, archiveReason) => {
     const [result] = await pool.promise().query(
       `UPDATE employees
-       SET is_archived = 1, archived_at = NOW(), archived_by = ?
+       SET is_archived = 1, archived_at = NOW(), archived_by = ?, archived_reason = ?
        WHERE id = ? AND is_archived = 0`,
-      [archivedBy || null, id],
+      [archivedBy || null, archiveReason || null, id],
     );
     return result;
   },
@@ -247,7 +247,7 @@ const Employee = {
   unarchive: async (id) => {
     const [result] = await pool.promise().query(
       `UPDATE employees
-       SET is_archived = 0, archived_at = NULL, archived_by = NULL
+       SET is_archived = 0, archived_at = NULL, archived_by = NULL, archived_reason = NULL
        WHERE id = ? AND is_archived = 1`,
       [id],
     );

@@ -199,6 +199,7 @@ CREATE TABLE `employees` (
   `is_archived` tinyint(1) NOT NULL DEFAULT 0,
   `archived_at` datetime DEFAULT NULL,
   `archived_by` int(11) DEFAULT NULL,
+  `archived_reason` varchar(500) DEFAULT NULL,
   `on_leave` tinyint(1) NOT NULL DEFAULT 0,
   `on_leave_from` date DEFAULT NULL,
   `on_leave_until` date DEFAULT NULL,

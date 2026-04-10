@@ -294,13 +294,20 @@ const deleteEmployee = async (req, res) => {
 
 const archiveEmployee = async (req, res) => {
   try {
-    const { password } = req.body;
+    const { password, archive_reason } = req.body;
 
     // Require password for archiving
     if (!password) {
       return res
         .status(400)
         .json({ message: "Password is required to archive employee" });
+    }
+
+    const archiveReason = String(archive_reason || "").trim();
+    if (!archiveReason) {
+      return res
+        .status(400)
+        .json({ message: "Archive reason is required" });
     }
 
     const employee = await Employee.getById(req.params.id, {
@@ -332,7 +339,7 @@ const archiveEmployee = async (req, res) => {
       return res.status(401).json({ message: "Password is incorrect" });
     }
 
-    const result = await Employee.archive(req.params.id, req.user.id);
+    const result = await Employee.archive(req.params.id, req.user.id, archiveReason);
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Employee not found" });
     }
@@ -343,7 +350,7 @@ const archiveEmployee = async (req, res) => {
       employee_id: Number(req.params.id),
       leave_id: null,
       action: "EMPLOYEE_ARCHIVED",
-      details: `${employee.first_name} ${employee.last_name} (${employee.employee_type})`,
+      details: `${employee.first_name} ${employee.last_name} (${employee.employee_type}) — Reason: ${archiveReason}`,
     });
 
     return res.status(200).json({ message: "Employee archived successfully" });

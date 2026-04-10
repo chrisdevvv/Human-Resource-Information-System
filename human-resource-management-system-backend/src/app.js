@@ -213,7 +213,8 @@ const ensureEmployeeArchiveSchema = async () => {
     ALTER TABLE employees
     ADD COLUMN IF NOT EXISTS is_archived TINYINT(1) NOT NULL DEFAULT 0 AFTER school_id,
     ADD COLUMN IF NOT EXISTS archived_at DATETIME NULL AFTER is_archived,
-    ADD COLUMN IF NOT EXISTS archived_by INT NULL AFTER archived_at;
+    ADD COLUMN IF NOT EXISTS archived_by INT NULL AFTER archived_at,
+    ADD COLUMN IF NOT EXISTS archived_reason VARCHAR(500) NULL AFTER archived_by;
   `);
 
   await pool.promise().query(`
@@ -241,7 +242,7 @@ const ensureEmployeeArchiveSchema = async () => {
 const ensureEmployeeLeaveStatusSchema = async () => {
   await pool.promise().query(`
     ALTER TABLE employees
-    ADD COLUMN IF NOT EXISTS on_leave TINYINT(1) NOT NULL DEFAULT 0 AFTER archived_by,
+    ADD COLUMN IF NOT EXISTS on_leave TINYINT(1) NOT NULL DEFAULT 0 AFTER archived_reason,
     ADD COLUMN IF NOT EXISTS on_leave_from DATE NULL AFTER on_leave,
     ADD COLUMN IF NOT EXISTS on_leave_until DATE NULL AFTER on_leave_from,
     ADD COLUMN IF NOT EXISTS on_leave_reason VARCHAR(500) NULL AFTER on_leave_until,
