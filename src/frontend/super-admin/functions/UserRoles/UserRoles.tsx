@@ -363,7 +363,7 @@ export default function UserRoles() {
 
       {/* Tab Content */}
       {activeTab === "users" && (
-        <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col">
+        <div className="w-full min-w-0 bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col">
           <h1
             style={{ fontSize: "20px" }}
             className="font-bold text-gray-900 mb-4 inline-flex items-center gap-2"
@@ -426,7 +426,7 @@ export default function UserRoles() {
                       setSchoolFilter(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="w-full sm:w-56 lg:w-64 text-gray-500 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                    className=" w-full sm:w-56 lg:w-64 text-gray-500 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                     disabled={schoolsLoading}
                   >
                     <option value="ALL">All Schools</option>

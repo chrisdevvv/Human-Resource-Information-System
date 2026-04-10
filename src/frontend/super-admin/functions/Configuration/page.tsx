@@ -5,6 +5,9 @@ import {
   Building2,
   CheckCircle2,
   ListChecks,
+  Briefcase,
+  MapPinned,
+  Users,
   Plus,
   Trash2,
   X,
@@ -13,6 +16,11 @@ import {
 
 import SchoolsList from "./SchoolsList";
 import ParticularsList from "./ParticularsList";
+import District from "./District";
+import CivilStatus from "./CivilStatus";
+import Positions from "./Positions";
+import Sex from "./Sex";
+import SuccessMessage from "./SuccessMessage";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -23,15 +31,16 @@ type School = {
   school_code: string;
 };
 
-type ConfigurationItem = {
-  id: number | string;
-  name: string;
-};
+type ConfigTab =
+  | "schools"
+  | "particulars"
+  | "district"
+  | "civil-status"
+  | "positions"
+  | "sex";
 
 export default function ConfigurationPage() {
-  const [activeTab, setActiveTab] = useState<"schools" | "particulars">(
-    "schools",
-  );
+  const [activeTab, setActiveTab] = useState<ConfigTab>("schools");
   const [schoolSearch, setSchoolSearch] = useState("");
   const [particularSearch, setParticularSearch] = useState("");
   const [schoolSort, setSchoolSort] = useState<"a-z" | "z-a">("a-z");
@@ -41,10 +50,11 @@ export default function ConfigurationPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showEntryModal, setShowEntryModal] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
+  const [feedbackVisible, setFeedbackVisible] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackVariant, setFeedbackVariant] = useState<"success" | "error">(
+    "success",
+  );
   const [modalInput, setModalInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [showAddConfirm, setShowAddConfirm] = useState(false);
@@ -56,21 +66,11 @@ export default function ConfigurationPage() {
   } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const showSuccessFeedback = (message: string) => {
-    setSuccessMessage(message);
-    setShowSuccessModal(true);
+  const showFeedback = (variant: "success" | "error", message: string) => {
+    setFeedbackVariant(variant);
+    setFeedbackMessage(message);
+    setFeedbackVisible(true);
   };
-
-  useEffect(() => {
-    if (!showSuccessModal) return;
-
-    const timer = setTimeout(() => {
-      setShowSuccessModal(false);
-      setSuccessMessage("");
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [showSuccessModal]);
 
   const refreshConfigurationData = async (showSpinner = false) => {
     if (showSpinner) {
@@ -148,12 +148,15 @@ export default function ConfigurationPage() {
   const confirmDelete = async () => {
     if (!deleteTarget) return;
 
+    const target = deleteTarget;
+    setShowDeleteConfirm(false);
+    setDeleteTarget(null);
+
     setIsDeleting(true);
     try {
       const token = localStorage.getItem("authToken");
       if (!token) {
-        setToastMessage("No auth token found");
-        setShowToast(true);
+        showFeedback("error", "No auth token found");
         setIsDeleting(false);
         return;
       }
@@ -163,51 +166,50 @@ export default function ConfigurationPage() {
         "Content-Type": "application/json",
       };
 
-      if (deleteTarget.type === "school") {
-        const res = await fetch(
-          `${API_BASE_URL}/api/schools/${deleteTarget.id}`,
-          {
-            method: "DELETE",
-            headers,
-          },
-        );
+      if (target.type === "school") {
+        const res = await fetch(`${API_BASE_URL}/api/schools/${target.id}`, {
+          method: "DELETE",
+          headers,
+        });
 
         if (res.ok) {
-          showSuccessFeedback(
-            `School "${deleteTarget.name}" deleted successfully`,
+          showFeedback(
+            "success",
+            `School "${target.name}" deleted successfully`,
           );
           await refreshConfigurationData();
         } else {
           const errData = await res.json().catch(() => ({}));
-          setToastMessage(errData.message || "Failed to delete school");
-          setShowToast(true);
+          showFeedback("error", errData.message || "Failed to delete school");
         }
       } else {
         const res = await fetch(`${API_BASE_URL}/api/leave/particulars`, {
           method: "DELETE",
           headers,
           body: JSON.stringify({
-            particular: deleteTarget.name,
+            particular: target.name,
           }),
         });
 
         if (res.ok) {
-          showSuccessFeedback(
-            `Particular "${deleteTarget.name}" deleted successfully`,
+          showFeedback(
+            "success",
+            `Particular "${target.name}" deleted successfully`,
           );
           await refreshConfigurationData();
         } else {
           const errData = await res.json().catch(() => ({}));
-          setToastMessage(errData.message || "Failed to delete particular");
-          setShowToast(true);
+          showFeedback(
+            "error",
+            errData.message || "Failed to delete particular",
+          );
         }
       }
-
-      setShowDeleteConfirm(false);
-      setDeleteTarget(null);
     } catch (err) {
-      setToastMessage(err instanceof Error ? err.message : "An error occurred");
-      setShowToast(true);
+      showFeedback(
+        "error",
+        err instanceof Error ? err.message : "An error occurred",
+      );
     } finally {
       setIsDeleting(false);
     }
@@ -256,6 +258,7 @@ export default function ConfigurationPage() {
     schoolSearch.trim().length > 0 || schoolSort !== "a-z";
   const hasActiveParticularFilters =
     particularSearch.trim().length > 0 || particularSort !== "a-z";
+  const canManageItems = activeTab === "schools" || activeTab === "particulars";
 
   const handleClearSchoolFilters = () => {
     setSchoolSearch("");
@@ -269,8 +272,7 @@ export default function ConfigurationPage() {
 
   const requestAddItem = () => {
     if (!modalInput.trim()) {
-      setToastMessage("Please enter a name");
-      setShowToast(true);
+      showFeedback("error", "Please enter a name");
       return;
     }
 
@@ -280,19 +282,19 @@ export default function ConfigurationPage() {
   const handleAddItem = async () => {
     if (!modalInput.trim()) {
       setShowAddConfirm(false);
-      setToastMessage("Please enter a name");
-      setShowToast(true);
+      setShowEntryModal(false);
+      showFeedback("error", "Please enter a name");
       return;
     }
 
     setShowAddConfirm(false);
+    setShowEntryModal(false);
 
     setIsSaving(true);
     try {
       const token = localStorage.getItem("authToken");
       if (!token) {
-        setToastMessage("No auth token found");
-        setShowToast(true);
+        showFeedback("error", "No auth token found");
         setIsSaving(false);
         return;
       }
@@ -321,12 +323,11 @@ export default function ConfigurationPage() {
 
         if (res.ok) {
           await res.json().catch(() => ({}));
-          showSuccessFeedback("School added successfully");
+          showFeedback("success", "School added successfully");
           await refreshConfigurationData();
         } else {
           const errData = await res.json().catch(() => ({}));
-          setToastMessage(errData.message || "Failed to add school");
-          setShowToast(true);
+          showFeedback("error", errData.message || "Failed to add school");
         }
       } else {
         // Create particular
@@ -339,27 +340,26 @@ export default function ConfigurationPage() {
         });
 
         if (res.ok) {
-          showSuccessFeedback("Particular added successfully");
+          showFeedback("success", "Particular added successfully");
           await refreshConfigurationData();
         } else {
           const errData = await res.json().catch(() => ({}));
-          setToastMessage(errData.message || "Failed to add particular");
-          setShowToast(true);
+          showFeedback("error", errData.message || "Failed to add particular");
         }
       }
-
-      setShowEntryModal(false);
       setModalInput("");
     } catch (err) {
-      setToastMessage(err instanceof Error ? err.message : "An error occurred");
-      setShowToast(true);
+      showFeedback(
+        "error",
+        err instanceof Error ? err.message : "An error occurred",
+      );
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <section className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col gap-4">
+    <section className="w-full min-w-0 bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col gap-4">
       <h1
         style={{ fontSize: "20px" }}
         className="font-bold text-gray-900 inline-flex items-center gap-2"
@@ -383,16 +383,30 @@ export default function ConfigurationPage() {
       <div className="flex justify-start gap-2 mb-1">
         <button
           type="button"
-          onClick={() => setActiveTab("schools")}
+          onClick={() => setActiveTab("civil-status")}
           className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
-            activeTab === "schools"
+            activeTab === "civil-status"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
           <span className="inline-flex items-center justify-center gap-2">
-            <Building2 size={16} />
-            Schools
+            <Users size={16} />
+            Civil Status
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("district")}
+          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
+            activeTab === "district"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          <span className="inline-flex items-center justify-center gap-2">
+            <MapPinned size={16} />
+            District
           </span>
         </button>
         <button
@@ -407,6 +421,48 @@ export default function ConfigurationPage() {
           <span className="inline-flex items-center justify-center gap-2">
             <ListChecks size={16} />
             Particulars
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("positions")}
+          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
+            activeTab === "positions"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          <span className="inline-flex items-center justify-center gap-2">
+            <Briefcase size={16} />
+            Positions
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("schools")}
+          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
+            activeTab === "schools"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          <span className="inline-flex items-center justify-center gap-2">
+            <Building2 size={16} />
+            Schools
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("sex")}
+          className={`px-4 py-1 font-medium text-xs rounded-t-lg transition cursor-pointer ${
+            activeTab === "sex"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          <span className="inline-flex items-center justify-center gap-2">
+            <Users size={16} />
+            Sex
           </span>
         </button>
       </div>
@@ -433,7 +489,7 @@ export default function ConfigurationPage() {
             sortValue={schoolSort}
             onSortChange={setSchoolSort}
           />
-        ) : (
+        ) : activeTab === "particulars" ? (
           <ParticularsList
             items={filteredParticulars.map((particular, index) => ({
               id: index,
@@ -448,10 +504,18 @@ export default function ConfigurationPage() {
             sortValue={particularSort}
             onSortChange={setParticularSort}
           />
+        ) : activeTab === "district" ? (
+          <District />
+        ) : activeTab === "civil-status" ? (
+          <CivilStatus />
+        ) : activeTab === "positions" ? (
+          <Positions />
+        ) : (
+          <Sex />
         )}
       </div>
 
-      {showEntryModal ? (
+      {showEntryModal && canManageItems ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
             <div className="border-b border-gray-200 px-5 py-4">
@@ -523,7 +587,7 @@ export default function ConfigurationPage() {
         </div>
       ) : null}
 
-      {showAddConfirm ? (
+      {showAddConfirm && canManageItems ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl">
             <div className="border-b border-gray-200 px-5 py-4">
@@ -624,44 +688,12 @@ export default function ConfigurationPage() {
         </div>
       ) : null}
 
-      {showSuccessModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="mt-0.5 text-emerald-600" size={20} />
-              <div>
-                <p className="text-sm font-semibold text-gray-900">Success</p>
-                <p className="text-sm text-gray-600">{successMessage}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {showToast ? (
-        <div className="fixed bottom-5 right-5 z-50 w-[min(360px,calc(100vw-2rem))] rounded-xl border border-blue-200 bg-white p-4 shadow-lg">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="mt-0.5 text-emerald-600" size={18} />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-900">
-                {toastMessage.includes("Error") ||
-                toastMessage.includes("Failed")
-                  ? "Error"
-                  : "Success"}
-              </p>
-              <p className="text-sm text-gray-600">{toastMessage}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowToast(false)}
-              className="cursor-pointer text-gray-400 hover:text-gray-700"
-              aria-label="Close toast"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <SuccessMessage
+        isVisible={feedbackVisible}
+        message={feedbackMessage}
+        variant={feedbackVariant}
+        onClose={() => setFeedbackVisible(false)}
+      />
     </section>
   );
 }

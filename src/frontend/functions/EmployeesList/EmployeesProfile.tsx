@@ -19,6 +19,7 @@ import ArchivedEmployee from "./ArchivedEmployee";
 import ArchiveConfirmationModal from "./modals/ArchiveConfirmationModal";
 import ArchiveSuccessMessage from "../LeaveManagement/ArchiveSuccessMessage";
 import ViewEmployeeModal from "./modals/ViewEmployeeModal";
+import ToastMessage from "../../components/ToastMessage";
 import { archiveEmployee } from "../LeaveManagement/leaveApi";
 
 type EmployeeRecordApi = {
@@ -175,18 +176,6 @@ export default function EmployeesListLayout() {
   useEffect(() => {
     setCurrentUserRole(getCurrentUserRole());
   }, []);
-
-  useEffect(() => {
-    if (!showAddSuccessToast) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      setShowAddSuccessToast(false);
-    }, 3000);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [showAddSuccessToast]);
 
   const fetchEmployees = async (showSpinner = true) => {
     try {
@@ -413,7 +402,7 @@ export default function EmployeesListLayout() {
     sortOrder !== "asc";
 
   return (
-    <div className="w-full min-w-0" >
+    <div className="w-full min-w-0">
       <div className="flex justify-start gap-2 mb-4">
         <button
           onClick={() => setActiveTab("list")}
@@ -867,25 +856,14 @@ export default function EmployeesListLayout() {
         }}
       />
 
-      {showAddSuccessToast ? (
-        <div className="fixed bottom-5 right-5 z-50 w-[min(360px,calc(100vw-2rem))] rounded-xl border border-blue-200 bg-white p-4 shadow-lg">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="mt-0.5 text-emerald-600" size={18} />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-900">Success</p>
-              <p className="text-sm text-gray-600">{addSuccessMessage}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowAddSuccessToast(false)}
-              className="cursor-pointer text-gray-400 hover:text-gray-700"
-              aria-label="Close toast"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <ToastMessage
+        isVisible={showAddSuccessToast}
+        title="Success"
+        message={addSuccessMessage}
+        variant="success"
+        onClose={() => setShowAddSuccessToast(false)}
+        autoCloseDuration={3000}
+      />
     </div>
   );
 }

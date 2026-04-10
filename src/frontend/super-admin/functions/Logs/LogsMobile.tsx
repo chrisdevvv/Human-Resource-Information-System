@@ -27,6 +27,8 @@ type Log = {
   action: string;
   details: string;
   createdAt: string;
+  createdAtMs: number;
+  searchIndex: string;
 };
 
 type ArchiveFlowStep = "range" | "generate-prompt" | "confirm" | "success";
@@ -35,6 +37,39 @@ const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
+const createLogSearchIndex = (log: {
+  firstName: string;
+  lastName: string;
+  action: string;
+  createdAt: string;
+}) => {
+  const createdAtDate = new Date(log.createdAt);
+  const parts = [
+    `${log.firstName} ${log.lastName}`.trim(),
+    log.action,
+    log.createdAt,
+  ];
+
+  if (!Number.isNaN(createdAtDate.getTime())) {
+    parts.push(
+      createdAtDate.toISOString().slice(0, 10),
+      createdAtDate.toLocaleDateString("en-PH"),
+      createdAtDate.toLocaleString("en-PH", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }),
+      createdAtDate.toLocaleString("en-PH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+    );
+  }
+
+  return parts.join(" ").toLowerCase();
+};
 
 export default function LogsMobile() {
   const router = useRouter();
@@ -328,6 +363,13 @@ export default function LogsMobile() {
           action: (item.action as string) || "N/A",
           details: (item.details as string) || "",
           createdAt: item.created_at as string,
+          createdAtMs: new Date(item.created_at as string).getTime(),
+          searchIndex: createLogSearchIndex({
+            firstName: (item.first_name as string) || "Unknown",
+            lastName: (item.last_name as string) || "",
+            action: (item.action as string) || "N/A",
+            createdAt: item.created_at as string,
+          }),
         }),
       );
       setLogsData(formatted);
@@ -347,64 +389,74 @@ export default function LogsMobile() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filteredLogs = logsData
-    .filter((log) => {
-      const query = searchQuery.trim().toLowerCase();
-      const fullName = `${log.firstName} ${log.lastName}`.toLowerCase();
-      const logDate = new Date(log.createdAt);
+  const normalizedSearchQuery = React.useMemo(
+    () => searchQuery.trim().toLowerCase(),
+    [searchQuery],
+  );
 
-      const searchableDateParts = Number.isNaN(logDate.getTime())
-        ? []
-        : [
-            log.createdAt.toLowerCase(),
-            logDate.toISOString().slice(0, 10),
-            logDate.toLocaleDateString("en-PH"),
-            logDate.toLocaleString("en-PH", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            }),
-            logDate.toLocaleString("en-PH", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            }),
-          ].map((value) => value.toLowerCase());
+  const fromTimestamp = React.useMemo(
+    () => (dateFrom ? new Date(dateFrom).getTime() : null),
+    [dateFrom],
+  );
 
+  const toTimestamp = React.useMemo(() => {
+    if (!dateTo) return null;
+
+    const end = new Date(dateTo);
+    end.setHours(23, 59, 59, 999);
+    return end.getTime();
+  }, [dateTo]);
+
+  const filteredLogs = React.useMemo(() => {
+    const filtered = logsData.filter((log) => {
       const matchesSearch =
-        !query ||
-        fullName.includes(query) ||
-        log.action.toLowerCase().includes(query) ||
-        searchableDateParts.some((datePart) => datePart.includes(query));
+        !normalizedSearchQuery ||
+        log.searchIndex.includes(normalizedSearchQuery);
       const matchesRole = roleFilter === "ALL" || log.role === roleFilter;
       const matchesLetter =
         letterFilter === "ALL" ||
         log.firstName.charAt(0).toUpperCase() === letterFilter;
-      const afterFrom = !dateFrom || logDate >= new Date(dateFrom);
-      const beforeTo = !dateTo
-        ? true
-        : (() => {
-            const end = new Date(dateTo);
-            end.setHours(23, 59, 59, 999);
-            return logDate <= end;
-          })();
+      const afterFrom =
+        fromTimestamp === null || log.createdAtMs >= fromTimestamp;
+      const beforeTo = toTimestamp === null || log.createdAtMs <= toTimestamp;
+
       return (
         matchesSearch && matchesRole && matchesLetter && afterFrom && beforeTo
       );
-    })
-    .sort((a, b) => {
-      if (sortMode === "name-asc")
-        return a.firstName.localeCompare(b.firstName);
-      if (sortMode === "name-desc")
-        return b.firstName.localeCompare(a.firstName);
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
-      return sortMode === "date-desc" ? dateB - dateA : dateA - dateB;
     });
 
-  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / itemsPerPage));
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedLogs = filteredLogs.slice(startIdx, startIdx + itemsPerPage);
+    return filtered.sort((a, b) => {
+      if (sortMode === "name-asc") {
+        return a.firstName.localeCompare(b.firstName);
+      }
+
+      if (sortMode === "name-desc") {
+        return b.firstName.localeCompare(a.firstName);
+      }
+
+      return sortMode === "date-desc"
+        ? b.createdAtMs - a.createdAtMs
+        : a.createdAtMs - b.createdAtMs;
+    });
+  }, [
+    fromTimestamp,
+    letterFilter,
+    logsData,
+    normalizedSearchQuery,
+    roleFilter,
+    sortMode,
+    toTimestamp,
+  ]);
+
+  const totalPages = React.useMemo(
+    () => Math.max(1, Math.ceil(filteredLogs.length / itemsPerPage)),
+    [filteredLogs.length, itemsPerPage],
+  );
+
+  const paginatedLogs = React.useMemo(() => {
+    const startIdx = (currentPage - 1) * itemsPerPage;
+    return filteredLogs.slice(startIdx, startIdx + itemsPerPage);
+  }, [currentPage, filteredLogs, itemsPerPage]);
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
     Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
@@ -412,16 +464,21 @@ export default function LogsMobile() {
     totalPages,
     pageGroupStart + PAGE_WINDOW_SIZE - 1,
   );
-  const pageNumberItems: Array<number | "ellipsis"> = Array.from(
-    { length: pageGroupEnd - pageGroupStart + 1 },
-    (_, i) => pageGroupStart + i,
-  );
-  if (pageGroupEnd < totalPages) {
-    if (totalPages - pageGroupEnd > 1) {
-      pageNumberItems.push("ellipsis");
+  const pageNumberItems = React.useMemo<Array<number | "ellipsis">>(() => {
+    const items: Array<number | "ellipsis"> = Array.from(
+      { length: pageGroupEnd - pageGroupStart + 1 },
+      (_, i) => pageGroupStart + i,
+    );
+
+    if (pageGroupEnd < totalPages) {
+      if (totalPages - pageGroupEnd > 1) {
+        items.push("ellipsis");
+      }
+      items.push(totalPages);
     }
-    pageNumberItems.push(totalPages);
-  }
+
+    return items;
+  }, [pageGroupEnd, pageGroupStart, totalPages]);
 
   useEffect(() => {
     if (currentPage > totalPages) {

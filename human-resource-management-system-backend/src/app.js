@@ -14,8 +14,16 @@ const registrationRoutes = require("./modules/registration/registrationRoutes");
 const userRoutes = require("./modules/user/userRoutes");
 const { autoCreditCurrentMonth } = require("./modules/leave/leaveController");
 const authMiddleware = require("./middleware/authMiddleware");
+const { validateRequest } = require("./middleware/validateRequest");
 const { roleAuthMiddleware } = require("./middleware/roleAuthMiddleware");
 const pool = require("./config/db");
+const {
+  idParamSchema,
+  civilStatusBodySchema,
+  districtBodySchema,
+  positionBodySchema,
+  sexBodySchema,
+} = require("./validation/schemas");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -615,6 +623,77 @@ app.get(
   },
 );
 
+app.post(
+  "/api/districts",
+  authMiddleware,
+  roleAuthMiddleware(["super-admin"]),
+  validateRequest({ body: districtBodySchema }),
+  async (req, res) => {
+    try {
+      const districtName = req.body.district_name.trim();
+      const [existingRows] = await pool
+        .promise()
+        .query("SELECT id FROM districts WHERE district_name = ? LIMIT 1", [
+          districtName,
+        ]);
+
+      if (existingRows.length > 0) {
+        return res.status(409).json({ message: "District already exists" });
+      }
+
+      const [result] = await pool
+        .promise()
+        .query("INSERT INTO districts (district_name) VALUES (?)", [
+          districtName,
+        ]);
+
+      return res.status(201).json({
+        message: "District created successfully",
+        data: { id: result.insertId, district_name: districtName },
+      });
+    } catch (err) {
+      return res.status(500).json({
+        message: "Error creating district",
+        error: err.message,
+      });
+    }
+  },
+);
+
+app.delete(
+  "/api/districts/:id",
+  authMiddleware,
+  roleAuthMiddleware(["super-admin"]),
+  validateRequest({ params: idParamSchema }),
+  async (req, res) => {
+    try {
+      const [existingRows] = await pool
+        .promise()
+        .query("SELECT id, district_name FROM districts WHERE id = ? LIMIT 1", [
+          req.params.id,
+        ]);
+
+      if (existingRows.length === 0) {
+        return res.status(404).json({ message: "District not found" });
+      }
+
+      await pool
+        .promise()
+        .query("DELETE FROM districts WHERE id = ?", [req.params.id]);
+
+      return res.status(200).json({
+        message: "District deleted successfully",
+        data: { id: Number(req.params.id) },
+      });
+    } catch (err) {
+      return res.status(500).json({
+        message: "Error deleting district",
+        error: err.message,
+      });
+    }
+  },
+);
+
 app.get(
   "/api/positions",
   authMiddleware,
@@ -640,11 +719,91 @@ app.get(
     try {
       const [rows] = await pool
         .promise()
-        .query("SELECT id, civil_status_name FROM civil_statuses ORDER BY id ASC");
+        .query(
+          "SELECT id, civil_status_name FROM civil_statuses ORDER BY id ASC",
+        );
       return res.status(200).json({ data: rows });
     } catch (err) {
       return res.status(500).json({
         message: "Error retrieving civil statuses",
+        error: err.message,
+      });
+    }
+  },
+);
+
+app.post(
+  "/api/civil-statuses",
+  authMiddleware,
+  roleAuthMiddleware(["super-admin"]),
+  validateRequest({ body: civilStatusBodySchema }),
+  async (req, res) => {
+    try {
+      const civilStatusName = req.body.civil_status_name.trim();
+      const [existingRows] = await pool
+        .promise()
+        .query(
+          "SELECT id FROM civil_statuses WHERE civil_status_name = ? LIMIT 1",
+          [civilStatusName],
+        );
+
+      if (existingRows.length > 0) {
+        return res.status(409).json({
+          message: "Civil status already exists",
+        });
+      }
+
+      const [result] = await pool
+        .promise()
+        .query("INSERT INTO civil_statuses (civil_status_name) VALUES (?)", [
+          civilStatusName,
+        ]);
+
+      return res.status(201).json({
+        message: "Civil status created successfully",
+        data: {
+          id: result.insertId,
+          civil_status_name: civilStatusName,
+        },
+      });
+    } catch (err) {
+      return res.status(500).json({
+        message: "Error creating civil status",
+        error: err.message,
+      });
+    }
+  },
+);
+
+app.delete(
+  "/api/civil-statuses/:id",
+  authMiddleware,
+  roleAuthMiddleware(["super-admin"]),
+  validateRequest({ params: idParamSchema }),
+  async (req, res) => {
+    try {
+      const [existingRows] = await pool
+        .promise()
+        .query(
+          "SELECT id, civil_status_name FROM civil_statuses WHERE id = ? LIMIT 1",
+          [req.params.id],
+        );
+
+      if (existingRows.length === 0) {
+        return res.status(404).json({ message: "Civil status not found" });
+      }
+
+      await pool
+        .promise()
+        .query("DELETE FROM civil_statuses WHERE id = ?", [req.params.id]);
+
+      return res.status(200).json({
+        message: "Civil status deleted successfully",
+        data: { id: Number(req.params.id) },
+      });
+    } catch (err) {
+      return res.status(500).json({
+        message: "Error deleting civil status",
         error: err.message,
       });
     }
@@ -664,6 +823,146 @@ app.get(
     } catch (err) {
       return res.status(500).json({
         message: "Error retrieving sexes",
+        error: err.message,
+      });
+    }
+  },
+);
+
+app.post(
+  "/api/sexes",
+  authMiddleware,
+  roleAuthMiddleware(["super-admin"]),
+  validateRequest({ body: sexBodySchema }),
+  async (req, res) => {
+    try {
+      const sexName = req.body.sex_name.trim();
+      const [existingRows] = await pool
+        .promise()
+        .query("SELECT id FROM sexes WHERE sex_name = ? LIMIT 1", [sexName]);
+
+      if (existingRows.length > 0) {
+        return res.status(409).json({ message: "Sex already exists" });
+      }
+
+      const [result] = await pool
+        .promise()
+        .query("INSERT INTO sexes (sex_name) VALUES (?)", [sexName]);
+
+      return res.status(201).json({
+        message: "Sex created successfully",
+        data: { id: result.insertId, sex_name: sexName },
+      });
+    } catch (err) {
+      return res.status(500).json({
+        message: "Error creating sex",
+        error: err.message,
+      });
+    }
+  },
+);
+
+app.delete(
+  "/api/sexes/:id",
+  authMiddleware,
+  roleAuthMiddleware(["super-admin"]),
+  validateRequest({ params: idParamSchema }),
+  async (req, res) => {
+    try {
+      const [existingRows] = await pool
+        .promise()
+        .query("SELECT id, sex_name FROM sexes WHERE id = ? LIMIT 1", [
+          req.params.id,
+        ]);
+
+      if (existingRows.length === 0) {
+        return res.status(404).json({ message: "Sex not found" });
+      }
+
+      await pool
+        .promise()
+        .query("DELETE FROM sexes WHERE id = ?", [req.params.id]);
+
+      return res.status(200).json({
+        message: "Sex deleted successfully",
+        data: { id: Number(req.params.id) },
+      });
+    } catch (err) {
+      return res.status(500).json({
+        message: "Error deleting sex",
+        error: err.message,
+      });
+    }
+  },
+);
+
+app.post(
+  "/api/positions",
+  authMiddleware,
+  roleAuthMiddleware(["super-admin"]),
+  validateRequest({ body: positionBodySchema }),
+  async (req, res) => {
+    try {
+      const positionName = req.body.position_name.trim();
+      const [existingRows] = await pool
+        .promise()
+        .query("SELECT id FROM positions WHERE position_name = ? LIMIT 1", [
+          positionName,
+        ]);
+
+      if (existingRows.length > 0) {
+        return res.status(409).json({
+          message: "Position already exists",
+        });
+      }
+
+      const [result] = await pool
+        .promise()
+        .query("INSERT INTO positions (position_name) VALUES (?)", [
+          positionName,
+        ]);
+
+      return res.status(201).json({
+        message: "Position created successfully",
+        data: { id: result.insertId, position_name: positionName },
+      });
+    } catch (err) {
+      return res.status(500).json({
+        message: "Error creating position",
+        error: err.message,
+      });
+    }
+  },
+);
+
+app.delete(
+  "/api/positions/:id",
+  authMiddleware,
+  roleAuthMiddleware(["super-admin"]),
+  validateRequest({ params: idParamSchema }),
+  async (req, res) => {
+    try {
+      const [existingRows] = await pool
+        .promise()
+        .query("SELECT id, position_name FROM positions WHERE id = ? LIMIT 1", [
+          req.params.id,
+        ]);
+
+      if (existingRows.length === 0) {
+        return res.status(404).json({ message: "Position not found" });
+      }
+
+      await pool
+        .promise()
+        .query("DELETE FROM positions WHERE id = ?", [req.params.id]);
+
+      return res.status(200).json({
+        message: "Position deleted successfully",
+        data: { id: Number(req.params.id) },
+      });
+    } catch (err) {
+      return res.status(500).json({
+        message: "Error deleting position",
         error: err.message,
       });
     }

@@ -5,7 +5,6 @@ import {
   ArrowDownAZ,
   ArrowUpAZ,
   Archive,
-  Check,
   ChevronLeft,
   ChevronRight,
   Pencil,
@@ -13,6 +12,7 @@ import {
   Undo2,
   X,
 } from "lucide-react";
+import ToastMessage from "../../components/ToastMessage";
 import UnarchiveConfirmationModal from "./modals/UnarchiveConfirmationModal";
 import { unarchiveEmployee } from "../LeaveManagement/leaveApi";
 
@@ -759,49 +759,32 @@ export default function ArchivedEmployee() {
         employeeName={selectedEmployeeName}
       />
 
-      {showUnarchiveSuccess && (
-        <div className="fixed bottom-5 right-5 z-50 w-[min(380px,calc(100vw-2rem))] rounded-xl border border-blue-200 bg-white p-4 shadow-lg">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-100">
-              <Check className="h-4 w-4 text-green-600" strokeWidth={3} />
-            </div>
-
-            <div className="flex-1">
-              <h2 className="text-sm font-semibold text-gray-900">
-                Restore Successful
-              </h2>
-              <p className="mt-1 text-sm text-gray-600 leading-relaxed">
-                {lastUnarchivedCount > 1 ? (
-                  <>
-                    <span className="font-semibold text-gray-800">
-                      {lastUnarchivedCount} employees
-                    </span>{" "}
-                    have been restored and are now active again.
-                  </>
-                ) : selectedEmployeeName ? (
-                  <>
-                    <span className="font-semibold text-gray-800">
-                      {selectedEmployeeName}
-                    </span>{" "}
-                    has been restored and is now active again.
-                  </>
-                ) : (
-                  "The employee has been restored and is now active again."
-                )}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowUnarchiveSuccess(false)}
-              className="cursor-pointer text-gray-400 hover:text-gray-700"
-              aria-label="Close restore success toast"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-      )}
+      <ToastMessage
+        isVisible={showUnarchiveSuccess}
+        title="Restore Successful"
+        message={
+          lastUnarchivedCount > 1 ? (
+            <>
+              <span className="font-semibold text-gray-800">
+                {lastUnarchivedCount} employees
+              </span>{" "}
+              have been restored and are now active again.
+            </>
+          ) : selectedEmployeeName ? (
+            <>
+              <span className="font-semibold text-gray-800">
+                {selectedEmployeeName}
+              </span>{" "}
+              has been restored and is now active again.
+            </>
+          ) : (
+            "The employee has been restored and is now active again."
+          )
+        }
+        variant="success"
+        onClose={() => setShowUnarchiveSuccess(false)}
+        autoCloseDuration={2000}
+      />
     </div>
   );
 }

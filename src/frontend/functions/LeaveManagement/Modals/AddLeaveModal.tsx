@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { AlertTriangle, Check, X } from "lucide-react";
 import ConfirmationAddLeave from "../ConfirmationAddLeave";
 import AddLeaveSuccess from "../AddLeaveSuccess";
 import { getLeaveHistoryByEmployee, getLeaveParticulars } from "../leaveApi";
@@ -78,6 +79,11 @@ const defaultForm: AddLeaveFormState = {
   abs_without_pay_sl: "",
 };
 
+type BalanceErrorState = {
+  title: string;
+  desc: string;
+};
+
 export default function AddLeaveModal({
   isOpen,
   employeeId,
@@ -104,6 +110,9 @@ export default function AddLeaveModal({
   const [particularInputValue, setParticularInputValue] = useState("");
   const [showParticularDropdown, setShowParticularDropdown] = useState(false);
   const [formError, setFormError] = useState("");
+  const [balanceError, setBalanceError] = useState<BalanceErrorState | null>(
+    null,
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -117,8 +126,22 @@ export default function AddLeaveModal({
       setIsSuccessOpen(false);
       setSuccessData(null);
       setFormError("");
+      setBalanceError(null);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!balanceError) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [balanceError]);
 
   useEffect(() => {
     const loadParticularOptions = async () => {
@@ -231,6 +254,7 @@ export default function AddLeaveModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
+    setBalanceError(null);
 
     if (!form.period_of_leave.trim()) {
       setFormError("Period of leave is required.");
@@ -249,6 +273,43 @@ export default function AddLeaveModal({
 
     if (!particularOptions.includes(form.particulars.trim())) {
       setFormError("Please select a valid Particulars option.");
+      return;
+    }
+
+    const parseNumber = (value: string) => Number(value || 0);
+    const balanceIssues: string[] = [];
+
+    if (currentBalVl !== null) {
+      const projectedVl =
+        Number(currentBalVl) +
+        parseNumber(form.earned_vl) -
+        parseNumber(form.abs_with_pay_vl);
+
+      if (!Number.isFinite(projectedVl) || projectedVl < 0) {
+        balanceIssues.push(
+          `Vacation Leave balance would become ${projectedVl.toFixed(3)}.`,
+        );
+      }
+    }
+
+    if (currentBalSl !== null) {
+      const projectedSl =
+        Number(currentBalSl) +
+        parseNumber(form.earned_sl) -
+        parseNumber(form.abs_with_pay_sl);
+
+      if (!Number.isFinite(projectedSl) || projectedSl < 0) {
+        balanceIssues.push(
+          `Sick Leave balance would become ${projectedSl.toFixed(3)}.`,
+        );
+      }
+    }
+
+    if (balanceIssues.length > 0) {
+      setBalanceError({
+        title: "Invalid Leave Balance",
+        desc: `${balanceIssues.join(" ")} Please adjust the leave entry before saving.`,
+      });
       return;
     }
 
@@ -300,6 +361,10 @@ export default function AddLeaveModal({
       setIsConfirmOpen(false);
       setPendingPayload(null);
     }
+  }
+
+  function closeBalanceError() {
+    setBalanceError(null);
   }
 
   function handleCancelConfirm() {
@@ -646,7 +711,10 @@ export default function AddLeaveModal({
               className="cursor-pointer rounded-lg bg-gray-100 px-4 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
               disabled={isSaving || isConfirmOpen}
             >
-              Cancel
+              <span className="inline-flex items-center gap-1.5">
+                <X size={14} />
+                Cancel
+              </span>
             </button>
 
             <button
@@ -654,10 +722,45 @@ export default function AddLeaveModal({
               disabled={isSaving || isConfirmOpen}
               className="cursor-pointer rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSaving ? "Saving..." : "Save Leave"}
+              <span className="inline-flex items-center gap-1.5">
+                <Check size={14} />
+                {isSaving ? "Saving..." : "Save Leave"}
+              </span>
             </button>
           </div>
         </form>
+
+        {balanceError && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40 px-4">
+            <div className="relative w-full max-w-md rounded-xl border border-red-200 bg-white p-6 shadow-2xl">
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-red-50 p-2 text-red-600">
+                  <AlertTriangle size={20} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-gray-800">
+                    {balanceError.title}
+                  </h3>
+                </div>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-gray-600">
+                {balanceError.desc}
+              </p>
+              <div className="mt-5 flex justify-end">
+                <button
+                  type="button"
+                  onClick={closeBalanceError}
+                  className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <X size={14} />
+                    Okay
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <ConfirmationAddLeave
           isOpen={isConfirmOpen}
