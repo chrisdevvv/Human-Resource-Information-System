@@ -87,6 +87,16 @@ export default function MonthlyCredit() {
   const now = useMemo(() => new Date(), []);
   const [year, setYear] = useState<number>(now.getFullYear());
   const [month, setMonth] = useState<number>(now.getMonth() + 1);
+  const [creditSearch, setCreditSearch] = useState("");
+  const [creditSortOrder, setCreditSortOrder] = useState<"az" | "za">("az");
+  const [creditTypeFilter, setCreditTypeFilter] = useState<
+    "all" | "teaching" | "non-teaching"
+  >("all");
+  const [skipSearch, setSkipSearch] = useState("");
+  const [skipSortOrder, setSkipSortOrder] = useState<"az" | "za">("az");
+  const [skipTypeFilter, setSkipTypeFilter] = useState<
+    "all" | "teaching" | "non-teaching"
+  >("all");
   const [loading, setLoading] = useState(false);
   const [simulationResult, setSimulationResult] =
     useState<SimulationResponse | null>(null);
@@ -258,8 +268,61 @@ export default function MonthlyCredit() {
     setActiveAction(action);
   };
 
+  const creditRows = useMemo(() => {
+    const rows = simulationResult?.would_credit_employees ?? [];
+    const query = creditSearch.trim().toLowerCase();
+    const filteredRows = rows.filter((row) => {
+      const rowType = "non-teaching" as const;
+      const matchesType =
+        creditTypeFilter === "all" || creditTypeFilter === rowType;
+      const matchesSearch =
+        !query ||
+        row.employee_name.toLowerCase().includes(query) ||
+        String(row.projected_balance?.bal_vl ?? "")
+          .toLowerCase()
+          .includes(query) ||
+        String(row.projected_balance?.bal_sl ?? "")
+          .toLowerCase()
+          .includes(query);
+
+      return matchesType && matchesSearch;
+    });
+
+    return [...filteredRows].sort((a, b) => {
+      const comparison = a.employee_name.localeCompare(b.employee_name, "en", {
+        sensitivity: "base",
+      });
+      return creditSortOrder === "az" ? comparison : -comparison;
+    });
+  }, [creditSearch, creditSortOrder, creditTypeFilter, simulationResult]);
+
+  const skipRows = useMemo(() => {
+    const rows = simulationResult?.would_skip_employees ?? [];
+    const query = skipSearch.trim().toLowerCase();
+    const filteredRows = rows.filter((row) => {
+      const rowType =
+        row.reason === "TEACHING_EMPLOYEE" ? "teaching" : "non-teaching";
+      const matchesType =
+        skipTypeFilter === "all" || skipTypeFilter === rowType;
+      const matchesSearch =
+        !query ||
+        row.employee_name.toLowerCase().includes(query) ||
+        reasonLabel(row.reason).toLowerCase().includes(query) ||
+        row.reason.toLowerCase().includes(query);
+
+      return matchesType && matchesSearch;
+    });
+
+    return [...filteredRows].sort((a, b) => {
+      const comparison = a.employee_name.localeCompare(b.employee_name, "en", {
+        sensitivity: "base",
+      });
+      return skipSortOrder === "az" ? comparison : -comparison;
+    });
+  }, [skipSearch, skipSortOrder, skipTypeFilter, simulationResult]);
+
   return (
-    <div className="w-full max-w-7xl mx-auto rounded-xl border border-gray-200 bg-white p-3 sm:p-4 md:p-6 space-y-5 md:space-y-6">
+    <div className="w-full rounded-xl border border-gray-200 bg-white p-3 sm:p-4 md:p-6 space-y-5 md:space-y-6">
       <div className="space-y-1">
         <h2 className="text-lg md:text-xl font-semibold text-gray-900">
           Monthly Credit Simulation
@@ -362,42 +425,75 @@ export default function MonthlyCredit() {
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             <div className="rounded-lg border border-gray-200 overflow-hidden">
-              <div className="bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-800">
-                Employees To Credit
+              <div className="bg-gray-100 px-3 py-2 text-xs font-medium text-gray-800 space-y-2">
+                <div>Employees To Credit</div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <input
+                    type="text"
+                    value={creditSearch}
+                    onChange={(e) => setCreditSearch(e.target.value)}
+                    placeholder="Search employees..."
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                  <select
+                    value={creditSortOrder}
+                    onChange={(e) =>
+                      setCreditSortOrder(e.target.value === "za" ? "za" : "az")
+                    }
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="az">A-Z</option>
+                    <option value="za">Z-A</option>
+                  </select>
+                  <select
+                    value={creditTypeFilter}
+                    onChange={(e) =>
+                      setCreditTypeFilter(
+                        e.target.value === "teaching"
+                          ? "teaching"
+                          : e.target.value === "non-teaching"
+                            ? "non-teaching"
+                            : "all",
+                      )
+                    }
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="all">All Types</option>
+                    <option value="teaching">Teaching</option>
+                    <option value="non-teaching">Non-Teaching</option>
+                  </select>
+                </div>
               </div>
               <div className="max-h-80 overflow-auto">
                 <div className="flex flex-col gap-2 p-2 sm:hidden">
-                  {(simulationResult.would_credit_employees || []).length >
-                  0 ? (
-                    (simulationResult.would_credit_employees || []).map(
-                      (row) => (
-                        <div
-                          key={row.employee_id}
-                          className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
-                        >
-                          <p className="text-sm font-semibold text-gray-900 truncate">
-                            {row.employee_name}
+                  {creditRows.length > 0 ? (
+                    creditRows.map((row) => (
+                      <div
+                        key={row.employee_id}
+                        className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
+                      >
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {row.employee_name}
+                        </p>
+                        <div className="mt-1 grid grid-cols-2 gap-2 text-xs">
+                          <p className="text-gray-600">
+                            VL:{" "}
+                            <span className="font-semibold text-gray-800">
+                              {row.projected_balance?.bal_vl ?? "-"}
+                            </span>
                           </p>
-                          <div className="mt-1 grid grid-cols-2 gap-2 text-xs">
-                            <p className="text-gray-600">
-                              VL:{" "}
-                              <span className="font-semibold text-gray-800">
-                                {row.projected_balance?.bal_vl ?? "-"}
-                              </span>
-                            </p>
-                            <p className="text-gray-600">
-                              SL:{" "}
-                              <span className="font-semibold text-gray-800">
-                                {row.projected_balance?.bal_sl ?? "-"}
-                              </span>
-                            </p>
-                          </div>
+                          <p className="text-gray-600">
+                            SL:{" "}
+                            <span className="font-semibold text-gray-800">
+                              {row.projected_balance?.bal_sl ?? "-"}
+                            </span>
+                          </p>
                         </div>
-                      ),
-                    )
+                      </div>
+                    ))
                   ) : (
                     <p className="px-1 py-2 text-xs text-gray-500">
-                      No employees will be credited.
+                      No employees match the selected filters.
                     </p>
                   )}
                 </div>
@@ -406,49 +502,46 @@ export default function MonthlyCredit() {
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 text-gray-600">
                       <tr>
-                        <th className="px-3 py-1 text-left text-xs">
+                        <th className="px-3 py-2 text-left text-sm uppercase tracking-wide">
                           Employee
                         </th>
-                        <th className="px-3 py-1 text-left text-xs">
+                        <th className="px-3 py-2 text-left text-sm uppercase tracking-wide">
                           Projected VL
                         </th>
-                        <th className="px-3 py-1 text-left text-xs">
+                        <th className="px-3 py-2 text-left text-sm uppercase tracking-wide">
                           Projected SL
                         </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {(simulationResult.would_credit_employees || []).map(
-                        (row, index) => {
-                          const rowBackgroundClass =
-                            index % 2 === 0 ? "bg-gray-100" : "bg-white";
+                      {creditRows.map((row, index) => {
+                        const rowBackgroundClass =
+                          index % 2 === 0 ? "bg-gray-100" : "bg-white";
 
-                          return (
-                            <tr
-                              key={row.employee_id}
-                              className={`border-t border-gray-100 ${rowBackgroundClass}`}
-                            >
-                              <td className="px-3 py-1 text-xs text-gray-800">
-                                {row.employee_name}
-                              </td>
-                              <td className="px-3 py-1 text-xs text-gray-700">
-                                {row.projected_balance?.bal_vl ?? "-"}
-                              </td>
-                              <td className="px-3 py-1 text-xs text-gray-700">
-                                {row.projected_balance?.bal_sl ?? "-"}
-                              </td>
-                            </tr>
-                          );
-                        },
-                      )}
-                      {(simulationResult.would_credit_employees || [])
-                        .length === 0 ? (
+                        return (
+                          <tr
+                            key={row.employee_id}
+                            className={`border-t border-gray-100 ${rowBackgroundClass}`}
+                          >
+                            <td className="px-3 py-2 text-sm font-medium text-gray-800">
+                              {row.employee_name}
+                            </td>
+                            <td className="px-3 py-2 text-sm text-gray-700">
+                              {row.projected_balance?.bal_vl ?? "-"}
+                            </td>
+                            <td className="px-3 py-2 text-sm text-gray-700">
+                              {row.projected_balance?.bal_sl ?? "-"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {creditRows.length === 0 ? (
                         <tr>
                           <td
-                            className="px-3 py-2 text-xs text-gray-500"
+                            className="px-3 py-3 text-sm text-gray-500"
                             colSpan={3}
                           >
-                            No employees will be credited.
+                            No employees match the selected filters.
                           </td>
                         </tr>
                       ) : null}
@@ -459,13 +552,49 @@ export default function MonthlyCredit() {
             </div>
 
             <div className="rounded-lg border border-gray-200 overflow-hidden">
-              <div className="bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-800">
-                Employees To Skip
+              <div className="bg-gray-100 px-3 py-2 text-xs font-medium text-gray-800 space-y-2">
+                <div>Employees To Skip</div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <input
+                    type="text"
+                    value={skipSearch}
+                    onChange={(e) => setSkipSearch(e.target.value)}
+                    placeholder="Search employees..."
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                  <select
+                    value={skipSortOrder}
+                    onChange={(e) =>
+                      setSkipSortOrder(e.target.value === "za" ? "za" : "az")
+                    }
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="az">A-Z</option>
+                    <option value="za">Z-A</option>
+                  </select>
+                  <select
+                    value={skipTypeFilter}
+                    onChange={(e) =>
+                      setSkipTypeFilter(
+                        e.target.value === "teaching"
+                          ? "teaching"
+                          : e.target.value === "non-teaching"
+                            ? "non-teaching"
+                            : "all",
+                      )
+                    }
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="all">All Types</option>
+                    <option value="teaching">Teaching</option>
+                    <option value="non-teaching">Non-Teaching</option>
+                  </select>
+                </div>
               </div>
               <div className="max-h-80 overflow-auto">
                 <div className="flex flex-col gap-2 p-2 sm:hidden">
-                  {(simulationResult.would_skip_employees || []).length > 0 ? (
-                    (simulationResult.would_skip_employees || []).map((row) => (
+                  {skipRows.length > 0 ? (
+                    skipRows.map((row) => (
                       <div
                         key={`${row.employee_id}-${row.reason}`}
                         className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
@@ -480,7 +609,7 @@ export default function MonthlyCredit() {
                     ))
                   ) : (
                     <p className="px-1 py-2 text-xs text-gray-500">
-                      No employees will be skipped.
+                      No employees match the selected filters.
                     </p>
                   )}
                 </div>
@@ -489,41 +618,40 @@ export default function MonthlyCredit() {
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 text-gray-600">
                       <tr>
-                        <th className="px-3 py-1 text-left text-xs">
+                        <th className="px-3 py-2 text-left text-sm uppercase tracking-wide">
                           Employee
                         </th>
-                        <th className="px-3 py-1 text-left text-xs">Reason</th>
+                        <th className="px-3 py-2 text-left text-sm uppercase tracking-wide">
+                          Reason
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {(simulationResult.would_skip_employees || []).map(
-                        (row, index) => {
-                          const rowBackgroundClass =
-                            index % 2 === 0 ? "bg-gray-100" : "bg-white";
+                      {skipRows.map((row, index) => {
+                        const rowBackgroundClass =
+                          index % 2 === 0 ? "bg-gray-100" : "bg-white";
 
-                          return (
-                            <tr
-                              key={`${row.employee_id}-${row.reason}`}
-                              className={`border-t border-gray-100 ${rowBackgroundClass}`}
-                            >
-                              <td className="px-3 py-1 text-xs text-gray-800">
-                                {row.employee_name}
-                              </td>
-                              <td className="px-3 py-1 text-xs text-gray-700">
-                                {reasonLabel(row.reason)}
-                              </td>
-                            </tr>
-                          );
-                        },
-                      )}
-                      {(simulationResult.would_skip_employees || []).length ===
-                      0 ? (
+                        return (
+                          <tr
+                            key={`${row.employee_id}-${row.reason}`}
+                            className={`border-t border-gray-100 ${rowBackgroundClass}`}
+                          >
+                            <td className="px-3 py-2 text-sm font-medium text-gray-800">
+                              {row.employee_name}
+                            </td>
+                            <td className="px-3 py-2 text-sm text-gray-700">
+                              {reasonLabel(row.reason)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {skipRows.length === 0 ? (
                         <tr>
                           <td
-                            className="px-3 py-2 text-xs text-gray-500"
+                            className="px-3 py-3 text-sm text-gray-500"
                             colSpan={2}
                           >
-                            No employees will be skipped.
+                            No employees match the selected filters.
                           </td>
                         </tr>
                       ) : null}

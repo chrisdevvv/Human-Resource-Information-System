@@ -398,8 +398,8 @@ export default function EmployeeLeaveManagement() {
   };
 
   return (
-    <div className="w-full">
-      <div className="max-w-7xl mx-auto mb-4 flex justify-start gap-2">
+    <div className="w-full min-w-0">
+      <div className="mb-4 flex justify-start gap-2">
         <button
           type="button"
           onClick={() => setActiveTab("leave-records")}
@@ -431,7 +431,7 @@ export default function EmployeeLeaveManagement() {
       </div>
 
       {activeTab === "leave-records" ? (
-        <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-0 sm:top-4 flex flex-col">
+        <div className="w-full min-w-0 bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-0 sm:top-4 flex flex-col">
           <h1
             style={{ fontSize: "20px" }}
             className="font-bold text-gray-900 mb-2 sm:mb-4 inline-flex items-center gap-2"

@@ -20,6 +20,16 @@ type District = {
   district_name: string;
 };
 
+type CivilStatus = {
+  id: number;
+  civil_status_name: string;
+};
+
+type Sex = {
+  id: number;
+  sex_name: string;
+};
+
 type ValidationError = {
   field: string;
   message: string;
@@ -34,6 +44,11 @@ type EmployeeDetailsResponse = {
   email?: string | null;
   mobile_number?: string | null;
   home_address?: string | null;
+  place_of_birth?: string | null;
+  civil_status?: string | null;
+  civil_status_id?: number | null;
+  sex?: string | null;
+  sex_id?: number | null;
   employee_type?: "teaching" | "non-teaching";
   school_id?: number | null;
   school_name?: string | null;
@@ -46,6 +61,7 @@ type EmployeeDetailsResponse = {
   plantilla_no?: string | null;
   age?: number | null;
   birthdate?: string | null;
+  prc_license_no?: string | null;
   license_no_prc?: string | null;
 };
 
@@ -131,12 +147,20 @@ const formatEmployeeType = (type: string): string => {
   return type;
 };
 
+const isValidDepEdEmail = (value: string): boolean => {
+  const trimmed = value.trim().toLowerCase();
+  return /^[^\s@]+@deped\.gov\.ph$/.test(trimmed);
+};
+
 type InfoFieldProps = {
   label: string;
   value: string;
   isEditing?: boolean;
   children?: React.ReactNode;
   fullWidth?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+  errorMessage?: string | null;
 };
 
 const InfoField = ({
@@ -145,9 +169,15 @@ const InfoField = ({
   isEditing = false,
   children,
   fullWidth = false,
+  className = "",
+  style,
+  errorMessage,
 }: InfoFieldProps) => {
   return (
-    <div className={fullWidth ? "sm:col-span-2" : ""}>
+    <div
+      className={`${fullWidth ? "sm:col-span-2" : ""} ${className}`.trim()}
+      style={style}
+    >
       <label className="block text-sm font-semibold text-gray-700">
         {label}
       </label>
@@ -159,6 +189,11 @@ const InfoField = ({
             {value}
           </div>
         )}
+        {isEditing && errorMessage ? (
+          <p className="mt-1 text-xs font-medium text-red-600">
+            {errorMessage}
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -188,6 +223,13 @@ export default function ViewEmployeeModal({
   const [editPersonalEmail, setEditPersonalEmail] = useState("");
   const [editMobileNumber, setEditMobileNumber] = useState("");
   const [editHomeAddress, setEditHomeAddress] = useState("");
+  const [editPlaceOfBirth, setEditPlaceOfBirth] = useState("");
+  const [editCivilStatus, setEditCivilStatus] = useState("");
+  const [editCivilStatusId, setEditCivilStatusId] = useState<number | null>(
+    null,
+  );
+  const [editSex, setEditSex] = useState("");
+  const [editSexId, setEditSexId] = useState<number | null>(null);
   const [editEmployeeNo, setEditEmployeeNo] = useState("");
   const [editWorkEmail, setEditWorkEmail] = useState("");
   const [editDistrict, setEditDistrict] = useState("");
@@ -204,6 +246,8 @@ export default function ViewEmployeeModal({
   const [schools, setSchools] = useState<School[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
+  const [civilStatuses, setCivilStatuses] = useState<CivilStatus[]>([]);
+  const [sexes, setSexes] = useState<Sex[]>([]);
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
   const [showPositionDropdown, setShowPositionDropdown] = useState(false);
   const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
@@ -290,6 +334,11 @@ export default function ViewEmployeeModal({
             setEditPersonalEmail(data.email || "");
             setEditMobileNumber(data.mobile_number || "");
             setEditHomeAddress(data.home_address || "");
+            setEditPlaceOfBirth(data.place_of_birth || "");
+            setEditCivilStatus(data.civil_status || "");
+            setEditCivilStatusId(data.civil_status_id || null);
+            setEditSex(data.sex || "");
+            setEditSexId(data.sex_id || null);
             setEditEmployeeNo(data.employee_no || "");
             setEditWorkEmail(data.work_email || "");
             setEditDistrict(data.district || data.work_district || "");
@@ -299,7 +348,9 @@ export default function ViewEmployeeModal({
             setEditEmployeeType(data.employee_type || "non-teaching");
             setEditSchoolId(data.school_id || null);
             setEditSchoolName(data.school_name || "");
-            setEditLicenseNoPrc(data.license_no_prc || "");
+            setEditLicenseNoPrc(
+              data.prc_license_no || data.license_no_prc || "",
+            );
           }
         }
       } catch (err) {
@@ -395,6 +446,53 @@ export default function ViewEmployeeModal({
   }, [visible]);
 
   useEffect(() => {
+    if (!visible) return;
+
+    const loadCivilStatusesAndSexes = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (!token) return;
+
+        const [civilStatusesRes, sexesRes] = await Promise.all([
+          fetch(`${API_BASE}/api/civil-statuses`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          fetch(`${API_BASE}/api/sexes`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+        ]);
+
+        const civilStatusesBody = (await civilStatusesRes.json()) as {
+          data?: CivilStatus[];
+        };
+        const sexesBody = (await sexesRes.json()) as {
+          data?: Sex[];
+        };
+
+        if (civilStatusesRes.ok && civilStatusesBody.data) {
+          setCivilStatuses(civilStatusesBody.data);
+        }
+
+        if (sexesRes.ok && sexesBody.data) {
+          setSexes(sexesBody.data);
+        }
+      } catch (err) {
+        console.error("Failed to load civil status/sex data:", err);
+      }
+    };
+
+    loadCivilStatusesAndSexes();
+  }, [visible]);
+
+  useEffect(() => {
     if (!toastMessage) return;
 
     const timeoutId = window.setTimeout(() => {
@@ -419,6 +517,9 @@ export default function ViewEmployeeModal({
   const ageValue =
     resolvedDetails?.age ??
     computeAge(resolvedDetails?.birthdate || employee.birthdate);
+
+  const getValidationError = (field: string): string | null =>
+    errors.find((error) => error.field === field)?.message ?? null;
 
   const handleSaveChanges = async () => {
     setEditError(null);
@@ -453,6 +554,55 @@ export default function ViewEmployeeModal({
       newErrors.push({
         field: "Date of Birth",
         message: "Date of birth is required",
+      });
+    }
+
+    if (!editHomeAddress.trim()) {
+      newErrors.push({
+        field: "Home Address",
+        message: "Home address is required",
+      });
+    }
+
+    if (!editPlaceOfBirth.trim()) {
+      newErrors.push({
+        field: "Place of Birth",
+        message: "Place of birth is required",
+      });
+    }
+
+    if (!editCivilStatus.trim()) {
+      newErrors.push({
+        field: "Civil Status",
+        message: "Civil status is required",
+      });
+    }
+
+    if (!editSex.trim()) {
+      newErrors.push({
+        field: "Sex",
+        message: "Sex is required",
+      });
+    }
+
+    if (!editDistrict.trim()) {
+      newErrors.push({
+        field: "District",
+        message: "District is required",
+      });
+    }
+
+    if (!editPosition.trim()) {
+      newErrors.push({
+        field: "Position",
+        message: "Position is required",
+      });
+    }
+
+    if (!editPlantillaNo.trim()) {
+      newErrors.push({
+        field: "Plantilla Number",
+        message: "Plantilla number is required",
       });
     }
 
@@ -494,13 +644,18 @@ export default function ViewEmployeeModal({
 
     if (!editWorkEmail.trim()) {
       newErrors.push({
-        field: "Work Email",
-        message: "Work email is required",
+        field: "DepEd Email",
+        message: "DepEd email is required",
       });
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editWorkEmail.trim())) {
       newErrors.push({
-        field: "Work Email",
-        message: "Work email must be a valid email",
+        field: "DepEd Email",
+        message: "DepEd email must be a valid email",
+      });
+    } else if (!isValidDepEdEmail(editWorkEmail)) {
+      newErrors.push({
+        field: "DepEd Email",
+        message: "DepEd email must end with @deped.gov.ph",
       });
     }
 
@@ -543,6 +698,11 @@ export default function ViewEmployeeModal({
           personal_email: editPersonalEmail.trim(),
           mobile_number: editMobileNumber.trim(),
           home_address: editHomeAddress.trim(),
+          place_of_birth: editPlaceOfBirth.trim(),
+          civil_status: editCivilStatus.trim(),
+          civil_status_id: editCivilStatusId,
+          sex: editSex.trim(),
+          sex_id: editSexId,
           employee_no: editEmployeeNo.trim(),
           work_email: editWorkEmail.trim(),
           district: editDistrict.trim(),
@@ -551,6 +711,7 @@ export default function ViewEmployeeModal({
           plantilla_no: editPlantillaNo.trim(),
           employee_type: editEmployeeType,
           school_id: editSchoolId,
+          prc_license_no: editLicenseNoPrc.trim(),
           license_no_prc: editLicenseNoPrc.trim(),
         }),
       });
@@ -572,6 +733,11 @@ export default function ViewEmployeeModal({
               email: editPersonalEmail.trim(),
               mobile_number: editMobileNumber.trim(),
               home_address: editHomeAddress.trim(),
+              place_of_birth: editPlaceOfBirth.trim(),
+              civil_status: editCivilStatus.trim(),
+              civil_status_id: editCivilStatusId,
+              sex: editSex.trim(),
+              sex_id: editSexId,
               employee_no: editEmployeeNo.trim(),
               work_email: editWorkEmail.trim(),
               district: editDistrict.trim(),
@@ -582,6 +748,7 @@ export default function ViewEmployeeModal({
               school_id: editSchoolId,
               school_name: editSchoolName,
               age: computeAge(editBirthdate),
+              prc_license_no: editLicenseNoPrc.trim(),
               license_no_prc: editLicenseNoPrc.trim(),
             }
           : null,
@@ -634,12 +801,12 @@ export default function ViewEmployeeModal({
     }`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       {toastMessage ? (
         <ChangesToast message={toastMessage} type={toastType} />
       ) : null}
-      <div className="relative flex w-full flex-col overflow-hidden rounded-none border border-blue-200 bg-white shadow-2xl max-h-[92vh] sm:max-w-5xl sm:rounded-2xl">
-        <div className="show-scrollbar overflow-y-auto px-3 py-3 sm:px-5 sm:py-5">
+      <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-blue-200 bg-white p-5 shadow-2xl sm:p-6">
+        <div className="show-scrollbar">
           <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
             <div>
               <h2 className="text-xl font-bold text-gray-800 sm:text-2xl">
@@ -743,78 +910,88 @@ export default function ViewEmployeeModal({
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
-                <InfoField
-                  label="Last Name"
-                  value={formatValue(editLastName)}
-                  isEditing={isEditing}
-                >
-                  <input
-                    type="text"
-                    value={editLastName}
-                    onChange={(e) => setEditLastName(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-                  />
-                </InfoField>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1.35fr_1.35fr_1.35fr_0.5fr] sm:gap-4">
+                  <InfoField
+                    label="Last Name"
+                    value={formatValue(editLastName)}
+                    isEditing={isEditing}
+                    errorMessage={getValidationError("Last Name")}
+                  >
+                    <input
+                      type="text"
+                      value={editLastName}
+                      onChange={(e) => setEditLastName(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                    />
+                  </InfoField>
 
-                <InfoField
-                  label="First Name"
-                  value={formatValue(editFirstName)}
-                  isEditing={isEditing}
-                >
-                  <input
-                    type="text"
-                    value={editFirstName}
-                    onChange={(e) => setEditFirstName(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-                  />
-                </InfoField>
+                  <InfoField
+                    label="First Name"
+                    value={formatValue(editFirstName)}
+                    isEditing={isEditing}
+                    errorMessage={getValidationError("First Name")}
+                  >
+                    <input
+                      type="text"
+                      value={editFirstName}
+                      onChange={(e) => setEditFirstName(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                    />
+                  </InfoField>
 
-                <InfoField
-                  label="Middle Name"
-                  value={formatValue(editMiddleName)}
-                  isEditing={isEditing}
-                >
-                  <input
-                    type="text"
-                    value={editMiddleName}
-                    onChange={(e) => setEditMiddleName(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-                  />
-                </InfoField>
+                  <InfoField
+                    label="Middle Name"
+                    value={formatValue(editMiddleName)}
+                    isEditing={isEditing}
+                    errorMessage={getValidationError("Middle Name")}
+                  >
+                    <input
+                      type="text"
+                      value={editMiddleName}
+                      onChange={(e) => setEditMiddleName(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                    />
+                  </InfoField>
 
-                <InfoField
-                  label="M.I."
-                  value={formatValue(editMiddleInitial)}
-                  isEditing={isEditing}
-                >
-                  <input
-                    type="text"
-                    value={editMiddleInitial}
-                    onChange={(e) => setEditMiddleInitial(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-                  />
-                </InfoField>
+                  <InfoField
+                    label="M.I."
+                    value={formatValue(editMiddleInitial)}
+                    isEditing={isEditing}
+                    className="lg:w-24"
+                    errorMessage={getValidationError("M.I.")}
+                  >
+                    <input
+                      type="text"
+                      value={editMiddleInitial}
+                      onChange={(e) => setEditMiddleInitial(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                    />
+                  </InfoField>
+                </div>
 
-                <InfoField
-                  label="Home Address"
-                  value={formatValue(editHomeAddress)}
-                  isEditing={isEditing}
-                  fullWidth
-                >
-                  <input
-                    type="text"
-                    value={editHomeAddress}
-                    onChange={(e) => setEditHomeAddress(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-                  />
-                </InfoField>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[2.1fr_1fr_0.45fr] sm:gap-4">
+                  <InfoField
+                    label="Home Address"
+                    value={formatValue(editHomeAddress)}
+                    isEditing={isEditing}
+                    fullWidth
+                    className="lg:col-span-1"
+                    errorMessage={getValidationError("Home Address")}
+                  >
+                    <input
+                      type="text"
+                      value={editHomeAddress}
+                      onChange={(e) => setEditHomeAddress(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                    />
+                  </InfoField>
 
-                <div className="sm:col-span-2 lg:col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                   <InfoField
                     label="Date of Birth"
                     value={formatDate(editBirthdate)}
                     isEditing={isEditing}
+                    errorMessage={getValidationError("Date of Birth")}
                   >
                     <input
                       type="date"
@@ -827,14 +1004,107 @@ export default function ViewEmployeeModal({
                   <InfoField
                     label="Age"
                     value={ageValue ? String(ageValue) : "N/A"}
+                    className="lg:w-24 lg:justify-self-end"
+                    errorMessage={getValidationError("Age")}
                   />
                 </div>
 
-                <div className="sm:col-span-2 lg:col-span-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1.25fr_1.25fr_0.5fr] sm:gap-4">
+                  <InfoField
+                    label="Place of Birth"
+                    value={formatValue(editPlaceOfBirth)}
+                    isEditing={isEditing}
+                    errorMessage={getValidationError("Place of Birth")}
+                  >
+                    <input
+                      type="text"
+                      value={editPlaceOfBirth}
+                      onChange={(e) => setEditPlaceOfBirth(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                    />
+                  </InfoField>
+
+                  <InfoField
+                    label="Civil Status"
+                    value={formatValue(editCivilStatus)}
+                    isEditing={isEditing}
+                    errorMessage={getValidationError("Civil Status")}
+                  >
+                    <div className="relative">
+                      <select
+                        value={
+                          editCivilStatusId ? String(editCivilStatusId) : ""
+                        }
+                        onChange={(e) => {
+                          const nextValue = e.target.value
+                            ? Number(e.target.value)
+                            : null;
+                          const selected = civilStatuses.find(
+                            (item) => item.id === nextValue,
+                          );
+                          setEditCivilStatusId(selected?.id ?? null);
+                          setEditCivilStatus(selected?.civil_status_name || "");
+                        }}
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                      >
+                        <option value="">Select civil status</option>
+                        {civilStatuses
+                          .slice()
+                          .sort((a, b) =>
+                            a.civil_status_name.localeCompare(
+                              b.civil_status_name,
+                            ),
+                          )
+                          .map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {item.civil_status_name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  </InfoField>
+
+                  <InfoField
+                    label="Sex"
+                    value={formatValue(editSex)}
+                    isEditing={isEditing}
+                    errorMessage={getValidationError("Sex")}
+                  >
+                    <div className="relative">
+                      <select
+                        value={editSexId ? String(editSexId) : ""}
+                        onChange={(e) => {
+                          const nextValue = e.target.value
+                            ? Number(e.target.value)
+                            : null;
+                          const selected = sexes.find(
+                            (item) => item.id === nextValue,
+                          );
+                          setEditSexId(selected?.id ?? null);
+                          setEditSex(selected?.sex_name || "");
+                        }}
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                      >
+                        <option value="">Select sex</option>
+                        {sexes
+                          .slice()
+                          .sort((a, b) => a.sex_name.localeCompare(b.sex_name))
+                          .map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {item.sex_name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  </InfoField>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1.2fr_1.25fr_0.9fr] sm:gap-4">
                   <InfoField
                     label="Personal Email"
                     value={formatValue(editPersonalEmail)}
                     isEditing={isEditing}
+                    errorMessage={getValidationError("Personal Email")}
                   >
                     <input
                       type="email"
@@ -845,9 +1115,26 @@ export default function ViewEmployeeModal({
                   </InfoField>
 
                   <InfoField
+                    label="DepEd Email"
+                    value={formatValue(editWorkEmail)}
+                    isEditing={isEditing}
+                    style={{ maxWidth: "30ch" }}
+                    errorMessage={getValidationError("DepEd Email")}
+                  >
+                    <input
+                      type="email"
+                      value={editWorkEmail}
+                      onChange={(e) => setEditWorkEmail(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                    />
+                  </InfoField>
+
+                  <InfoField
                     label="Mobile Number"
                     value={formatValue(editMobileNumber)}
                     isEditing={isEditing}
+                    style={{ maxWidth: "22ch" }}
+                    errorMessage={getValidationError("Mobile Number")}
                   >
                     <input
                       type="text"
@@ -866,7 +1153,6 @@ export default function ViewEmployeeModal({
               </div>
             </div>
           )}
-
           {activeSection === "work" && (
             <div className="rounded-2xl border border-gray-200 bg-white p-3 sm:p-4">
               <div className="mb-3 sm:mb-4">
@@ -880,211 +1166,210 @@ export default function ViewEmployeeModal({
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                <InfoField
-                  label="District"
-                  value={formatValue(editDistrict)}
-                  isEditing={isEditing}
-                >
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={districtSearch}
-                      onChange={(e) => setDistrictSearch(e.target.value)}
-                      onFocus={() => setShowDistrictDropdown(true)}
-                      onBlur={() => setShowDistrictDropdown(false)}
-                      placeholder="District"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-xs outline-none focus:border-blue-500"
-                    />
-                    {showDistrictDropdown && (
-                      <div className="no-scrollbar absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-sm">
-                        {districts
-                          .filter((d) =>
-                            d.district_name
-                              .toLowerCase()
-                              .includes(districtSearch.toLowerCase()),
-                          )
-                          .map((district) => (
-                            <button
-                              key={district.id}
-                              type="button"
-                              onMouseDown={() => {
-                                setEditDistrict(district.district_name);
-                                setDistrictSearch(district.district_name);
-                                setShowDistrictDropdown(false);
-                              }}
-                              className="block w-full cursor-pointer border-t border-gray-100 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 first:border-t-0"
-                            >
-                              {district.district_name}
-                            </button>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                </InfoField>
-
-                <InfoField
-                  label="School"
-                  value={formatValue(editSchoolName)}
-                  isEditing={isEditing}
-                >
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={schoolSearch}
-                      onChange={(e) => setSchoolSearch(e.target.value)}
-                      onFocus={() => setShowSchoolDropdown(true)}
-                      onBlur={() => setShowSchoolDropdown(false)}
-                      placeholder="School"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-xs outline-none focus:border-blue-500"
-                    />
-                    {showSchoolDropdown && (
-                      <div className="no-scrollbar absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-sm">
-                        {schools
-                          .filter((s) =>
-                            s.school_name
-                              .toLowerCase()
-                              .includes(schoolSearch.toLowerCase()),
-                          )
-                          .map((school) => (
-                            <button
-                              key={school.id}
-                              type="button"
-                              onMouseDown={() => {
-                                setEditSchoolId(school.id);
-                                setEditSchoolName(school.school_name);
-                                setSchoolSearch(school.school_name);
-                                setShowSchoolDropdown(false);
-                              }}
-                              className="block w-full cursor-pointer border-t border-gray-100 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 first:border-t-0"
-                            >
-                              {school.school_name}
-                            </button>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                </InfoField>
-
-                <InfoField
-                  label="Plantilla Number"
-                  value={formatValue(editPlantillaNo)}
-                  isEditing={isEditing}
-                >
-                  <input
-                    type="text"
-                    value={editPlantillaNo}
-                    onChange={(e) => setEditPlantillaNo(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-                  />
-                </InfoField>
-
-                <InfoField
-                  label="Position"
-                  value={formatValue(editPosition)}
-                  isEditing={isEditing}
-                >
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={positionSearch}
-                      onChange={(e) => setPositionSearch(e.target.value)}
-                      onFocus={() => setShowPositionDropdown(true)}
-                      onBlur={() => setShowPositionDropdown(false)}
-                      placeholder="Position"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-xs outline-none focus:border-blue-500"
-                    />
-                    {showPositionDropdown && (
-                      <div className="no-scrollbar absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-sm">
-                        {positions
-                          .filter((p) =>
-                            p.position_name
-                              .toLowerCase()
-                              .includes(positionSearch.toLowerCase()),
-                          )
-                          .map((position) => (
-                            <button
-                              key={position.id}
-                              type="button"
-                              onMouseDown={() => {
-                                setEditPositionId(position.id);
-                                setEditPosition(position.position_name);
-                                setPositionSearch(position.position_name);
-                                setShowPositionDropdown(false);
-                              }}
-                              className="block w-full cursor-pointer border-t border-gray-100 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 first:border-t-0"
-                            >
-                              {position.position_name}
-                            </button>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                </InfoField>
-
-                <InfoField
-                  label="Employee Number"
-                  value={formatValue(editEmployeeNo)}
-                  isEditing={isEditing}
-                >
-                  <input
-                    type="text"
-                    value={editEmployeeNo}
-                    onChange={(e) => {
-                      const digitsOnly = e.target.value
-                        .replace(/\D/g, "")
-                        .slice(0, 7);
-                      setEditEmployeeNo(digitsOnly);
-                    }}
-                    maxLength={7}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-                  />
-                </InfoField>
-
-                <InfoField
-                  label="Work Email"
-                  value={formatValue(editWorkEmail)}
-                  isEditing={isEditing}
-                >
-                  <input
-                    type="email"
-                    value={editWorkEmail}
-                    onChange={(e) => setEditWorkEmail(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-                  />
-                </InfoField>
-
-                <InfoField
-                  label="Employee Type"
-                  value={formatEmployeeType(editEmployeeType)}
-                  isEditing={isEditing}
-                >
-                  <select
-                    value={editEmployeeType}
-                    onChange={(e) =>
-                      setEditEmployeeType(
-                        e.target.value as "teaching" | "non-teaching",
-                      )
-                    }
-                    className="w-full cursor-pointer rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
+                  <InfoField
+                    label="Employee Type"
+                    value={formatEmployeeType(editEmployeeType)}
+                    isEditing={isEditing}
+                    errorMessage={getValidationError("Employee Type")}
                   >
-                    <option value="teaching">Teaching</option>
-                    <option value="non-teaching">Non-Teaching</option>
-                  </select>
-                </InfoField>
+                    <select
+                      value={editEmployeeType}
+                      onChange={(e) =>
+                        setEditEmployeeType(
+                          e.target.value as "teaching" | "non-teaching",
+                        )
+                      }
+                      className="w-full cursor-pointer rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                    >
+                      <option value="teaching">Teaching</option>
+                      <option value="non-teaching">Non-Teaching</option>
+                    </select>
+                  </InfoField>
 
-                <InfoField
-                  label="License No PRC"
-                  value={formatValue(editLicenseNoPrc)}
-                  isEditing={isEditing}
-                >
-                  <input
-                    type="text"
-                    value={editLicenseNoPrc}
-                    onChange={(e) => setEditLicenseNoPrc(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-                  />
-                </InfoField>
+                  <InfoField
+                    label="Position"
+                    value={formatValue(editPosition)}
+                    isEditing={isEditing}
+                    errorMessage={getValidationError("Position")}
+                  >
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={positionSearch}
+                        onChange={(e) => setPositionSearch(e.target.value)}
+                        onFocus={() => setShowPositionDropdown(true)}
+                        onBlur={() => setShowPositionDropdown(false)}
+                        placeholder="Position"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-xs outline-none focus:border-blue-500"
+                      />
+                      {showPositionDropdown && (
+                        <div className="no-scrollbar absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-sm">
+                          {positions
+                            .filter((p) =>
+                              p.position_name
+                                .toLowerCase()
+                                .includes(positionSearch.toLowerCase()),
+                            )
+                            .map((position) => (
+                              <button
+                                key={position.id}
+                                type="button"
+                                onMouseDown={() => {
+                                  setEditPositionId(position.id);
+                                  setEditPosition(position.position_name);
+                                  setPositionSearch(position.position_name);
+                                  setShowPositionDropdown(false);
+                                }}
+                                className="block w-full cursor-pointer border-t border-gray-100 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 first:border-t-0"
+                              >
+                                {position.position_name}
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  </InfoField>
+
+                  <InfoField
+                    label="Plantilla Number"
+                    value={formatValue(editPlantillaNo)}
+                    isEditing={isEditing}
+                    errorMessage={getValidationError("Plantilla Number")}
+                  >
+                    <input
+                      type="text"
+                      value={editPlantillaNo}
+                      onChange={(e) => setEditPlantillaNo(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                    />
+                  </InfoField>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                  <InfoField
+                    label="District"
+                    value={formatValue(editDistrict)}
+                    isEditing={isEditing}
+                    errorMessage={getValidationError("District")}
+                  >
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={districtSearch}
+                        onChange={(e) => setDistrictSearch(e.target.value)}
+                        onFocus={() => setShowDistrictDropdown(true)}
+                        onBlur={() => setShowDistrictDropdown(false)}
+                        placeholder="District"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-xs outline-none focus:border-blue-500"
+                      />
+                      {showDistrictDropdown && (
+                        <div className="no-scrollbar absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-sm">
+                          {districts
+                            .filter((d) =>
+                              d.district_name
+                                .toLowerCase()
+                                .includes(districtSearch.toLowerCase()),
+                            )
+                            .map((district) => (
+                              <button
+                                key={district.id}
+                                type="button"
+                                onMouseDown={() => {
+                                  setEditDistrict(district.district_name);
+                                  setDistrictSearch(district.district_name);
+                                  setShowDistrictDropdown(false);
+                                }}
+                                className="block w-full cursor-pointer border-t border-gray-100 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 first:border-t-0"
+                              >
+                                {district.district_name}
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  </InfoField>
+
+                  <InfoField
+                    label="School Name"
+                    value={formatValue(editSchoolName)}
+                    isEditing={isEditing}
+                    errorMessage={getValidationError("School")}
+                  >
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={schoolSearch}
+                        onChange={(e) => setSchoolSearch(e.target.value)}
+                        onFocus={() => setShowSchoolDropdown(true)}
+                        onBlur={() => setShowSchoolDropdown(false)}
+                        placeholder="School"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-xs outline-none focus:border-blue-500"
+                      />
+                      {showSchoolDropdown && (
+                        <div className="no-scrollbar absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-sm">
+                          {schools
+                            .filter((s) =>
+                              s.school_name
+                                .toLowerCase()
+                                .includes(schoolSearch.toLowerCase()),
+                            )
+                            .map((school) => (
+                              <button
+                                key={school.id}
+                                type="button"
+                                onMouseDown={() => {
+                                  setEditSchoolId(school.id);
+                                  setEditSchoolName(school.school_name);
+                                  setSchoolSearch(school.school_name);
+                                  setShowSchoolDropdown(false);
+                                }}
+                                className="block w-full cursor-pointer border-t border-gray-100 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 first:border-t-0"
+                              >
+                                {school.school_name}
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  </InfoField>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <InfoField
+                    label="Employee Number"
+                    value={formatValue(editEmployeeNo)}
+                    isEditing={isEditing}
+                    errorMessage={getValidationError("Employee Number")}
+                  >
+                    <input
+                      type="text"
+                      value={editEmployeeNo}
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 7);
+                        setEditEmployeeNo(digitsOnly);
+                      }}
+                      maxLength={7}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                    />
+                  </InfoField>
+
+                  <InfoField
+                    label="License No PRC"
+                    value={formatValue(editLicenseNoPrc)}
+                    isEditing={isEditing}
+                  >
+                    <input
+                      type="text"
+                      value={editLicenseNoPrc}
+                      onChange={(e) => setEditLicenseNoPrc(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                    />
+                  </InfoField>
+                </div>
               </div>
             </div>
           )}

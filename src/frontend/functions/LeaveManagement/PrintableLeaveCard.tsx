@@ -302,6 +302,7 @@ const DocumentHeader = React.memo(function DocumentHeader({
 
       <div className="mb-4 grid grid-cols-1 gap-2" style={{ fontSize: "10pt" }}>
         <p>
+          Name of Employee:{" "}
           <span style={{ fontWeight: "bold" }}>{employeeNameDisplay}</span>
         </p>
       </div>

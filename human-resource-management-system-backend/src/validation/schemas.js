@@ -151,6 +151,22 @@ const schoolBodySchema = Joi.object({
   school_code: Joi.string().trim().min(1).max(50).required(),
 });
 
+const civilStatusBodySchema = Joi.object({
+  civil_status_name: Joi.string().trim().min(1).max(50).required(),
+});
+
+const districtBodySchema = Joi.object({
+  district_name: Joi.string().trim().min(1).max(50).required(),
+});
+
+const positionBodySchema = Joi.object({
+  position_name: Joi.string().trim().min(1).max(255).required(),
+});
+
+const sexBodySchema = Joi.object({
+  sex_name: Joi.string().trim().min(1).max(20).required(),
+});
+
 const userRoleBodySchema = Joi.object({
   role: Joi.string().valid("SUPER_ADMIN", "ADMIN", "DATA_ENCODER").required(),
 });
@@ -303,6 +319,10 @@ module.exports = {
   employeeStatusCountsQuerySchema,
   employeeArchiveBodySchema,
   schoolBodySchema,
+  civilStatusBodySchema,
+  districtBodySchema,
+  positionBodySchema,
+  sexBodySchema,
   userRoleBodySchema,
   userStatusBodySchema,
   userPasswordResetBodySchema,

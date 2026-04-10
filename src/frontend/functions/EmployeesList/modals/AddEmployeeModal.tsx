@@ -19,6 +19,16 @@ type District = {
   district_name: string;
 };
 
+type CivilStatus = {
+  id: number;
+  civil_status_name: string;
+};
+
+type Sex = {
+  id: number;
+  sex_name: string;
+};
+
 type AddEmployeeModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -37,6 +47,16 @@ type PositionApiResponse = {
 
 type DistrictApiResponse = {
   data?: District[];
+  message?: string;
+};
+
+type CivilStatusApiResponse = {
+  data?: CivilStatus[];
+  message?: string;
+};
+
+type SexApiResponse = {
+  data?: Sex[];
   message?: string;
 };
 
@@ -62,6 +82,11 @@ type PendingEmployeePayload = {
   email: string;
   mobile_number: string;
   home_address: string;
+  place_of_birth: string;
+  civil_status: string;
+  civil_status_id: number | null;
+  sex: string;
+  sex_id: number | null;
   employee_type: "teaching" | "non-teaching";
   school_id: number;
   school_name: string;
@@ -73,10 +98,16 @@ type PendingEmployeePayload = {
   plantilla_no: string;
   age: number;
   birthdate: string;
+  prc_license_no: string;
   license_no_prc: string;
 };
 
 type StepKey = "personal" | "work";
+
+type ValidationError = {
+  field: string;
+  message: string;
+};
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -98,6 +129,11 @@ const isValidEmail = (value: string): boolean => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
 };
 
+const isValidDepEdEmail = (value: string): boolean => {
+  const trimmed = value.trim().toLowerCase();
+  return /^[^\s@]+@deped\.gov\.ph$/.test(trimmed);
+};
+
 const formatEmployeeType = (type: string): string => {
   const normalized = String(type).toLowerCase().trim();
   if (normalized === "non-teaching") return "Non-Teaching";
@@ -106,25 +142,15 @@ const formatEmployeeType = (type: string): string => {
 };
 
 const computeAgeFromBirthdate = (birthdate: string): number => {
-  if (!birthdate) {
-    return 0;
-  }
-
+  if (!birthdate) return 0;
   const dob = new Date(birthdate);
-  if (Number.isNaN(dob.getTime())) {
-    return 0;
-  }
-
+  if (Number.isNaN(dob.getTime())) return 0;
   const today = new Date();
   let age = today.getFullYear() - dob.getFullYear();
   const monthDelta = today.getMonth() - dob.getMonth();
-  const birthdayNotReached =
-    monthDelta < 0 || (monthDelta === 0 && today.getDate() < dob.getDate());
-
-  if (birthdayNotReached) {
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < dob.getDate())) {
     age -= 1;
   }
-
   return Math.max(0, age);
 };
 
@@ -144,6 +170,11 @@ export default function AddEmployeeModal({
   const [personalEmail, setPersonalEmail] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [homeAddress, setHomeAddress] = useState("");
+  const [placeOfBirth, setPlaceOfBirth] = useState("");
+  const [selectedCivilStatusId, setSelectedCivilStatusId] = useState<
+    number | null
+  >(null);
+  const [selectedSexId, setSelectedSexId] = useState<number | null>(null);
 
   const [employeeNo, setEmployeeNo] = useState("");
   const [workEmail, setWorkEmail] = useState("");
@@ -176,8 +207,15 @@ export default function AddEmployeeModal({
   const [positionsLoading, setPositionsLoading] = useState(false);
   const [districts, setDistricts] = useState<District[]>([]);
   const [districtsLoading, setDistrictsLoading] = useState(false);
+  const [civilStatuses, setCivilStatuses] = useState<CivilStatus[]>([]);
+  const [civilStatusesLoading, setCivilStatusesLoading] = useState(false);
+  const [sexes, setSexes] = useState<Sex[]>([]);
+  const [sexesLoading, setSexesLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>(
+    [],
+  );
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [pendingPayload, setPendingPayload] =
     useState<PendingEmployeePayload | null>(null);
@@ -203,49 +241,43 @@ export default function AddEmployeeModal({
       [...districts].sort((a, b) => {
         const aNumber = Number.parseInt(a.district_name.replace(/\D/g, ""), 10);
         const bNumber = Number.parseInt(b.district_name.replace(/\D/g, ""), 10);
-
-        if (!Number.isNaN(aNumber) && !Number.isNaN(bNumber)) {
+        if (!Number.isNaN(aNumber) && !Number.isNaN(bNumber))
           return aNumber - bNumber;
-        }
-
         return a.district_name.localeCompare(b.district_name);
       }),
     [districts],
   );
 
+  const sortedCivilStatuses = useMemo(
+    () =>
+      [...civilStatuses].sort((a, b) =>
+        a.civil_status_name.localeCompare(b.civil_status_name),
+      ),
+    [civilStatuses],
+  );
+
+  const sortedSexes = useMemo(
+    () => [...sexes].sort((a, b) => a.sex_name.localeCompare(b.sex_name)),
+    [sexes],
+  );
+
   const filteredPositions = useMemo(() => {
     const query = positionSearch.trim().toLowerCase();
-
-    if (!query) {
-      return sortedPositions;
-    }
-
-    return sortedPositions.filter((item) =>
-      item.position_name.toLowerCase().includes(query),
-    );
-  }, [sortedPositions, positionSearch]);
-
-  const selectedPosition = useMemo(
-    () => positions.find((item) => item.id === selectedPositionId) || null,
-    [positions, selectedPositionId],
-  );
+    return query
+      ? sortedPositions.filter((item) =>
+          item.position_name.toLowerCase().includes(query),
+        )
+      : sortedPositions;
+  }, [positionSearch, sortedPositions]);
 
   const filteredDistricts = useMemo(() => {
     const query = districtSearch.trim().toLowerCase();
-
-    if (!query) {
-      return sortedDistricts;
-    }
-
-    return sortedDistricts.filter((item) =>
-      item.district_name.toLowerCase().includes(query),
-    );
-  }, [sortedDistricts, districtSearch]);
-
-  const selectedDistrict = useMemo(
-    () => districts.find((item) => item.id === selectedDistrictId) || null,
-    [districts, selectedDistrictId],
-  );
+    return query
+      ? sortedDistricts.filter((item) =>
+          item.district_name.toLowerCase().includes(query),
+        )
+      : sortedDistricts;
+  }, [districtSearch, sortedDistricts]);
 
   const filteredSchools = useMemo(() => {
     const query = schoolInputValue.trim().toLowerCase();
@@ -254,9 +286,35 @@ export default function AddEmployeeModal({
     );
   }, [sortedSchools, schoolInputValue]);
 
+  const selectedPosition = useMemo(
+    () => positions.find((item) => item.id === selectedPositionId) || null,
+    [positions, selectedPositionId],
+  );
+  const selectedDistrict = useMemo(
+    () => districts.find((item) => item.id === selectedDistrictId) || null,
+    [districts, selectedDistrictId],
+  );
+  const selectedCivilStatus = useMemo(
+    () =>
+      civilStatuses.find((item) => item.id === selectedCivilStatusId) || null,
+    [civilStatuses, selectedCivilStatusId],
+  );
+  const selectedSex = useMemo(
+    () => sexes.find((item) => item.id === selectedSexId) || null,
+    [sexes, selectedSexId],
+  );
+
+  const getFieldError = (field: string): string | null =>
+    validationErrors.find((error) => error.field === field)?.message ?? null;
+  const renderFieldError = (field: string) => {
+    const message = getFieldError(field);
+    return message ? (
+      <p className="mt-1 text-xs font-medium text-red-600">{message}</p>
+    ) : null;
+  };
+
   const resetState = () => {
     setStep("personal");
-
     setFirstName("");
     setLastName("");
     setMiddleName("");
@@ -266,7 +324,9 @@ export default function AddEmployeeModal({
     setPersonalEmail("");
     setMobileNumber("");
     setHomeAddress("");
-
+    setPlaceOfBirth("");
+    setSelectedCivilStatusId(null);
+    setSelectedSexId(null);
     setEmployeeNo("");
     setWorkEmail("");
     setPlantillaNo("");
@@ -277,25 +337,26 @@ export default function AddEmployeeModal({
     setSelectedDistrictId(null);
     setDistrictSearch("");
     setShowDistrictDropdown(false);
-
     setSchoolId(null);
     setSchoolInputValue("");
     setShowSchoolDropdown(false);
-
     setCurrentUserRole("");
     setAssignedSchoolId(null);
     setAssignedSchoolName("");
-
     setLicenseNoPrc("");
-
     setSchools([]);
     setSchoolsLoading(false);
     setPositions([]);
     setPositionsLoading(false);
     setDistricts([]);
     setDistrictsLoading(false);
+    setCivilStatuses([]);
+    setCivilStatusesLoading(false);
+    setSexes([]);
+    setSexesLoading(false);
     setSubmitLoading(false);
     setErrorMessage(null);
+    setValidationErrors([]);
     setIsConfirmOpen(false);
     setPendingPayload(null);
   };
@@ -483,6 +544,70 @@ export default function AddEmployeeModal({
       return;
     }
 
+    const loadCivilStatusesAndSexes = async () => {
+      try {
+        setCivilStatusesLoading(true);
+        setSexesLoading(true);
+        setErrorMessage(null);
+
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          throw new Error(
+            "No authentication token found. Please log in again.",
+          );
+        }
+
+        const [civilStatusesRes, sexesRes] = await Promise.all([
+          fetch(`${API_BASE}/api/civil-statuses`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          fetch(`${API_BASE}/api/sexes`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+        ]);
+
+        const civilStatusesBody =
+          (await civilStatusesRes.json()) as CivilStatusApiResponse;
+        const sexesBody = (await sexesRes.json()) as SexApiResponse;
+
+        if (!civilStatusesRes.ok) {
+          throw new Error(
+            civilStatusesBody.message || "Failed to load civil statuses",
+          );
+        }
+
+        if (!sexesRes.ok) {
+          throw new Error(sexesBody.message || "Failed to load sexes");
+        }
+
+        setCivilStatuses(civilStatusesBody.data || []);
+        setSexes(sexesBody.data || []);
+      } catch (err) {
+        setErrorMessage(
+          err instanceof Error ? err.message : "Failed to load lookup data",
+        );
+      } finally {
+        setCivilStatusesLoading(false);
+        setSexesLoading(false);
+      }
+    };
+
+    loadCivilStatusesAndSexes();
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
     if (!["ADMIN", "DATA_ENCODER"].includes(currentUserRole)) {
       return;
     }
@@ -551,6 +676,7 @@ export default function AddEmployeeModal({
   }
 
   const validateStepOne = (): boolean => {
+    const fieldErrors: ValidationError[] = [];
     const first = firstName.trim();
     const last = lastName.trim();
     const middle = middleName.trim();
@@ -559,70 +685,157 @@ export default function AddEmployeeModal({
     const mobile = mobileNumber.trim();
     const address = homeAddress.trim();
 
-    if (!first || !last) {
-      setErrorMessage("First name and last name are required.");
-      return false;
+    if (!first) {
+      fieldErrors.push({
+        field: "First Name",
+        message: "First name is required.",
+      });
     }
 
-    if (!noMiddleName && (!middle || !mi)) {
-      setErrorMessage(
-        "Middle name and M.I. are required unless not applicable.",
-      );
-      return false;
+    if (!last) {
+      fieldErrors.push({
+        field: "Last Name",
+        message: "Last name is required.",
+      });
     }
 
-    if (
-      !NAME_PATTERN.test(first) ||
-      !NAME_PATTERN.test(last) ||
-      (!noMiddleName && !NAME_PATTERN.test(middle))
-    ) {
-      setErrorMessage("Names must use letters, spaces, or dots only.");
-      return false;
+    if (!noMiddleName && !middle) {
+      fieldErrors.push({
+        field: "Middle Name",
+        message: "Middle name is required unless not applicable.",
+      });
     }
 
-    if (!noMiddleName && !MIDDLE_INITIAL_PATTERN.test(mi)) {
-      setErrorMessage("M.I. must use letters, spaces, or dots only.");
-      return false;
+    if (!noMiddleName && !mi) {
+      fieldErrors.push({
+        field: "M.I.",
+        message: "M.I. is required unless not applicable.",
+      });
+    }
+
+    if (first && !NAME_PATTERN.test(first)) {
+      fieldErrors.push({
+        field: "First Name",
+        message: "First name must use letters, spaces, or dots only.",
+      });
+    }
+
+    if (last && !NAME_PATTERN.test(last)) {
+      fieldErrors.push({
+        field: "Last Name",
+        message: "Last name must use letters, spaces, or dots only.",
+      });
+    }
+
+    if (!noMiddleName && middle && !NAME_PATTERN.test(middle)) {
+      fieldErrors.push({
+        field: "Middle Name",
+        message: "Middle name must use letters, spaces, or dots only.",
+      });
+    }
+
+    if (!noMiddleName && mi && !MIDDLE_INITIAL_PATTERN.test(mi)) {
+      fieldErrors.push({
+        field: "M.I.",
+        message: "M.I. must use letters, spaces, or dots only.",
+      });
     }
 
     if (!birthdate) {
-      setErrorMessage("Date of birth is required.");
-      return false;
+      fieldErrors.push({
+        field: "Date of Birth",
+        message: "Date of birth is required.",
+      });
     }
 
-    if (new Date(birthdate) > new Date()) {
-      setErrorMessage("Date of birth cannot be in the future.");
-      return false;
+    if (birthdate && new Date(birthdate) > new Date()) {
+      fieldErrors.push({
+        field: "Date of Birth",
+        message: "Date of birth cannot be in the future.",
+      });
     }
 
-    if (!age || age < 0 || age > 150) {
-      setErrorMessage("Computed age is invalid. Please check date of birth.");
-      return false;
+    if (birthdate && (!age || age < 0 || age > 150)) {
+      fieldErrors.push({
+        field: "Age",
+        message: "Computed age is invalid. Please check date of birth.",
+      });
     }
 
     if (!pEmail || !isValidEmail(pEmail)) {
-      setErrorMessage("A valid personal email is required.");
-      return false;
+      fieldErrors.push({
+        field: "Personal Email",
+        message: "A valid personal email is required.",
+      });
+    }
+
+    if (!workEmail.trim() || !isValidEmail(workEmail.trim())) {
+      fieldErrors.push({
+        field: "DepEd Email",
+        message: "A valid DepEd email is required.",
+      });
+    } else if (!isValidDepEdEmail(workEmail)) {
+      fieldErrors.push({
+        field: "DepEd Email",
+        message: "DepEd email must end with @deped.gov.ph.",
+      });
     }
 
     if (!mobile || !MOBILE_PATTERN.test(mobile)) {
-      setErrorMessage("Mobile number must be exactly 11 digits.");
-      return false;
+      fieldErrors.push({
+        field: "Mobile Number",
+        message: "Mobile number must be exactly 11 digits.",
+      });
     }
 
     if (!address) {
-      setErrorMessage("Home address is required.");
+      fieldErrors.push({
+        field: "Home Address",
+        message: "Home address is required.",
+      });
+    }
+
+    if (!placeOfBirth.trim()) {
+      fieldErrors.push({
+        field: "Place of Birth",
+        message: "Place of birth is required.",
+      });
+    }
+
+    if (!selectedCivilStatus) {
+      fieldErrors.push({
+        field: "Civil Status",
+        message: "Civil status is required.",
+      });
+    }
+
+    if (!selectedSex) {
+      fieldErrors.push({
+        field: "Sex",
+        message: "Sex is required.",
+      });
+    }
+
+    if (fieldErrors.length > 0) {
+      setValidationErrors(fieldErrors);
+      setErrorMessage(null);
       return false;
     }
 
+    setValidationErrors([]);
     setErrorMessage(null);
     return true;
   };
 
-  const resolveSchool = (): { id: number; name: string } | null => {
+  const resolveSchool = (
+    fieldErrors: ValidationError[],
+  ): { id: number; name: string } | null => {
     if (["ADMIN", "DATA_ENCODER"].includes(currentUserRole)) {
       if (!assignedSchoolId) {
-        setErrorMessage("Your account has no assigned school.");
+        fieldErrors.push({
+          field: "School",
+          message: "Your account has no assigned school.",
+        });
         return null;
       }
 
@@ -633,13 +846,19 @@ export default function AddEmployeeModal({
     }
 
     if (!schoolId) {
-      setErrorMessage("Please select a valid school from the dropdown.");
+      fieldErrors.push({
+        field: "School",
+        message: "Please select a valid school from the dropdown.",
+      });
       return null;
     }
 
     const selectedSchool = schools.find((s) => s.id === schoolId);
     if (!selectedSchool) {
-      setErrorMessage("Invalid school selection.");
+      fieldErrors.push({
+        field: "School",
+        message: "Invalid school selection.",
+      });
       return null;
     }
 
@@ -650,45 +869,60 @@ export default function AddEmployeeModal({
   };
 
   const validateStepTwo = (): { id: number; name: string } | null => {
+    const fieldErrors: ValidationError[] = [];
     const eNo = employeeNo.trim();
     const wEmail = workEmail.trim();
     const pNo = plantillaNo.trim();
 
     if (!employeeType) {
-      setErrorMessage("Employee type is required.");
-      return null;
+      fieldErrors.push({
+        field: "Employee Type",
+        message: "Employee type is required.",
+      });
     }
 
     if (!eNo || !EMPLOYEE_NO_PATTERN.test(eNo)) {
-      setErrorMessage("Employee number must be exactly 7 digits.");
-      return null;
-    }
-
-    if (!wEmail || !isValidEmail(wEmail)) {
-      setErrorMessage("A valid work email is required.");
-      return null;
+      fieldErrors.push({
+        field: "Employee Number",
+        message: "Employee number must be exactly 7 digits.",
+      });
     }
 
     if (!selectedDistrict) {
-      setErrorMessage("Please select a valid district from the dropdown.");
-      return null;
+      fieldErrors.push({
+        field: "District",
+        message: "Please select a valid district from the dropdown.",
+      });
     }
 
     if (!selectedPosition) {
-      setErrorMessage("Please select a valid position from the dropdown.");
-      return null;
+      fieldErrors.push({
+        field: "Position",
+        message: "Please select a valid position from the dropdown.",
+      });
     }
 
     if (!pNo) {
-      setErrorMessage("Plantilla number is required.");
-      return null;
+      fieldErrors.push({
+        field: "Plantilla Number",
+        message: "Plantilla number is required.",
+      });
     }
 
-    const school = resolveSchool();
+    const school = resolveSchool(fieldErrors);
     if (!school) {
+      setValidationErrors(fieldErrors);
+      setErrorMessage(null);
       return null;
     }
 
+    if (fieldErrors.length > 0) {
+      setValidationErrors(fieldErrors);
+      setErrorMessage(null);
+      return null;
+    }
+
+    setValidationErrors([]);
     setErrorMessage(null);
     return school;
   };
@@ -703,6 +937,7 @@ export default function AddEmployeeModal({
 
   const handleGoBack = () => {
     setErrorMessage(null);
+    setValidationErrors([]);
     setStep("personal");
   };
 
@@ -733,6 +968,20 @@ export default function AddEmployeeModal({
       return;
     }
 
+    const civilStatusRecord = selectedCivilStatus;
+    if (!civilStatusRecord) {
+      setErrorMessage("Civil status is required.");
+      setStep("personal");
+      return;
+    }
+
+    const sexRecord = selectedSex;
+    if (!sexRecord) {
+      setErrorMessage("Sex is required.");
+      setStep("personal");
+      return;
+    }
+
     setPendingPayload({
       first_name: firstName.trim(),
       middle_name: noMiddleName ? "N/A" : middleName.trim(),
@@ -743,6 +992,11 @@ export default function AddEmployeeModal({
       email: personalEmail.trim(),
       mobile_number: mobileNumber.trim(),
       home_address: homeAddress.trim(),
+      place_of_birth: placeOfBirth.trim(),
+      civil_status: civilStatusRecord.civil_status_name,
+      civil_status_id: civilStatusRecord.id,
+      sex: sexRecord.sex_name,
+      sex_id: sexRecord.id,
       employee_type: employeeType,
       school_id: school.id,
       school_name: school.name,
@@ -754,6 +1008,7 @@ export default function AddEmployeeModal({
       plantilla_no: plantillaNo.trim(),
       age,
       birthdate,
+      prc_license_no: licenseNoPrc.trim(),
       license_no_prc: licenseNoPrc.trim(),
     });
     setIsConfirmOpen(true);
@@ -789,6 +1044,11 @@ export default function AddEmployeeModal({
           email: pendingPayload.email,
           mobile_number: pendingPayload.mobile_number,
           home_address: pendingPayload.home_address,
+          place_of_birth: pendingPayload.place_of_birth,
+          civil_status: pendingPayload.civil_status,
+          civil_status_id: pendingPayload.civil_status_id,
+          sex: pendingPayload.sex,
+          sex_id: pendingPayload.sex_id,
           employee_type: pendingPayload.employee_type,
           school_id: pendingPayload.school_id,
           employee_no: pendingPayload.employee_no,
@@ -799,6 +1059,7 @@ export default function AddEmployeeModal({
           plantilla_no: pendingPayload.plantilla_no,
           age: pendingPayload.age,
           birthdate: pendingPayload.birthdate,
+          prc_license_no: pendingPayload.prc_license_no,
           license_no_prc: pendingPayload.license_no_prc,
         }),
       });
@@ -836,7 +1097,7 @@ export default function AddEmployeeModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-blue-200 bg-white p-5 shadow-2xl sm:p-6">
+      <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-blue-200 bg-white p-5 shadow-2xl sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-gray-800 sm:text-xl">
@@ -874,94 +1135,101 @@ export default function AddEmployeeModal({
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           {step === "personal" && (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Last Name
-                </label>
-                <input
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
-                  placeholder="Dela Cruz"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  First Name
-                </label>
-                <input
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
-                  placeholder="Juan"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Middle Name
-                </label>
-                <input
-                  type="text"
-                  value={middleName}
-                  onChange={(e) => setMiddleName(e.target.value)}
-                  disabled={noMiddleName}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-100"
-                  placeholder="Santos"
-                />
-                <label className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1.35fr_1.35fr_1.35fr_0.5fr] sm:gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Last Name
+                  </label>
                   <input
-                    type="checkbox"
-                    checked={noMiddleName}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setNoMiddleName(checked);
-                      if (checked) {
-                        setMiddleName("N/A");
-                        setMiddleInitial("N/A");
-                      } else {
-                        setMiddleName("");
-                        setMiddleInitial("");
-                      }
-                    }}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                    placeholder="Dela Cruz"
                   />
-                  I don&apos;t have a middle name
-                </label>
+                  {renderFieldError("Last Name")}
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                    placeholder="Juan"
+                  />
+                  {renderFieldError("First Name")}
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Middle Name
+                  </label>
+                  <input
+                    type="text"
+                    value={middleName}
+                    onChange={(e) => setMiddleName(e.target.value)}
+                    disabled={noMiddleName}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-100"
+                    placeholder="Santos"
+                  />
+                  {renderFieldError("Middle Name")}
+                  <label className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={noMiddleName}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setNoMiddleName(checked);
+                        if (checked) {
+                          setMiddleName("N/A");
+                          setMiddleInitial("N/A");
+                        } else {
+                          setMiddleName("");
+                          setMiddleInitial("");
+                        }
+                      }}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    I don&apos;t have a middle name
+                  </label>
+                </div>
+
+                <div className="lg:w-24">
+                  <label className="text-sm font-medium text-gray-700">
+                    M.I.
+                  </label>
+                  <input
+                    type="text"
+                    value={middleInitial}
+                    onChange={(e) => setMiddleInitial(e.target.value)}
+                    disabled={noMiddleName}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-100"
+                    placeholder="S"
+                  />
+                  {renderFieldError("M.I.")}
+                </div>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  M.I.
-                </label>
-                <input
-                  type="text"
-                  value={middleInitial}
-                  onChange={(e) => setMiddleInitial(e.target.value)}
-                  disabled={noMiddleName}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-100"
-                  placeholder="S"
-                />
-              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[2.1fr_1fr_0.45fr] sm:gap-4">
+                <div className="sm:col-span-2 lg:col-span-1">
+                  <label className="text-sm font-medium text-gray-700">
+                    Home Address
+                  </label>
+                  <textarea
+                    value={homeAddress}
+                    onChange={(e) => setHomeAddress(e.target.value)}
+                    rows={2}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 whitespace-pre-wrap wrap-break-word"
+                    placeholder="Street, Barangay, City"
+                  />
+                  {renderFieldError("Home Address")}
+                </div>
 
-              <div className="sm:col-span-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Home Address
-                </label>
-                <textarea
-                  value={homeAddress}
-                  onChange={(e) => setHomeAddress(e.target.value)}
-                  rows={2}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 whitespace-pre-wrap wrap-break-word"
-                  placeholder="Street, Barangay, City"
-                />
-              </div>
-
-              <div className="sm:col-span-2 lg:col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-700">
                     Date of Birth
@@ -973,9 +1241,10 @@ export default function AddEmployeeModal({
                     max={new Date().toISOString().slice(0, 10)}
                     className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
                   />
+                  {renderFieldError("Date of Birth")}
                 </div>
 
-                <div>
+                <div className="lg:w-24 lg:justify-self-end">
                   <label className="text-sm font-medium text-gray-700">
                     Age
                   </label>
@@ -984,12 +1253,90 @@ export default function AddEmployeeModal({
                     value={age || ""}
                     readOnly
                     className="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700"
-                    placeholder="Auto computed"
+                    placeholder="Auto"
                   />
                 </div>
               </div>
 
-              <div className="sm:col-span-2 lg:col-span-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1.25fr_1.25fr_0.5fr] sm:gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Place of Birth
+                  </label>
+                  <input
+                    type="text"
+                    value={placeOfBirth}
+                    onChange={(e) => setPlaceOfBirth(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                    placeholder="City / Municipality"
+                  />
+                  {renderFieldError("Place of Birth")}
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Civil Status
+                  </label>
+                  <select
+                    value={
+                      selectedCivilStatusId ? String(selectedCivilStatusId) : ""
+                    }
+                    onChange={(e) => {
+                      const nextValue = e.target.value
+                        ? Number(e.target.value)
+                        : null;
+                      setSelectedCivilStatusId(
+                        Number.isFinite(nextValue) ? nextValue : null,
+                      );
+                    }}
+                    disabled={civilStatusesLoading}
+                    className="mt-1 w-full cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-100"
+                  >
+                    <option value="">
+                      {civilStatusesLoading
+                        ? "Loading civil statuses..."
+                        : "Select civil status"}
+                    </option>
+                    {sortedCivilStatuses.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.civil_status_name}
+                      </option>
+                    ))}
+                  </select>
+                  {renderFieldError("Civil Status")}
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Sex
+                  </label>
+                  <select
+                    value={selectedSexId ? String(selectedSexId) : ""}
+                    onChange={(e) => {
+                      const nextValue = e.target.value
+                        ? Number(e.target.value)
+                        : null;
+                      setSelectedSexId(
+                        Number.isFinite(nextValue) ? nextValue : null,
+                      );
+                    }}
+                    disabled={sexesLoading}
+                    className="mt-1 w-full cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-100"
+                  >
+                    <option value="">
+                      {sexesLoading ? "Loading sexes..." : "Select sex"}
+                    </option>
+                    {sortedSexes.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.sex_name}
+                      </option>
+                    ))}
+                  </select>
+                  {renderFieldError("Sex")}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1.2fr_1.25fr_0.9fr] sm:gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-700">
                     Personal Email
@@ -1001,9 +1348,24 @@ export default function AddEmployeeModal({
                     className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
                     placeholder="name@email.com"
                   />
+                  {renderFieldError("Personal Email")}
                 </div>
 
                 <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    DepEd Email
+                  </label>
+                  <input
+                    type="email"
+                    value={workEmail}
+                    onChange={(e) => setWorkEmail(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                    placeholder="employee@deped.gov.ph"
+                  />
+                  {renderFieldError("DepEd Email")}
+                </div>
+
+                <div style={{ maxWidth: "22ch" }}>
                   <label className="text-sm font-medium text-gray-700">
                     Mobile Number
                   </label>
@@ -1022,6 +1384,7 @@ export default function AddEmployeeModal({
                     className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
                     placeholder="09123456789"
                   />
+                  {renderFieldError("Mobile Number")}
                 </div>
               </div>
             </div>
@@ -1096,6 +1459,7 @@ export default function AddEmployeeModal({
                     </div>
                   )}
                 </div>
+                {renderFieldError("District")}
               </div>
 
               <div>
@@ -1183,6 +1547,7 @@ export default function AddEmployeeModal({
                     Selected school is valid.
                   </p>
                 )}
+                {renderFieldError("School")}
               </div>
 
               <div>
@@ -1196,6 +1561,7 @@ export default function AddEmployeeModal({
                   className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
                   placeholder="PL-0001"
                 />
+                {renderFieldError("Plantilla Number")}
               </div>
 
               <div>
@@ -1265,6 +1631,7 @@ export default function AddEmployeeModal({
                     </div>
                   )}
                 </div>
+                {renderFieldError("Position")}
               </div>
 
               <div>
@@ -1286,19 +1653,7 @@ export default function AddEmployeeModal({
                   className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
                   placeholder="1234567"
                 />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Work Email
-                </label>
-                <input
-                  type="email"
-                  value={workEmail}
-                  onChange={(e) => setWorkEmail(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
-                  placeholder="employee@deped.gov.ph"
-                />
+                {renderFieldError("Employee Number")}
               </div>
 
               <div>
@@ -1317,6 +1672,7 @@ export default function AddEmployeeModal({
                   <option value="teaching">Teaching</option>
                   <option value="non-teaching">Non-Teaching</option>
                 </select>
+                {renderFieldError("Employee Type")}
               </div>
 
               <div>
@@ -1417,7 +1773,9 @@ export default function AddEmployeeModal({
                 {pendingPayload.personal_email}
               </p>
               <p>
-                <span className="font-semibold text-gray-800">Work Email:</span>{" "}
+                <span className="font-semibold text-gray-800">
+                  DepEd Email:
+                </span>{" "}
                 {pendingPayload.work_email}
               </p>
               <p>
