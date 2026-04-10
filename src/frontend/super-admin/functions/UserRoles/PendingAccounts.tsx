@@ -229,7 +229,7 @@ export default function PendingAccounts({
   };
 
   return (
-    <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col">
+    <div className="w-full bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col">
       <h1
         style={{ fontSize: "20px" }}
         className="font-bold text-gray-900 mb-4 inline-flex items-center gap-2"

@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   CircleUser,
+  CalendarDays,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -45,7 +46,7 @@ const SIDEBAR_TABS: SidebarTab[] = [
   {
     id: "employee-management",
     label: "Leave Management",
-    icon: Users,
+    icon: CalendarDays,
     roles: ALL_ROLES,
   },
   {

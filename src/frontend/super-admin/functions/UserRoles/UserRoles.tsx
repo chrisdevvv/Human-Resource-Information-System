@@ -61,6 +61,10 @@ const normalizeRole = (value: unknown): string => {
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 const USER_ROLES_TAB_KEY = "userRoles:activeTab";
 
+type UserRolesProps = {
+  mode?: "super-admin" | "admin";
+};
+
 const getInitialUserRolesTab = (): "users" | "pending" => {
   if (typeof window === "undefined") {
     return "users";
@@ -75,7 +79,8 @@ const getInitialUserRolesTab = (): "users" | "pending" => {
   return "users";
 };
 
-export default function UserRoles() {
+export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
+  const isAdminMode = mode === "admin";
   const [activeTab, setActiveTab] = useState<"users" | "pending">(
     getInitialUserRolesTab,
   );
@@ -88,6 +93,7 @@ export default function UserRoles() {
   const [letterFilter, setLetterFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [pageJumpInput, setPageJumpInput] = useState("1");
   const [userData, setUserData] = useState<User[]>([]);
   const [userLoading, setUserLoading] = useState(true);
@@ -167,13 +173,26 @@ export default function UserRoles() {
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
 
-      const params = new URLSearchParams();
-      if (currentUserRole === "SUPER_ADMIN" && schoolFilter !== "ALL") {
-        params.set("school_id", schoolFilter);
-      }
-
       const response = await fetch(
-        `${API_BASE}/api/users/${params.toString() ? `?${params.toString()}` : ""}`,
+        isAdminMode
+          ? `${API_BASE}/api/users/?${new URLSearchParams({
+              ...(searchQuery ? { search: searchQuery } : {}),
+              ...(roleFilter && roleFilter !== "ALL"
+                ? { role: roleFilter }
+                : {}),
+              ...(accountStatusFilter && accountStatusFilter !== "ALL"
+                ? {
+                    is_active: accountStatusFilter === "ACTIVE" ? "1" : "0",
+                  }
+                : {}),
+              page: String(currentPage),
+              pageSize: String(itemsPerPage),
+            }).toString()}`
+          : `${API_BASE}/api/users/${
+              currentUserRole === "SUPER_ADMIN" && schoolFilter !== "ALL"
+                ? `?${new URLSearchParams({ school_id: schoolFilter }).toString()}`
+                : ""
+            }`,
         {
           method: "GET",
           headers: {
@@ -198,18 +217,25 @@ export default function UserRoles() {
         isActive: normalizeIsActive(item.is_active),
       }));
       const scopedData =
-        currentUserRole !== "SUPER_ADMIN" && currentUserSchoolId
+        !isAdminMode && currentUserRole !== "SUPER_ADMIN" && currentUserSchoolId
           ? formatted.filter(
               (item: User) =>
                 Number(item.schoolId) === Number(currentUserSchoolId),
             )
           : formatted;
+      const resultTotal = (result as { total?: number }).total;
       setUserData(scopedData);
+      setTotalItems(
+        isAdminMode && typeof resultTotal === "number"
+          ? resultTotal
+          : scopedData.length,
+      );
       setUserError(null);
     } catch (err) {
       setUserError(err instanceof Error ? err.message : "An error occurred");
       if (showSpinner) {
         setUserData([]);
+        setTotalItems(0);
       }
     } finally {
       if (showSpinner) {
@@ -227,45 +253,83 @@ export default function UserRoles() {
 
     return () => window.clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUserRole, currentUserSchoolId, schoolFilter]);
+  }, [
+    isAdminMode,
+    currentUserRole,
+    currentUserSchoolId,
+    schoolFilter,
+    currentPage,
+    itemsPerPage,
+    roleFilter,
+    accountStatusFilter,
+  ]);
 
-  const filteredUsers = userData
-    .filter((user) => {
-      const matchesSearch =
-        user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.schoolName.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
-      const matchesAccountStatus =
-        accountStatusFilter === "ALL" ||
-        (accountStatusFilter === "ACTIVE" ? user.isActive : !user.isActive);
-      const matchesLetter =
-        letterFilter === "ALL" ||
-        user.firstName.charAt(0).toUpperCase() === letterFilter;
-      const matchesSchool =
-        currentUserRole !== "SUPER_ADMIN" ||
-        schoolFilter === "ALL" ||
-        String(user.schoolId) === schoolFilter;
-      return (
-        matchesSearch &&
-        matchesRole &&
-        matchesAccountStatus &&
-        matchesLetter &&
-        matchesSchool
-      );
-    })
-    .sort((a, b) => {
-      if (sortOrder === "asc") return a.firstName.localeCompare(b.firstName);
-      return b.firstName.localeCompare(a.firstName);
-    });
+  useEffect(() => {
+    if (!isAdminMode) {
+      return;
+    }
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredUsers.length / itemsPerPage),
-  );
+    const id = window.setTimeout(() => {
+      setCurrentPage(1);
+      fetchUsers();
+    }, 350);
+
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, isAdminMode]);
+
+  const filteredUsers = isAdminMode
+    ? userData
+        .filter((user) => {
+          const matchesLetter =
+            letterFilter === "ALL" ||
+            user.firstName.charAt(0).toUpperCase() === letterFilter;
+          return matchesLetter;
+        })
+        .sort((a, b) => {
+          if (sortOrder === "asc")
+            return a.firstName.localeCompare(b.firstName);
+          return b.firstName.localeCompare(a.firstName);
+        })
+    : userData
+        .filter((user) => {
+          const matchesSearch =
+            user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            user.schoolName.toLowerCase().includes(searchQuery.toLowerCase());
+          const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
+          const matchesAccountStatus =
+            accountStatusFilter === "ALL" ||
+            (accountStatusFilter === "ACTIVE" ? user.isActive : !user.isActive);
+          const matchesLetter =
+            letterFilter === "ALL" ||
+            user.firstName.charAt(0).toUpperCase() === letterFilter;
+          const matchesSchool =
+            currentUserRole !== "SUPER_ADMIN" ||
+            schoolFilter === "ALL" ||
+            String(user.schoolId) === schoolFilter;
+          return (
+            matchesSearch &&
+            matchesRole &&
+            matchesAccountStatus &&
+            matchesLetter &&
+            matchesSchool
+          );
+        })
+        .sort((a, b) => {
+          if (sortOrder === "asc")
+            return a.firstName.localeCompare(b.firstName);
+          return b.firstName.localeCompare(a.firstName);
+        });
+
+  const totalPages = isAdminMode
+    ? Math.max(1, Math.ceil(totalItems / itemsPerPage))
+    : Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
   const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIdx, startIdx + itemsPerPage);
+  const paginatedUsers = isAdminMode
+    ? filteredUsers
+    : filteredUsers.slice(startIdx, startIdx + itemsPerPage);
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
     Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
@@ -296,6 +360,9 @@ export default function UserRoles() {
   const handleSearch = () => {
     setCurrentPage(1);
     setPageJumpInput("1");
+    if (isAdminMode) {
+      fetchUsers();
+    }
   };
 
   const handleResetFilters = () => {
@@ -369,7 +436,7 @@ export default function UserRoles() {
             className="font-bold text-gray-900 mb-4 inline-flex items-center gap-2"
           >
             <Settings size={24} className="text-blue-600" />
-            User & Roles
+            {isAdminMode ? "User & Roles (Admin Only)" : "User & Roles"}
           </h1>
 
           {/* Header with search and controls */}
@@ -395,11 +462,11 @@ export default function UserRoles() {
             </div>
 
             {/* Filters Row */}
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-center lg:justify-start">
               <div className="grid gap-3 sm:grid-cols-2 lg:flex lg:flex-row lg:items-center">
                 <button
                   onClick={() => setShowAddUserModal(true)}
-                  className="inline-flex items-center justify-center gap-1 px-3 py-2 sm:py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer"
+                  className="inline-flex items-center justify-center gap-1 px-3 py-2 sm:py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer whitespace-nowrap shrink-0"
                 >
                   <UserPlus size={14} />
                   Add User
@@ -414,9 +481,11 @@ export default function UserRoles() {
                   className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ALL">All Roles</option>
-                  <option value="SUPER_ADMIN">Super Admin</option>
                   <option value="ADMIN">Admin</option>
                   <option value="DATA_ENCODER">Data Encoder</option>
+                  {!isAdminMode && (
+                    <option value="SUPER_ADMIN">Super Admin</option>
+                  )}
                 </select>
 
                 {currentUserRole === "SUPER_ADMIN" && (
@@ -426,7 +495,7 @@ export default function UserRoles() {
                       setSchoolFilter(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className=" w-full sm:w-56 lg:w-64 text-gray-500 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                    className="w-full sm:w-72 lg:w-96 text-gray-500 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                     disabled={schoolsLoading}
                   >
                     <option value="ALL">All Schools</option>
@@ -448,7 +517,7 @@ export default function UserRoles() {
                     );
                     setCurrentPage(1);
                   }}
-                  className="text-gray-500 w-full px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  className="text-gray-500 w-full sm:w-72 lg:w-96 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ACTIVE">Active Accounts</option>
                   <option value="INACTIVE">Inactive Accounts</option>
@@ -475,7 +544,7 @@ export default function UserRoles() {
                   onClick={() => {
                     setSortOrder(sortOrder === "asc" ? "desc" : "asc");
                   }}
-                  className="text-gray-500 flex items-center justify-center gap-2 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
+                  className="text-gray-500 flex items-center justify-center gap-2 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer whitespace-nowrap shrink-0"
                 >
                   {sortOrder === "asc" ? (
                     <>
@@ -573,9 +642,32 @@ export default function UserRoles() {
                             </button>
                             <button
                               onClick={() => setSettingsTarget(user)}
-                              className="p-1.5 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition cursor-pointer"
-                              aria-label={`Open settings for ${user.firstName} ${user.lastName}`}
-                              title="User settings"
+                              disabled={
+                                isAdminMode &&
+                                (user.role === "SUPER_ADMIN" ||
+                                  user.role === "ADMIN")
+                              }
+                              className={`p-1.5 rounded transition ${
+                                isAdminMode &&
+                                (user.role === "SUPER_ADMIN" ||
+                                  user.role === "ADMIN")
+                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer"
+                              }`}
+                              aria-label={
+                                isAdminMode &&
+                                (user.role === "SUPER_ADMIN" ||
+                                  user.role === "ADMIN")
+                                  ? `Settings disabled for ${user.firstName} ${user.lastName}`
+                                  : `Open settings for ${user.firstName} ${user.lastName}`
+                              }
+                              title={
+                                isAdminMode &&
+                                (user.role === "SUPER_ADMIN" ||
+                                  user.role === "ADMIN")
+                                  ? "Settings disabled for Admin and Super Admin"
+                                  : "User settings"
+                              }
                             >
                               <Settings size={12} />
                             </button>

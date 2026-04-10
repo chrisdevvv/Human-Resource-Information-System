@@ -467,14 +467,26 @@ export default function RegistrationModal({ visible, onClose }: Props) {
 
   return (
     <div
-      className={`${visible ? "flex" : "hidden"} fixed inset-0 items-center justify-center bg-black/40 z-50 px-4`}
+      className={`${visible ? "flex" : "hidden"} fixed inset-0 z-50 items-center justify-center bg-black/40 px-4`}
       aria-hidden={!visible}
     >
-      <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-blue-200 bg-white p-5 shadow sm:p-8 md:p-10">
-        <div className="flex items-center justify-center mb-6">
-          <h2 className="text-3xl font-bold text-sky-800">Registration Form</h2>
+      <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-blue-200 bg-white p-6 shadow-2xl sm:p-8">
+        <button
+          type="button"
+          onClick={handleReset}
+          className="absolute right-2 top-2 rounded p-1 text-xl transition hover:bg-red-500 hover:text-white"
+          aria-label="Close registration form"
+        >
           <X size={18} />
+        </button>
+
+        <div className="mb-1 flex items-center gap-2">
+          <Building2 size={20} className="text-blue-600" />
+          <h2 className="text-xl font-bold text-gray-800">Registration Form</h2>
         </div>
+        <p className="mb-5 text-sm text-gray-500">
+          Complete the form below to submit your registration request.
+        </p>
 
         {/* Success screen */}
         {submitted ? (
@@ -482,7 +494,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
         ) : (
           <>
             {error && (
-              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
+              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
                 {error}
               </div>
             )}
@@ -497,7 +509,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
               >
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div>
-                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                       <User className="text-blue-600" size={18} />
                       First name <span className="text-red-500">*</span>
                     </label>
@@ -510,7 +522,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                       }}
                       onBlur={handleFirstNameBlur}
                       placeholder="First name"
-                      className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${firstNameError ? "border-red-500" : ""}`}
+                      className={`mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100 ${firstNameError ? "border-red-500" : ""}`}
                     />
                     {firstNameError && (
                       <p className="text-sm text-red-600 mt-1">
@@ -520,7 +532,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   </div>
 
                   <div>
-                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                       <User className="text-blue-600" size={18} />
                       Last name <span className="text-red-500">*</span>
                     </label>
@@ -533,7 +545,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                       }}
                       onBlur={handleLastNameBlur}
                       placeholder="Last name"
-                      className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${lastNameError ? "border-red-500" : ""}`}
+                      className={`mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100 ${lastNameError ? "border-red-500" : ""}`}
                     />
                     {lastNameError && (
                       <p className="text-sm text-red-600 mt-1">
@@ -544,7 +556,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                 </div>
 
                 <div>
-                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                     <User className="text-blue-600" size={18} />
                     Middle name <span className="text-red-500">*</span>
                   </label>
@@ -560,10 +572,10 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                     placeholder={
                       noMiddleName ? "No middle name provided" : "Middle name"
                     }
-                    className={`mt-2 w-full px-3 py-2 border rounded-md placeholder:text-gray-500 ${
+                    className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100 ${
                       noMiddleName
                         ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                        : "text-gray-700"
+                        : "border-gray-300 text-gray-700"
                     } ${middleNameError ? "border-red-500" : ""}`}
                   />
                   <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
@@ -591,7 +603,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
 
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div>
-                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                       <Mail className="text-blue-600" size={18} />
                       Email <span className="text-red-500">*</span>
                     </label>
@@ -604,7 +616,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                       }}
                       onBlur={handleEmailBlur}
                       placeholder="name@deped.gov.ph"
-                      className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${emailError ? "border-red-500" : ""}`}
+                      className={`mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100 ${emailError ? "border-red-500" : ""}`}
                     />
                     {emailError && (
                       <p className="text-sm text-red-600 mt-1">{emailError}</p>
@@ -612,7 +624,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   </div>
 
                   <div>
-                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                       <User className="text-blue-600" size={18} />
                       Birthdate <span className="text-red-500">*</span>
                     </label>
@@ -625,7 +637,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                         if (birthdateError) setBirthdateError("");
                       }}
                       max={new Date().toISOString().slice(0, 10)}
-                      className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md ${birthdateError ? "border-red-500" : ""}`}
+                      className={`mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 ${birthdateError ? "border-red-500" : ""}`}
                     />
                     {birthdateError && (
                       <p className="text-sm text-red-600 mt-1">
@@ -636,7 +648,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                 </div>
 
                 <div className="mt-4">
-                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                     <Building2 className="text-blue-600" size={18} />
                     School <span className="text-red-500">*</span>
                   </label>
@@ -654,9 +666,9 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                         setTimeout(() => setShowSchoolDropdown(false), 150);
                       }}
                       disabled={schoolsLoading}
-                      className={`w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${
+                      className={`w-full rounded-lg border px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100 ${
                         schoolError ? "border-red-500" : ""
-                      } ${schoolsLoading ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                      } ${schoolsLoading ? "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed" : "border-gray-300 text-gray-700"}`}
                       placeholder={
                         schoolsLoading
                           ? "Loading schools..."
@@ -716,17 +728,17 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   )}
                 </div>
 
-                <div className="flex flex-col gap-3 items-center mt-6">
+                <div className="mt-6 flex flex-col items-center gap-3">
                   <button
                     type="submit"
-                    className="cursor-pointer px-5 py-1.5 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition"
+                    className="cursor-pointer w-full rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700"
                   >
                     Continue
                   </button>
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="text-gray-700 cursor-pointer px-5 py-1.5 border rounded-md w-full hover:bg-gray-100 transition"
+                    className="cursor-pointer w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
                   >
                     Cancel
                   </button>
@@ -740,7 +752,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                 }}
                 className="space-y-4"
               >
-                <div className="mb-4 p-3 bg-blue-50 text-blue-800 rounded-md text-sm">
+                <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-3 py-3 text-sm text-blue-800">
                   <p className="font-semibold mb-1">Password requirements:</p>
                   <ul className="list-disc list-inside space-y-1">
                     <li>At least 8 characters long</li>
@@ -752,7 +764,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   </ul>
                 </div>
 
-                <label className="flex items-center gap-2 text-sm text-gray-700">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                   <Key className="text-blue-600" size={18} />
                   Create password <span className="text-red-500">*</span>
                 </label>
@@ -769,7 +781,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                     onBlur={handlePasswordBlur}
                     placeholder="Create a password"
                     type={showPassword ? "text" : "password"}
-                    className={`w-full text-gray-700 px-3 py-2 pr-10 border rounded-md placeholder:text-gray-500 ${passwordError ? "border-red-500" : ""}`}
+                    className={`w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-700 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100 ${passwordError ? "border-red-500" : ""}`}
                   />
                   <button
                     type="button"
@@ -786,7 +798,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   <p className="text-sm text-red-600 mt-1">{passwordError}</p>
                 )}
 
-                <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+                <label className="mt-4 flex items-center gap-2 text-sm font-medium text-gray-700">
                   <Key className="text-blue-600" size={18} />
                   Confirm password <span className="text-red-500">*</span>
                 </label>
@@ -801,7 +813,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                     onBlur={handleConfirmPasswordBlur}
                     placeholder="Confirm password"
                     type={showConfirmPassword ? "text" : "password"}
-                    className={`w-full text-gray-700 px-3 py-2 pr-10 border rounded-md placeholder:text-gray-500 ${confirmPasswordError ? "border-red-500" : ""}`}
+                    className={`w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-700 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100 ${confirmPasswordError ? "border-red-500" : ""}`}
                   />
                   <button
                     type="button"
@@ -826,11 +838,11 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   </p>
                 )}
 
-                <div className="flex flex-col gap-3 items-center mt-6">
+                <div className="mt-6 flex flex-col items-center gap-3">
                   <button
                     type="submit"
                     disabled={isLoading || isConfirmOpen}
-                    className="cursor-pointer px-5 py-1.5 bg-blue-600 text-white rounded-md w-full hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="cursor-pointer w-full rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isLoading ? "Submitting..." : "Submit Request"}
                   </button>
@@ -841,7 +853,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                       setError("");
                     }}
                     disabled={isLoading || isConfirmOpen}
-                    className="text-gray-700 cursor-pointer px-5 py-1.5 border rounded-md w-full hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="cursor-pointer w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Back
                   </button>

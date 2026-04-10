@@ -8,6 +8,8 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
 const FORCE_PASSWORD_CHANGE_KEY = "forcePasswordChange:addedUsers";
+const SCHOOLS_DIVISION_OFFICE = "Schools Division Office";
+const SCHOOLS_DIVISION_OFFICE_VALUE = "__schools_division_office__";
 
 type AddUserModalProps = {
   onClose: () => void;
@@ -105,6 +107,8 @@ export default function AddUserModal({
   const [email, setEmail] = useState("");
   const [birthdate, setBirthdate] = useState("");
   const [schoolId, setSchoolId] = useState("");
+  const [useSchoolsDivisionOffice, setUseSchoolsDivisionOffice] =
+    useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -241,7 +245,9 @@ export default function AddUserModal({
       setBirthdateError("");
     }
 
-    if (!schoolId) {
+    if (useSchoolsDivisionOffice) {
+      setSchoolError("");
+    } else if (!schoolId) {
       setSchoolError("School is required");
       hasError = true;
     } else if (
@@ -311,12 +317,20 @@ export default function AddUserModal({
       setLoading(true);
       setError("");
 
-      const selectedSchool = schoolOptions.find(
-        (option) => String(option.id) === schoolId,
-      );
+      const selectedSchool = useSchoolsDivisionOffice
+        ? null
+        : schoolOptions.find((option) => String(option.id) === schoolId);
 
-      if (!selectedSchool) {
-        throw new Error("Please select a valid school from the dropdown.");
+      const schoolName = useSchoolsDivisionOffice
+        ? SCHOOLS_DIVISION_OFFICE
+        : selectedSchool?.school_name;
+
+      if (!schoolName) {
+        throw new Error(
+          useSchoolsDivisionOffice
+            ? "Unable to resolve Schools Division Office."
+            : "Please select a valid school from the dropdown.",
+        );
       }
 
       const registerResponse = await fetch(
@@ -332,7 +346,7 @@ export default function AddUserModal({
             email: email.trim(),
             password,
             birthdate,
-            school_name: selectedSchool.school_name,
+            school_name: schoolName,
             requested_role: "DATA_ENCODER",
             suppress_pending_email: true,
           }),
@@ -535,24 +549,52 @@ export default function AddUserModal({
                 <label className="text-sm font-medium text-gray-700">
                   School
                 </label>
-                <select
-                  value={schoolId}
-                  onChange={(e) => {
-                    setSchoolId(e.target.value);
-                    if (schoolError) setSchoolError("");
-                  }}
-                  disabled={schoolsLoading}
-                  className="mt-1 w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white cursor-pointer disabled:cursor-not-allowed"
-                >
-                  <option value="">
-                    {schoolsLoading ? "Loading schools..." : "Select a school"}
-                  </option>
-                  {schoolOptions.map((option) => (
-                    <option key={option.id} value={String(option.id)}>
-                      {option.school_name}
+                {useSchoolsDivisionOffice ? (
+                  <input
+                    type="text"
+                    value={SCHOOLS_DIVISION_OFFICE}
+                    readOnly
+                    disabled
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-gray-100 cursor-not-allowed"
+                  />
+                ) : (
+                  <select
+                    value={schoolId}
+                    onChange={(e) => {
+                      setSchoolId(e.target.value);
+                      if (schoolError) setSchoolError("");
+                    }}
+                    disabled={schoolsLoading}
+                    className="mt-1 w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    <option value="">
+                      {schoolsLoading
+                        ? "Loading schools..."
+                        : "Select a school"}
                     </option>
-                  ))}
-                </select>
+                    {schoolOptions.map((option) => (
+                      <option key={option.id} value={String(option.id)}>
+                        {option.school_name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={useSchoolsDivisionOffice}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setUseSchoolsDivisionOffice(checked);
+                      setSchoolId(checked ? SCHOOLS_DIVISION_OFFICE_VALUE : "");
+                      if (checked) {
+                        setSchoolError("");
+                      }
+                    }}
+                    className="h-4 w-4 cursor-pointer"
+                  />
+                  Schools Division Office
+                </label>
                 {schoolError && (
                   <p className="text-xs text-red-600 mt-1">{schoolError}</p>
                 )}

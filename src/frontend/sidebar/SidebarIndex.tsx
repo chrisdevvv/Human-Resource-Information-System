@@ -7,6 +7,7 @@ import {
   CircleUser,
   ChevronLeft,
   ChevronRight,
+  CalendarDays,
   SlidersHorizontal,
   LayoutDashboard,
   LogOut,
@@ -45,7 +46,7 @@ const SIDEBAR_TABS: SidebarTab[] = [
   {
     id: "employee-management",
     label: "Leave Management",
-    icon: Users,
+    icon: CalendarDays,
     roles: ALL_ROLES,
   },
   {
