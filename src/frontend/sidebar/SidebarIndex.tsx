@@ -132,7 +132,10 @@ function getFirstNameFromStoredUser(userStr: string | null): string {
         safeValue(candidate.lastName) || safeValue(candidate.last_name);
       const email = safeValue(candidate.email);
 
-      const combinedName = [firstName, lastName].filter(Boolean).join(" ").trim();
+      const combinedName = [firstName, lastName]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
       const nameSource = fullName || combinedName || firstName;
 
       if (nameSource) {
@@ -292,13 +295,16 @@ export default function SidebarIndex({
           return;
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/schools/${schoolId}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+        const response = await fetch(
+          `${API_BASE_URL}/api/schools/${schoolId}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
           },
-        });
+        );
 
         const body = (await response.json().catch(() => ({}))) as {
           data?: { school_name?: unknown };
@@ -394,7 +400,11 @@ export default function SidebarIndex({
               className="shrink-0 rounded-md p-2 transition hover:bg-blue-800 cursor-pointer"
               aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
-              {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+              {isCollapsed ? (
+                <ChevronRight size={18} />
+              ) : (
+                <ChevronLeft size={18} />
+              )}
             </button>
 
             {isCollapsed && (
@@ -446,7 +456,9 @@ export default function SidebarIndex({
               }`}
             >
               <LogOut size={18} className="shrink-0" />
-              {!isCollapsed && <span className="text-xs font-medium">Logout</span>}
+              {!isCollapsed && (
+                <span className="text-xs font-medium">Logout</span>
+              )}
             </button>
 
             <button
