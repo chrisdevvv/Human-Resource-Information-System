@@ -3,6 +3,19 @@ const pool = require("../../config/db");
 const EMPLOYEE_SELECT_WITH_AGE =
   "employees.*, schools.school_name, COALESCE(employees.age, TIMESTAMPDIFF(YEAR, employees.birthdate, CURDATE())) AS age";
 
+const normalizeEmployeeTypeForStorage = (employeeType) => {
+  if (typeof employeeType !== "string") return employeeType;
+  const normalized = employeeType.trim().toLowerCase().replace(/[_\s]+/g, "-");
+  if (
+    normalized === "teaching" ||
+    normalized === "non-teaching" ||
+    normalized === "teaching-related"
+  ) {
+    return normalized;
+  }
+  return employeeType;
+};
+
 const Employee = {
   // Supports optional pagination: if `pagination` omitted, returns full rows for compatibility.
   getAll: async (filters = {}) => {
@@ -135,6 +148,7 @@ const Employee = {
     const middleInitial =
       middle_initial || (middle_name ? String(middle_name).trim().charAt(0) : null);
     const resolvedDistrict = district || work_district || null;
+    const normalizedEmployeeType = normalizeEmployeeTypeForStorage(employee_type);
     const [result] = await pool
       .promise()
       .query(
@@ -152,7 +166,7 @@ const Employee = {
           civil_status_id || null,
           sex || null,
           sex_id || null,
-          employee_type,
+          normalizedEmployeeType,
           school_id,
           employee_no || null,
           work_email || null,
@@ -200,6 +214,7 @@ const Employee = {
     const middleInitial =
       middle_initial || (middle_name ? String(middle_name).trim().charAt(0) : null);
     const resolvedDistrict = district || work_district || null;
+    const normalizedEmployeeType = normalizeEmployeeTypeForStorage(employee_type);
     const [result] = await pool
       .promise()
       .query(
@@ -217,7 +232,7 @@ const Employee = {
           civil_status_id || null,
           sex || null,
           sex_id || null,
-          employee_type,
+          normalizedEmployeeType,
           school_id,
           employee_no || null,
           work_email || null,

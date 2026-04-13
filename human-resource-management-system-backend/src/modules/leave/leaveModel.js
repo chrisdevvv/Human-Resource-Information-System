@@ -362,12 +362,13 @@ const Leave = {
     return rows;
   },
 
+  // Returns teaching and teaching-related employees (excluded from monthly crediting)
   getAllTeachingEmployees: async () => {
     const [rows] = await pool.promise().query(
       `SELECT id, first_name, last_name, employee_type, on_leave, on_leave_from, on_leave_until
              FROM employees
              WHERE is_archived = 0
-               AND LOWER(REPLACE(employee_type, '_', '-')) = 'teaching'`,
+               AND LOWER(REPLACE(REPLACE(employee_type, '_', '-'), ' ', '-')) IN ('teaching', 'teaching-related')`,
     );
     return rows;
   },

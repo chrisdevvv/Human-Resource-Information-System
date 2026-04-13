@@ -101,7 +101,7 @@ const normalizePeriod = (yearInput, monthInput) => {
 
 const normalizeEmployeeType = (employeeType) => {
   if (typeof employeeType !== "string") return "";
-  return employeeType.trim().toLowerCase().replace(/_/g, "-");
+  return employeeType.trim().toLowerCase().replace(/[_\s]+/g, "-");
 };
 
 const getMonthlyCreditByEmployeeType = (employeeType) => {
@@ -659,7 +659,7 @@ const applyMonthlyCredit = async ({
         skippedEmployees.push({
           employee_id: emp.id,
           employee_name: fullName,
-          reason: "TEACHING_EMPLOYEE",
+          reason: "NOT_NON_TEACHING_EMPLOYEE",
         });
       }
     }
@@ -956,10 +956,13 @@ const drawLeaveCardEmployeeMeta = (doc, employee) => {
   ]
     .filter(Boolean)
     .join(" ");
+  const normalizedEmployeeType = normalizeEmployeeType(employee.employee_type);
   const employeeTypeLabel =
-    String(employee.employee_type || "").toLowerCase() === "non-teaching"
+    normalizedEmployeeType === "non-teaching"
       ? "Non-Teaching"
-      : "Teaching";
+      : normalizedEmployeeType === "teaching-related"
+        ? "Teaching Related"
+        : "Teaching";
 
   const metaY = doc.y;
 
