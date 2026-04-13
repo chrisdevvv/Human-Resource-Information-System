@@ -72,6 +72,17 @@ type EmployeeDetailsResponse = {
   birthdate?: string | null;
   prc_license_no?: string | null;
   license_no_prc?: string | null;
+  tin?: string | null;
+  tin_no?: string | null;
+  tin_number?: string | null;
+  gsis_bp_number?: string | null;
+  gsis_bp_no?: string | null;
+  gsis_crn_number?: string | null;
+  gsis_crn_no?: string | null;
+  pag_ibig_number?: string | null;
+  pagibig_number?: string | null;
+  philhealth_number?: string | null;
+  phil_health_number?: string | null;
   retirable?: "Yes" | "No" | "Mandatory Retirement" | null;
   is_archived?: number | boolean | null;
   archived_at?: string | null;
@@ -202,6 +213,34 @@ const isValidDepEdEmail = (value: string): boolean => {
   return /^[^\s@]+@deped\.gov\.ph$/.test(trimmed);
 };
 
+const GOVERNMENT_ID_PATTERN = /^(?=.*\d)[\d-]+$/;
+
+const sanitizeGovernmentIdInput = (value: string): string =>
+  value.replace(/\s+/g, "").replace(/[^\d-]/g, "");
+
+const isGovernmentIdNotAvailable = (value: string): boolean =>
+  value.trim().toUpperCase() === "N/A";
+
+const isValidGovernmentId = (value: string): boolean => {
+  const normalized = value.trim();
+  if (!normalized || isGovernmentIdNotAvailable(normalized)) {
+    return true;
+  }
+  return GOVERNMENT_ID_PATTERN.test(normalized);
+};
+
+const firstNonEmptyValue = (
+  ...candidates: Array<string | null | undefined>
+): string => {
+  for (const candidate of candidates) {
+    const normalized = String(candidate || "").trim();
+    if (normalized) {
+      return normalized;
+    }
+  }
+  return "";
+};
+
 type InfoFieldProps = {
   label: string;
   value: string;
@@ -292,6 +331,17 @@ export default function ViewEmployeeModal({
   const [editSchoolName, setEditSchoolName] = useState("");
   const [editPositionId, setEditPositionId] = useState<number | null>(null);
   const [editLicenseNoPrc, setEditLicenseNoPrc] = useState("");
+  const [editTin, setEditTin] = useState("");
+  const [editGsisBpNumber, setEditGsisBpNumber] = useState("");
+  const [editGsisCrnNumber, setEditGsisCrnNumber] = useState("");
+  const [editPagIbigNumber, setEditPagIbigNumber] = useState("");
+  const [editPhilHealthNumber, setEditPhilHealthNumber] = useState("");
+  const [isTinNotAvailable, setIsTinNotAvailable] = useState(false);
+  const [isGsisBpNotAvailable, setIsGsisBpNotAvailable] = useState(false);
+  const [isGsisCrnNotAvailable, setIsGsisCrnNotAvailable] = useState(false);
+  const [isPagIbigNotAvailable, setIsPagIbigNotAvailable] = useState(false);
+  const [isPhilHealthNotAvailable, setIsPhilHealthNotAvailable] =
+    useState(false);
 
   const [schools, setSchools] = useState<School[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -400,6 +450,45 @@ export default function ViewEmployeeModal({
             setEditSchoolName(data.school_name || "");
             setEditLicenseNoPrc(
               data.prc_license_no || data.license_no_prc || "",
+            );
+
+            const resolvedTin = firstNonEmptyValue(
+              data.tin,
+              data.tin_no,
+              data.tin_number,
+            );
+            const resolvedGsisBp = firstNonEmptyValue(
+              data.gsis_bp_number,
+              data.gsis_bp_no,
+            );
+            const resolvedGsisCrn = firstNonEmptyValue(
+              data.gsis_crn_number,
+              data.gsis_crn_no,
+            );
+            const resolvedPagIbig = firstNonEmptyValue(
+              data.pag_ibig_number,
+              data.pagibig_number,
+            );
+            const resolvedPhilHealth = firstNonEmptyValue(
+              data.philhealth_number,
+              data.phil_health_number,
+            );
+
+            setEditTin(resolvedTin);
+            setEditGsisBpNumber(resolvedGsisBp);
+            setEditGsisCrnNumber(resolvedGsisCrn);
+            setEditPagIbigNumber(resolvedPagIbig);
+            setEditPhilHealthNumber(resolvedPhilHealth);
+            setIsTinNotAvailable(isGovernmentIdNotAvailable(resolvedTin));
+            setIsGsisBpNotAvailable(isGovernmentIdNotAvailable(resolvedGsisBp));
+            setIsGsisCrnNotAvailable(
+              isGovernmentIdNotAvailable(resolvedGsisCrn),
+            );
+            setIsPagIbigNotAvailable(
+              isGovernmentIdNotAvailable(resolvedPagIbig),
+            );
+            setIsPhilHealthNotAvailable(
+              isGovernmentIdNotAvailable(resolvedPhilHealth),
             );
           }
         }
@@ -725,6 +814,23 @@ export default function ViewEmployeeModal({
       });
     }
 
+    const governmentFields = [
+      { field: "TIN", value: editTin },
+      { field: "GSIS BP Number", value: editGsisBpNumber },
+      { field: "GSIS CRN Number", value: editGsisCrnNumber },
+      { field: "PAG-IBIG Number", value: editPagIbigNumber },
+      { field: "PhilHealth Number", value: editPhilHealthNumber },
+    ];
+
+    governmentFields.forEach(({ field, value }) => {
+      if (!isValidGovernmentId(value)) {
+        newErrors.push({
+          field,
+          message: "Use digits and dashes only, with no spaces.",
+        });
+      }
+    });
+
     if (newErrors.length > 0) {
       setErrors(newErrors);
       showToast("Please fix the highlighted fields before saving.", "error");
@@ -772,6 +878,19 @@ export default function ViewEmployeeModal({
           school_id: editSchoolId,
           prc_license_no: editLicenseNoPrc.trim(),
           license_no_prc: editLicenseNoPrc.trim(),
+          tin: isTinNotAvailable ? "N/A" : editTin.trim(),
+          gsis_bp_number: isGsisBpNotAvailable
+            ? "N/A"
+            : editGsisBpNumber.trim(),
+          gsis_crn_number: isGsisCrnNotAvailable
+            ? "N/A"
+            : editGsisCrnNumber.trim(),
+          pag_ibig_number: isPagIbigNotAvailable
+            ? "N/A"
+            : editPagIbigNumber.trim(),
+          philhealth_number: isPhilHealthNotAvailable
+            ? "N/A"
+            : editPhilHealthNumber.trim(),
         }),
       });
 
@@ -809,6 +928,19 @@ export default function ViewEmployeeModal({
               age: computeAge(editBirthdate),
               prc_license_no: editLicenseNoPrc.trim(),
               license_no_prc: editLicenseNoPrc.trim(),
+              tin: isTinNotAvailable ? "N/A" : editTin.trim(),
+              gsis_bp_number: isGsisBpNotAvailable
+                ? "N/A"
+                : editGsisBpNumber.trim(),
+              gsis_crn_number: isGsisCrnNotAvailable
+                ? "N/A"
+                : editGsisCrnNumber.trim(),
+              pag_ibig_number: isPagIbigNotAvailable
+                ? "N/A"
+                : editPagIbigNumber.trim(),
+              philhealth_number: isPhilHealthNotAvailable
+                ? "N/A"
+                : editPhilHealthNumber.trim(),
             }
           : null,
       );
@@ -1475,6 +1607,188 @@ export default function ViewEmployeeModal({
                       className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
                     />
                   </InfoField>
+                </div>
+
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                  <p className="text-sm font-semibold text-gray-700">
+                    Government/Work IDs
+                  </p>
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <InfoField
+                      label="TIN"
+                      value={formatValue(editTin)}
+                      isEditing={isEditing}
+                      errorMessage={getValidationError("TIN")}
+                    >
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={editTin}
+                          onChange={(e) =>
+                            setEditTin(
+                              sanitizeGovernmentIdInput(e.target.value),
+                            )
+                          }
+                          disabled={isTinNotAvailable}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+                          placeholder="Digits and dashes only"
+                        />
+                        <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                          <input
+                            type="checkbox"
+                            checked={isTinNotAvailable}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setIsTinNotAvailable(checked);
+                              setEditTin(checked ? "N/A" : "");
+                            }}
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          Not Available
+                        </label>
+                      </div>
+                    </InfoField>
+
+                    <InfoField
+                      label="GSIS BP Number"
+                      value={formatValue(editGsisBpNumber)}
+                      isEditing={isEditing}
+                      errorMessage={getValidationError("GSIS BP Number")}
+                    >
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={editGsisBpNumber}
+                          onChange={(e) =>
+                            setEditGsisBpNumber(
+                              sanitizeGovernmentIdInput(e.target.value),
+                            )
+                          }
+                          disabled={isGsisBpNotAvailable}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+                          placeholder="Digits and dashes only"
+                        />
+                        <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                          <input
+                            type="checkbox"
+                            checked={isGsisBpNotAvailable}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setIsGsisBpNotAvailable(checked);
+                              setEditGsisBpNumber(checked ? "N/A" : "");
+                            }}
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          Not Available
+                        </label>
+                      </div>
+                    </InfoField>
+
+                    <InfoField
+                      label="GSIS CRN Number"
+                      value={formatValue(editGsisCrnNumber)}
+                      isEditing={isEditing}
+                      errorMessage={getValidationError("GSIS CRN Number")}
+                    >
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={editGsisCrnNumber}
+                          onChange={(e) =>
+                            setEditGsisCrnNumber(
+                              sanitizeGovernmentIdInput(e.target.value),
+                            )
+                          }
+                          disabled={isGsisCrnNotAvailable}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+                          placeholder="Digits and dashes only"
+                        />
+                        <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                          <input
+                            type="checkbox"
+                            checked={isGsisCrnNotAvailable}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setIsGsisCrnNotAvailable(checked);
+                              setEditGsisCrnNumber(checked ? "N/A" : "");
+                            }}
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          Not Available
+                        </label>
+                      </div>
+                    </InfoField>
+
+                    <InfoField
+                      label="PAG-IBIG Number"
+                      value={formatValue(editPagIbigNumber)}
+                      isEditing={isEditing}
+                      errorMessage={getValidationError("PAG-IBIG Number")}
+                    >
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={editPagIbigNumber}
+                          onChange={(e) =>
+                            setEditPagIbigNumber(
+                              sanitizeGovernmentIdInput(e.target.value),
+                            )
+                          }
+                          disabled={isPagIbigNotAvailable}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+                          placeholder="Digits and dashes only"
+                        />
+                        <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                          <input
+                            type="checkbox"
+                            checked={isPagIbigNotAvailable}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setIsPagIbigNotAvailable(checked);
+                              setEditPagIbigNumber(checked ? "N/A" : "");
+                            }}
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          Not Available
+                        </label>
+                      </div>
+                    </InfoField>
+
+                    <InfoField
+                      label="PhilHealth Number"
+                      value={formatValue(editPhilHealthNumber)}
+                      isEditing={isEditing}
+                      errorMessage={getValidationError("PhilHealth Number")}
+                    >
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={editPhilHealthNumber}
+                          onChange={(e) =>
+                            setEditPhilHealthNumber(
+                              sanitizeGovernmentIdInput(e.target.value),
+                            )
+                          }
+                          disabled={isPhilHealthNotAvailable}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+                          placeholder="Digits and dashes only"
+                        />
+                        <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                          <input
+                            type="checkbox"
+                            checked={isPhilHealthNotAvailable}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setIsPhilHealthNotAvailable(checked);
+                              setEditPhilHealthNumber(checked ? "N/A" : "");
+                            }}
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          Not Available
+                        </label>
+                      </div>
+                    </InfoField>
+                  </div>
                 </div>
               </div>
             </div>
