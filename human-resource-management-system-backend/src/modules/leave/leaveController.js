@@ -599,6 +599,7 @@ const applyMonthlyCredit = async ({
       creditedEmployees.push({
         employee_id: emp.id,
         employee_name: fullName,
+        on_leave: Boolean(emp.on_leave),
         period,
         credit: {
           earned_vl: effect.earned_vl,

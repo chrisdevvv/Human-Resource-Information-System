@@ -10,6 +10,7 @@ const API_BASE_URL =
 type SimEmployeeCredit = {
   employee_id: number;
   employee_name: string;
+  on_leave?: boolean;
   projected_balance?: {
     bal_vl: number;
     bal_sl: number;
@@ -106,7 +107,7 @@ export default function MonthlyCredit() {
   const [creditSearch, setCreditSearch] = useState("");
   const [creditSortOrder, setCreditSortOrder] = useState<"az" | "za">("az");
   const [creditTypeFilter, setCreditTypeFilter] = useState<
-    "all" | "teaching" | "non-teaching"
+    "all" | "non-teaching" | "not-on-leave"
   >("all");
   const [skipSearch, setSkipSearch] = useState("");
   const [skipSortOrder, setSkipSortOrder] = useState<"az" | "za">("az");
@@ -290,7 +291,9 @@ export default function MonthlyCredit() {
     const filteredRows = rows.filter((row) => {
       const rowType = "non-teaching" as const;
       const matchesType =
-        creditTypeFilter === "all" || creditTypeFilter === rowType;
+        creditTypeFilter === "all" ||
+        creditTypeFilter === rowType ||
+        (creditTypeFilter === "not-on-leave" && !row.on_leave);
       const matchesSearch =
         !query ||
         row.employee_name.toLowerCase().includes(query) ||
@@ -468,18 +471,18 @@ export default function MonthlyCredit() {
                     value={creditTypeFilter}
                     onChange={(e) =>
                       setCreditTypeFilter(
-                        e.target.value === "teaching"
-                          ? "teaching"
-                          : e.target.value === "non-teaching"
+                        e.target.value === "non-teaching"
                             ? "non-teaching"
+                            : e.target.value === "not-on-leave"
+                              ? "not-on-leave"
                             : "all",
                       )
                     }
                     className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="all">All Types</option>
-                    <option value="teaching">Teaching</option>
                     <option value="non-teaching">Non-Teaching</option>
+                    <option value="not-on-leave">Not on leave</option>
                   </select>
                 </div>
               </div>
