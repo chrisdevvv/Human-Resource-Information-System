@@ -72,7 +72,9 @@ const reasonLabel = (reason: string) => {
 };
 
 const isTeachingRelatedReason = (reason: string) => {
-  const normalized = String(reason || "").trim().toLowerCase();
+  const normalized = String(reason || "")
+    .trim()
+    .toLowerCase();
   return (
     normalized === "teaching_employee" ||
     normalized === "not_non_teaching_employee" ||
@@ -81,8 +83,12 @@ const isTeachingRelatedReason = (reason: string) => {
 };
 
 const isOnLeaveReason = (reason: string) => {
-  const normalized = String(reason || "").trim().toLowerCase();
-  return normalized === "on_leave_during_period" || normalized.includes("on leave");
+  const normalized = String(reason || "")
+    .trim()
+    .toLowerCase();
+  return (
+    normalized === "on_leave_during_period" || normalized.includes("on leave")
+  );
 };
 
 const MONTH_OPTIONS = [
@@ -472,9 +478,9 @@ export default function MonthlyCredit() {
                     onChange={(e) =>
                       setCreditTypeFilter(
                         e.target.value === "non-teaching"
-                            ? "non-teaching"
-                            : e.target.value === "not-on-leave"
-                              ? "not-on-leave"
+                          ? "non-teaching"
+                          : e.target.value === "not-on-leave"
+                            ? "not-on-leave"
                             : "all",
                       )
                     }
@@ -606,7 +612,7 @@ export default function MonthlyCredit() {
                               ? "teaching-related"
                               : e.target.value === "on-leave"
                                 ? "on-leave"
-                            : "all",
+                                : "all",
                       )
                     }
                     className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"

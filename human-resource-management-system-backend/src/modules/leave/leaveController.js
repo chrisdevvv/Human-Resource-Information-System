@@ -101,7 +101,10 @@ const normalizePeriod = (yearInput, monthInput) => {
 
 const normalizeEmployeeType = (employeeType) => {
   if (typeof employeeType !== "string") return "";
-  return employeeType.trim().toLowerCase().replace(/[_\s]+/g, "-");
+  return employeeType
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s]+/g, "-");
 };
 
 const getMonthlyCreditByEmployeeType = (employeeType) => {
@@ -1525,8 +1528,7 @@ const simulateMonthlyCredit = async (req, res) => {
   try {
     if (!["SUPER_ADMIN", "ADMIN"].includes(req.user.role)) {
       return res.status(403).json({
-        message:
-          "Only Admin or Super Admin can simulate monthly leave credit",
+        message: "Only Admin or Super Admin can simulate monthly leave credit",
       });
     }
 
