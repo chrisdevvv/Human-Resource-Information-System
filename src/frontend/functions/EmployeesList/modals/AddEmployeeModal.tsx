@@ -910,7 +910,6 @@ export default function AddEmployeeModal({
       });
     }
 
-
     const school = resolveSchool(fieldErrors);
     if (!school) {
       setValidationErrors(fieldErrors);
@@ -1693,7 +1692,6 @@ export default function AddEmployeeModal({
                   placeholder="PRC License Number"
                 />
               </div>
-
             </div>
           )}
 
