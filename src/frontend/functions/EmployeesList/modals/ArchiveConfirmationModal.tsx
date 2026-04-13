@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Archive, XCircle } from "lucide-react";
+import { createClearHandler } from "../../../utils/clearFormUtils";
 
 type ArchiveConfirmationModalProps = {
   isOpen: boolean;
@@ -108,6 +109,22 @@ function ArchiveConfirmationModal({
                 <XCircle size={14} />
                 Cancel
               </span>
+            </button>
+            <button
+              type="button"
+              onClick={createClearHandler(
+                () => {
+                  setPassword("");
+                  setArchiveReason("");
+                  setTouched(false);
+                  setReasonTouched(false);
+                },
+                !!(password || archiveReason),
+              )}
+              disabled={isLoading}
+              className="order-first mr-auto cursor-pointer rounded px-3 py-1.5 text-sm font-medium bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100 disabled:opacity-60"
+            >
+              <span className="inline-flex items-center gap-1">Clear All</span>
             </button>
             <button
               type="submit"

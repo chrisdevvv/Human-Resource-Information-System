@@ -10,6 +10,7 @@ import {
   XCircle,
 } from "lucide-react";
 import ConfirmationModal from "../../super-admin/components/ConfirmationModal";
+import { createClearHandler } from "../../utils/clearFormUtils";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -494,6 +495,34 @@ export default function EncoderAddUserModal({
                 <XCircle size={14} />
                 {step === 1 ? "Cancel" : "Back"}
               </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={createClearHandler(
+                () => {
+                  setFirstName("");
+                  setLastName("");
+                  setEmail("");
+                  setBirthdate("");
+                  setPassword("");
+                  setConfirmPassword("");
+                  setError("");
+                  setFirstNameError("");
+                  setLastNameError("");
+                  setEmailError("");
+                  setBirthdateError("");
+                  setPasswordError("");
+                  setConfirmPasswordError("");
+                  setStep(1);
+                  setShowConfirm(false);
+                },
+                !!(firstName || lastName || email || password),
+              )}
+              disabled={loading}
+              className="order-first mr-auto px-3 py-1.5 bg-gray-50 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition text-sm font-medium cursor-pointer disabled:opacity-60"
+            >
+              <span className="inline-flex items-center gap-1">Clear All</span>
             </button>
 
             {step === 1 ? (

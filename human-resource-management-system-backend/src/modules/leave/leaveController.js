@@ -659,7 +659,8 @@ const applyMonthlyCredit = async ({
         skippedEmployees.push({
           employee_id: emp.id,
           employee_name: fullName,
-          reason: "NOT_NON_TEACHING_EMPLOYEE",
+          reason:
+            "This employee is teaching personnel, and monthly leave credit applies only to non-teaching employees.",
         });
       }
     }

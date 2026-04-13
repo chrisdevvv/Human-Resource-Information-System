@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import ChangesToast from "./ChangesToast";
 import SaveChanges from "./SaveChanges";
+import { createClearHandler } from "../../../utils/clearFormUtils";
 
 type School = {
   id: number;
@@ -42,6 +43,58 @@ type Sex = {
 type ValidationError = {
   field: string;
   message: string;
+};
+
+type EditSnapshot = {
+  firstName: string;
+  middleName: string;
+  middleInitial: string;
+  lastName: string;
+  birthdate: string;
+  personalEmail: string;
+  mobileNumber: string;
+  homeAddress: string;
+  placeOfBirth: string;
+  civilStatus: string;
+  civilStatusId: number | null;
+  sex: string;
+  sexId: number | null;
+  employeeNo: string;
+  workEmail: string;
+  district: string;
+  position: string;
+  plantillaNo: string;
+  employeeType: "teaching" | "non-teaching" | "teaching-related";
+  schoolId: number | null;
+  schoolName: string;
+  positionId: number | null;
+  licenseNoPrc: string;
+  tin: string;
+  gsisBpNo: string;
+  gsisCrnNo: string;
+  pagibigNo: string;
+  philhealthNo: string;
+  tinNotAvailable: boolean;
+  gsisBpNotAvailable: boolean;
+  gsisCrnNotAvailable: boolean;
+  pagibigNotAvailable: boolean;
+  philhealthNotAvailable: boolean;
+};
+
+type EmployeeListResponse = {
+  data?: Array<
+    Partial<EmployeeDetailsResponse> & {
+      id?: number;
+    }
+  >;
+  message?: string;
+};
+
+type EmployeeDetailsApiResponse = {
+  data?: Partial<EmployeeDetailsResponse> & {
+    id?: number;
+  };
+  message?: string;
 };
 
 type EmployeeDetailsResponse = {
@@ -207,6 +260,12 @@ const isValidDepEdEmail = (value: string): boolean => {
   return /^[^\s@]+@deped\.gov\.ph$/.test(trimmed);
 };
 
+const normalizeMiddleInitialInput = (value: string): string =>
+  value
+    .replace(/[^a-zA-Z.]/g, "")
+    .toUpperCase()
+    .slice(0, 2);
+
 type IdMaskConfig = {
   maxDigits: number;
   groups: number[];
@@ -261,6 +320,14 @@ const normalizePhilhealth = (value: string): string =>
 
 const normalize12Digits = (value: string): string =>
   stripToDigits(value).slice(0, 12);
+
+const normalizeUniqueIdentifier = (value: string): string =>
+  value.trim().toUpperCase().replace(/[\s-]/g, "");
+
+const hasComparableUniqueValue = (value: string): boolean => {
+  const normalized = value.trim();
+  return Boolean(normalized) && normalized.toUpperCase() !== "N/A";
+};
 
 const isPhilhealthValid = (value: string): boolean => {
   const normalized = value.trim();
@@ -401,6 +468,44 @@ export default function ViewEmployeeModal({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<"success" | "error">("success");
   const [isSaveConfirmOpen, setIsSaveConfirmOpen] = useState(false);
+  const [initialEditSnapshot, setInitialEditSnapshot] =
+    useState<EditSnapshot | null>(null);
+
+  const applyEditSnapshot = (snapshot: EditSnapshot) => {
+    setEditFirstName(snapshot.firstName);
+    setEditMiddleName(snapshot.middleName);
+    setEditMiddleInitial(snapshot.middleInitial);
+    setEditLastName(snapshot.lastName);
+    setEditBirthdate(snapshot.birthdate);
+    setEditPersonalEmail(snapshot.personalEmail);
+    setEditMobileNumber(snapshot.mobileNumber);
+    setEditHomeAddress(snapshot.homeAddress);
+    setEditPlaceOfBirth(snapshot.placeOfBirth);
+    setEditCivilStatus(snapshot.civilStatus);
+    setEditCivilStatusId(snapshot.civilStatusId);
+    setEditSex(snapshot.sex);
+    setEditSexId(snapshot.sexId);
+    setEditEmployeeNo(snapshot.employeeNo);
+    setEditWorkEmail(snapshot.workEmail);
+    setEditDistrict(snapshot.district);
+    setEditPosition(snapshot.position);
+    setEditPlantillaNo(snapshot.plantillaNo);
+    setEditEmployeeType(snapshot.employeeType);
+    setEditSchoolId(snapshot.schoolId);
+    setEditSchoolName(snapshot.schoolName);
+    setEditPositionId(snapshot.positionId);
+    setEditLicenseNoPrc(snapshot.licenseNoPrc);
+    setEditTin(snapshot.tin);
+    setEditGsisBpNo(snapshot.gsisBpNo);
+    setEditGsisCrnNo(snapshot.gsisCrnNo);
+    setEditPagibigNo(snapshot.pagibigNo);
+    setEditPhilhealthNo(snapshot.philhealthNo);
+    setTinNotAvailable(snapshot.tinNotAvailable);
+    setGsisBpNotAvailable(snapshot.gsisBpNotAvailable);
+    setGsisCrnNotAvailable(snapshot.gsisCrnNotAvailable);
+    setPagibigNotAvailable(snapshot.pagibigNotAvailable);
+    setPhilhealthNotAvailable(snapshot.philhealthNotAvailable);
+  };
 
   const showToast = (message: string, type: "success" | "error") => {
     setToastMessage(message);
@@ -467,87 +572,65 @@ export default function ViewEmployeeModal({
 
           const data = body.data;
           if (data) {
-            setEditFirstName(data.first_name || "");
-            setEditMiddleName(data.middle_name || "");
-            setEditMiddleInitial(data.middle_initial || "");
-            setEditLastName(data.last_name || "");
-            setEditBirthdate(data.birthdate || "");
-            setEditPersonalEmail(data.email || "");
-            setEditMobileNumber(data.mobile_number || "");
-            setEditHomeAddress(data.home_address || "");
-            setEditPlaceOfBirth(data.place_of_birth || "");
-            setEditCivilStatus(data.civil_status || "");
-            setEditCivilStatusId(data.civil_status_id || null);
-            setEditSex(data.sex || "");
-            setEditSexId(data.sex_id || null);
-            setEditEmployeeNo(data.employee_no || "");
-            setEditWorkEmail(data.work_email || "");
-            setEditDistrict(data.district || data.work_district || "");
-            setEditPosition(data.position || "");
-            setEditPositionId(data.position_id || null);
-            setEditPlantillaNo(data.plantilla_no || "");
-            setEditEmployeeType(data.employee_type || "non-teaching");
-            setEditSchoolId(data.school_id || null);
-            setEditSchoolName(data.school_name || "");
-            setEditLicenseNoPrc(
-              data.prc_license_no || data.license_no_prc || "",
-            );
             const nextTin = String(data.tin || "").trim();
             const nextGsisBpNo = String(data.gsis_bp_no || "").trim();
             const nextGsisCrnNo = String(data.gsis_crn_no || "").trim();
             const nextPagibigNo = String(data.pagibig_no || "").trim();
             const nextPhilhealthNo = String(data.philhealth_no || "").trim();
 
-            setEditTin(
-              nextTin.toUpperCase() === "N/A"
-                ? "N/A"
-                : formatMaskedId(nextTin, GOV_ID_MASKS.tin),
-            );
-            setEditGsisBpNo(
-              nextGsisBpNo.toUpperCase() === "N/A"
-                ? "N/A"
-                : formatGsisBp(nextGsisBpNo),
-            );
-            setEditGsisCrnNo(
-              nextGsisCrnNo.toUpperCase() === "N/A"
-                ? "N/A"
-                : normalize12Digits(nextGsisCrnNo),
-            );
-            setEditPagibigNo(
-              nextPagibigNo.toUpperCase() === "N/A"
-                ? "N/A"
-                : normalize12Digits(nextPagibigNo),
-            );
-            setEditPhilhealthNo(
-              nextPhilhealthNo.toUpperCase() === "N/A"
-                ? "N/A"
-                : normalizePhilhealth(nextPhilhealthNo),
-            );
-            setTinNotAvailable(
-              String(data.tin || "")
-                .trim()
-                .toUpperCase() === "N/A",
-            );
-            setGsisBpNotAvailable(
-              String(data.gsis_bp_no || "")
-                .trim()
-                .toUpperCase() === "N/A",
-            );
-            setGsisCrnNotAvailable(
-              String(data.gsis_crn_no || "")
-                .trim()
-                .toUpperCase() === "N/A",
-            );
-            setPagibigNotAvailable(
-              String(data.pagibig_no || "")
-                .trim()
-                .toUpperCase() === "N/A",
-            );
-            setPhilhealthNotAvailable(
-              String(data.philhealth_no || "")
-                .trim()
-                .toUpperCase() === "N/A",
-            );
+            const snapshot: EditSnapshot = {
+              firstName: data.first_name || "",
+              middleName: data.middle_name || "",
+              middleInitial: data.middle_initial || "",
+              lastName: data.last_name || "",
+              birthdate: data.birthdate || "",
+              personalEmail: data.email || "",
+              mobileNumber: data.mobile_number || "",
+              homeAddress: data.home_address || "",
+              placeOfBirth: data.place_of_birth || "",
+              civilStatus: data.civil_status || "",
+              civilStatusId: data.civil_status_id || null,
+              sex: data.sex || "",
+              sexId: data.sex_id || null,
+              employeeNo: data.employee_no || "",
+              workEmail: data.work_email || "",
+              district: data.district || data.work_district || "",
+              position: data.position || "",
+              plantillaNo: data.plantilla_no || "",
+              employeeType: data.employee_type || "non-teaching",
+              schoolId: data.school_id || null,
+              schoolName: data.school_name || "",
+              positionId: data.position_id || null,
+              licenseNoPrc: data.prc_license_no || data.license_no_prc || "",
+              tin:
+                nextTin.toUpperCase() === "N/A"
+                  ? "N/A"
+                  : formatMaskedId(nextTin, GOV_ID_MASKS.tin),
+              gsisBpNo:
+                nextGsisBpNo.toUpperCase() === "N/A"
+                  ? "N/A"
+                  : formatGsisBp(nextGsisBpNo),
+              gsisCrnNo:
+                nextGsisCrnNo.toUpperCase() === "N/A"
+                  ? "N/A"
+                  : normalize12Digits(nextGsisCrnNo),
+              pagibigNo:
+                nextPagibigNo.toUpperCase() === "N/A"
+                  ? "N/A"
+                  : normalize12Digits(nextPagibigNo),
+              philhealthNo:
+                nextPhilhealthNo.toUpperCase() === "N/A"
+                  ? "N/A"
+                  : normalizePhilhealth(nextPhilhealthNo),
+              tinNotAvailable: nextTin.toUpperCase() === "N/A",
+              gsisBpNotAvailable: nextGsisBpNo.toUpperCase() === "N/A",
+              gsisCrnNotAvailable: nextGsisCrnNo.toUpperCase() === "N/A",
+              pagibigNotAvailable: nextPagibigNo.toUpperCase() === "N/A",
+              philhealthNotAvailable: nextPhilhealthNo.toUpperCase() === "N/A",
+            };
+
+            applyEditSnapshot(snapshot);
+            setInitialEditSnapshot(snapshot);
           }
         }
       } catch (err) {
@@ -567,6 +650,7 @@ export default function ViewEmployeeModal({
 
     setDetails(null);
     setIsEditing(false);
+    setInitialEditSnapshot(null);
     setEditError(null);
     setErrors([]);
     setActiveSection("personal");
@@ -727,6 +811,52 @@ export default function ViewEmployeeModal({
   const getValidationError = (field: string): string | null =>
     errors.find((error) => error.field === field)?.message ?? null;
 
+  const hasEditChanges =
+    isEditing &&
+    initialEditSnapshot !== null &&
+    JSON.stringify({
+      firstName: editFirstName,
+      middleName: editMiddleName,
+      middleInitial: editMiddleInitial,
+      lastName: editLastName,
+      birthdate: editBirthdate,
+      personalEmail: editPersonalEmail,
+      mobileNumber: editMobileNumber,
+      homeAddress: editHomeAddress,
+      placeOfBirth: editPlaceOfBirth,
+      civilStatus: editCivilStatus,
+      civilStatusId: editCivilStatusId,
+      sex: editSex,
+      sexId: editSexId,
+      employeeNo: editEmployeeNo,
+      workEmail: editWorkEmail,
+      district: editDistrict,
+      position: editPosition,
+      plantillaNo: editPlantillaNo,
+      employeeType: editEmployeeType,
+      schoolId: editSchoolId,
+      schoolName: editSchoolName,
+      positionId: editPositionId,
+      licenseNoPrc: editLicenseNoPrc,
+      tin: editTin,
+      gsisBpNo: editGsisBpNo,
+      gsisCrnNo: editGsisCrnNo,
+      pagibigNo: editPagibigNo,
+      philhealthNo: editPhilhealthNo,
+      tinNotAvailable,
+      gsisBpNotAvailable,
+      gsisCrnNotAvailable,
+      pagibigNotAvailable,
+      philhealthNotAvailable,
+    }) !== JSON.stringify(initialEditSnapshot);
+
+  const handleClearEditChanges = () => {
+    if (!initialEditSnapshot) return;
+    applyEditSnapshot(initialEditSnapshot);
+    setErrors([]);
+    setEditError(null);
+  };
+
   const handleSaveChanges = async () => {
     setEditError(null);
     const newErrors: ValidationError[] = [];
@@ -753,6 +883,13 @@ export default function ViewEmployeeModal({
       newErrors.push({
         field: "Middle Initial",
         message: "Middle initial is required",
+      });
+    }
+
+    if (editMiddleInitial.trim().length > 2) {
+      newErrors.push({
+        field: "M.I.",
+        message: "M.I. must be at most 2 characters.",
       });
     }
 
@@ -899,6 +1036,146 @@ export default function ViewEmployeeModal({
       return;
     }
 
+    const checkUniqueIdentifiers = async (): Promise<ValidationError[]> => {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        return [
+          {
+            field: "Work Information",
+            message: "Unable to validate unique fields. Please log in again.",
+          },
+        ];
+      }
+
+      const uniqueTargets = [
+        { field: "Employee Number", key: "employee_no", value: editEmployeeNo },
+        {
+          field: "Plantilla Number",
+          key: "plantilla_no",
+          value: editPlantillaNo,
+        },
+        {
+          field: "License No PRC",
+          key: "prc_license_no",
+          value: editLicenseNoPrc,
+        },
+        { field: "TIN", key: "tin", value: editTin },
+        { field: "GSIS BP Number", key: "gsis_bp_no", value: editGsisBpNo },
+        { field: "GSIS CRN Number", key: "gsis_crn_no", value: editGsisCrnNo },
+        { field: "PAG-IBIG Number", key: "pagibig_no", value: editPagibigNo },
+        {
+          field: "PhilHealth Number",
+          key: "philhealth_no",
+          value: editPhilhealthNo,
+        },
+      ] as const;
+
+      try {
+        const listResponse = await fetch(`${API_BASE}/api/employees/`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const listBody = (await listResponse.json()) as EmployeeListResponse;
+        if (!listResponse.ok) {
+          return [
+            {
+              field: "Work Information",
+              message:
+                listBody.message ||
+                "Unable to validate unique fields. Please try again.",
+            },
+          ];
+        }
+
+        let employees = Array.isArray(listBody.data) ? listBody.data : [];
+        const hasUniqueFieldsInList = employees.some(
+          (row) =>
+            row.employee_no !== undefined ||
+            row.plantilla_no !== undefined ||
+            row.prc_license_no !== undefined ||
+            row.tin !== undefined ||
+            row.gsis_bp_no !== undefined ||
+            row.gsis_crn_no !== undefined ||
+            row.pagibig_no !== undefined ||
+            row.philhealth_no !== undefined,
+        );
+
+        if (!hasUniqueFieldsInList) {
+          const ids = employees
+            .map((row) => Number(row.id))
+            .filter((id) => Number.isFinite(id) && id > 0);
+
+          const detailResponses = await Promise.all(
+            ids.map(async (id) => {
+              const response = await fetch(`${API_BASE}/api/employees/${id}`, {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+              if (!response.ok) return null;
+              const body = (await response
+                .json()
+                .catch(() => ({}))) as EmployeeDetailsApiResponse;
+              return body.data || null;
+            }),
+          );
+
+          employees = detailResponses.filter(
+            (row): row is NonNullable<typeof row> => Boolean(row),
+          );
+        }
+
+        const duplicateErrors: ValidationError[] = [];
+
+        for (const target of uniqueTargets) {
+          if (!hasComparableUniqueValue(target.value)) {
+            continue;
+          }
+
+          const targetNormalized = normalizeUniqueIdentifier(target.value);
+          const isDuplicate = employees.some((row) => {
+            if (Number(row.id) === Number(employee.id)) {
+              return false;
+            }
+            const candidate = String(row[target.key] || "").trim();
+            if (!hasComparableUniqueValue(candidate)) {
+              return false;
+            }
+            return normalizeUniqueIdentifier(candidate) === targetNormalized;
+          });
+
+          if (isDuplicate) {
+            duplicateErrors.push({
+              field: target.field,
+              message: `${target.field} already exists. Please use a unique value.`,
+            });
+          }
+        }
+
+        return duplicateErrors;
+      } catch {
+        return [
+          {
+            field: "Work Information",
+            message: "Unable to validate unique fields. Please try again.",
+          },
+        ];
+      }
+    };
+
+    const duplicateErrors = await checkUniqueIdentifiers();
+    if (duplicateErrors.length > 0) {
+      setErrors(duplicateErrors);
+      showToast("Please fix the highlighted fields before saving.", "error");
+      return;
+    }
+
     setErrors([]);
 
     try {
@@ -918,7 +1195,7 @@ export default function ViewEmployeeModal({
         body: JSON.stringify({
           first_name: editFirstName.trim(),
           middle_name: editMiddleName.trim(),
-          middle_initial: editMiddleInitial.trim(),
+          middle_initial: normalizeMiddleInitialInput(editMiddleInitial.trim()),
           last_name: editLastName.trim(),
           birthdate: editBirthdate,
           email: editPersonalEmail.trim(),
@@ -959,7 +1236,9 @@ export default function ViewEmployeeModal({
               ...prev,
               first_name: editFirstName.trim(),
               middle_name: editMiddleName.trim(),
-              middle_initial: editMiddleInitial.trim(),
+              middle_initial: normalizeMiddleInitialInput(
+                editMiddleInitial.trim(),
+              ),
               last_name: editLastName.trim(),
               birthdate: editBirthdate,
               email: editPersonalEmail.trim(),
@@ -1244,7 +1523,12 @@ export default function ViewEmployeeModal({
                     <input
                       type="text"
                       value={editMiddleInitial}
-                      onChange={(e) => setEditMiddleInitial(e.target.value)}
+                      onChange={(e) =>
+                        setEditMiddleInitial(
+                          normalizeMiddleInitialInput(e.target.value),
+                        )
+                      }
+                      maxLength={2}
                       className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
                     />
                   </InfoField>
@@ -1853,6 +2137,18 @@ export default function ViewEmployeeModal({
 
             {isEditing && (
               <>
+                <button
+                  type="button"
+                  onClick={createClearHandler(
+                    handleClearEditChanges,
+                    hasEditChanges,
+                  )}
+                  disabled={isSaving}
+                  className="mr-auto inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-gray-300 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Clear All
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import type { LeaveHistoryRecord, UpdateLeavePayload } from "../leaveApi";
+import { createClearHandler } from "../../../utils/clearFormUtils";
 
 type EditLeaveModalProps = {
   isOpen: boolean;
@@ -34,6 +35,9 @@ export default function EditLeaveModal({
   isSaving = false,
 }: EditLeaveModalProps) {
   const [form, setForm] = useState<EditLeaveFormValues | null>(null);
+  const [initialForm, setInitialForm] = useState<EditLeaveFormValues | null>(
+    null,
+  );
 
   const formatNumber = (value: number) => {
     const safeValue = Number.isFinite(value) ? value : 0;
@@ -47,13 +51,14 @@ export default function EditLeaveModal({
   useEffect(() => {
     if (!leave) {
       setForm(null);
+      setInitialForm(null);
       return;
     }
 
     const isMonetization =
       (leave.particulars || "").trim().toLowerCase() === "monetization";
 
-    setForm({
+    const formData = {
       period_of_leave: leave.periodOfLeave || "",
       particulars: isMonetization ? "Monetization" : leave.particulars || "",
       isMonetization,
@@ -63,7 +68,10 @@ export default function EditLeaveModal({
       earned_sl: Number(leave.earnedSl),
       abs_with_pay_sl: Number(leave.absWithPaySl),
       abs_without_pay_sl: Number(leave.absWithoutPaySl),
-    });
+    };
+
+    setForm(formData);
+    setInitialForm(formData);
   }, [leave]);
 
   if (!isOpen || !leave || !form) {
@@ -137,6 +145,12 @@ export default function EditLeaveModal({
       abs_with_pay_sl: Number(form.abs_with_pay_sl || 0),
       abs_without_pay_sl: Number(form.abs_without_pay_sl || 0),
     });
+  }
+
+  function handleClearAllFields() {
+    if (initialForm) {
+      setForm(initialForm);
+    }
   }
 
   const inputClass =
@@ -322,6 +336,20 @@ export default function EditLeaveModal({
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={createClearHandler(
+                handleClearAllFields,
+                form !== null && initialForm !== null
+                  ? JSON.stringify(form) !== JSON.stringify(initialForm)
+                  : false,
+              )}
+              disabled={isSaving}
+              className="mr-auto cursor-pointer rounded-lg border border-gray-300 bg-gray-50 px-4 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Clear All
+            </button>
+
             <button
               type="button"
               onClick={onClose}

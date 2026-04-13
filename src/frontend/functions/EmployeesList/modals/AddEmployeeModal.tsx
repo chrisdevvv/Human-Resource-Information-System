@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, UserPlus, XCircle } from "lucide-react";
 import ConfirmationModal from "../../../super-admin/components/ConfirmationModal";
+import { createClearHandler } from "../../../utils/clearFormUtils";
 
 type School = {
   id: number;
@@ -72,6 +73,22 @@ type CreateEmployeeResponse = {
   message?: string;
 };
 
+type EmployeeRecordResponse = {
+  data?: Array<
+    Partial<PendingEmployeePayload> & {
+      id?: number;
+    }
+  >;
+  message?: string;
+};
+
+type EmployeeDetailsRecordResponse = {
+  data?: Partial<PendingEmployeePayload> & {
+    id?: number;
+  };
+  message?: string;
+};
+
 type PendingEmployeePayload = {
   first_name: string;
   middle_name: string;
@@ -118,7 +135,7 @@ const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
 const NAME_PATTERN = /^[A-Za-z.\s]+$/;
-const MIDDLE_INITIAL_PATTERN = /^[A-Za-z.\s]+$/;
+const MIDDLE_INITIAL_PATTERN = /^[A-Z.]{1,2}$/;
 const MOBILE_PATTERN = /^\d{11}$/;
 const EMPLOYEE_NO_PATTERN = /^\d{7}$/;
 type IdMaskConfig = {
@@ -137,6 +154,11 @@ const GOV_ID_MASKS = {
 const stripToDigits = (value: string): string => value.replace(/\D/g, "");
 const stripToAlphaNumericUpper = (value: string): string =>
   value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+const normalizeMiddleInitialInput = (value: string): string =>
+  value
+    .replace(/[^a-zA-Z.]/g, "")
+    .toUpperCase()
+    .slice(0, 2);
 
 const formatMaskedId = (value: string, config: IdMaskConfig): string => {
   const digits = stripToDigits(value).slice(0, config.maxDigits);
@@ -175,6 +197,14 @@ const normalizePhilhealth = (value: string): string =>
 
 const normalize12Digits = (value: string): string =>
   stripToDigits(value).slice(0, 12);
+
+const normalizeUniqueIdentifier = (value: string): string =>
+  value.trim().toUpperCase().replace(/[\s-]/g, "");
+
+const hasComparableUniqueValue = (value: string): boolean => {
+  const normalized = value.trim();
+  return Boolean(normalized) && normalized.toUpperCase() !== "N/A";
+};
 
 const isPhilhealthValid = (value: string): boolean => {
   const normalized = value.trim();
@@ -781,7 +811,7 @@ export default function AddEmployeeModal({
     const first = firstName.trim();
     const last = lastName.trim();
     const middle = middleName.trim();
-    const mi = middleInitial.trim();
+    const mi = normalizeMiddleInitialInput(middleInitial.trim());
     const pEmail = personalEmail.trim();
     const mobile = mobileNumber.trim();
     const address = homeAddress.trim();
@@ -838,7 +868,7 @@ export default function AddEmployeeModal({
     if (!noMiddleName && mi && !MIDDLE_INITIAL_PATTERN.test(mi)) {
       fieldErrors.push({
         field: "M.I.",
-        message: "M.I. must use letters, spaces, or dots only.",
+        message: "M.I. must be letters/dots only, max 2 characters.",
       });
     }
 
@@ -1063,7 +1093,125 @@ export default function AddEmployeeModal({
     setStep("personal");
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const checkUniqueIdentifiers = async (): Promise<ValidationError[]> => {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      return [
+        {
+          field: "Work Information",
+          message: "Unable to validate unique fields. Please log in again.",
+        },
+      ];
+    }
+
+    const uniqueTargets = [
+      { field: "Employee Number", key: "employee_no", value: employeeNo },
+      { field: "Plantilla Number", key: "plantilla_no", value: plantillaNo },
+      { field: "License No PRC", key: "prc_license_no", value: licenseNoPrc },
+      { field: "TIN", key: "tin", value: tin },
+      { field: "GSIS BP Number", key: "gsis_bp_no", value: gsisBpNo },
+      { field: "GSIS CRN Number", key: "gsis_crn_no", value: gsisCrnNo },
+      { field: "PAG-IBIG Number", key: "pagibig_no", value: pagibigNo },
+      { field: "PhilHealth Number", key: "philhealth_no", value: philhealthNo },
+    ] as const;
+
+    try {
+      const listResponse = await fetch(`${API_BASE}/api/employees/`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const listBody = (await listResponse.json()) as EmployeeRecordResponse;
+      if (!listResponse.ok) {
+        return [
+          {
+            field: "Work Information",
+            message:
+              listBody.message ||
+              "Unable to validate unique fields. Please try again.",
+          },
+        ];
+      }
+
+      let employees = Array.isArray(listBody.data) ? listBody.data : [];
+      const hasUniqueFieldsInList = employees.some(
+        (row) =>
+          row.employee_no !== undefined ||
+          row.plantilla_no !== undefined ||
+          row.prc_license_no !== undefined ||
+          row.tin !== undefined ||
+          row.gsis_bp_no !== undefined ||
+          row.gsis_crn_no !== undefined ||
+          row.pagibig_no !== undefined ||
+          row.philhealth_no !== undefined,
+      );
+
+      if (!hasUniqueFieldsInList) {
+        const ids = employees
+          .map((row) => Number(row.id))
+          .filter((id) => Number.isFinite(id) && id > 0);
+
+        const detailResponses = await Promise.all(
+          ids.map(async (id) => {
+            const response = await fetch(`${API_BASE}/api/employees/${id}`, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            });
+            if (!response.ok) return null;
+            const body = (await response
+              .json()
+              .catch(() => ({}))) as EmployeeDetailsRecordResponse;
+            return body.data || null;
+          }),
+        );
+
+        employees = detailResponses.filter(
+          (row): row is NonNullable<typeof row> => Boolean(row),
+        );
+      }
+
+      const duplicateErrors: ValidationError[] = [];
+
+      for (const target of uniqueTargets) {
+        if (!hasComparableUniqueValue(target.value)) {
+          continue;
+        }
+
+        const targetNormalized = normalizeUniqueIdentifier(target.value);
+        const isDuplicate = employees.some((row) => {
+          const candidate = String(row[target.key] || "").trim();
+          if (!hasComparableUniqueValue(candidate)) {
+            return false;
+          }
+          return normalizeUniqueIdentifier(candidate) === targetNormalized;
+        });
+
+        if (isDuplicate) {
+          duplicateErrors.push({
+            field: target.field,
+            message: `${target.field} already exists. Please use a unique value.`,
+          });
+        }
+      }
+
+      return duplicateErrors;
+    } catch {
+      return [
+        {
+          field: "Work Information",
+          message: "Unable to validate unique fields. Please try again.",
+        },
+      ];
+    }
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!validateStepOne()) {
@@ -1104,12 +1252,22 @@ export default function AddEmployeeModal({
       return;
     }
 
+    const duplicateErrors = await checkUniqueIdentifiers();
+    if (duplicateErrors.length > 0) {
+      setValidationErrors(duplicateErrors);
+      setErrorMessage(null);
+      setStep("work");
+      return;
+    }
+
     setPendingPayload({
       first_name: firstName.trim(),
       middle_name: noMiddleName ? "N/A" : middleName.trim(),
       no_middle_name: noMiddleName,
       last_name: lastName.trim(),
-      middle_initial: noMiddleName ? "N/A" : middleInitial.trim(),
+      middle_initial: noMiddleName
+        ? "N/A"
+        : normalizeMiddleInitialInput(middleInitial.trim()),
       personal_email: personalEmail.trim(),
       email: personalEmail.trim(),
       mobile_number: mobileNumber.trim(),
@@ -1227,6 +1385,57 @@ export default function AddEmployeeModal({
     setIsConfirmOpen(false);
   };
 
+  const handleClearAllFields = () => {
+    // Reset personal information fields
+    setFirstName("");
+    setLastName("");
+    setMiddleName("");
+    setMiddleInitial("");
+    setNoMiddleName(false);
+    setBirthdate("");
+    setPersonalEmail("");
+    setMobileNumber("");
+    setHomeAddress("");
+    setPlaceOfBirth("");
+    setSelectedCivilStatusId(null);
+    setSelectedSexId(null);
+
+    // Reset work information fields
+    setEmployeeNo("");
+    setWorkEmail("");
+    setPlantillaNo("");
+    setEmployeeType("non-teaching");
+    setSelectedPositionId(null);
+    setPositionSearch("");
+    setShowPositionDropdown(false);
+    setSelectedDistrictId(null);
+    setDistrictSearch("");
+    setShowDistrictDropdown(false);
+    setSchoolId(null);
+    setSchoolInputValue("");
+    setShowSchoolDropdown(false);
+
+    // Reset government IDs
+    setLicenseNoPrc("");
+    setTin("");
+    setGsisBpNo("");
+    setGsisCrnNo("");
+    setPagibigNo("");
+    setPhilhealthNo("");
+    setTinNotAvailable(false);
+    setGsisBpNotAvailable(false);
+    setGsisCrnNotAvailable(false);
+    setPagibigNotAvailable(false);
+    setPhilhealthNotAvailable(false);
+
+    // Reset form state
+    setStep("personal");
+    setErrorMessage(null);
+    setValidationErrors([]);
+    setIsConfirmOpen(false);
+    setPendingPayload(null);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-blue-200 bg-white p-5 shadow-2xl sm:p-6">
@@ -1338,8 +1547,13 @@ export default function AddEmployeeModal({
                   <input
                     type="text"
                     value={middleInitial}
-                    onChange={(e) => setMiddleInitial(e.target.value)}
+                    onChange={(e) =>
+                      setMiddleInitial(
+                        normalizeMiddleInitialInput(e.target.value),
+                      )
+                    }
                     disabled={noMiddleName}
+                    maxLength={2}
                     className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-100"
                     placeholder="S"
                   />
@@ -1999,6 +2213,32 @@ export default function AddEmployeeModal({
                 <XCircle size={14} />
                 Cancel
               </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={createClearHandler(
+                handleClearAllFields,
+                !!(
+                  firstName ||
+                  lastName ||
+                  middleName ||
+                  birthdate ||
+                  personalEmail ||
+                  selectedCivilStatusId ||
+                  employeeNo ||
+                  workEmail ||
+                  selectedPositionId ||
+                  selectedDistrictId ||
+                  schoolId ||
+                  tin ||
+                  gsisBpNo
+                ),
+              )}
+              className="order-first mr-auto cursor-pointer rounded-lg border border-gray-300 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
+              disabled={submitLoading || isConfirmOpen}
+            >
+              <span className="inline-flex items-center gap-1">Clear All</span>
             </button>
 
             {step === "work" && (

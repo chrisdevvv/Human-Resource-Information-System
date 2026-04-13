@@ -5,6 +5,7 @@ import { AlertTriangle, Check, X } from "lucide-react";
 import ConfirmationAddLeave from "../ConfirmationAddLeave";
 import AddLeaveSuccess from "../AddLeaveSuccess";
 import { getLeaveHistoryByEmployee, getLeaveParticulars } from "../leaveApi";
+import { createClearHandler, hasFormData } from "../../../utils/clearFormUtils";
 
 export type AddLeaveFormValues = {
   employee_id: number;
@@ -375,6 +376,14 @@ export default function AddLeaveModal({
     setIsConfirmOpen(false);
   }
 
+  function handleClearAllFields() {
+    setForm(defaultForm);
+    setParticularInputValue("");
+    setShowParticularDropdown(false);
+    setFormError("");
+    setBalanceError(null);
+  }
+
   const inputClass =
     "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
   const labelClass = "mb-1 block text-sm font-medium text-gray-700";
@@ -705,6 +714,20 @@ export default function AddLeaveModal({
           )}
 
           <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={createClearHandler(
+                handleClearAllFields,
+                hasFormData(form, defaultForm),
+              )}
+              className="mr-auto cursor-pointer rounded-lg border border-gray-300 bg-gray-50 px-4 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
+              disabled={isSaving || isConfirmOpen}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                Clear All
+              </span>
+            </button>
+
             <button
               type="button"
               onClick={onClose}

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
 import ConfirmationModal from "../../components/ConfirmationModal";
+import { createClearHandler } from "../../../utils/clearFormUtils";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -682,6 +683,40 @@ export default function AddUserModal({
               className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium cursor-pointer disabled:opacity-60"
             >
               {step === 1 ? "Cancel" : "Back"}
+            </button>
+
+            <button
+              type="button"
+              onClick={createClearHandler(
+                () => {
+                  setFirstName("");
+                  setLastName("");
+                  setMiddleName("");
+                  setNoMiddleName(false);
+                  setEmail("");
+                  setBirthdate("");
+                  setSchoolId("");
+                  setUseSchoolsDivisionOffice(false);
+                  setPassword("");
+                  setConfirmPassword("");
+                  setError("");
+                  setFirstNameError("");
+                  setLastNameError("");
+                  setMiddleNameError("");
+                  setEmailError("");
+                  setBirthdateError("");
+                  setSchoolError("");
+                  setPasswordError("");
+                  setConfirmPasswordError("");
+                  setStep(1);
+                  setShowConfirm(false);
+                },
+                !!(firstName || lastName || email || password),
+              )}
+              disabled={loading}
+              className="order-first mr-auto px-3 py-1.5 bg-gray-50 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition text-sm font-medium cursor-pointer disabled:opacity-60"
+            >
+              Clear All
             </button>
 
             {step === 1 ? (

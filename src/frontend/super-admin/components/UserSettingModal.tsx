@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { X, Eye, EyeOff } from "lucide-react";
 import ConfirmationModal from "./ConfirmationModal";
+import { createClearHandler } from "../../utils/clearFormUtils";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -229,16 +230,34 @@ export default function UserSettingModal({
                 <option value="ADMIN">Admin</option>
                 <option value="DATA_ENCODER">Data Encoder</option>
               </select>
-              <button
-                onClick={() => {
-                  setError(null);
-                  setConfirmAction("role");
-                }}
-                disabled={savingRole || savingStatus}
-                className="mt-3 w-full px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
-              >
-                Save Role
-              </button>
+              <div className="mt-3 flex w-full items-center gap-2">
+                <button
+                  onClick={createClearHandler(
+                    () => {
+                      setSelectedRole(initialRole);
+                      setSuperAdminPassword("");
+                      setError(null);
+                      setShowPassword(false);
+                    },
+                    selectedRole !== initialRole || !!superAdminPassword,
+                  )}
+                  disabled={savingRole || savingStatus}
+                  className="mr-auto px-3 py-1.5 bg-gray-50 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition font-medium text-sm cursor-pointer disabled:opacity-60"
+                >
+                  Clear All
+                </button>
+
+                <button
+                  onClick={() => {
+                    setError(null);
+                    setConfirmAction("role");
+                  }}
+                  disabled={savingRole || savingStatus}
+                  className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
+                >
+                  Save Role
+                </button>
+              </div>
             </div>
 
             <div className="pt-4 border-t border-gray-200">

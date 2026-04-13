@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { poppins } from "../frontend/assets/fonts";
 import SessionGuard from "@/frontend/auth/SessionGuard";
+import ClearAllConfirmation from "@/frontend/components/ClearAllConfirmation";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,6 +34,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} antialiased`}
       >
         <SessionGuard />
+        <ClearAllConfirmation />
         {children}
       </body>
     </html>

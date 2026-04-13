@@ -5,6 +5,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Mail, Key, User, X, Building2, Eye, EyeOff } from "../assets/icons";
 import { RegistrationSuccessModal } from ".";
+import { createClearHandler, hasFormData } from "../utils/clearFormUtils";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -436,6 +437,33 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     submitInProgressRef.current = false;
   }
 
+  function handleClearAllFields() {
+    setFirstName("");
+    setMiddleName("");
+    setNoMiddleName(false);
+    setLastName("");
+    setEmail("");
+    setBirthdate("");
+    setSchool("");
+    setSchoolId(null);
+    setSchoolInputValue("");
+    setShowSchoolDropdown(false);
+    setUseSchoolsDivisionOffice(false);
+    setPassword("");
+    setConfirmPassword("");
+    setError("");
+    setFirstNameError("");
+    setMiddleNameError("");
+    setLastNameError("");
+    setEmailError("");
+    setBirthdateError("");
+    setSchoolError("");
+    setPasswordError("");
+    setConfirmPasswordError("");
+    setHasUnsavedChanges(false);
+    // Keep step, don't reset to step 1
+  }
+
   function handleReset() {
     if (
       !submitted &&
@@ -779,19 +807,29 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   )}
                 </div>
 
-                <div className="mt-6 flex flex-col items-center gap-3">
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
                   <button
-                    type="submit"
-                    className="cursor-pointer w-full rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700"
+                    type="button"
+                    onClick={createClearHandler(
+                      handleClearAllFields,
+                      hasUnsavedChanges,
+                    )}
+                    className="cursor-pointer w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100 sm:mr-auto sm:w-auto"
                   >
-                    Continue
+                    Clear All
                   </button>
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="cursor-pointer w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
+                    className="cursor-pointer w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 sm:w-auto"
                   >
                     Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="cursor-pointer w-full rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 sm:w-auto"
+                  >
+                    Continue
                   </button>
                 </div>
               </form>
@@ -889,13 +927,17 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                   </p>
                 )}
 
-                <div className="mt-6 flex flex-col items-center gap-3">
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={createClearHandler(
+                      handleClearAllFields,
+                      hasUnsavedChanges,
+                    )}
                     disabled={isLoading || isConfirmOpen}
-                    className="cursor-pointer w-full rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="cursor-pointer w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 sm:mr-auto sm:w-auto"
                   >
-                    {isLoading ? "Submitting..." : "Submit Request"}
+                    Clear All
                   </button>
                   <button
                     type="button"
@@ -904,9 +946,16 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                       setError("");
                     }}
                     disabled={isLoading || isConfirmOpen}
-                    className="cursor-pointer w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="cursor-pointer w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                   >
                     Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isLoading || isConfirmOpen}
+                    className="cursor-pointer w-full rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                  >
+                    {isLoading ? "Submitting..." : "Submit Request"}
                   </button>
                 </div>
               </form>

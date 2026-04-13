@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Pencil, Save, XCircle } from "lucide-react";
 import ConfirmEdit from "./ConfirmEdit";
+import { createClearHandler } from "../../../utils/clearFormUtils";
 
 type EmployeeRecord = {
   id: number;
@@ -77,6 +78,18 @@ const buildFullName = (
   lastName: string,
 ): string => [firstName, middleName, lastName].filter(Boolean).join(" ").trim();
 
+const createInitialDraft = (employee: EmployeeRecord): EditableState => ({
+  firstName: employee.firstName,
+  middleName: employee.middleName,
+  noMiddleName: !employee.middleName,
+  lastName: employee.lastName,
+  email: employee.email,
+  birthdate: toDateInputValue(employee.birthdate),
+  employeeType: employee.employeeType,
+  schoolId: employee.schoolId,
+  schoolName: employee.schoolName,
+});
+
 export default function EditEmployee({
   employee,
   canEdit,
@@ -89,17 +102,12 @@ export default function EditEmployee({
   const [schools, setSchools] = useState<School[]>([]);
   const [schoolsLoading, setSchoolsLoading] = useState(false);
   const [showConfirmEdit, setShowConfirmEdit] = useState(false);
-  const [draft, setDraft] = useState<EditableState>({
-    firstName: employee.firstName,
-    middleName: employee.middleName,
-    noMiddleName: !employee.middleName,
-    lastName: employee.lastName,
-    email: employee.email,
-    birthdate: toDateInputValue(employee.birthdate),
-    employeeType: employee.employeeType,
-    schoolId: employee.schoolId,
-    schoolName: employee.schoolName,
-  });
+  const [draft, setDraft] = useState<EditableState>(
+    createInitialDraft(employee),
+  );
+
+  const hasDraftChanges =
+    JSON.stringify(draft) !== JSON.stringify(createInitialDraft(employee));
 
   const sortedSchools = useMemo(
     () =>
@@ -112,17 +120,7 @@ export default function EditEmployee({
     setIsSaving(false);
     setErrorMessage(null);
     setShowConfirmEdit(false);
-    setDraft({
-      firstName: employee.firstName,
-      middleName: employee.middleName,
-      noMiddleName: !employee.middleName,
-      lastName: employee.lastName,
-      email: employee.email,
-      birthdate: toDateInputValue(employee.birthdate),
-      employeeType: employee.employeeType,
-      schoolId: employee.schoolId,
-      schoolName: employee.schoolName,
-    });
+    setDraft(createInitialDraft(employee));
   }, [employee]);
 
   useEffect(() => {
@@ -189,17 +187,7 @@ export default function EditEmployee({
     setIsEditing(false);
     setErrorMessage(null);
     setShowConfirmEdit(false);
-    setDraft({
-      firstName: employee.firstName,
-      middleName: employee.middleName,
-      noMiddleName: !employee.middleName,
-      lastName: employee.lastName,
-      email: employee.email,
-      birthdate: toDateInputValue(employee.birthdate),
-      employeeType: employee.employeeType,
-      schoolId: employee.schoolId,
-      schoolName: employee.schoolName,
-    });
+    setDraft(createInitialDraft(employee));
   };
 
   const validateBeforeConfirm = () => {
@@ -526,6 +514,18 @@ export default function EditEmployee({
 
         {canEdit && isEditing ? (
           <>
+            <button
+              type="button"
+              onClick={createClearHandler(() => {
+                setDraft(createInitialDraft(employee));
+                setErrorMessage(null);
+              }, hasDraftChanges)}
+              disabled={isSaving}
+              className="mr-auto rounded-lg border border-gray-300 bg-gray-50 px-5 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 transition cursor-pointer disabled:opacity-60"
+            >
+              <span className="inline-flex items-center gap-1">Clear All</span>
+            </button>
+
             <button
               type="button"
               onClick={handleCancelEdit}

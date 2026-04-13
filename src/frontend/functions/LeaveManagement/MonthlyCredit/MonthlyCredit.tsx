@@ -63,9 +63,25 @@ const reasonLabel = (reason: string) => {
       return "Not eligible for monthly credit";
     case "TEACHING_EMPLOYEE":
       return "Teaching employees are excluded from monthly credit";
+    case "NOT_NON_TEACHING_EMPLOYEE":
+      return "Teaching employees are excluded from monthly credit";
     default:
       return reason;
   }
+};
+
+const isTeachingRelatedReason = (reason: string) => {
+  const normalized = String(reason || "").trim().toLowerCase();
+  return (
+    normalized === "teaching_employee" ||
+    normalized === "not_non_teaching_employee" ||
+    normalized.includes("teaching")
+  );
+};
+
+const isOnLeaveReason = (reason: string) => {
+  const normalized = String(reason || "").trim().toLowerCase();
+  return normalized === "on_leave_during_period" || normalized.includes("on leave");
 };
 
 const MONTH_OPTIONS = [
@@ -95,7 +111,7 @@ export default function MonthlyCredit() {
   const [skipSearch, setSkipSearch] = useState("");
   const [skipSortOrder, setSkipSortOrder] = useState<"az" | "za">("az");
   const [skipTypeFilter, setSkipTypeFilter] = useState<
-    "all" | "teaching" | "non-teaching"
+    "all" | "teaching" | "non-teaching" | "teaching-related" | "on-leave"
   >("all");
   const [loading, setLoading] = useState(false);
   const [simulationResult, setSimulationResult] =
@@ -300,10 +316,13 @@ export default function MonthlyCredit() {
     const rows = simulationResult?.would_skip_employees ?? [];
     const query = skipSearch.trim().toLowerCase();
     const filteredRows = rows.filter((row) => {
-      const rowType =
-        row.reason === "TEACHING_EMPLOYEE" ? "teaching" : "non-teaching";
+      const isTeachingRelated = isTeachingRelatedReason(row.reason);
       const matchesType =
-        skipTypeFilter === "all" || skipTypeFilter === rowType;
+        skipTypeFilter === "all" ||
+        (skipTypeFilter === "teaching" && isTeachingRelated) ||
+        (skipTypeFilter === "non-teaching" && !isTeachingRelated) ||
+        (skipTypeFilter === "teaching-related" && isTeachingRelated) ||
+        (skipTypeFilter === "on-leave" && isOnLeaveReason(row.reason));
       const matchesSearch =
         !query ||
         row.employee_name.toLowerCase().includes(query) ||
@@ -580,6 +599,10 @@ export default function MonthlyCredit() {
                           ? "teaching"
                           : e.target.value === "non-teaching"
                             ? "non-teaching"
+                            : e.target.value === "teaching-related"
+                              ? "teaching-related"
+                              : e.target.value === "on-leave"
+                                ? "on-leave"
                             : "all",
                       )
                     }
@@ -588,6 +611,8 @@ export default function MonthlyCredit() {
                     <option value="all">All Types</option>
                     <option value="teaching">Teaching</option>
                     <option value="non-teaching">Non-Teaching</option>
+                    <option value="teaching-related">Teaching Related</option>
+                    <option value="on-leave">On-leave</option>
                   </select>
                 </div>
               </div>
