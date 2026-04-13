@@ -365,7 +365,12 @@ const ensureEmployeeProfileSchema = async () => {
     ADD COLUMN IF NOT EXISTS \`position\` VARCHAR(255) NULL AFTER district,
     ADD COLUMN IF NOT EXISTS plantilla_no VARCHAR(100) NULL AFTER \`position\`,
     ADD COLUMN IF NOT EXISTS prc_license_no VARCHAR(100) NULL AFTER plantilla_no,
-    ADD COLUMN IF NOT EXISTS age INT NULL AFTER prc_license_no;
+    ADD COLUMN IF NOT EXISTS tin VARCHAR(50) NULL AFTER prc_license_no,
+    ADD COLUMN IF NOT EXISTS gsis_bp_no VARCHAR(50) NULL AFTER tin,
+    ADD COLUMN IF NOT EXISTS gsis_crn_no VARCHAR(50) NULL AFTER gsis_bp_no,
+    ADD COLUMN IF NOT EXISTS pagibig_no VARCHAR(50) NULL AFTER gsis_crn_no,
+    ADD COLUMN IF NOT EXISTS philhealth_no VARCHAR(50) NULL AFTER pagibig_no,
+    ADD COLUMN IF NOT EXISTS age INT NULL AFTER philhealth_no;
   `);
 
   await pool.promise().query(`
