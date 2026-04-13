@@ -444,7 +444,7 @@ export default function AdminProfileSettings() {
               },
               !!(currentPassword || newPassword || retypePassword),
             )}
-            className={`mr-auto px-4 py-2 rounded-lg text-sm font-medium transition border border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100`}
+            className={`mr-auto px-4 py-2 rounded-lg text-sm font-medium transition border border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100 cursor-pointer`}
           >
             <span className="inline-flex items-center gap-1">Clear All</span>
           </button>
