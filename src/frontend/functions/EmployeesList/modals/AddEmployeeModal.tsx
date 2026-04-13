@@ -180,9 +180,9 @@ export default function AddEmployeeModal({
   const [employeeNo, setEmployeeNo] = useState("");
   const [workEmail, setWorkEmail] = useState("");
   const [plantillaNo, setPlantillaNo] = useState("");
-  const [employeeType, setEmployeeType] = useState<"teaching" | "non-teaching" | "teaching-related">(
-    "non-teaching",
-  );
+  const [employeeType, setEmployeeType] = useState<
+    "teaching" | "non-teaching" | "teaching-related"
+  >("non-teaching");
   const [selectedPositionId, setSelectedPositionId] = useState<number | null>(
     null,
   );
@@ -1665,7 +1665,10 @@ export default function AddEmployeeModal({
                   value={employeeType}
                   onChange={(e) =>
                     setEmployeeType(
-                      e.target.value as "teaching" | "non-teaching" | "teaching-related",
+                      e.target.value as
+                        | "teaching"
+                        | "non-teaching"
+                        | "teaching-related",
                     )
                   }
                   className="mt-1 w-full cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700"

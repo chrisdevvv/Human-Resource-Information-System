@@ -1250,7 +1250,10 @@ export default function ViewEmployeeModal({
                       value={editEmployeeType}
                       onChange={(e) =>
                         setEditEmployeeType(
-                          e.target.value as "teaching" | "non-teaching" | "teaching-related",
+                          e.target.value as
+                            | "teaching"
+                            | "non-teaching"
+                            | "teaching-related",
                         )
                       }
                       className="w-full cursor-pointer rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"

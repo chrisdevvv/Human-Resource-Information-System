@@ -466,7 +466,11 @@ export default function EmployeeLeaveManagement() {
                   value={employeeTypeFilter}
                   onChange={(e) => {
                     setEmployeeTypeFilter(
-                      e.target.value as "ALL" | "teaching" | "non-teaching" | "teaching-related",
+                      e.target.value as
+                        | "ALL"
+                        | "teaching"
+                        | "non-teaching"
+                        | "teaching-related",
                     );
                     setCurrentPage(1);
                   }}
