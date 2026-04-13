@@ -64,6 +64,7 @@ type EditSnapshot = {
   district: string;
   position: string;
   plantillaNo: string;
+  dateOfFirstAppointment: string;
   employeeType: "teaching" | "non-teaching" | "teaching-related";
   schoolId: number | null;
   schoolName: string;
@@ -123,6 +124,9 @@ type EmployeeDetailsResponse = {
   plantilla_no?: string | null;
   age?: number | null;
   birthdate?: string | null;
+  date_of_first_appointment?: string | null;
+  years_in_service?: number | string | null;
+  loyalty_bonus?: string | number | boolean | null;
   prc_license_no?: string | null;
   license_no_prc?: string | null;
   tin?: string | null;
@@ -181,14 +185,137 @@ const formatValue = (value: string | number | null | undefined): string => {
 const formatDate = (value: string | null | undefined): string => {
   if (!value) return "N/A";
 
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
+  const raw = String(value).trim();
+  if (!raw) return "N/A";
+
+  const dateOnlyMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (dateOnlyMatch) {
+    const [, year, month, day] = dateOnlyMatch;
+    const localDate = new Date(Number(year), Number(month) - 1, Number(day));
+    return localDate.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return raw;
 
   return parsed.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+};
+
+const toDateInputValue = (value: string | null | undefined): string => {
+  if (!value) return "";
+  const raw = String(value).trim();
+  if (!raw) return "";
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+    return raw.slice(0, 10);
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toISOString().slice(0, 10);
+};
+
+const isValidDateValue = (value: string): boolean => {
+  const trimmed = value.trim();
+  if (!trimmed) return true;
+  return !Number.isNaN(new Date(trimmed).getTime());
+};
+
+const formatYearsInService = (
+  value: number | string | null | undefined,
+): string => {
+  if (value === null || value === undefined) return "N/A";
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? String(value) : "N/A";
+  }
+  const text = String(value).trim();
+  return text ? text : "N/A";
+};
+
+const formatLoyaltyBonus = (
+  value: string | number | boolean | null | undefined,
+): string => {
+  if (value === null || value === undefined) return "N/A";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "number") {
+    if (value === 1) return "Yes";
+    if (value === 0) return "No";
+    return "N/A";
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+  if (!normalized) return "N/A";
+  if (["yes", "true", "1"].includes(normalized)) return "Yes";
+  if (["no", "false", "0"].includes(normalized)) return "No";
+  return "N/A";
+};
+
+const createEditSnapshotFromDetails = (
+  data: EmployeeDetailsResponse,
+): EditSnapshot => {
+  const nextTin = String(data.tin || "").trim();
+  const nextGsisBpNo = String(data.gsis_bp_no || "").trim();
+  const nextGsisCrnNo = String(data.gsis_crn_no || "").trim();
+  const nextPagibigNo = String(data.pagibig_no || "").trim();
+  const nextPhilhealthNo = String(data.philhealth_no || "").trim();
+
+  return {
+    firstName: data.first_name || "",
+    middleName: data.middle_name || "",
+    middleInitial: data.middle_initial || "",
+    lastName: data.last_name || "",
+    birthdate: data.birthdate || "",
+    personalEmail: data.email || "",
+    mobileNumber: data.mobile_number || "",
+    homeAddress: data.home_address || "",
+    placeOfBirth: data.place_of_birth || "",
+    civilStatus: data.civil_status || "",
+    civilStatusId: data.civil_status_id || null,
+    sex: data.sex || "",
+    sexId: data.sex_id || null,
+    employeeNo: data.employee_no || "",
+    workEmail: data.work_email || "",
+    district: data.district || data.work_district || "",
+    position: data.position || "",
+    plantillaNo: data.plantilla_no || "",
+    dateOfFirstAppointment: toDateInputValue(data.date_of_first_appointment),
+    employeeType: data.employee_type || "non-teaching",
+    schoolId: data.school_id || null,
+    schoolName: data.school_name || "",
+    positionId: data.position_id || null,
+    licenseNoPrc: data.prc_license_no || data.license_no_prc || "",
+    tin:
+      nextTin.toUpperCase() === "N/A"
+        ? "N/A"
+        : formatMaskedId(nextTin, GOV_ID_MASKS.tin),
+    gsisBpNo:
+      nextGsisBpNo.toUpperCase() === "N/A" ? "N/A" : formatGsisBp(nextGsisBpNo),
+    gsisCrnNo:
+      nextGsisCrnNo.toUpperCase() === "N/A"
+        ? "N/A"
+        : normalize12Digits(nextGsisCrnNo),
+    pagibigNo:
+      nextPagibigNo.toUpperCase() === "N/A"
+        ? "N/A"
+        : normalize12Digits(nextPagibigNo),
+    philhealthNo:
+      nextPhilhealthNo.toUpperCase() === "N/A"
+        ? "N/A"
+        : normalizePhilhealth(nextPhilhealthNo),
+    tinNotAvailable: nextTin.toUpperCase() === "N/A",
+    gsisBpNotAvailable: nextGsisBpNo.toUpperCase() === "N/A",
+    gsisCrnNotAvailable: nextGsisCrnNo.toUpperCase() === "N/A",
+    pagibigNotAvailable: nextPagibigNo.toUpperCase() === "N/A",
+    philhealthNotAvailable: nextPhilhealthNo.toUpperCase() === "N/A",
+  };
 };
 
 const computeAge = (birthdate: string | null | undefined): number | null => {
@@ -433,6 +560,8 @@ export default function ViewEmployeeModal({
   const [editDistrict, setEditDistrict] = useState("");
   const [editPosition, setEditPosition] = useState("");
   const [editPlantillaNo, setEditPlantillaNo] = useState("");
+  const [editDateOfFirstAppointment, setEditDateOfFirstAppointment] =
+    useState("");
   const [editEmployeeType, setEditEmployeeType] = useState<
     "teaching" | "non-teaching" | "teaching-related"
   >("non-teaching");
@@ -490,6 +619,7 @@ export default function ViewEmployeeModal({
     setEditDistrict(snapshot.district);
     setEditPosition(snapshot.position);
     setEditPlantillaNo(snapshot.plantillaNo);
+    setEditDateOfFirstAppointment(snapshot.dateOfFirstAppointment);
     setEditEmployeeType(snapshot.employeeType);
     setEditSchoolId(snapshot.schoolId);
     setEditSchoolName(snapshot.schoolName);
@@ -572,62 +702,7 @@ export default function ViewEmployeeModal({
 
           const data = body.data;
           if (data) {
-            const nextTin = String(data.tin || "").trim();
-            const nextGsisBpNo = String(data.gsis_bp_no || "").trim();
-            const nextGsisCrnNo = String(data.gsis_crn_no || "").trim();
-            const nextPagibigNo = String(data.pagibig_no || "").trim();
-            const nextPhilhealthNo = String(data.philhealth_no || "").trim();
-
-            const snapshot: EditSnapshot = {
-              firstName: data.first_name || "",
-              middleName: data.middle_name || "",
-              middleInitial: data.middle_initial || "",
-              lastName: data.last_name || "",
-              birthdate: data.birthdate || "",
-              personalEmail: data.email || "",
-              mobileNumber: data.mobile_number || "",
-              homeAddress: data.home_address || "",
-              placeOfBirth: data.place_of_birth || "",
-              civilStatus: data.civil_status || "",
-              civilStatusId: data.civil_status_id || null,
-              sex: data.sex || "",
-              sexId: data.sex_id || null,
-              employeeNo: data.employee_no || "",
-              workEmail: data.work_email || "",
-              district: data.district || data.work_district || "",
-              position: data.position || "",
-              plantillaNo: data.plantilla_no || "",
-              employeeType: data.employee_type || "non-teaching",
-              schoolId: data.school_id || null,
-              schoolName: data.school_name || "",
-              positionId: data.position_id || null,
-              licenseNoPrc: data.prc_license_no || data.license_no_prc || "",
-              tin:
-                nextTin.toUpperCase() === "N/A"
-                  ? "N/A"
-                  : formatMaskedId(nextTin, GOV_ID_MASKS.tin),
-              gsisBpNo:
-                nextGsisBpNo.toUpperCase() === "N/A"
-                  ? "N/A"
-                  : formatGsisBp(nextGsisBpNo),
-              gsisCrnNo:
-                nextGsisCrnNo.toUpperCase() === "N/A"
-                  ? "N/A"
-                  : normalize12Digits(nextGsisCrnNo),
-              pagibigNo:
-                nextPagibigNo.toUpperCase() === "N/A"
-                  ? "N/A"
-                  : normalize12Digits(nextPagibigNo),
-              philhealthNo:
-                nextPhilhealthNo.toUpperCase() === "N/A"
-                  ? "N/A"
-                  : normalizePhilhealth(nextPhilhealthNo),
-              tinNotAvailable: nextTin.toUpperCase() === "N/A",
-              gsisBpNotAvailable: nextGsisBpNo.toUpperCase() === "N/A",
-              gsisCrnNotAvailable: nextGsisCrnNo.toUpperCase() === "N/A",
-              pagibigNotAvailable: nextPagibigNo.toUpperCase() === "N/A",
-              philhealthNotAvailable: nextPhilhealthNo.toUpperCase() === "N/A",
-            };
+            const snapshot = createEditSnapshotFromDetails(data);
 
             applyEditSnapshot(snapshot);
             setInitialEditSnapshot(snapshot);
@@ -833,6 +908,7 @@ export default function ViewEmployeeModal({
       district: editDistrict,
       position: editPosition,
       plantillaNo: editPlantillaNo,
+      dateOfFirstAppointment: editDateOfFirstAppointment,
       employeeType: editEmployeeType,
       schoolId: editSchoolId,
       schoolName: editSchoolName,
@@ -947,6 +1023,28 @@ export default function ViewEmployeeModal({
         field: "Plantilla Number",
         message: "Plantilla number is required",
       });
+    }
+
+    const firstAppointmentDate = editDateOfFirstAppointment.trim();
+    if (firstAppointmentDate && !isValidDateValue(firstAppointmentDate)) {
+      newErrors.push({
+        field: "Date of First Appointment",
+        message: "Date of First Appointment must be a valid date",
+      });
+    }
+
+    if (firstAppointmentDate) {
+      const parsedAppointmentDate = new Date(firstAppointmentDate);
+      const currentDate = new Date();
+      if (
+        !Number.isNaN(parsedAppointmentDate.getTime()) &&
+        parsedAppointmentDate > currentDate
+      ) {
+        newErrors.push({
+          field: "Date of First Appointment",
+          message: "Date of First Appointment cannot be in the future",
+        });
+      }
     }
 
     if (!editPersonalEmail.trim()) {
@@ -1213,6 +1311,7 @@ export default function ViewEmployeeModal({
           position: editPosition.trim(),
           position_id: editPositionId,
           plantilla_no: editPlantillaNo.trim(),
+          date_of_first_appointment: firstAppointmentDate || null,
           employee_type: editEmployeeType,
           school_id: editSchoolId,
           prc_license_no: editLicenseNoPrc.trim(),
@@ -1230,45 +1329,29 @@ export default function ViewEmployeeModal({
         throw new Error(body.message || "Failed to update employee");
       }
 
-      setDetails((prev) =>
-        prev
-          ? {
-              ...prev,
-              first_name: editFirstName.trim(),
-              middle_name: editMiddleName.trim(),
-              middle_initial: normalizeMiddleInitialInput(
-                editMiddleInitial.trim(),
-              ),
-              last_name: editLastName.trim(),
-              birthdate: editBirthdate,
-              email: editPersonalEmail.trim(),
-              mobile_number: editMobileNumber.trim(),
-              home_address: editHomeAddress.trim(),
-              place_of_birth: editPlaceOfBirth.trim(),
-              civil_status: editCivilStatus.trim(),
-              civil_status_id: editCivilStatusId,
-              sex: editSex.trim(),
-              sex_id: editSexId,
-              employee_no: editEmployeeNo.trim(),
-              work_email: editWorkEmail.trim(),
-              district: editDistrict.trim(),
-              position: editPosition.trim(),
-              position_id: editPositionId,
-              plantilla_no: editPlantillaNo.trim(),
-              employee_type: editEmployeeType,
-              school_id: editSchoolId,
-              school_name: editSchoolName,
-              age: computeAge(editBirthdate),
-              prc_license_no: editLicenseNoPrc.trim(),
-              license_no_prc: editLicenseNoPrc.trim(),
-              tin: editTin.trim(),
-              gsis_bp_no: editGsisBpNo.trim(),
-              gsis_crn_no: editGsisCrnNo.trim(),
-              pagibig_no: editPagibigNo.trim(),
-              philhealth_no: editPhilhealthNo.trim(),
-            }
-          : null,
+      const refreshedResponse = await fetch(
+        `${API_BASE}/api/employees/${employee.id}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
       );
+
+      const refreshedBody = (await refreshedResponse.json()) as {
+        data?: EmployeeDetailsResponse;
+        message?: string;
+      };
+
+      if (refreshedResponse.ok && refreshedBody.data) {
+        const refreshedDetails = refreshedBody.data;
+        setDetails(refreshedDetails);
+        const refreshedSnapshot =
+          createEditSnapshotFromDetails(refreshedDetails);
+        setInitialEditSnapshot(refreshedSnapshot);
+      }
 
       onEmployeeUpdated({
         id: employee.id,
@@ -2118,6 +2201,38 @@ export default function ViewEmployeeModal({
                       </label>
                     </div>
                   </InfoField>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
+                  <InfoField
+                    label="Date of First Appointment"
+                    value={formatDate(editDateOfFirstAppointment)}
+                    isEditing={isEditing}
+                    errorMessage={getValidationError(
+                      "Date of First Appointment",
+                    )}
+                  >
+                    <input
+                      type="date"
+                      value={editDateOfFirstAppointment}
+                      onChange={(e) =>
+                        setEditDateOfFirstAppointment(e.target.value)
+                      }
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+                    />
+                  </InfoField>
+
+                  <InfoField
+                    label="Years in Service"
+                    value={formatYearsInService(
+                      resolvedDetails?.years_in_service,
+                    )}
+                  />
+
+                  <InfoField
+                    label="Loyalty Bonus"
+                    value={formatLoyaltyBonus(resolvedDetails?.loyalty_bonus)}
+                  />
                 </div>
               </div>
             </div>
