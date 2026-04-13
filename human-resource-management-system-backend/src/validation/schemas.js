@@ -9,6 +9,7 @@ const schoolIdParamSchema = Joi.object({
 });
 
 const birthdateSchema = Joi.date().iso().max("now");
+const firstAppointmentDateSchema = Joi.date().iso().max("now");
 const noMiddleNameSchema = Joi.alternatives().try(
   Joi.boolean(),
   Joi.string().valid("true", "false", "1", "0"),
@@ -93,6 +94,7 @@ const employeeCreateBodySchema = Joi.object({
   pagibig_no: pagibigNoSchema,
   philhealth_no: philhealthNoSchema,
   birthdate: birthdateSchema.required(),
+  date_of_first_appointment: firstAppointmentDateSchema.allow(null, ""),
   age: ageSchema,
 });
 
@@ -133,6 +135,7 @@ const employeeUpdateBodySchema = Joi.object({
   pagibig_no: pagibigNoSchema,
   philhealth_no: philhealthNoSchema,
   birthdate: birthdateSchema.allow(null),
+  date_of_first_appointment: firstAppointmentDateSchema.allow(null, ""),
   age: ageSchema,
 });
 

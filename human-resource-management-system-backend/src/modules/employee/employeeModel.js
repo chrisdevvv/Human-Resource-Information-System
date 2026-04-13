@@ -25,6 +25,40 @@ const normalizeOptionalText = (value) => {
   return normalized.length > 0 ? normalized : null;
 };
 
+const normalizeOptionalDate = (value) => {
+  if (value === undefined || value === null) return null;
+  const normalized = String(value).trim();
+  return normalized.length > 0 ? normalized : null;
+};
+
+const computeServiceMetrics = (dateOfFirstAppointment) => {
+  const normalizedDate = normalizeOptionalDate(dateOfFirstAppointment);
+  if (!normalizedDate) {
+    return { yearsInService: null, loyaltyBonus: "No" };
+  }
+
+  const [y, m, d] = normalizedDate.split("-").map(Number);
+  if (!y || !m || !d) {
+    return { yearsInService: null, loyaltyBonus: "No" };
+  }
+
+  const now = new Date();
+  let years = now.getFullYear() - y;
+  const hasReachedAnniversary =
+    now.getMonth() + 1 > m ||
+    (now.getMonth() + 1 === m && now.getDate() >= d);
+
+  if (!hasReachedAnniversary) {
+    years -= 1;
+  }
+
+  const yearsInService = Math.max(0, years);
+  const loyaltyBonus =
+    yearsInService > 0 && yearsInService % 5 === 0 ? "Yes" : "No";
+
+  return { yearsInService, loyaltyBonus };
+};
+
 const Employee = {
   // Supports optional pagination: if `pagination` omitted, returns full rows for compatibility.
   getAll: async (filters = {}) => {
@@ -157,6 +191,7 @@ const Employee = {
       philhealth_no,
       age,
       birthdate,
+      date_of_first_appointment,
     } = data;
     const personalEmail = personal_email || email || null;
     const middleInitial =
@@ -170,10 +205,16 @@ const Employee = {
     const normalizedGsisCrnNo = normalizeOptionalText(gsis_crn_no);
     const normalizedPagibigNo = normalizeOptionalText(pagibig_no);
     const normalizedPhilhealthNo = normalizeOptionalText(philhealth_no);
+    const normalizedFirstAppointmentDate = normalizeOptionalDate(
+      date_of_first_appointment,
+    );
+    const { yearsInService, loyaltyBonus } = computeServiceMetrics(
+      normalizedFirstAppointmentDate,
+    );
     const [result] = await pool
       .promise()
       .query(
-        "INSERT INTO employees (first_name, middle_name, last_name, middle_initial, email, mobile_number, home_address, place_of_birth, civil_status, civil_status_id, sex, sex_id, employee_type, school_id, employee_no, work_email, district, `position`, position_id, plantilla_no, prc_license_no, tin, gsis_bp_no, gsis_crn_no, pagibig_no, philhealth_no, age, birthdate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO employees (first_name, middle_name, last_name, middle_initial, email, mobile_number, home_address, place_of_birth, civil_status, civil_status_id, sex, sex_id, employee_type, school_id, employee_no, work_email, district, `position`, position_id, plantilla_no, prc_license_no, tin, gsis_bp_no, gsis_crn_no, pagibig_no, philhealth_no, age, birthdate, date_of_first_appointment, years_in_service, loyalty_bonus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           first_name,
           middle_name || null,
@@ -203,6 +244,9 @@ const Employee = {
           normalizedPhilhealthNo,
           age || null,
           birthdate,
+          normalizedFirstAppointmentDate,
+          yearsInService,
+          loyaltyBonus,
         ],
       );
     return result;
@@ -240,6 +284,7 @@ const Employee = {
       philhealth_no,
       age,
       birthdate,
+      date_of_first_appointment,
     } = data;
     const personalEmail = personal_email || email || null;
     const middleInitial =
@@ -253,10 +298,16 @@ const Employee = {
     const normalizedGsisCrnNo = normalizeOptionalText(gsis_crn_no);
     const normalizedPagibigNo = normalizeOptionalText(pagibig_no);
     const normalizedPhilhealthNo = normalizeOptionalText(philhealth_no);
+    const normalizedFirstAppointmentDate = normalizeOptionalDate(
+      date_of_first_appointment,
+    );
+    const { yearsInService, loyaltyBonus } = computeServiceMetrics(
+      normalizedFirstAppointmentDate,
+    );
     const [result] = await pool
       .promise()
       .query(
-        "UPDATE employees SET first_name = ?, middle_name = ?, last_name = ?, middle_initial = ?, email = ?, mobile_number = ?, home_address = ?, place_of_birth = ?, civil_status = ?, civil_status_id = ?, sex = ?, sex_id = ?, employee_type = ?, school_id = ?, employee_no = ?, work_email = ?, district = ?, `position` = ?, position_id = ?, plantilla_no = ?, prc_license_no = ?, tin = ?, gsis_bp_no = ?, gsis_crn_no = ?, pagibig_no = ?, philhealth_no = ?, age = ?, birthdate = ? WHERE id = ? AND is_archived = 0",
+        "UPDATE employees SET first_name = ?, middle_name = ?, last_name = ?, middle_initial = ?, email = ?, mobile_number = ?, home_address = ?, place_of_birth = ?, civil_status = ?, civil_status_id = ?, sex = ?, sex_id = ?, employee_type = ?, school_id = ?, employee_no = ?, work_email = ?, district = ?, `position` = ?, position_id = ?, plantilla_no = ?, prc_license_no = ?, tin = ?, gsis_bp_no = ?, gsis_crn_no = ?, pagibig_no = ?, philhealth_no = ?, age = ?, birthdate = ?, date_of_first_appointment = ?, years_in_service = ?, loyalty_bonus = ? WHERE id = ? AND is_archived = 0",
         [
           first_name,
           middle_name || null,
@@ -286,6 +337,9 @@ const Employee = {
           normalizedPhilhealthNo,
           age || null,
           birthdate || null,
+          normalizedFirstAppointmentDate,
+          yearsInService,
+          loyaltyBonus,
           id,
         ],
       );

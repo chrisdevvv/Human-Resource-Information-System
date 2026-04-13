@@ -66,6 +66,9 @@ CREATE TABLE `employees` (
   `gsis_crn_no` varchar(50) DEFAULT NULL,
   `pagibig_no` varchar(50) DEFAULT NULL,
   `philhealth_no` varchar(50) DEFAULT NULL,
+  `date_of_first_appointment` date DEFAULT NULL,
+  `years_in_service` int(11) DEFAULT NULL,
+  `loyalty_bonus` enum('Yes','No') NOT NULL DEFAULT 'No',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
