@@ -72,6 +72,7 @@ type EmployeeDetailsResponse = {
   birthdate?: string | null;
   prc_license_no?: string | null;
   license_no_prc?: string | null;
+  retirable?: "Yes" | "No" | "Mandatory Retirement" | null;
   is_archived?: number | boolean | null;
   archived_at?: string | null;
   archived_by?: number | null;
@@ -160,6 +161,40 @@ const formatEmployeeType = (type: string): string => {
   if (normalized === "non-teaching") return "Non-Teaching";
   if (normalized === "teaching") return "Teaching";
   return type;
+};
+
+const normalizeRetirableValue = (
+  value: string | null | undefined,
+): "Yes" | "No" | "Mandatory Retirement" | null => {
+  if (!value) return null;
+  const normalized = String(value).trim().toLowerCase();
+  if (normalized === "yes") return "Yes";
+  if (normalized === "no") return "No";
+  if (
+    normalized === "mandatory retirement" ||
+    normalized === "mandatory-retirement"
+  ) {
+    return "Mandatory Retirement";
+  }
+  return null;
+};
+
+const getRetirableTextClass = (
+  value: "Yes" | "No" | "Mandatory Retirement" | null,
+): string => {
+  if (value === "Yes") return "text-orange-600";
+  if (value === "No") return "text-green-600";
+  if (value === "Mandatory Retirement") return "text-red-600";
+  return "text-gray-600";
+};
+
+const getRetirableFromAge = (
+  age: number | null | undefined,
+): "Yes" | "No" | "Mandatory Retirement" | null => {
+  if (!Number.isFinite(age)) return null;
+  if (Number(age) >= 65) return "Mandatory Retirement";
+  if (Number(age) >= 60) return "Yes";
+  return "No";
 };
 
 const isValidDepEdEmail = (value: string): boolean => {
@@ -533,6 +568,9 @@ export default function ViewEmployeeModal({
     resolvedDetails?.age ??
     computeAge(resolvedDetails?.birthdate || employee.birthdate);
   const isArchived = Boolean(resolvedDetails?.is_archived);
+  const retirableValue =
+    normalizeRetirableValue(resolvedDetails?.retirable) ||
+    getRetirableFromAge(ageValue);
   const archivedByLabel =
     resolvedDetails?.archived_by_name ||
     (resolvedDetails?.archived_by
@@ -828,38 +866,30 @@ export default function ViewEmployeeModal({
       ) : null}
       <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-blue-200 bg-white p-5 shadow-2xl sm:p-6">
         <div className="show-scrollbar">
-          <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-            <div>
-              <h2 className="text-xl font-bold text-gray-800 sm:text-2xl">
-                {isEditing ? `Edit Employee` : `View Employee`}
-              </h2>
-              <p className="mt-1 text-sm text-gray-500">
-                {isEditing
-                  ? "Update personal details first, then work details."
-                  : "View personal details and work details of the employee."}
-              </p>
-            </div>
+          <div className="mb-3 sm:mb-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800 sm:text-2xl">
+                  {isEditing ? `Edit Employee` : `View Employee`}
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  {isEditing
+                    ? "Update personal details first, then work details."
+                    : "View personal details and work details of the employee."}
+                </p>
+              </div>
 
-            <div className="flex items-center justify-between gap-2 sm:items-start sm:justify-start">
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="rounded-xl bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 sm:px-4 sm:py-2 sm:text-sm">
-                  {activeSection === "personal"
-                    ? "Personal Information"
-                    : "Work Information"}
-                </div>
+              <div className="flex items-center gap-2">
                 {(() => {
-                  const age = computeAge(
-                    resolvedDetails?.birthdate || employee?.birthdate,
-                  );
-                  if (age !== null && age >= 65) {
+                  if (retirableValue === "Mandatory Retirement") {
                     return (
-                      <div className="inline-flex items-center gap-1 rounded-xl bg-yellow-100 px-3 py-1.5 text-xs font-bold text-orange-600 sm:px-4 sm:py-2 sm:text-sm">
+                      <div className="inline-flex items-center gap-1 rounded-xl bg-red-100 px-3 py-1.5 text-xs font-bold text-red-600 sm:px-4 sm:py-2 sm:text-sm">
                         <AlertTriangle size={14} />
                         Mandatory Retirement
                       </div>
                     );
                   }
-                  if (age !== null && age >= 60) {
+                  if (retirableValue === "Yes") {
                     return (
                       <div className="inline-flex items-center gap-1 rounded-xl bg-yellow-100 px-3 py-1.5 text-xs font-bold text-orange-600 sm:px-4 sm:py-2 sm:text-sm">
                         <Clock size={14} />
@@ -869,16 +899,16 @@ export default function ViewEmployeeModal({
                   }
                   return null;
                 })()}
-              </div>
 
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isEditing || isSaving}
-                className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-gray-200 text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <X size={18} />
-              </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isEditing || isSaving}
+                  className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-gray-200 text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1455,9 +1485,9 @@ export default function ViewEmployeeModal({
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
               >
-                <Pencil size={15} />
+                <Pencil size={14} />
                 Edit Details
               </button>
             )}
@@ -1468,9 +1498,9 @@ export default function ViewEmployeeModal({
                   type="button"
                   onClick={() => setIsEditing(false)}
                   disabled={isSaving}
-                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gray-100 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <XCircle size={16} />
+                  <XCircle size={14} />
                   Cancel
                 </button>
 
@@ -1478,9 +1508,9 @@ export default function ViewEmployeeModal({
                   type="button"
                   onClick={handleOpenSaveConfirmation}
                   disabled={isSaving}
-                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <Save size={15} />
+                  <Save size={14} />
                   {isSaving ? "Saving..." : "Save Changes"}
                 </button>
               </>

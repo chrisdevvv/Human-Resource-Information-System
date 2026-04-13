@@ -9,6 +9,8 @@ import { RegistrationSuccessModal } from ".";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
+const SCHOOLS_DIVISION_OFFICE = "Schools Division Office";
+
 type Props = {
   visible: boolean;
   onClose: () => void;
@@ -26,6 +28,8 @@ export default function RegistrationModal({ visible, onClose }: Props) {
   const [schoolId, setSchoolId] = useState<number | null>(null);
   const [schoolInputValue, setSchoolInputValue] = useState("");
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
+  const [useSchoolsDivisionOffice, setUseSchoolsDivisionOffice] =
+    useState(false);
   const [schools, setSchools] = useState<
     Array<{ id: number; school_name: string }>
   >([]);
@@ -302,14 +306,18 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       hasError = true;
     }
 
-    if (!school.trim()) {
-      setSchoolError("School is required");
-      hasError = true;
-    }
+    if (useSchoolsDivisionOffice) {
+      setSchoolError("");
+    } else {
+      if (!school.trim()) {
+        setSchoolError("School is required");
+        hasError = true;
+      }
 
-    if (!schoolId) {
-      setSchoolError("Please select a valid school from the dropdown");
-      hasError = true;
+      if (!schoolId) {
+        setSchoolError("Please select a valid school from the dropdown");
+        hasError = true;
+      }
     }
 
     if (!birthdate) {
@@ -355,6 +363,10 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     }
 
     // Store form data and show confirmation modal
+    const selectedSchoolName = useSchoolsDivisionOffice
+      ? SCHOOLS_DIVISION_OFFICE
+      : school;
+
     setPendingFormData({
       firstName,
       middleName,
@@ -362,7 +374,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       lastName,
       email,
       birthdate,
-      school,
+      school: selectedSchoolName,
       password,
     });
     setIsConfirmOpen(true);
@@ -446,6 +458,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     setSchoolId(null);
     setSchoolInputValue("");
     setShowSchoolDropdown(false);
+    setUseSchoolsDivisionOffice(false);
     setPassword("");
     setConfirmPassword("");
     setError("");
@@ -653,71 +666,109 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                     School <span className="text-red-500">*</span>
                   </label>
                   <div className="relative mt-2">
-                    <input
-                      type="text"
-                      value={schoolInputValue}
-                      onChange={(e) => {
-                        setSchoolInputValue(e.target.value);
-                        setShowSchoolDropdown(true);
-                      }}
-                      onFocus={() => setShowSchoolDropdown(true)}
-                      onBlur={() => {
-                        // Delay closing to allow click on option
-                        setTimeout(() => setShowSchoolDropdown(false), 150);
-                      }}
-                      disabled={schoolsLoading}
-                      className={`w-full rounded-lg border px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100 ${
-                        schoolError ? "border-red-500" : ""
-                      } ${schoolsLoading ? "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed" : "border-gray-300 text-gray-700"}`}
-                      placeholder={
-                        schoolsLoading
-                          ? "Loading schools..."
-                          : "Type to search schools..."
-                      }
-                    />
-                    {showSchoolDropdown && (
-                      <div className="absolute top-full mt-1 w-full bg-white border border-blue-200 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
-                        {schoolsLoading ? (
-                          <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                            Loading schools...
-                          </div>
-                        ) : schoolsError ? (
-                          <div className="px-4 py-3 text-sm text-red-600 text-center">
-                            Error: {schoolsError}
-                          </div>
-                        ) : schools.length === 0 ? (
-                          <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                            No schools available
-                          </div>
-                        ) : filteredSchools.length > 0 ? (
-                          filteredSchools.map((schoolOption) => (
-                            <button
-                              key={schoolOption.id}
-                              type="button"
-                              onClick={() => {
-                                setSchoolId(schoolOption.id);
-                                setSchoolInputValue(schoolOption.school_name);
-                                setSchool(schoolOption.school_name);
-                                setShowSchoolDropdown(false);
-                                if (schoolError) setSchoolError("");
-                              }}
-                              className={`w-full px-3 py-1.5 text-left text-sm hover:bg-blue-50 transition cursor-pointer ${
-                                schoolId === schoolOption.id
-                                  ? "bg-blue-100 font-medium text-blue-700"
-                                  : "text-gray-700"
-                              }`}
-                            >
-                              {schoolOption.school_name}
-                            </button>
-                          ))
-                        ) : (
-                          <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                            No schools match &quot;{schoolInputValue}&quot;
+                    {useSchoolsDivisionOffice ? (
+                      <input
+                        type="text"
+                        value={SCHOOLS_DIVISION_OFFICE}
+                        readOnly
+                        disabled
+                        className="w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-700 cursor-not-allowed"
+                      />
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          value={schoolInputValue}
+                          onChange={(e) => {
+                            setSchoolInputValue(e.target.value);
+                            setShowSchoolDropdown(true);
+                          }}
+                          onFocus={() => setShowSchoolDropdown(true)}
+                          onBlur={() => {
+                            // Delay closing to allow click on option
+                            setTimeout(() => setShowSchoolDropdown(false), 150);
+                          }}
+                          disabled={schoolsLoading}
+                          className={`w-full rounded-lg border px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100 ${
+                            schoolError ? "border-red-500" : ""
+                          } ${schoolsLoading ? "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed" : "border-gray-300 text-gray-700"}`}
+                          placeholder={
+                            schoolsLoading
+                              ? "Loading schools..."
+                              : "Type to search schools..."
+                          }
+                        />
+                        {showSchoolDropdown && (
+                          <div className="absolute top-full mt-1 w-full bg-white border border-blue-200 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
+                            {schoolsLoading ? (
+                              <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                                Loading schools...
+                              </div>
+                            ) : schoolsError ? (
+                              <div className="px-4 py-3 text-sm text-red-600 text-center">
+                                Error: {schoolsError}
+                              </div>
+                            ) : schools.length === 0 ? (
+                              <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                                No schools available
+                              </div>
+                            ) : filteredSchools.length > 0 ? (
+                              filteredSchools.map((schoolOption) => (
+                                <button
+                                  key={schoolOption.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSchoolId(schoolOption.id);
+                                    setSchoolInputValue(
+                                      schoolOption.school_name,
+                                    );
+                                    setSchool(schoolOption.school_name);
+                                    setShowSchoolDropdown(false);
+                                    if (schoolError) setSchoolError("");
+                                  }}
+                                  className={`w-full px-3 py-1.5 text-left text-sm hover:bg-blue-50 transition cursor-pointer ${
+                                    schoolId === schoolOption.id
+                                      ? "bg-blue-100 font-medium text-blue-700"
+                                      : "text-gray-700"
+                                  }`}
+                                >
+                                  {schoolOption.school_name}
+                                </button>
+                              ))
+                            ) : (
+                              <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                                No schools match &quot;{schoolInputValue}&quot;
+                              </div>
+                            )}
                           </div>
                         )}
-                      </div>
+                      </>
                     )}
                   </div>
+                  <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={useSchoolsDivisionOffice}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setHasUnsavedChanges(true);
+                        setUseSchoolsDivisionOffice(checked);
+                        if (checked) {
+                          setSchool(SCHOOLS_DIVISION_OFFICE);
+                          setSchoolInputValue(SCHOOLS_DIVISION_OFFICE);
+                          setSchoolId(null);
+                          setShowSchoolDropdown(false);
+                          setSchoolError("");
+                        } else {
+                          setSchool("");
+                          setSchoolInputValue("");
+                          setSchoolId(null);
+                        }
+                      }}
+                      className="h-4 w-4 cursor-pointer"
+                    />
+                    Schools Division Office
+                  </label>
                   {schoolId && (
                     <p className="mt-1 text-xs text-green-700">
                       ✓ School selected

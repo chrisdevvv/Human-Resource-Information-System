@@ -9,6 +9,8 @@ import RegistrationSuccessModal from "./RegistrationSuccessModal";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
+const SCHOOLS_DIVISION_OFFICE = "Schools Division Office";
+
 type StepId = 1 | 2;
 
 export default function RegistrationMobile() {
@@ -21,6 +23,8 @@ export default function RegistrationMobile() {
   const [email, setEmail] = useState("");
   const [birthdate, setBirthdate] = useState("");
   const [school, setSchool] = useState("");
+  const [useSchoolsDivisionOffice, setUseSchoolsDivisionOffice] =
+    useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -92,6 +96,7 @@ export default function RegistrationMobile() {
     setEmail("");
     setBirthdate("");
     setSchool("");
+    setUseSchoolsDivisionOffice(false);
     setPassword("");
     setConfirmPassword("");
     setError("");
@@ -153,7 +158,9 @@ export default function RegistrationMobile() {
       hasError = true;
     }
 
-    if (!school.trim()) {
+    if (useSchoolsDivisionOffice) {
+      setSchoolError("");
+    } else if (!school.trim()) {
       setSchoolError("School is required");
       hasError = true;
     }
@@ -213,7 +220,9 @@ export default function RegistrationMobile() {
           email,
           birthdate,
           password,
-          school_name: school,
+          school_name: useSchoolsDivisionOffice
+            ? SCHOOLS_DIVISION_OFFICE
+            : school,
         }),
       });
 
@@ -406,14 +415,42 @@ export default function RegistrationMobile() {
                     School <span className="text-red-500">*</span>
                   </label>
                   <input
-                    value={school}
+                    value={
+                      useSchoolsDivisionOffice
+                        ? SCHOOLS_DIVISION_OFFICE
+                        : school
+                    }
                     onChange={(e) => {
                       setSchool(e.target.value);
                       if (schoolError) setSchoolError("");
                     }}
                     placeholder="Enter school name"
-                    className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${schoolError ? "border-red-500" : ""}`}
+                    readOnly={useSchoolsDivisionOffice}
+                    disabled={useSchoolsDivisionOffice}
+                    className={`mt-2 w-full px-3 py-2 border rounded-md placeholder:text-gray-500 ${schoolError ? "border-red-500" : ""} ${
+                      useSchoolsDivisionOffice
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "text-gray-700"
+                    }`}
                   />
+                  <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={useSchoolsDivisionOffice}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setUseSchoolsDivisionOffice(checked);
+                        if (checked) {
+                          setSchool(SCHOOLS_DIVISION_OFFICE);
+                          setSchoolError("");
+                        } else {
+                          setSchool("");
+                        }
+                      }}
+                      className="h-4 w-4 cursor-pointer"
+                    />
+                    Schools Division Office
+                  </label>
                   {schoolError && (
                     <p className="text-sm text-red-600 mt-1">{schoolError}</p>
                   )}

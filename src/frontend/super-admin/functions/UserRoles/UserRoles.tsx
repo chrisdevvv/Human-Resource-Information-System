@@ -478,7 +478,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                     setRoleFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  className="text-gray-500 w-full sm:w-auto sm:min-w-36 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ALL">All Roles</option>
                   <option value="ADMIN">Admin</option>
@@ -495,7 +495,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                       setSchoolFilter(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="w-full sm:w-72 lg:w-96 text-gray-500 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                    className="w-full sm:w-auto sm:min-w-48 lg:max-w-[18rem] text-gray-500 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                     disabled={schoolsLoading}
                   >
                     <option value="ALL">All Schools</option>
@@ -517,7 +517,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                     );
                     setCurrentPage(1);
                   }}
-                  className="text-gray-500 w-full sm:w-72 lg:w-96 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  className="text-gray-500 w-full sm:w-auto sm:min-w-42 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ACTIVE">Active Accounts</option>
                   <option value="INACTIVE">Inactive Accounts</option>
@@ -530,7 +530,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                     setLetterFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="text-gray-500 w-full px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  className="text-gray-500 w-full sm:w-auto sm:min-w-34 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ALL">All Letters</option>
                   {alphabet.map((letter) => (

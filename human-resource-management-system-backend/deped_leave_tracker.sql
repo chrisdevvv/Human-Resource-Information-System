@@ -196,6 +196,7 @@ CREATE TABLE `employees` (
   `sex_id` int(11) DEFAULT NULL,
   `employee_type` enum('teaching','non-teaching','teaching-related') NOT NULL,
   `school_id` int(11) NOT NULL,
+  `retirable` enum('Yes','No','Mandatory Retirement') DEFAULT NULL,
   `is_archived` tinyint(1) NOT NULL DEFAULT 0,
   `archived_at` datetime DEFAULT NULL,
   `archived_by` int(11) DEFAULT NULL,

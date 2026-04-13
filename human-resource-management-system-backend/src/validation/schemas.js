@@ -31,6 +31,10 @@ const districtSchema = Joi.string().trim().max(255).allow(null, "");
 const positionSchema = Joi.string().trim().max(255).allow(null, "");
 const plantillaNoSchema = Joi.string().trim().max(100).allow(null, "");
 const prcLicenseNoSchema = Joi.string().trim().max(100).allow(null, "");
+const retirableSchema = Joi.string()
+  .trim()
+  .valid("Yes", "No", "Mandatory Retirement")
+  .allow(null, "");
 const ageSchema = Joi.number().integer().min(0).max(150).allow(null);
 const employeeTypeSchema = Joi.string()
   .trim()
@@ -82,6 +86,7 @@ const employeeCreateBodySchema = Joi.object({
   position_id: Joi.number().integer().positive().allow(null, ""),
   plantilla_no: plantillaNoSchema,
   prc_license_no: prcLicenseNoSchema,
+  retirable: retirableSchema,
   birthdate: birthdateSchema.required(),
   age: ageSchema,
 });
@@ -117,6 +122,7 @@ const employeeUpdateBodySchema = Joi.object({
   position_id: Joi.number().integer().positive().allow(null, ""),
   plantilla_no: plantillaNoSchema,
   prc_license_no: prcLicenseNoSchema,
+  retirable: retirableSchema,
   birthdate: birthdateSchema.allow(null),
   age: ageSchema,
 });

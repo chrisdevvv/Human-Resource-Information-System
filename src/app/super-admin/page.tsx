@@ -7,6 +7,7 @@ import SidebarMobile from "../../frontend/sidebar/SidebarMobile";
 import StickyHeader from "../../frontend/components/StickyHeader";
 import AppFooter from "../../frontend/footer/page";
 import { hasAccessToFeature } from "../../frontend/auth/roleAccess";
+import { setPageTitle } from "../../frontend/utils/pageTitle";
 
 const ACTIVE_TAB_STORAGE_KEY = "activeTab:super-admin";
 const ALLOWED_TABS = new Set([
@@ -90,6 +91,10 @@ export default function Page() {
     window.addEventListener("pageshow", verifyAuth);
     return () => window.removeEventListener("pageshow", verifyAuth);
   }, [router]);
+
+  useEffect(() => {
+    setPageTitle(activeTab);
+  }, [activeTab]);
 
   if (!isAuthorized) {
     return null;
