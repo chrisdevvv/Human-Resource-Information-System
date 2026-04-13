@@ -4,6 +4,7 @@ import AdminProfileSettings from "./functions/AdminProfileSettings";
 import AdminUserRoles from "./functions/AdminUserRoles";
 import EmployeeLeaveManagement from "../functions/LeaveManagement/EmployeeLeaveManagement";
 import EmployeesListLayout from "../functions/EmployeesList/EmployeesProfile";
+import EServiceRecord from "../functions/eservice/EServiceRecord";
 import Dashboard from "../functions/Dashboard/Dashboard";
 import DashboardMobile from "../functions/Dashboard/DashboardMobile";
 
@@ -30,6 +31,8 @@ export default function Admin({
   switch (activeTab) {
     case "employees-list":
       return <EmployeesListLayout key={tabKey} />;
+    case "eservice":
+      return <EServiceRecord key={tabKey} />;
     case "employee-management":
       return <EmployeeLeaveManagement key={tabKey} />;
     case "user-roles":

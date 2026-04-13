@@ -13,6 +13,7 @@ import {
   LogOut,
   ShieldCheck,
   Users,
+  FileText,
 } from "lucide-react";
 import { logoutNow } from "@/frontend/auth/session";
 
@@ -41,6 +42,12 @@ const SIDEBAR_TABS: SidebarTab[] = [
     id: "employees-list",
     label: "Employees Profile",
     icon: Users,
+    roles: ["admin", "super-admin"],
+  },
+  {
+    id: "eservice",
+    label: "E-Service Record",
+    icon: FileText,
     roles: ["admin", "super-admin"],
   },
   {

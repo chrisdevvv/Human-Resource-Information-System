@@ -13,6 +13,7 @@ const ALLOWED_TABS = new Set([
   "dashboard",
   "employee-management",
   "employees-list",
+  "eservice",
   "user-roles",
   "logs",
   "configuration",

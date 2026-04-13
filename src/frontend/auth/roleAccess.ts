@@ -25,6 +25,11 @@ export const ACCESSIBLE_FEATURES: AccessibleFeature[] = [
     roles: ["admin", "super-admin"],
   },
   {
+    id: "eservice",
+    label: "E-Service Record",
+    roles: ["admin", "super-admin"],
+  },
+  {
     id: "user-roles",
     label: "User & Roles",
     roles: ["admin", "super-admin"],

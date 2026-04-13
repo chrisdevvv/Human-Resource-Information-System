@@ -10,6 +10,7 @@ import {
   Pencil,
   Search,
   Undo2,
+  UserCheck,
   X,
 } from "lucide-react";
 import ToastMessage from "../../components/ToastMessage";
@@ -29,6 +30,7 @@ type EmployeeRecordApi = {
   created_at?: string | null;
   birthdate?: string | null;
   is_archived?: number;
+  archived_reason?: string | null;
 };
 
 type EmployeeRecord = {
@@ -43,6 +45,7 @@ type EmployeeRecord = {
   schoolId: number | null;
   birthdate: string;
   createdAt?: string;
+  archivedReason: string;
 };
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
@@ -101,6 +104,7 @@ const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
     schoolId: item.school_id ?? null,
     birthdate: item.birthdate || "",
     createdAt: item.created_at || undefined,
+    archivedReason: item.archived_reason?.trim() || "",
   };
 };
 
@@ -194,7 +198,7 @@ export default function ArchivedEmployee() {
   const handleBulkUnarchiveClick = () => {
     const ids = Array.from(selectedEmployeeIds);
     if (ids.length === 0) {
-      setUnarchiveError("Please select at least one employee to unarchive.");
+      setUnarchiveError("Please select at least one employee to activate.");
       return;
     }
 
@@ -428,10 +432,10 @@ export default function ArchivedEmployee() {
               <button
                 onClick={handleBulkUnarchiveClick}
                 disabled={selectedEmployeeIds.size === 0 || isUnarchiving}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg transition font-medium text-sm cursor-pointer bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg transition font-medium text-sm cursor-pointer bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Undo2 size={14} />
-                Unarchive Selected ({selectedEmployeeIds.size})
+                Activate Selected ({selectedEmployeeIds.size})
               </button>
             )}
           </div>
@@ -548,6 +552,16 @@ export default function ArchivedEmployee() {
                     <p className="text-xs text-gray-600 truncate">
                       {employee.schoolName || "N/A"}
                     </p>
+                    <p
+                      className="text-xs text-gray-600 truncate"
+                      title={employee.archivedReason}
+                    >
+                      {employee.archivedReason
+                        ? employee.archivedReason.length > 32
+                          ? employee.archivedReason.substring(0, 32) + "..."
+                          : employee.archivedReason
+                        : "N/A"}
+                    </p>
 
                     <div className="mt-2 flex items-center justify-end gap-2">
                       <button
@@ -565,16 +579,17 @@ export default function ArchivedEmployee() {
                         disabled={
                           isUnarchiving || showUnarchiveSuccess || isEditMode
                         }
-                        className="cursor-pointer rounded bg-red-600 px-3 py-1 text-xs font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex items-center gap-1 cursor-pointer rounded bg-green-600 px-3 py-1 text-xs font-medium text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        Unarchive
+                        <UserCheck size={12} />
+                        Activate
                       </button>
                     </div>
                   </div>
                 ))
               ) : (
                 <p className="py-8 text-center text-gray-500 text-sm">
-                  No archived employees found.
+                  No deactivated employees found.
                 </p>
               )}
             </div>
@@ -607,6 +622,9 @@ export default function ArchivedEmployee() {
                     </th>
                     <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       School
+                    </th>
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                      Reason
                     </th>
                     <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Action
@@ -642,6 +660,16 @@ export default function ArchivedEmployee() {
                         <td className="py-1 px-3 text-gray-500 text-sm">
                           {employee.schoolName}
                         </td>
+                        <td
+                          className="py-1 px-3 text-gray-500 text-sm"
+                          title={employee.archivedReason}
+                        >
+                          {employee.archivedReason
+                            ? employee.archivedReason.length > 32
+                              ? employee.archivedReason.substring(0, 32) + "..."
+                              : employee.archivedReason
+                            : "N/A"}
+                        </td>
                         <td className="py-1 px-3 text-center">
                           <div className="inline-flex items-center gap-2">
                             <button
@@ -664,9 +692,10 @@ export default function ArchivedEmployee() {
                                 showUnarchiveSuccess ||
                                 isEditMode
                               }
-                              className="cursor-pointer rounded px-3 py-1 text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                              className="inline-flex items-center gap-1 cursor-pointer rounded px-3 py-1 text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                              Unarchive
+                              <UserCheck size={14} />
+                              Activate
                             </button>
                           </div>
                         </td>
@@ -675,10 +704,10 @@ export default function ArchivedEmployee() {
                   ) : (
                     <tr>
                       <td
-                        colSpan={isEditMode ? 6 : 5}
+                        colSpan={isEditMode ? 7 : 6}
                         className="py-8 text-center text-gray-500"
                       >
-                        No archived employees found.
+                        No deactivated employees found.
                       </td>
                     </tr>
                   )}

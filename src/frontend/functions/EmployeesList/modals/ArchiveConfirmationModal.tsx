@@ -49,10 +49,10 @@ function ArchiveConfirmationModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 sm:px-4">
       <div className="relative w-full max-w-md rounded-xl bg-white shadow-2xl p-6">
         <h2 className="text-lg font-bold text-gray-800 mb-2">
-          Archive Employee
+          Deactivate Employee
         </h2>
         <p className="text-gray-700 mb-4">
-          Are you sure you want to archive
+          Are you sure you want to deactivate
           {employeeName ? (
             <span className="font-semibold"> {employeeName}</span>
           ) : (
@@ -80,19 +80,19 @@ function ArchiveConfirmationModal({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Reason for archiving
+              Reason for deactivating
             </label>
             <textarea
               value={archiveReason}
               onChange={(e) => setArchiveReason(e.target.value)}
               onBlur={() => setReasonTouched(true)}
               className="text-black w-full min-h-24 rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter the reason for archiving"
+              placeholder="Enter the reason for deactivating"
               disabled={isLoading}
             />
             {reasonTouched && !archiveReason.trim() && (
               <p className="text-xs text-red-500 mt-1">
-                Archive reason is required.
+                Deactivation reason is required.
               </p>
             )}
           </div>
@@ -116,7 +116,7 @@ function ArchiveConfirmationModal({
             >
               <span className="inline-flex items-center gap-1">
                 <Archive size={14} />
-                {isLoading ? "Archiving..." : "Confirm Archive"}
+                {isLoading ? "Deactivating..." : "Confirm Deactivate"}
               </span>
             </button>
           </div>

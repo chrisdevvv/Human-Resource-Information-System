@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Archive,
+  UserX,
   Users,
   Plus,
   CheckCircle2,
@@ -120,6 +121,19 @@ const getCurrentUserRole = (): string => {
   }
 };
 
+const computeAge = (birthdate: string | null | undefined): number | null => {
+  if (!birthdate) return null;
+  const dob = new Date(birthdate);
+  if (Number.isNaN(dob.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDelta = today.getMonth() - dob.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < dob.getDate())) {
+    age -= 1;
+  }
+  return Math.max(0, age);
+};
+
 const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
   const firstName = item.first_name?.trim() || "Unknown";
   const middleName = item.middle_name?.trim() || "";
@@ -153,6 +167,9 @@ export default function EmployeesListLayout() {
   const [schoolFilter, setSchoolFilter] = useState("ALL");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [letterFilter, setLetterFilter] = useState("ALL");
+  const [retirementFilter, setRetirementFilter] = useState<
+    "ALL" | "retirable" | "mandatory"
+  >("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [pageJumpInput, setPageJumpInput] = useState("1");
@@ -254,8 +271,21 @@ export default function EmployeesListLayout() {
           letterFilter === "ALL" ||
           employee.fullName.charAt(0).toUpperCase() === letterFilter;
 
+        const matchesRetirement = (() => {
+          if (retirementFilter === "ALL") return true;
+          const age = computeAge(employee.birthdate);
+          if (age === null) return false;
+          if (retirementFilter === "mandatory") return age >= 65;
+          if (retirementFilter === "retirable") return age >= 60 && age < 65;
+          return false;
+        })();
+
         return (
-          matchesSearch && matchesEmployeeType && matchesSchool && matchesLetter
+          matchesSearch &&
+          matchesEmployeeType &&
+          matchesSchool &&
+          matchesLetter &&
+          matchesRetirement
         );
       })
       .sort((a, b) => {
@@ -270,6 +300,7 @@ export default function EmployeesListLayout() {
     employeeTypeFilter,
     schoolFilter,
     letterFilter,
+    retirementFilter,
     sortOrder,
   ]);
 
@@ -329,6 +360,7 @@ export default function EmployeesListLayout() {
     setEmployeeTypeFilter("ALL");
     setSchoolFilter("ALL");
     setLetterFilter("ALL");
+    setRetirementFilter("ALL");
     setSortOrder("asc");
     setCurrentPage(1);
     setPageJumpInput("1");
@@ -380,7 +412,7 @@ export default function EmployeesListLayout() {
       setArchiveError(
         err instanceof Error
           ? err.message
-          : "Failed to archive employee. Please try again.",
+          : "Failed to deactivate employee. Please try again.",
       );
     } finally {
       setIsArchiving(false);
@@ -406,6 +438,7 @@ export default function EmployeesListLayout() {
     employeeTypeFilter !== "ALL" ||
     schoolFilter !== "ALL" ||
     letterFilter !== "ALL" ||
+    retirementFilter !== "ALL" ||
     sortOrder !== "asc";
 
   return (
@@ -531,6 +564,21 @@ export default function EmployeesListLayout() {
                   ))}
                 </select>
 
+                <select
+                  value={retirementFilter}
+                  onChange={(e) => {
+                    setRetirementFilter(
+                      e.target.value as "ALL" | "retirable" | "mandatory",
+                    );
+                    setCurrentPage(1);
+                  }}
+                  className="w-full sm:w-auto text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                >
+                  <option value="ALL">All</option>
+                  <option value="retirable">Retirable</option>
+                  <option value="mandatory">Mandatory Retirement</option>
+                </select>
+
                 <button
                   onClick={() => {
                     setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -609,12 +657,12 @@ export default function EmployeesListLayout() {
                             <button
                               type="button"
                               onClick={() => handleOpenArchive(employee)}
-                              className="inline-flex items-center gap-1 rounded bg-gray-800 px-3 py-1 text-xs font-medium text-white hover:bg-gray-900 transition cursor-pointer"
-                              aria-label="Archive employee"
-                              title="Archive"
+                              className="inline-flex items-center gap-1 rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 transition cursor-pointer"
+                              aria-label="Deactivate employee"
+                              title="Deactivate"
                             >
-                              <Archive size={12} />
-                              Archive
+                              <UserX size={12} />
+                              Deactivate
                             </button>
                           ) : null}
                         </div>
@@ -686,12 +734,12 @@ export default function EmployeesListLayout() {
                                       onClick={() =>
                                         handleOpenArchive(employee)
                                       }
-                                      className="inline-flex items-center gap-1 rounded bg-gray-800 px-3 py-1 text-xs font-medium text-white hover:bg-gray-900 transition cursor-pointer"
-                                      aria-label="Archive employee"
-                                      title="Archive"
+                                      className="inline-flex items-center gap-1 rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 transition cursor-pointer"
+                                      aria-label="Deactivate employee"
+                                      title="Deactivate"
                                     >
-                                      <Archive size={12} />
-                                      Archive
+                                      <UserX size={12} />
+                                      Deactivate
                                     </button>
                                   ) : null}
                                 </div>

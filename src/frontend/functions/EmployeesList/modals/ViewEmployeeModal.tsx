@@ -1,7 +1,16 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Loader2, Pencil, XCircle, Save, X, AlertCircle } from "lucide-react";
+import {
+  Loader2,
+  Pencil,
+  XCircle,
+  Save,
+  X,
+  AlertCircle,
+  Clock,
+  AlertTriangle,
+} from "lucide-react";
 import ChangesToast from "./ChangesToast";
 import ChangesConfirmation from "./ChangesConfirmation";
 
@@ -832,10 +841,34 @@ export default function ViewEmployeeModal({
             </div>
 
             <div className="flex items-center justify-between gap-2 sm:items-start sm:justify-start">
-              <div className="rounded-xl bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 sm:px-4 sm:py-2 sm:text-sm">
-                {activeSection === "personal"
-                  ? "Personal Information"
-                  : "Work Information"}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="rounded-xl bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 sm:px-4 sm:py-2 sm:text-sm">
+                  {activeSection === "personal"
+                    ? "Personal Information"
+                    : "Work Information"}
+                </div>
+                {(() => {
+                  const age = computeAge(
+                    resolvedDetails?.birthdate || employee?.birthdate,
+                  );
+                  if (age !== null && age >= 65) {
+                    return (
+                      <div className="inline-flex items-center gap-1 rounded-xl bg-yellow-100 px-3 py-1.5 text-xs font-bold text-orange-600 sm:px-4 sm:py-2 sm:text-sm">
+                        <AlertTriangle size={14} />
+                        Mandatory Retirement
+                      </div>
+                    );
+                  }
+                  if (age !== null && age >= 60) {
+                    return (
+                      <div className="inline-flex items-center gap-1 rounded-xl bg-yellow-100 px-3 py-1.5 text-xs font-bold text-orange-600 sm:px-4 sm:py-2 sm:text-sm">
+                        <Clock size={14} />
+                        Retirable
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               <button
@@ -910,18 +943,22 @@ export default function ViewEmployeeModal({
 
           {isArchived ? (
             <div className="mb-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 sm:p-4">
-              <h3 className="text-lg font-bold text-amber-900">
-                Archive Information
-              </h3>
-              <p className="mt-1 text-sm text-amber-800">
-                This employee is currently archived.
-              </p>
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <h3 className="text-lg font-bold text-amber-900">
+                  Archive Information
+                </h3>
+                <p className="mt-1 text-sm text-amber-800">
+                  This employee is currently archived.
+                </p>
+              </div>
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <InfoField
                   label="Archived At"
                   value={formatDate(resolvedDetails?.archived_at)}
                 />
                 <InfoField label="Archived By" value={archivedByLabel} />
+              </div>
+              <div className="mt-3">
                 <InfoField
                   label="Archive Reason"
                   value={formatValue(resolvedDetails?.archived_reason)}
