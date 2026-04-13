@@ -16,5 +16,5 @@ All routes require authentication.
 
 ## Behavior Notes
 - Create, update, and delete operations also write activity logs to the backlog module.
-- Employee data includes school association and employee type (teaching/non-teaching).
+- Employee data includes school association and employee type (teaching/non-teaching/teaching-related).
 - Deleting an employee may cascade to related leave records depending on database constraints.

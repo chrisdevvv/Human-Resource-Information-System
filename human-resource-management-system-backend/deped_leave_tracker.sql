@@ -194,7 +194,7 @@ CREATE TABLE `employees` (
   `civil_status_id` int(11) DEFAULT NULL,
   `sex` varchar(20) DEFAULT NULL,
   `sex_id` int(11) DEFAULT NULL,
-  `employee_type` enum('teaching','non-teaching') NOT NULL,
+  `employee_type` enum('teaching','non-teaching','teaching-related') NOT NULL,
   `school_id` int(11) NOT NULL,
   `is_archived` tinyint(1) NOT NULL DEFAULT 0,
   `archived_at` datetime DEFAULT NULL,

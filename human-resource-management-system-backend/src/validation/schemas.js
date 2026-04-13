@@ -32,6 +32,11 @@ const positionSchema = Joi.string().trim().max(255).allow(null, "");
 const plantillaNoSchema = Joi.string().trim().max(100).allow(null, "");
 const prcLicenseNoSchema = Joi.string().trim().max(100).allow(null, "");
 const ageSchema = Joi.number().integer().min(0).max(150).allow(null);
+const employeeTypeSchema = Joi.string()
+  .trim()
+  .lowercase()
+  .valid("teaching", "non-teaching", "teaching-related", "teaching related")
+  .required();
 
 const requiredMiddleNameWhenApplicable = middleNameSchema.when(
   "no_middle_name",
@@ -67,7 +72,7 @@ const employeeCreateBodySchema = Joi.object({
   civil_status_id: Joi.number().integer().positive().allow(null, ""),
   sex: sexSchema,
   sex_id: Joi.number().integer().positive().allow(null, ""),
-  employee_type: Joi.string().valid("teaching", "non-teaching").required(),
+  employee_type: employeeTypeSchema,
   school_id: Joi.number().integer().positive().required(),
   employee_no: employeeNoSchema,
   work_email: workEmailSchema,
@@ -102,7 +107,7 @@ const employeeUpdateBodySchema = Joi.object({
   civil_status_id: Joi.number().integer().positive().allow(null, ""),
   sex: sexSchema,
   sex_id: Joi.number().integer().positive().allow(null, ""),
-  employee_type: Joi.string().valid("teaching", "non-teaching").required(),
+  employee_type: employeeTypeSchema,
   school_id: Joi.number().integer().positive().required(),
   employee_no: employeeNoSchema,
   work_email: workEmailSchema,

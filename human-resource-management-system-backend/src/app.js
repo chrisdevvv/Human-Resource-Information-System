@@ -300,6 +300,55 @@ const ensureMiddleNameSchema = async () => {
   `);
 };
 
+const ensureEmployeeTypeSchema = async () => {
+  const parseEnumValues = (columnType) => {
+    if (!columnType || !/^enum\(/i.test(columnType)) return [];
+    const inner = columnType.slice(
+      columnType.indexOf("(") + 1,
+      columnType.lastIndexOf(")"),
+    );
+    const matches = inner.match(/'((?:[^'\\]|\\.)*)'/g) || [];
+    return matches.map((token) => token.slice(1, -1).replace(/\\'/g, "'"));
+  };
+
+  const toEnumSql = (values) =>
+    values.map((v) => `'${String(v).replace(/'/g, "''")}'`).join(",");
+
+  const [typeRows] = await pool.promise().query(
+    `SELECT COLUMN_TYPE AS column_type
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'employees'
+       AND COLUMN_NAME = 'employee_type'
+     LIMIT 1`,
+  );
+
+  const currentEnumValues = parseEnumValues(typeRows?.[0]?.column_type || "");
+  if (currentEnumValues.length === 0) {
+    return;
+  }
+
+  const mergedValues = Array.from(
+    new Set([...currentEnumValues, "teaching-related"]),
+  );
+
+  if (mergedValues.length !== currentEnumValues.length) {
+    const enumSql = toEnumSql(mergedValues);
+    await pool.promise().query(`
+      ALTER TABLE employees
+      MODIFY COLUMN employee_type ENUM(${enumSql}) NOT NULL;
+    `);
+  }
+
+  // Canonicalize legacy values so all variants store as teaching-related.
+  await pool.promise().query(`
+    UPDATE employees
+    SET employee_type = 'teaching-related'
+    WHERE LOWER(REPLACE(REPLACE(employee_type, '_', '-'), ' ', '-')) = 'teaching-related'
+      AND employee_type <> 'teaching-related';
+  `);
+};
+
 const ensureEmployeeProfileSchema = async () => {
   await pool.promise().query(`
     ALTER TABLE employees
@@ -995,6 +1044,9 @@ app.listen(PORT, async () => {
 
     await ensureMiddleNameSchema();
     console.log("✔  Middle name schema is ready");
+
+    await ensureEmployeeTypeSchema();
+    console.log("✔  Employee type schema is ready");
 
     await ensureEmployeeProfileSchema();
     console.log("✔  Employee profile schema is ready");
