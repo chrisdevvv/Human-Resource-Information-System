@@ -370,7 +370,10 @@ const ensureEmployeeProfileSchema = async () => {
     ADD COLUMN IF NOT EXISTS gsis_crn_no VARCHAR(50) NULL AFTER gsis_bp_no,
     ADD COLUMN IF NOT EXISTS pagibig_no VARCHAR(50) NULL AFTER gsis_crn_no,
     ADD COLUMN IF NOT EXISTS philhealth_no VARCHAR(50) NULL AFTER pagibig_no,
-    ADD COLUMN IF NOT EXISTS age INT NULL AFTER philhealth_no;
+    ADD COLUMN IF NOT EXISTS age INT NULL AFTER philhealth_no,
+    ADD COLUMN IF NOT EXISTS date_of_first_appointment DATE NULL AFTER age,
+    ADD COLUMN IF NOT EXISTS years_in_service INT NULL AFTER date_of_first_appointment,
+    ADD COLUMN IF NOT EXISTS loyalty_bonus ENUM('Yes', 'No') NOT NULL DEFAULT 'No' AFTER years_in_service;
   `);
 
   await pool.promise().query(`
@@ -397,6 +400,25 @@ const ensureEmployeeProfileSchema = async () => {
       }
     }
   }
+};
+
+const syncEmployeeServiceMetrics = async () => {
+  await pool.promise().query(`
+    UPDATE employees
+    SET years_in_service = CASE
+          WHEN date_of_first_appointment IS NULL THEN NULL
+          WHEN date_of_first_appointment > CURDATE() THEN 0
+          ELSE TIMESTAMPDIFF(YEAR, date_of_first_appointment, CURDATE())
+        END,
+        loyalty_bonus = CASE
+          WHEN date_of_first_appointment IS NULL THEN 'No'
+          WHEN date_of_first_appointment > CURDATE() THEN 'No'
+          WHEN TIMESTAMPDIFF(YEAR, date_of_first_appointment, CURDATE()) > 0
+               AND MOD(TIMESTAMPDIFF(YEAR, date_of_first_appointment, CURDATE()), 5) = 0
+            THEN 'Yes'
+          ELSE 'No'
+        END;
+  `);
 };
 
 const ensureBacklogArchiveSchema = async () => {
@@ -1056,6 +1078,9 @@ app.listen(PORT, async () => {
     await ensureEmployeeProfileSchema();
     console.log("✔  Employee profile schema is ready");
 
+    await syncEmployeeServiceMetrics();
+    console.log("✔  Employee service metrics are synced");
+
     await ensureBacklogArchiveSchema();
     console.log("✔  Backlog archive schema is ready");
 
@@ -1115,6 +1140,7 @@ app.listen(PORT, async () => {
     cron.schedule("0 1 * * *", async () => {
       try {
         await archiveOldBacklogs();
+        await syncEmployeeServiceMetrics();
       } catch (error) {
         console.error("[Backlog Archive] Scheduled run failed:", error.message);
       }
