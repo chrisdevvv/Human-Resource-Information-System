@@ -61,7 +61,11 @@ CREATE TABLE `employees` (
   `sex_id` int(11) DEFAULT NULL,
   `employee_type` enum('teaching','non-teaching','teaching-related') NOT NULL,
   `school_id` int(11) NOT NULL,
-  `retirable` enum('Yes','No','Mandatory Retirement') DEFAULT NULL,
+  `tin` varchar(50) DEFAULT NULL,
+  `gsis_bp_no` varchar(50) DEFAULT NULL,
+  `gsis_crn_no` varchar(50) DEFAULT NULL,
+  `pagibig_no` varchar(50) DEFAULT NULL,
+  `philhealth_no` varchar(50) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

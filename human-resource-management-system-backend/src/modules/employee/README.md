@@ -16,5 +16,5 @@ All routes require authentication.
 
 ## Behavior Notes
 - Create, update, and delete operations also write activity logs to the backlog module.
-- Employee data includes school association and employee type (teaching/non-teaching/teaching-related).
+- Employee data includes school association, employee type (teaching/non-teaching/teaching-related), and identity fields like TIN, GSIS BP#, GSIS CRN#, PAG-IBIG#, and PhilHealth.
 - Deleting an employee may cascade to related leave records depending on database constraints.

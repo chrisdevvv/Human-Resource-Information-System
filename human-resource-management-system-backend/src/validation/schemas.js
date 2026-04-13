@@ -31,10 +31,11 @@ const districtSchema = Joi.string().trim().max(255).allow(null, "");
 const positionSchema = Joi.string().trim().max(255).allow(null, "");
 const plantillaNoSchema = Joi.string().trim().max(100).allow(null, "");
 const prcLicenseNoSchema = Joi.string().trim().max(100).allow(null, "");
-const retirableSchema = Joi.string()
-  .trim()
-  .valid("Yes", "No", "Mandatory Retirement")
-  .allow(null, "");
+const tinSchema = Joi.string().trim().max(50).allow(null, "");
+const gsisBpNoSchema = Joi.string().trim().max(50).allow(null, "");
+const gsisCrnNoSchema = Joi.string().trim().max(50).allow(null, "");
+const pagibigNoSchema = Joi.string().trim().max(50).allow(null, "");
+const philhealthNoSchema = Joi.string().trim().max(50).allow(null, "");
 const ageSchema = Joi.number().integer().min(0).max(150).allow(null);
 const employeeTypeSchema = Joi.string()
   .trim()
@@ -86,7 +87,11 @@ const employeeCreateBodySchema = Joi.object({
   position_id: Joi.number().integer().positive().allow(null, ""),
   plantilla_no: plantillaNoSchema,
   prc_license_no: prcLicenseNoSchema,
-  retirable: retirableSchema,
+  tin: tinSchema,
+  gsis_bp_no: gsisBpNoSchema,
+  gsis_crn_no: gsisCrnNoSchema,
+  pagibig_no: pagibigNoSchema,
+  philhealth_no: philhealthNoSchema,
   birthdate: birthdateSchema.required(),
   age: ageSchema,
 });
@@ -122,7 +127,11 @@ const employeeUpdateBodySchema = Joi.object({
   position_id: Joi.number().integer().positive().allow(null, ""),
   plantilla_no: plantillaNoSchema,
   prc_license_no: prcLicenseNoSchema,
-  retirable: retirableSchema,
+  tin: tinSchema,
+  gsis_bp_no: gsisBpNoSchema,
+  gsis_crn_no: gsisCrnNoSchema,
+  pagibig_no: pagibigNoSchema,
+  philhealth_no: philhealthNoSchema,
   birthdate: birthdateSchema.allow(null),
   age: ageSchema,
 });
