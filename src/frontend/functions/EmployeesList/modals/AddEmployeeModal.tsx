@@ -87,7 +87,7 @@ type PendingEmployeePayload = {
   civil_status_id: number | null;
   sex: string;
   sex_id: number | null;
-  employee_type: "teaching" | "non-teaching";
+  employee_type: "teaching" | "non-teaching" | "teaching-related";
   school_id: number;
   school_name: string;
   employee_no: string;
@@ -138,6 +138,7 @@ const formatEmployeeType = (type: string): string => {
   const normalized = String(type).toLowerCase().trim();
   if (normalized === "non-teaching") return "Non-Teaching";
   if (normalized === "teaching") return "Teaching";
+  if (normalized === "teaching-related") return "Teaching-Related";
   return type;
 };
 
@@ -179,7 +180,7 @@ export default function AddEmployeeModal({
   const [employeeNo, setEmployeeNo] = useState("");
   const [workEmail, setWorkEmail] = useState("");
   const [plantillaNo, setPlantillaNo] = useState("");
-  const [employeeType, setEmployeeType] = useState<"teaching" | "non-teaching">(
+  const [employeeType, setEmployeeType] = useState<"teaching" | "non-teaching" | "teaching-related">(
     "non-teaching",
   );
   const [selectedPositionId, setSelectedPositionId] = useState<number | null>(
@@ -1664,13 +1665,14 @@ export default function AddEmployeeModal({
                   value={employeeType}
                   onChange={(e) =>
                     setEmployeeType(
-                      e.target.value as "teaching" | "non-teaching",
+                      e.target.value as "teaching" | "non-teaching" | "teaching-related",
                     )
                   }
                   className="mt-1 w-full cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700"
                 >
                   <option value="teaching">Teaching</option>
                   <option value="non-teaching">Non-Teaching</option>
+                  <option value="teaching-related">Teaching-Related</option>
                 </select>
                 {renderFieldError("Employee Type")}
               </div>

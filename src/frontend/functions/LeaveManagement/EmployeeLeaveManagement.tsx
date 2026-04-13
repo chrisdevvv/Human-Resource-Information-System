@@ -133,7 +133,7 @@ export default function EmployeeLeaveManagement() {
   >("leave-records");
   const [searchQuery, setSearchQuery] = useState("");
   const [employeeTypeFilter, setEmployeeTypeFilter] = useState<
-    "ALL" | "teaching" | "non-teaching"
+    "ALL" | "teaching" | "non-teaching" | "teaching-related"
   >("ALL");
   const [schoolFilter, setSchoolFilter] = useState("ALL");
   const [leaveStatusFilter, setLeaveStatusFilter] = useState<
@@ -466,7 +466,7 @@ export default function EmployeeLeaveManagement() {
                   value={employeeTypeFilter}
                   onChange={(e) => {
                     setEmployeeTypeFilter(
-                      e.target.value as "ALL" | "teaching" | "non-teaching",
+                      e.target.value as "ALL" | "teaching" | "non-teaching" | "teaching-related",
                     );
                     setCurrentPage(1);
                   }}
@@ -475,6 +475,7 @@ export default function EmployeeLeaveManagement() {
                   <option value="ALL">All Employee Types</option>
                   <option value="teaching">Teaching</option>
                   <option value="non-teaching">Non-Teaching</option>
+                  <option value="teaching-related">Teaching-Related</option>
                 </select>
 
                 {currentUserRole === "SUPER_ADMIN" ? (

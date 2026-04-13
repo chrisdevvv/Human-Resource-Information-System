@@ -31,7 +31,7 @@ type EmployeeRecordApi = {
   email?: string | null;
   school_name?: string | null;
   school_id?: number | null;
-  employee_type?: "teaching" | "non-teaching";
+  employee_type?: "teaching" | "non-teaching" | "teaching-related";
   birthdate?: string | null;
 };
 
@@ -42,7 +42,7 @@ type EmployeeRecord = {
   lastName: string;
   email: string;
   fullName: string;
-  employeeType: "teaching" | "non-teaching";
+  employeeType: "teaching" | "non-teaching" | "teaching-related";
   schoolId: number | null;
   schoolName: string;
   birthdate: string;
@@ -162,7 +162,7 @@ export default function EmployeesListLayout() {
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [employeeTypeFilter, setEmployeeTypeFilter] = useState<
-    "ALL" | "teaching" | "non-teaching"
+    "ALL" | "teaching" | "non-teaching" | "teaching-related"
   >("ALL");
   const [schoolFilter, setSchoolFilter] = useState("ALL");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -519,7 +519,7 @@ export default function EmployeesListLayout() {
                   value={employeeTypeFilter}
                   onChange={(e) => {
                     setEmployeeTypeFilter(
-                      e.target.value as "ALL" | "teaching" | "non-teaching",
+                      e.target.value as "ALL" | "teaching" | "non-teaching" | "teaching-related",
                     );
                     setCurrentPage(1);
                   }}
@@ -528,6 +528,7 @@ export default function EmployeesListLayout() {
                   <option value="ALL">All Employee Types</option>
                   <option value="teaching">Teaching</option>
                   <option value="non-teaching">Non-Teaching</option>
+                  <option value="teaching-related">Teaching-Related</option>
                 </select>
 
                 {currentUserRole === "SUPER_ADMIN" ? (

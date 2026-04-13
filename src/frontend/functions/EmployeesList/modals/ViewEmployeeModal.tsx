@@ -58,7 +58,7 @@ type EmployeeDetailsResponse = {
   civil_status_id?: number | null;
   sex?: string | null;
   sex_id?: number | null;
-  employee_type?: "teaching" | "non-teaching";
+  employee_type?: "teaching" | "non-teaching" | "teaching-related";
   school_id?: number | null;
   school_name?: string | null;
   employee_no?: string | null;
@@ -89,7 +89,7 @@ type ViewEmployeeModalProps = {
     lastName: string;
     fullName: string;
     email: string;
-    employeeType: "teaching" | "non-teaching";
+    employeeType: "teaching" | "non-teaching" | "teaching-related";
     schoolId: number | null;
     schoolName: string;
     birthdate: string;
@@ -102,7 +102,7 @@ type ViewEmployeeModalProps = {
     lastName: string;
     fullName: string;
     email: string;
-    employeeType: "teaching" | "non-teaching";
+    employeeType: "teaching" | "non-teaching" | "teaching-related";
     schoolId: number | null;
     schoolName: string;
     birthdate: string;
@@ -251,7 +251,7 @@ export default function ViewEmployeeModal({
   const [editPosition, setEditPosition] = useState("");
   const [editPlantillaNo, setEditPlantillaNo] = useState("");
   const [editEmployeeType, setEditEmployeeType] = useState<
-    "teaching" | "non-teaching"
+    "teaching" | "non-teaching" | "teaching-related"
   >("non-teaching");
   const [editSchoolId, setEditSchoolId] = useState<number | null>(null);
   const [editSchoolName, setEditSchoolName] = useState("");
@@ -1250,13 +1250,14 @@ export default function ViewEmployeeModal({
                       value={editEmployeeType}
                       onChange={(e) =>
                         setEditEmployeeType(
-                          e.target.value as "teaching" | "non-teaching",
+                          e.target.value as "teaching" | "non-teaching" | "teaching-related",
                         )
                       }
                       className="w-full cursor-pointer rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
                     >
                       <option value="teaching">Teaching</option>
                       <option value="non-teaching">Non-Teaching</option>
+                      <option value="teaching-related">Teaching-Related</option>
                     </select>
                   </InfoField>
 
