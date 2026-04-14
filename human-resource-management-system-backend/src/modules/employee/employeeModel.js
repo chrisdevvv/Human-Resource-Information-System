@@ -113,8 +113,7 @@ const computeServiceMetrics = (dateOfFirstAppointment) => {
   const now = new Date();
   let years = now.getFullYear() - y;
   const hasReachedAnniversary =
-    now.getMonth() + 1 > m ||
-    (now.getMonth() + 1 === m && now.getDate() >= d);
+    now.getMonth() + 1 > m || (now.getMonth() + 1 === m && now.getDate() >= d);
 
   if (!hasReachedAnniversary) {
     years -= 1;

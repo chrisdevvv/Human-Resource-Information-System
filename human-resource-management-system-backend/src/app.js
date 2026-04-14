@@ -288,7 +288,9 @@ const ensureUniqueIndex = async (tableName, indexName, columns) => {
   const quotedColumns = columns.map((column) => `\`${column}\``).join(", ");
   await pool
     .promise()
-    .query(`CREATE UNIQUE INDEX ${indexName} ON ${tableName} (${quotedColumns})`);
+    .query(
+      `CREATE UNIQUE INDEX ${indexName} ON ${tableName} (${quotedColumns})`,
+    );
 };
 
 const ensureBirthdateSchema = async () => {
@@ -902,12 +904,15 @@ app.post(
       const reasonName = req.body.reason_name.trim();
       const [existingRows] = await pool
         .promise()
-        .query("SELECT id FROM archiving_reasons WHERE reason_name = ? LIMIT 1", [
-          reasonName,
-        ]);
+        .query(
+          "SELECT id FROM archiving_reasons WHERE reason_name = ? LIMIT 1",
+          [reasonName],
+        );
 
       if (existingRows.length > 0) {
-        return res.status(409).json({ message: "Archiving reason already exists" });
+        return res
+          .status(409)
+          .json({ message: "Archiving reason already exists" });
       }
 
       const [result] = await pool
