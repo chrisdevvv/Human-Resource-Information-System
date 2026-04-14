@@ -19,7 +19,7 @@ import AddEmployeeModal from "@/frontend/functions/EmployeesList/modals/AddEmplo
 import ArchivedEmployee from "./ArchivedEmployee";
 import ArchiveConfirmationModal from "./modals/ArchiveConfirmationModal";
 import ArchiveSuccessMessage from "../LeaveManagement/ArchiveSuccessMessage";
-import ViewEmployeeModal from "./modals/ViewEmployeeModal";
+import ViewEmployeeModal from "./EmployeeDetails/ViewEmployeeModal";
 import ToastMessage from "../../components/ToastMessage";
 import { archiveEmployee } from "../LeaveManagement/leaveApi";
 

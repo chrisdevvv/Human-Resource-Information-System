@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import ToastMessage from "../../components/ToastMessage";
-import ViewEmployeeModal from "./modals/ViewEmployeeModal";
+import ViewEmployeeModal from "./EmployeeDetails/ViewEmployeeModal";
 import UnarchiveConfirmationModal from "./modals/UnarchiveConfirmationModal";
 import { unarchiveEmployee } from "../LeaveManagement/leaveApi";
 
