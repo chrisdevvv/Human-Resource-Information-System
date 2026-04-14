@@ -44,7 +44,7 @@ type EmployeeRecord = LeaveModalRecord & {
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type SessionUser = {
   role?: string;
@@ -134,6 +134,21 @@ type EmployeeApiResponse = {
   message?: string;
 };
 
+const parseApiBody = async <T extends { message?: string }>(
+  response: Response,
+): Promise<T> => {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.toLowerCase().includes("application/json")) {
+    return (await response.json().catch(() => ({}))) as T;
+  }
+
+  const text = await response.text().catch(() => "");
+  return {
+    message: text || undefined,
+  } as T;
+};
+
 export default function EmployeeLeaveManagement() {
   const [activeTab, setActiveTab] = useState<
     "leave-records" | "monthly-credit"
@@ -216,9 +231,12 @@ export default function EmployeeLeaveManagement() {
         },
       );
 
-      const body = (await response.json()) as EmployeeApiResponse;
+      const body = await parseApiBody<EmployeeApiResponse>(response);
       if (!response.ok) {
-        throw new Error(body.message || "Failed to fetch employees");
+        throw new Error(
+          body.message ||
+            `Failed to fetch employees (HTTP ${response.status}).`,
+        );
       }
 
       const mapped = (body.data || []).map(toEmployeeRecord);

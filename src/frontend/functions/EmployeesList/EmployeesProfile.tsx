@@ -56,6 +56,21 @@ type EmployeeApiResponse = {
   message?: string;
 };
 
+const parseApiBody = async <T extends { message?: string }>(
+  response: Response,
+): Promise<T> => {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.toLowerCase().includes("application/json")) {
+    return (await response.json().catch(() => ({}))) as T;
+  }
+
+  const text = await response.text().catch(() => "");
+  return {
+    message: text || undefined,
+  } as T;
+};
+
 type SessionUser = {
   role?: string;
   school_id?: number | string | null;
@@ -63,7 +78,7 @@ type SessionUser = {
 };
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const EMPLOYEES_LIST_TAB_KEY = "employeesList:activeTab";
@@ -237,9 +252,12 @@ export default function EmployeesListLayout() {
         },
       );
 
-      const body = (await response.json()) as EmployeeApiResponse;
+      const body = await parseApiBody<EmployeeApiResponse>(response);
       if (!response.ok) {
-        throw new Error(body.message || "Failed to fetch employees");
+        throw new Error(
+          body.message ||
+            `Failed to fetch employees (HTTP ${response.status}).`,
+        );
       }
 
       const mapped = (body.data || []).map(toEmployeeRecord);

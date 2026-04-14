@@ -125,7 +125,7 @@ export default function LeaveManagementModal({
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000"}/api/employees/${employeeId}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}/api/employees/${employeeId}`,
         {
           method: "GET",
           headers: {
@@ -171,7 +171,7 @@ export default function LeaveManagementModal({
         : `/api/employees/${employeeId}/mark-available`;
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000"}${endpoint}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${endpoint}`,
         {
           method: "PATCH",
           headers: {
