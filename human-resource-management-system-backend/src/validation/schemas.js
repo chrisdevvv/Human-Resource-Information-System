@@ -26,6 +26,7 @@ const sexSchema = Joi.string().trim().max(20).allow(null, "");
 const employeeNoSchema = Joi.string().trim().max(100).allow(null, "");
 const workEmailSchema = Joi.string()
   .trim()
+  .lowercase()
   .email({ tlds: { allow: false } })
   .allow(null, "");
 const districtSchema = Joi.string().trim().max(255).allow(null, "");
@@ -65,10 +66,12 @@ const employeeCreateBodySchema = Joi.object({
   middle_initial: middleInitialSchema,
   personal_email: Joi.string()
     .trim()
+    .lowercase()
     .email({ tlds: { allow: false } })
     .allow(null, ""),
   email: Joi.string()
     .trim()
+    .lowercase()
     .email({ tlds: { allow: false } })
     .allow(null, ""),
   mobile_number: mobileNumberSchema,
@@ -106,10 +109,12 @@ const employeeUpdateBodySchema = Joi.object({
   middle_initial: middleInitialSchema,
   personal_email: Joi.string()
     .trim()
+    .lowercase()
     .email({ tlds: { allow: false } })
     .allow(null, ""),
   email: Joi.string()
     .trim()
+    .lowercase()
     .email({ tlds: { allow: false } })
     .allow(null, ""),
   mobile_number: mobileNumberSchema,
@@ -180,6 +185,10 @@ const civilStatusBodySchema = Joi.object({
 
 const districtBodySchema = Joi.object({
   district_name: Joi.string().trim().min(1).max(50).required(),
+});
+
+const archivingReasonBodySchema = Joi.object({
+  reason_name: Joi.string().trim().min(1).max(255).required(),
 });
 
 const positionBodySchema = Joi.object({
@@ -350,6 +359,7 @@ module.exports = {
   schoolBodySchema,
   civilStatusBodySchema,
   districtBodySchema,
+  archivingReasonBodySchema,
   positionBodySchema,
   sexBodySchema,
   userRoleBodySchema,

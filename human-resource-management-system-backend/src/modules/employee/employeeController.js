@@ -288,6 +288,17 @@ const createEmployee = async (req, res) => {
       .status(201)
       .json({ message: "Employee created successfully", data: result });
   } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ message: err.message });
+    }
+
+    if (err.code === "ER_DUP_ENTRY" || /Duplicate entry/i.test(err.message)) {
+      return res.status(409).json({
+        message:
+          "An employee record with one of the provided unique values already exists.",
+      });
+    }
+
     res
       .status(500)
       .json({ message: "Error creating employee", error: err.message });
@@ -339,6 +350,17 @@ const updateEmployee = async (req, res) => {
       .status(200)
       .json({ message: "Employee updated successfully", data: result });
   } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ message: err.message });
+    }
+
+    if (err.code === "ER_DUP_ENTRY" || /Duplicate entry/i.test(err.message)) {
+      return res.status(409).json({
+        message:
+          "An employee record with one of the provided unique values already exists.",
+      });
+    }
+
     res
       .status(500)
       .json({ message: "Error updating employee", error: err.message });

@@ -16,6 +16,7 @@ import {
 
 import SchoolsList from "./SchoolsList";
 import ParticularsList from "./ParticularsList";
+import Reason from "./Reason";
 import District from "./District";
 import CivilStatus from "./CivilStatus";
 import Positions from "./Positions";
@@ -34,6 +35,7 @@ type School = {
 type ConfigTab =
   | "schools"
   | "particulars"
+  | "archiving"
   | "district"
   | "civil-status"
   | "positions"
@@ -425,6 +427,20 @@ export default function ConfigurationPage() {
         </button>
         <button
           type="button"
+          onClick={() => setActiveTab("archiving")}
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+            activeTab === "archiving"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
+            <AlertCircle size={16} />
+            Reason (Deactivate)
+          </span>
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab("positions")}
           className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "positions"
@@ -504,6 +520,8 @@ export default function ConfigurationPage() {
             sortValue={particularSort}
             onSortChange={setParticularSort}
           />
+        ) : activeTab === "archiving" ? (
+          <Reason />
         ) : activeTab === "district" ? (
           <District />
         ) : activeTab === "civil-status" ? (

@@ -31,6 +31,74 @@ const normalizeOptionalDate = (value) => {
   return normalized.length > 0 ? normalized : null;
 };
 
+const normalizeOptionalEmail = (value) => {
+  if (value === undefined || value === null) return null;
+  const normalized = String(value).trim().toLowerCase();
+  return normalized.length > 0 ? normalized : null;
+};
+
+const EMPLOYEE_UNIQUE_FIELD_DEFINITIONS = [
+  { column: "email", key: "personalEmail", label: "personal email" },
+  { column: "mobile_number", key: "mobileNumber", label: "mobile number" },
+  { column: "employee_no", key: "employeeNo", label: "employee number" },
+  { column: "work_email", key: "workEmail", label: "DepEd email" },
+  { column: "plantilla_no", key: "plantillaNo", label: "Plantilla Number" },
+  { column: "prc_license_no", key: "prcLicenseNo", label: "PRC License No" },
+  { column: "tin", key: "tin", label: "TIN" },
+  { column: "gsis_bp_no", key: "gsisBpNo", label: "GSIS BP Number" },
+  { column: "gsis_crn_no", key: "gsisCrnNo", label: "GSIS CRN Number" },
+  { column: "pagibig_no", key: "pagibigNo", label: "PAG-IBIG Number" },
+  { column: "philhealth_no", key: "philhealthNo", label: "PhilHealth Number" },
+];
+
+const normalizeEmployeeUniqueValues = (data = {}) => ({
+  personalEmail:
+    normalizeOptionalEmail(data.personal_email) ||
+    normalizeOptionalEmail(data.email),
+  mobileNumber: normalizeOptionalText(data.mobile_number),
+  employeeNo: normalizeOptionalText(data.employee_no),
+  workEmail: normalizeOptionalEmail(data.work_email),
+  plantillaNo: normalizeOptionalText(data.plantilla_no),
+  prcLicenseNo: normalizeOptionalText(data.prc_license_no),
+  tin: normalizeOptionalText(data.tin),
+  gsisBpNo: normalizeOptionalText(data.gsis_bp_no),
+  gsisCrnNo: normalizeOptionalText(data.gsis_crn_no),
+  pagibigNo: normalizeOptionalText(data.pagibig_no),
+  philhealthNo: normalizeOptionalText(data.philhealth_no),
+});
+
+const findEmployeeUniqueConflict = async (uniqueValues, excludeId = null) => {
+  for (const field of EMPLOYEE_UNIQUE_FIELD_DEFINITIONS) {
+    const value = uniqueValues[field.key];
+    if (value === null || value === undefined) {
+      continue;
+    }
+
+    const params = [value];
+    let sql = `SELECT id FROM employees WHERE ${field.column} = ?`;
+
+    if (excludeId !== null && excludeId !== undefined) {
+      sql += " AND id <> ?";
+      params.push(excludeId);
+    }
+
+    sql += " LIMIT 1";
+
+    const [rows] = await pool.promise().query(sql, params);
+    if (rows.length > 0) {
+      return field;
+    }
+  }
+
+  return null;
+};
+
+const createDuplicateEmployeeError = (label) => {
+  const error = new Error(`An employee with this ${label} already exists.`);
+  error.statusCode = 409;
+  return error;
+};
+
 const computeServiceMetrics = (dateOfFirstAppointment) => {
   const normalizedDate = normalizeOptionalDate(dateOfFirstAppointment);
   if (!normalizedDate) {
@@ -193,24 +261,34 @@ const Employee = {
       birthdate,
       date_of_first_appointment,
     } = data;
-    const personalEmail = personal_email || email || null;
+    const uniqueValues = normalizeEmployeeUniqueValues(data);
+    const personalEmail = uniqueValues.personalEmail;
     const middleInitial =
       middle_initial ||
       (middle_name ? String(middle_name).trim().charAt(0) : null);
     const resolvedDistrict = district || work_district || null;
     const normalizedEmployeeType =
       normalizeEmployeeTypeForStorage(employee_type);
-    const normalizedTin = normalizeOptionalText(tin);
-    const normalizedGsisBpNo = normalizeOptionalText(gsis_bp_no);
-    const normalizedGsisCrnNo = normalizeOptionalText(gsis_crn_no);
-    const normalizedPagibigNo = normalizeOptionalText(pagibig_no);
-    const normalizedPhilhealthNo = normalizeOptionalText(philhealth_no);
+    const normalizedMobileNumber = uniqueValues.mobileNumber;
+    const normalizedEmployeeNo = uniqueValues.employeeNo;
+    const normalizedWorkEmail = uniqueValues.workEmail;
+    const normalizedPlantillaNo = uniqueValues.plantillaNo;
+    const normalizedPrcLicenseNo = uniqueValues.prcLicenseNo;
+    const normalizedTin = uniqueValues.tin;
+    const normalizedGsisBpNo = uniqueValues.gsisBpNo;
+    const normalizedGsisCrnNo = uniqueValues.gsisCrnNo;
+    const normalizedPagibigNo = uniqueValues.pagibigNo;
+    const normalizedPhilhealthNo = uniqueValues.philhealthNo;
     const normalizedFirstAppointmentDate = normalizeOptionalDate(
       date_of_first_appointment,
     );
     const { yearsInService, loyaltyBonus } = computeServiceMetrics(
       normalizedFirstAppointmentDate,
     );
+    const duplicateField = await findEmployeeUniqueConflict(uniqueValues);
+    if (duplicateField) {
+      throw createDuplicateEmployeeError(duplicateField.label);
+    }
     const [result] = await pool
       .promise()
       .query(
@@ -221,7 +299,7 @@ const Employee = {
           last_name,
           middleInitial || null,
           personalEmail,
-          mobile_number || null,
+          normalizedMobileNumber,
           home_address || null,
           place_of_birth || null,
           civil_status || null,
@@ -230,13 +308,13 @@ const Employee = {
           sex_id || null,
           normalizedEmployeeType,
           school_id,
-          employee_no || null,
-          work_email || null,
+          normalizedEmployeeNo,
+          normalizedWorkEmail,
           resolvedDistrict,
           position || null,
           position_id || null,
-          plantilla_no || null,
-          prc_license_no || null,
+          normalizedPlantillaNo,
+          normalizedPrcLicenseNo,
           normalizedTin,
           normalizedGsisBpNo,
           normalizedGsisCrnNo,
@@ -286,24 +364,34 @@ const Employee = {
       birthdate,
       date_of_first_appointment,
     } = data;
-    const personalEmail = personal_email || email || null;
+    const uniqueValues = normalizeEmployeeUniqueValues(data);
+    const personalEmail = uniqueValues.personalEmail;
     const middleInitial =
       middle_initial ||
       (middle_name ? String(middle_name).trim().charAt(0) : null);
     const resolvedDistrict = district || work_district || null;
     const normalizedEmployeeType =
       normalizeEmployeeTypeForStorage(employee_type);
-    const normalizedTin = normalizeOptionalText(tin);
-    const normalizedGsisBpNo = normalizeOptionalText(gsis_bp_no);
-    const normalizedGsisCrnNo = normalizeOptionalText(gsis_crn_no);
-    const normalizedPagibigNo = normalizeOptionalText(pagibig_no);
-    const normalizedPhilhealthNo = normalizeOptionalText(philhealth_no);
+    const normalizedMobileNumber = uniqueValues.mobileNumber;
+    const normalizedEmployeeNo = uniqueValues.employeeNo;
+    const normalizedWorkEmail = uniqueValues.workEmail;
+    const normalizedPlantillaNo = uniqueValues.plantillaNo;
+    const normalizedPrcLicenseNo = uniqueValues.prcLicenseNo;
+    const normalizedTin = uniqueValues.tin;
+    const normalizedGsisBpNo = uniqueValues.gsisBpNo;
+    const normalizedGsisCrnNo = uniqueValues.gsisCrnNo;
+    const normalizedPagibigNo = uniqueValues.pagibigNo;
+    const normalizedPhilhealthNo = uniqueValues.philhealthNo;
     const normalizedFirstAppointmentDate = normalizeOptionalDate(
       date_of_first_appointment,
     );
     const { yearsInService, loyaltyBonus } = computeServiceMetrics(
       normalizedFirstAppointmentDate,
     );
+    const duplicateField = await findEmployeeUniqueConflict(uniqueValues, id);
+    if (duplicateField) {
+      throw createDuplicateEmployeeError(duplicateField.label);
+    }
     const [result] = await pool
       .promise()
       .query(
@@ -314,7 +402,7 @@ const Employee = {
           last_name,
           middleInitial || null,
           personalEmail,
-          mobile_number || null,
+          normalizedMobileNumber,
           home_address || null,
           place_of_birth || null,
           civil_status || null,
@@ -323,13 +411,13 @@ const Employee = {
           sex_id || null,
           normalizedEmployeeType,
           school_id,
-          employee_no || null,
-          work_email || null,
+          normalizedEmployeeNo,
+          normalizedWorkEmail,
           resolvedDistrict,
           position || null,
           position_id || null,
-          plantilla_no || null,
-          prc_license_no || null,
+          normalizedPlantillaNo,
+          normalizedPrcLicenseNo,
           normalizedTin,
           normalizedGsisBpNo,
           normalizedGsisCrnNo,

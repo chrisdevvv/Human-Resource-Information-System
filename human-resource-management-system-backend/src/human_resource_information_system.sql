@@ -609,6 +609,31 @@ INSERT INTO `districts` (`id`, `district_name`, `created_at`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `archiving_reasons`
+--
+
+CREATE TABLE `archiving_reasons` (
+  `id` int(11) NOT NULL,
+  `reason_name` varchar(255) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `archiving_reasons`
+--
+
+INSERT INTO `archiving_reasons` (`id`, `reason_name`, `created_at`) VALUES
+(1, 'Resignation', '2026-04-14 00:00:00'),
+(2, 'Retirement', '2026-04-14 00:00:00'),
+(3, 'Employment Termination', '2026-04-14 00:00:00'),
+(4, 'Deceased', '2026-04-14 00:00:00'),
+(5, 'Transfer to Another Agency', '2026-04-14 00:00:00'),
+(6, 'Absent Without Official Leave', '2026-04-14 00:00:00'),
+(7, 'Others', '2026-04-14 00:00:00');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `employees`
 --
 
@@ -1784,17 +1809,33 @@ ALTER TABLE `districts`
   ADD KEY `idx_districts_name` (`district_name`);
 
 --
+-- Indexes for table `archiving_reasons`
+--
+ALTER TABLE `archiving_reasons`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `reason_name` (`reason_name`),
+  ADD KEY `idx_archiving_reasons_name` (`reason_name`);
+
+--
 -- Indexes for table `employees`
 --
 ALTER TABLE `employees`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uk_employee_email` (`email`),
+  ADD UNIQUE KEY `uk_employees_mobile_number` (`mobile_number`),
+  ADD UNIQUE KEY `uk_employees_employee_no` (`employee_no`),
+  ADD UNIQUE KEY `uk_employees_work_email` (`work_email`),
+  ADD UNIQUE KEY `uk_employees_plantilla_no` (`plantilla_no`),
+  ADD UNIQUE KEY `uk_employees_prc_license_no` (`prc_license_no`),
+  ADD UNIQUE KEY `uk_employees_tin` (`tin`),
+  ADD UNIQUE KEY `uk_employees_gsis_bp_no` (`gsis_bp_no`),
+  ADD UNIQUE KEY `uk_employees_gsis_crn_no` (`gsis_crn_no`),
+  ADD UNIQUE KEY `uk_employees_pagibig_no` (`pagibig_no`),
+  ADD UNIQUE KEY `uk_employees_philhealth_no` (`philhealth_no`),
   ADD KEY `idx_employees_school_id` (`school_id`),
   ADD KEY `idx_employees_is_archived` (`is_archived`),
   ADD KEY `idx_employees_archived_by` (`archived_by`),
   ADD KEY `idx_employees_on_leave` (`on_leave`),
-  ADD KEY `idx_employees_employee_no` (`employee_no`),
-  ADD KEY `idx_employees_work_email` (`work_email`),
   ADD KEY `idx_employees_district` (`district`),
   ADD KEY `idx_employees_work_district` (`work_district`),
   ADD KEY `idx_employees_position_id` (`position_id`),

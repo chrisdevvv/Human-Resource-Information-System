@@ -21,6 +21,7 @@ const {
   idParamSchema,
   civilStatusBodySchema,
   districtBodySchema,
+  archivingReasonBodySchema,
   positionBodySchema,
   sexBodySchema,
 } = require("./validation/schemas");
@@ -266,6 +267,30 @@ const ensureEmployeeLeaveStatusSchema = async () => {
   }
 };
 
+const ensureUniqueIndex = async (tableName, indexName, columns) => {
+  const desiredColumnList = columns.join(",");
+  const [existingUniqueIndexes] = await pool.promise().query(
+    `SELECT INDEX_NAME, GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS column_list
+     FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND NON_UNIQUE = 0
+     GROUP BY INDEX_NAME`,
+    [tableName],
+  );
+
+  if (
+    existingUniqueIndexes.some((row) => row.column_list === desiredColumnList)
+  ) {
+    return;
+  }
+
+  const quotedColumns = columns.map((column) => `\`${column}\``).join(", ");
+  await pool
+    .promise()
+    .query(`CREATE UNIQUE INDEX ${indexName} ON ${tableName} (${quotedColumns})`);
+};
+
 const ensureBirthdateSchema = async () => {
   await pool.promise().query(`
     ALTER TABLE employees
@@ -384,9 +409,22 @@ const ensureEmployeeProfileSchema = async () => {
       AND work_district <> '';
   `);
 
+  await pool.promise().query(`
+    UPDATE employees
+    SET email = NULLIF(TRIM(email), ''),
+        mobile_number = NULLIF(TRIM(mobile_number), ''),
+        employee_no = NULLIF(TRIM(employee_no), ''),
+        work_email = NULLIF(TRIM(work_email), ''),
+        plantilla_no = NULLIF(TRIM(plantilla_no), ''),
+        prc_license_no = NULLIF(TRIM(prc_license_no), ''),
+        tin = NULLIF(TRIM(tin), ''),
+        gsis_bp_no = NULLIF(TRIM(gsis_bp_no), ''),
+        gsis_crn_no = NULLIF(TRIM(gsis_crn_no), ''),
+        pagibig_no = NULLIF(TRIM(pagibig_no), ''),
+        philhealth_no = NULLIF(TRIM(philhealth_no), '');
+  `);
+
   const indexStatements = [
-    `CREATE INDEX idx_employees_employee_no ON employees (employee_no)`,
-    `CREATE INDEX idx_employees_work_email ON employees (work_email)`,
     `CREATE INDEX idx_employees_district ON employees (district)`,
     `CREATE INDEX idx_employees_work_district ON employees (work_district)`,
   ];
@@ -397,6 +435,30 @@ const ensureEmployeeProfileSchema = async () => {
     } catch (err) {
       if (!/Duplicate|exists/i.test(err.message)) {
         console.warn("Employee profile index warning:", err.message);
+      }
+    }
+  }
+
+  const uniqueIndexStatements = [
+    ["uk_employees_email", ["email"]],
+    ["uk_employees_mobile_number", ["mobile_number"]],
+    ["uk_employees_employee_no", ["employee_no"]],
+    ["uk_employees_work_email", ["work_email"]],
+    ["uk_employees_plantilla_no", ["plantilla_no"]],
+    ["uk_employees_prc_license_no", ["prc_license_no"]],
+    ["uk_employees_tin", ["tin"]],
+    ["uk_employees_gsis_bp_no", ["gsis_bp_no"]],
+    ["uk_employees_gsis_crn_no", ["gsis_crn_no"]],
+    ["uk_employees_pagibig_no", ["pagibig_no"]],
+    ["uk_employees_philhealth_no", ["philhealth_no"]],
+  ];
+
+  for (const [indexName, columns] of uniqueIndexStatements) {
+    try {
+      await ensureUniqueIndex("employees", indexName, columns);
+    } catch (err) {
+      if (!/Duplicate|exists/i.test(err.message)) {
+        console.warn("Employee profile unique index warning:", err.message);
       }
     }
   }
@@ -586,6 +648,46 @@ const ensureDistrictsTable = async () => {
   }
 };
 
+const ensureArchivingReasonsTable = async () => {
+  await pool.promise().query(`
+    CREATE TABLE IF NOT EXISTS archiving_reasons (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      reason_name VARCHAR(255) NOT NULL UNIQUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `);
+
+  const archivingReasons = [
+    "Resignation",
+    "Retirement",
+    "Employment Termination",
+    "Deceased",
+    "Transfer to Another Agency",
+    "Absent Without Official Leave",
+    "Others",
+  ];
+
+  await pool
+    .promise()
+    .query(
+      `INSERT IGNORE INTO archiving_reasons (reason_name) VALUES ${archivingReasons
+        .map(() => "(?)")
+        .join(",")}`,
+      archivingReasons,
+    );
+
+  try {
+    await pool
+      .promise()
+      .query(
+        `CREATE INDEX idx_archiving_reasons_name ON archiving_reasons (reason_name)`,
+      );
+  } catch (err) {
+    if (!/Duplicate|exists/i.test(err.message)) {
+      console.warn("Archiving reasons index warning:", err.message);
+    }
+  }
+};
 const ensureEmployeePositionFK = async () => {
   // Check if position_id column exists
   const [columns] = await pool.promise().query(`
@@ -765,6 +867,97 @@ app.delete(
     } catch (err) {
       return res.status(500).json({
         message: "Error deleting district",
+        error: err.message,
+      });
+    }
+  },
+);
+
+app.get(
+  "/api/archiving-reasons",
+  authMiddleware,
+  roleAuthMiddleware(["super-admin"]),
+  async (_req, res) => {
+    try {
+      const [rows] = await pool
+        .promise()
+        .query("SELECT id, reason_name FROM archiving_reasons ORDER BY id ASC");
+      return res.status(200).json({ data: rows });
+    } catch (err) {
+      return res.status(500).json({
+        message: "Error retrieving archiving reasons",
+        error: err.message,
+      });
+    }
+  },
+);
+
+app.post(
+  "/api/archiving-reasons",
+  authMiddleware,
+  roleAuthMiddleware(["super-admin"]),
+  validateRequest({ body: archivingReasonBodySchema }),
+  async (req, res) => {
+    try {
+      const reasonName = req.body.reason_name.trim();
+      const [existingRows] = await pool
+        .promise()
+        .query("SELECT id FROM archiving_reasons WHERE reason_name = ? LIMIT 1", [
+          reasonName,
+        ]);
+
+      if (existingRows.length > 0) {
+        return res.status(409).json({ message: "Archiving reason already exists" });
+      }
+
+      const [result] = await pool
+        .promise()
+        .query("INSERT INTO archiving_reasons (reason_name) VALUES (?)", [
+          reasonName,
+        ]);
+
+      return res.status(201).json({
+        message: "Archiving reason created successfully",
+        data: { id: result.insertId, reason_name: reasonName },
+      });
+    } catch (err) {
+      return res.status(500).json({
+        message: "Error creating archiving reason",
+        error: err.message,
+      });
+    }
+  },
+);
+
+app.delete(
+  "/api/archiving-reasons/:id",
+  authMiddleware,
+  roleAuthMiddleware(["super-admin"]),
+  validateRequest({ params: idParamSchema }),
+  async (req, res) => {
+    try {
+      const [existingRows] = await pool
+        .promise()
+        .query(
+          "SELECT id, reason_name FROM archiving_reasons WHERE id = ? LIMIT 1",
+          [req.params.id],
+        );
+
+      if (existingRows.length === 0) {
+        return res.status(404).json({ message: "Archiving reason not found" });
+      }
+
+      await pool
+        .promise()
+        .query("DELETE FROM archiving_reasons WHERE id = ?", [req.params.id]);
+
+      return res.status(200).json({
+        message: "Archiving reason deleted successfully",
+        data: { id: Number(req.params.id) },
+      });
+    } catch (err) {
+      return res.status(500).json({
+        message: "Error deleting archiving reason",
         error: err.message,
       });
     }
@@ -1095,6 +1288,9 @@ app.listen(PORT, async () => {
 
     await ensureDistrictsTable();
     console.log("✔  Districts table is ready");
+
+    await ensureArchivingReasonsTable();
+    console.log("✔  Archiving reasons table is ready");
 
     await ensureEmployeePositionFK();
     console.log("✔  Employee position foreign key is ready");

@@ -1,6 +1,14 @@
-import React, { useState } from "react";
-import { Archive, XCircle } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Archive, ChevronDown, XCircle } from "lucide-react";
 import { createClearHandler } from "../../../utils/clearFormUtils";
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
+type ArchivingReasonOption = {
+  id: number;
+  reason_name: string;
+};
 
 type ArchiveConfirmationModalProps = {
   isOpen: boolean;
@@ -21,8 +29,74 @@ function ArchiveConfirmationModal({
 }: ArchiveConfirmationModalProps) {
   const [password, setPassword] = useState("");
   const [archiveReason, setArchiveReason] = useState("");
+  const [reasonOptions, setReasonOptions] = useState<ArchivingReasonOption[]>(
+    [],
+  );
+  const [reasonsLoading, setReasonsLoading] = useState(false);
+  const [reasonLoadError, setReasonLoadError] = useState<string | null>(null);
+  const [showReasonDropdown, setShowReasonDropdown] = useState(false);
   const [touched, setTouched] = useState(false);
   const [reasonTouched, setReasonTouched] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadReasons = async () => {
+      try {
+        setReasonsLoading(true);
+        setReasonLoadError(null);
+
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          throw new Error("No auth token found.");
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/archiving-reasons`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        const payload = (await response.json().catch(() => ({}))) as {
+          data?: ArchivingReasonOption[];
+          message?: string;
+        };
+
+        if (!response.ok) {
+          throw new Error(
+            payload.message || "Failed to load archiving reasons.",
+          );
+        }
+
+        if (!cancelled) {
+          setReasonOptions(Array.isArray(payload.data) ? payload.data : []);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setReasonOptions([]);
+          setReasonLoadError(
+            err instanceof Error ? err.message : "Failed to load reasons.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setReasonsLoading(false);
+        }
+      }
+    };
+
+    void loadReasons();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +113,7 @@ function ArchiveConfirmationModal({
   const handleClose = () => {
     setPassword("");
     setArchiveReason("");
+    setShowReasonDropdown(false);
     setTouched(false);
     setReasonTouched(false);
     onClose();
@@ -83,18 +158,68 @@ function ArchiveConfirmationModal({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Reason for deactivating
             </label>
-            <textarea
-              value={archiveReason}
-              onChange={(e) => setArchiveReason(e.target.value)}
-              onBlur={() => setReasonTouched(true)}
-              className="text-black w-full min-h-24 rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter the reason for deactivating"
-              disabled={isLoading}
-            />
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setReasonTouched(true);
+                  setShowReasonDropdown((current) => !current);
+                }}
+                onBlur={() => {
+                  setTimeout(() => setShowReasonDropdown(false), 150);
+                }}
+                disabled={isLoading || reasonsLoading}
+                className="text-black w-full rounded border border-gray-300 px-3 py-2 text-left text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed flex items-center justify-between gap-3"
+              >
+                <span
+                  className={archiveReason ? "text-gray-900" : "text-gray-500"}
+                >
+                  {archiveReason ||
+                    (reasonsLoading ? "Loading reasons..." : "Select a reason")}
+                </span>
+                <ChevronDown size={16} className="text-gray-500 shrink-0" />
+              </button>
+
+              {showReasonDropdown && (
+                <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-md border border-blue-200 bg-white shadow-lg max-h-64 overflow-y-auto">
+                  {reasonsLoading ? (
+                    <div className="px-3 py-2 text-center text-sm text-gray-500">
+                      Loading archiving reasons...
+                    </div>
+                  ) : reasonOptions.length === 0 ? (
+                    <div className="px-3 py-2 text-center text-sm text-gray-500">
+                      No archiving reasons available
+                    </div>
+                  ) : (
+                    reasonOptions.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => {
+                          setArchiveReason(option.reason_name);
+                          setReasonTouched(true);
+                          setShowReasonDropdown(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm transition hover:bg-blue-50 ${
+                          archiveReason === option.reason_name
+                            ? "bg-blue-100 font-medium text-blue-700"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        {option.reason_name}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
             {reasonTouched && !archiveReason.trim() && (
               <p className="text-xs text-red-500 mt-1">
                 Deactivation reason is required.
               </p>
+            )}
+            {reasonLoadError && (
+              <p className="text-xs text-red-500 mt-1">{reasonLoadError}</p>
             )}
           </div>
           {error && <p className="text-xs text-red-500">{error}</p>}
