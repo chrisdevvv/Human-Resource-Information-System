@@ -16,7 +16,8 @@ type UserSettingModalProps = {
   initialRole: UserRole;
   initialIsActive: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (message?: string) => void;
+  onError?: (message: string) => void;
 };
 
 type UserDetailsResponse = {
@@ -37,6 +38,7 @@ export default function UserSettingModal({
   initialIsActive,
   onClose,
   onSuccess,
+  onError,
 }: UserSettingModalProps) {
   const [selectedRole, setSelectedRole] = useState<UserRole>(initialRole);
   const [currentRole, setCurrentRole] = useState<UserRole>(initialRole);
@@ -84,7 +86,10 @@ export default function UserSettingModal({
           setIsActive(normalizeIsActive(activeFromApi));
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred.");
+        const errorMessage =
+          err instanceof Error ? err.message : "An error occurred.";
+        setError(errorMessage);
+        onError?.(errorMessage);
       } finally {
         setLoadingUser(false);
       }
@@ -144,9 +149,12 @@ export default function UserSettingModal({
       setSuperAdminPassword("");
       setConfirmAction(null);
 
-      onSuccess();
+      onSuccess("User role updated successfully.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred.");
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred.";
+      setError(errorMessage);
+      onError?.(errorMessage);
     } finally {
       setSavingRole(false);
     }
@@ -182,9 +190,12 @@ export default function UserSettingModal({
 
       setIsActive(nextStatus);
       setConfirmAction(null);
-      onSuccess();
+      onSuccess("User account status updated successfully.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred.");
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred.";
+      setError(errorMessage);
+      onError?.(errorMessage);
     } finally {
       setSavingStatus(false);
     }

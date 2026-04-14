@@ -284,6 +284,30 @@ const userAdminCreateBodySchema = Joi.object({
   school_name: Joi.string().trim().min(1).max(255),
 });
 
+const userDetailsUpdateBodySchema = Joi.object({
+  first_name: Joi.string().trim().min(1).max(100),
+  middle_name: Joi.alternatives().try(
+    Joi.string().trim().max(100).allow(""),
+    Joi.valid(null),
+  ),
+  last_name: Joi.string().trim().min(1).max(100),
+  email: Joi.string()
+    .trim()
+    .email({ tlds: { allow: false } }),
+  birthdate: birthdateSchema,
+  school_id: Joi.alternatives().try(
+    Joi.number().integer().positive(),
+    Joi.string().trim().pattern(/^\d+$/),
+    Joi.valid(null),
+    Joi.string().valid(""),
+  ),
+  use_schools_division_office: Joi.alternatives().try(
+    Joi.boolean(),
+    Joi.number().valid(0, 1),
+    Joi.string().valid("0", "1", "true", "false"),
+  ),
+}).min(1);
+
 const usersQuerySchema = Joi.object({
   search: Joi.string().trim().max(255),
   role: Joi.string().valid("SUPER_ADMIN", "ADMIN", "DATA_ENCODER"),
@@ -452,6 +476,7 @@ module.exports = {
   userStatusBodySchema,
   userPasswordResetBodySchema,
   userAdminCreateBodySchema,
+  userDetailsUpdateBodySchema,
   usersQuerySchema,
   authRegisterBodySchema,
   registrationStatusQuerySchema,

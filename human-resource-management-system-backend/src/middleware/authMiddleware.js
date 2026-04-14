@@ -57,8 +57,30 @@ const authMiddleware = async (req, res, next) => {
       }
     }
 
+    const [userRows] = await pool.promise().query(
+      `SELECT id, first_name, last_name, email, role, school_id, is_active
+       FROM users
+       WHERE id = ?
+       LIMIT 1`,
+      [decoded.id],
+    );
+
+    const dbUser = userRows[0];
+    if (!dbUser) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     req.token = token;
-    req.user = decoded;
+    req.user = {
+      ...decoded,
+      id: Number(dbUser.id),
+      first_name: dbUser.first_name,
+      last_name: dbUser.last_name,
+      email: dbUser.email,
+      role: dbUser.role,
+      school_id: dbUser.school_id,
+      is_active: dbUser.is_active,
+    };
     next();
   } catch (error) {
     return res.status(401).json({ message: "Unauthorized" });

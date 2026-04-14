@@ -7,13 +7,41 @@ const {
   sendPasswordChanged,
   sendAccountStatusChanged,
   sendAccountCreatedCredentials,
+  sendUserDetailsUpdated,
 } = require("../../utils/mailer");
 
 const VALID_ROLES = ["SUPER_ADMIN", "ADMIN", "DATA_ENCODER"];
+const SCHOOLS_DIVISION_OFFICE = "Schools Division Office";
+const pad2 = (value) => String(value).padStart(2, "0");
+
+const toDateOnlyString = (date) =>
+  `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+
 const normalizeBirthdate = (value) => {
-  const date = new Date(value);
+  if (value === null || value === undefined || value === "") return null;
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    const dateOnlyMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dateOnlyMatch) {
+      const year = Number(dateOnlyMatch[1]);
+      const month = Number(dateOnlyMatch[2]);
+      const day = Number(dateOnlyMatch[3]);
+      const candidate = new Date(year, month - 1, day);
+
+      if (
+        candidate.getFullYear() === year &&
+        candidate.getMonth() === month - 1 &&
+        candidate.getDate() === day
+      ) {
+        return `${year}-${pad2(month)}-${pad2(day)}`;
+      }
+    }
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  return date.toISOString().slice(0, 10);
+  return toDateOnlyString(date);
 };
 
 const normalizeRole = (role) =>
@@ -23,10 +51,162 @@ const normalizeRole = (role) =>
     .replace(/\s+/g, "_")
     .replace(/-/g, "_");
 
-const getScopedSchoolId = async (user) => {
-  const tokenSchoolId = Number(user?.school_id) || null;
-  if (tokenSchoolId) return tokenSchoolId;
+const normalizeEmail = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase();
 
+const formatDetailValue = (value) => {
+  if (value === null || value === undefined) return "N/A";
+  const normalized = String(value).trim();
+  return normalized || "N/A";
+};
+
+const formatBirthdateValue = (value) => {
+  if (!value) return "N/A";
+  const normalized = String(value).trim();
+  if (!normalized) return "N/A";
+  return normalized.slice(0, 10);
+};
+
+const parseSchoolId = (value) => {
+  if (value === null || value === "") return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return Number.NaN;
+  return parsed;
+};
+
+const parseBooleanFlag = (value) => {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") {
+    if (value === 1) return true;
+    if (value === 0) return false;
+  }
+
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (["1", "true"].includes(normalized)) return true;
+  if (["0", "false", ""].includes(normalized)) return false;
+  return null;
+};
+
+const resolveOrCreateSchoolsDivisionOfficeId = async () => {
+  const schoolCode = "SDO";
+  const [insertResult] = await pool.promise().query(
+    `INSERT INTO schools (school_name, school_code)
+     VALUES (?, ?)
+     ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)`,
+    [SCHOOLS_DIVISION_OFFICE, schoolCode],
+  );
+
+  const schoolId = Number(insertResult?.insertId) || null;
+  return schoolId;
+};
+
+const parseUserDetailPayload = (body, { allowSchool }) => {
+  const payload = body || {};
+  const normalized = {};
+  let wantsSchoolsDivisionOffice = false;
+
+  if (
+    Object.prototype.hasOwnProperty.call(payload, "use_schools_division_office")
+  ) {
+    if (!allowSchool) {
+      return { error: "Only SUPER_ADMIN users can update school" };
+    }
+
+    const parsedFlag = parseBooleanFlag(payload.use_schools_division_office);
+    if (parsedFlag === null) {
+      return {
+        error: "use_schools_division_office must be a valid boolean",
+      };
+    }
+
+    wantsSchoolsDivisionOffice = parsedFlag;
+    if (parsedFlag) {
+      normalized.use_schools_division_office = true;
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, "first_name")) {
+    normalized.first_name = String(payload.first_name || "").trim();
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, "middle_name")) {
+    const middleName = String(payload.middle_name || "").trim();
+    normalized.middle_name = middleName || null;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, "last_name")) {
+    normalized.last_name = String(payload.last_name || "").trim();
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, "email")) {
+    normalized.email = normalizeEmail(payload.email);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, "birthdate")) {
+    const normalizedBirthdate = normalizeBirthdate(payload.birthdate);
+    if (!normalizedBirthdate) {
+      return { error: "Valid birthdate is required" };
+    }
+    normalized.birthdate = normalizedBirthdate;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, "school_id")) {
+    if (!allowSchool) {
+      return { error: "Only SUPER_ADMIN users can update school" };
+    }
+
+    const schoolId = parseSchoolId(payload.school_id);
+    if (Number.isNaN(schoolId)) {
+      return { error: "school_id must be a valid positive number" };
+    }
+
+    normalized.school_id = schoolId;
+  }
+
+  if (
+    wantsSchoolsDivisionOffice &&
+    !Object.prototype.hasOwnProperty.call(normalized, "school_id")
+  ) {
+    normalized.school_id = null;
+  }
+
+  if (Object.keys(normalized).length === 0) {
+    return { error: "At least one field is required" };
+  }
+
+  return { data: normalized };
+};
+
+const buildUserDetailChanges = (before, after) => {
+  const changes = [];
+
+  const pushChange = (label, previousValue, nextValue) => {
+    const previousText = formatDetailValue(previousValue);
+    const nextText = formatDetailValue(nextValue);
+    if (previousText !== nextText) {
+      changes.push({
+        label,
+        from: previousText,
+        to: nextText,
+      });
+    }
+  };
+
+  pushChange("First Name", before.first_name, after.first_name);
+  pushChange("Middle Name", before.middle_name, after.middle_name);
+  pushChange("Last Name", before.last_name, after.last_name);
+  pushChange("Email", before.email, after.email);
+  pushChange("Birthdate", before.birthdate, after.birthdate);
+  pushChange("School", before.school_name, after.school_name);
+
+  return changes;
+};
+
+const getScopedSchoolId = async (user) => {
   if (!user?.id) return null;
   const userRow = await User.getById(user.id);
   return Number(userRow?.school_id) || null;
@@ -121,6 +301,210 @@ const getUserById = async (req, res) => {
     res
       .status(500)
       .json({ message: "Error retrieving user", error: err.message });
+  }
+};
+
+const getMyProfile = async (req, res) => {
+  try {
+    const user = await User.getById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json({ data: user });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Error retrieving profile", error: err.message });
+  }
+};
+
+const updateMyProfile = async (req, res) => {
+  try {
+    const requester = await User.getById(req.user.id);
+    if (!requester) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const requesterRole = normalizeRole(requester.role || req.user?.role);
+    const parsed = parseUserDetailPayload(req.body, {
+      allowSchool: requesterRole === "SUPER_ADMIN",
+    });
+
+    if (parsed.error) {
+      const statusCode = parsed.error.includes("Only SUPER_ADMIN") ? 403 : 400;
+      return res.status(statusCode).json({ message: parsed.error });
+    }
+
+    const updates = parsed.data;
+
+    if (updates.use_schools_division_office === true) {
+      const schoolsDivisionOfficeId =
+        await resolveOrCreateSchoolsDivisionOfficeId();
+      if (!schoolsDivisionOfficeId) {
+        return res.status(500).json({
+          message: "Unable to resolve Schools Division Office at this time.",
+        });
+      }
+
+      updates.school_id = schoolsDivisionOfficeId;
+    }
+    delete updates.use_schools_division_office;
+
+    if (
+      Object.prototype.hasOwnProperty.call(updates, "email") &&
+      updates.email !== normalizeEmail(requester.email)
+    ) {
+      const existing = await User.getByEmail(updates.email);
+      if (existing && Number(existing.id) !== Number(requester.id)) {
+        return res
+          .status(409)
+          .json({ message: "An account with this email already exists." });
+      }
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(updates, "school_id") &&
+      updates.school_id !== null
+    ) {
+      const [schoolRows] = await pool
+        .promise()
+        .query("SELECT id FROM schools WHERE id = ? LIMIT 1", [
+          updates.school_id,
+        ]);
+      if (schoolRows.length === 0) {
+        return res.status(400).json({ message: "Selected school not found" });
+      }
+    }
+
+    await User.updateDetails(requester.id, updates);
+    const updatedUser = await User.getById(requester.id);
+    const changes = buildUserDetailChanges(requester, updatedUser);
+
+    if (changes.length > 0) {
+      await Backlog.record({
+        user_id: req.user.id,
+        school_id: Number(updatedUser.school_id) || null,
+        employee_id: null,
+        leave_id: null,
+        action: "PROFILE_UPDATED",
+        details: `Updated fields: ${changes.map((change) => change.label).join(", ")}`,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Profile updated successfully",
+      data: updatedUser,
+    });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Error updating profile", error: err.message });
+  }
+};
+
+const updateUserDetails = async (req, res) => {
+  try {
+    if (normalizeRole(req.user?.role) !== "SUPER_ADMIN") {
+      return res.status(403).json({
+        message: "Only SUPER_ADMIN users can edit user details",
+      });
+    }
+
+    const user = await User.getById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const parsed = parseUserDetailPayload(req.body, { allowSchool: true });
+    if (parsed.error) {
+      return res.status(400).json({ message: parsed.error });
+    }
+
+    const updates = parsed.data;
+
+    if (updates.use_schools_division_office === true) {
+      const schoolsDivisionOfficeId =
+        await resolveOrCreateSchoolsDivisionOfficeId();
+      if (!schoolsDivisionOfficeId) {
+        return res.status(500).json({
+          message: "Unable to resolve Schools Division Office at this time.",
+        });
+      }
+
+      updates.school_id = schoolsDivisionOfficeId;
+    }
+    delete updates.use_schools_division_office;
+
+    if (
+      Object.prototype.hasOwnProperty.call(updates, "email") &&
+      updates.email !== normalizeEmail(user.email)
+    ) {
+      const existing = await User.getByEmail(updates.email);
+      if (existing && Number(existing.id) !== Number(user.id)) {
+        return res
+          .status(409)
+          .json({ message: "An account with this email already exists." });
+      }
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(updates, "school_id") &&
+      updates.school_id !== null
+    ) {
+      const [schoolRows] = await pool
+        .promise()
+        .query("SELECT id FROM schools WHERE id = ? LIMIT 1", [
+          updates.school_id,
+        ]);
+      if (schoolRows.length === 0) {
+        return res.status(400).json({ message: "Selected school not found" });
+      }
+    }
+
+    await User.updateDetails(user.id, updates);
+    const updatedUser = await User.getById(user.id);
+    const changes = buildUserDetailChanges(user, updatedUser);
+
+    if (changes.length > 0) {
+      const updatedByName =
+        `${req.user.first_name || ""} ${req.user.last_name || ""}`
+          .trim()
+          .replace(/\s+/g, " ");
+
+      sendUserDetailsUpdated(
+        updatedUser.email,
+        updatedUser.first_name || updatedUser.last_name || "User",
+        changes,
+        updatedByName || "a Super Admin",
+      );
+
+      await Backlog.record({
+        user_id: req.user.id,
+        school_id: Number(updatedUser.school_id) || null,
+        employee_id: null,
+        leave_id: null,
+        action: "USER_DETAILS_UPDATED",
+        details: `${updatedUser.first_name} ${updatedUser.last_name}: ${changes
+          .map((change) => change.label)
+          .join(", ")}`,
+      });
+    }
+
+    return res.status(200).json({
+      message: "User details updated successfully",
+      data: updatedUser,
+      changed_fields: changes.map((change) => ({
+        label: change.label,
+        from: change.from,
+        to: change.to,
+      })),
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error updating user details",
+      error: err.message,
+    });
   }
 };
 
@@ -489,6 +873,9 @@ const createDataEncoderByAdmin = async (req, res) => {
 module.exports = {
   getAllUsers,
   getUserById,
+  getMyProfile,
+  updateMyProfile,
+  updateUserDetails,
   updateUserRole,
   updateUserStatus,
   deleteUser,

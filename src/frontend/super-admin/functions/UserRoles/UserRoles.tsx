@@ -14,7 +14,9 @@ import {
 } from "lucide-react";
 import PendingAccounts from "./PendingAccounts";
 import UserSettingModal from "../../components/UserSettingModal";
+import UserDetailsEditModal from "../../components/UserDetailsEditModal";
 import AddUserModal from "./AddUserModal";
+import ToastMessage from "../../../components/ToastMessage";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -99,6 +101,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
   const [userLoading, setUserLoading] = useState(true);
   const [userError, setUserError] = useState<string | null>(null);
   const [detailsTargetId, setDetailsTargetId] = useState<number | null>(null);
+  const [detailsEditTarget, setDetailsEditTarget] = useState<User | null>(null);
   const [settingsTarget, setSettingsTarget] = useState<User | null>(null);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState<string>("");
@@ -108,7 +111,31 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
   const [schoolFilter, setSchoolFilter] = useState<string>("ALL");
   const [schools, setSchools] = useState<SchoolOption[]>([]);
   const [schoolsLoading, setSchoolsLoading] = useState(false);
+  const [toastState, setToastState] = useState<{
+    isVisible: boolean;
+    variant: "success" | "error";
+    title: string;
+    message: string;
+  }>({
+    isVisible: false,
+    variant: "success",
+    title: "",
+    message: "",
+  });
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+  const showToast = (
+    variant: "success" | "error",
+    title: string,
+    message: string,
+  ) => {
+    setToastState({
+      isVisible: true,
+      variant,
+      title,
+      message,
+    });
+  };
 
   useEffect(() => {
     try {
@@ -338,6 +365,21 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
 
   return (
     <div className="w-full">
+      <ToastMessage
+        isVisible={toastState.isVisible}
+        variant={toastState.variant}
+        title={toastState.title}
+        message={toastState.message}
+        position="top-right"
+        autoCloseDuration={2600}
+        onClose={() =>
+          setToastState((prev) => ({
+            ...prev,
+            isVisible: false,
+          }))
+        }
+      />
+
       {/* Tabs */}
       <div className="flex flex-col sm:flex-row justify-start gap-2 mb-4">
         <button
@@ -581,7 +623,14 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                               <Eye size={12} />
                             </button>
                             <button
-                              onClick={() => setSettingsTarget(user)}
+                              onClick={() => {
+                                if (isAdminMode) {
+                                  setSettingsTarget(user);
+                                  return;
+                                }
+
+                                setDetailsEditTarget(user);
+                              }}
                               disabled={
                                 isAdminMode &&
                                 (user.role === "SUPER_ADMIN" ||
@@ -599,14 +648,18 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                                 (user.role === "SUPER_ADMIN" ||
                                   user.role === "ADMIN")
                                   ? `Settings disabled for ${user.firstName} ${user.lastName}`
-                                  : `Open settings for ${user.firstName} ${user.lastName}`
+                                  : isAdminMode
+                                    ? `Open settings for ${user.firstName} ${user.lastName}`
+                                    : `Edit details for ${user.firstName} ${user.lastName}`
                               }
                               title={
                                 isAdminMode &&
                                 (user.role === "SUPER_ADMIN" ||
                                   user.role === "ADMIN")
                                   ? "Settings disabled for Admin and Super Admin"
-                                  : "User settings"
+                                  : isAdminMode
+                                    ? "User settings"
+                                    : "Edit user details"
                               }
                             >
                               <Settings size={12} />
@@ -738,6 +791,30 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
         />
       )}
 
+      {detailsEditTarget && (
+        <UserDetailsEditModal
+          userId={detailsEditTarget.id}
+          onClose={() => setDetailsEditTarget(null)}
+          onSuccess={(message) => {
+            fetchUsers(false);
+            showToast(
+              "success",
+              "User Updated",
+              message || "User details updated successfully.",
+            );
+          }}
+          onError={(message) => {
+            showToast("error", "Update Failed", message);
+          }}
+          onOpenAccountSettings={() => {
+            const target = detailsEditTarget;
+            if (!target) return;
+            setDetailsEditTarget(null);
+            setSettingsTarget(target);
+          }}
+        />
+      )}
+
       {settingsTarget && (
         <UserSettingModal
           userId={settingsTarget.id}
@@ -745,9 +822,17 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
           initialRole={settingsTarget.role}
           initialIsActive={settingsTarget.isActive}
           onClose={() => setSettingsTarget(null)}
-          onSuccess={() => {
+          onSuccess={(message) => {
             setSettingsTarget(null);
             fetchUsers(false);
+            showToast(
+              "success",
+              "Settings Updated",
+              message || "User settings updated successfully.",
+            );
+          }}
+          onError={(message) => {
+            showToast("error", "Update Failed", message);
           }}
         />
       )}
