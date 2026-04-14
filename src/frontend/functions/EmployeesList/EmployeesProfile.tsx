@@ -77,8 +77,7 @@ type SessionUser = {
   schoolId?: number | string | null;
 };
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const EMPLOYEES_LIST_TAB_KEY = "employeesList:activeTab";

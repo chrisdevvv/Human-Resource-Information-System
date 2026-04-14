@@ -2,8 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Archive, ChevronDown, XCircle } from "lucide-react";
 import { createClearHandler } from "../../../utils/clearFormUtils";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type ArchivingReasonOption = {
   id: number;

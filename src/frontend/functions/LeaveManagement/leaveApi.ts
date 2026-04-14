@@ -71,8 +71,7 @@ type ApiResponse = {
   message?: string;
 };
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 const LEAVE_ENDPOINT = `${API_BASE_URL}/api/leave`;
 
 const toNumber = (value: number | string | null | undefined) => {
@@ -118,10 +117,9 @@ const parseResponse = async <T>(response: Response): Promise<T> => {
   const contentType = response.headers.get("content-type") || "";
   const body = contentType.toLowerCase().includes("application/json")
     ? ((await response.json().catch(() => ({}))) as T & { message?: string })
-    :
-        ({
-          message: await response.text().catch(() => ""),
-        } as T & { message?: string });
+    : ({
+        message: await response.text().catch(() => ""),
+      } as T & { message?: string });
 
   if (!response.ok) {
     throw new Error(

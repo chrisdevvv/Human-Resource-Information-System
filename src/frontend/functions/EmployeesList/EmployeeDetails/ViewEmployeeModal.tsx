@@ -178,8 +178,7 @@ type ViewEmployeeModalProps = {
   onClose: () => void;
 };
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 const formatValue = (value: string | number | null | undefined): string => {
   if (value === null || value === undefined) return "N/A";
