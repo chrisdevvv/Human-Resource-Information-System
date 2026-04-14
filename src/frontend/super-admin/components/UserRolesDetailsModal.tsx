@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { X } from "lucide-react";
+import { XCircle } from "lucide-react";
 
 export type RegistrationDetail = {
   id: number;
@@ -49,7 +49,7 @@ export default function UserRolesDetailsModal({ account, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 relative">
+      <div className="bg-white rounded-xl border border-blue-200 shadow-2xl w-full max-w-md mx-4 p-6 relative">
         {/* Close button */}
         <h2 className="text-xl font-bold text-gray-800 mb-5">
           Registration Details
@@ -95,9 +95,12 @@ export default function UserRolesDetailsModal({ account, onClose }: Props) {
         <div className="mt-6 flex justify-end">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer"
+            className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer"
           >
-            Close
+            <span className="inline-flex items-center gap-1">
+              <XCircle size={14} />
+              Close
+            </span>
           </button>
         </div>
       </div>

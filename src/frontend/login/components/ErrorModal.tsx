@@ -3,6 +3,7 @@
 // Filename: ErrorModal.tsx
 // Purpose: Generic error modal to display validation or server messages
 import React, { useEffect } from "react";
+import { XCircle } from "lucide-react";
 import { AlertCircle } from "../../assets/icons";
 
 type Props = {
@@ -47,9 +48,10 @@ export default function ErrorModal({ error, onClose }: Props) {
           <div className="mt-4">
             <button
               id="errorOk"
-              className="transition hover:cursor-pointer px-4 py-2 hover:bg-blue-700 bg-blue-600 text-white rounded-md"
+              className="inline-flex items-center justify-center gap-1 transition hover:cursor-pointer px-3 py-1.5 hover:bg-blue-700 bg-blue-600 text-white rounded-md"
               onClick={onClose}
             >
+              <XCircle size={14} />
               Okay
             </button>
           </div>

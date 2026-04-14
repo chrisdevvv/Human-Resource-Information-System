@@ -2,7 +2,6 @@
 // Maps roles to accessible features
 
 export type UserRole = "data-encoder" | "admin" | "super-admin";
-
 export interface AccessibleFeature {
   id: string;
   label: string;
@@ -21,6 +20,16 @@ export const ACCESSIBLE_FEATURES: AccessibleFeature[] = [
     roles: ["data-encoder", "admin", "super-admin"],
   },
   {
+    id: "employees-list",
+    label: "Employees Profile",
+    roles: ["admin", "super-admin"],
+  },
+  {
+    id: "eservice",
+    label: "E-Service Record",
+    roles: ["admin", "super-admin"],
+  },
+  {
     id: "user-roles",
     label: "User & Roles",
     roles: ["admin", "super-admin"],
@@ -33,6 +42,11 @@ export const ACCESSIBLE_FEATURES: AccessibleFeature[] = [
   {
     id: "configuration",
     label: "Configuration",
+    roles: ["super-admin"],
+  },
+  {
+    id: "monthly-credit-simulation",
+    label: "Monthly Credit",
     roles: ["super-admin"],
   },
   {
@@ -128,11 +142,15 @@ export function canAccessPage(
     case "configuration":
     case "super-admin-configuration":
       return normalizeRole(userRole) === "super-admin";
+    case "monthly-credit-simulation":
+      return normalizeRole(userRole) === "super-admin";
     case "leave-management":
     case "employee-management":
       return ["data-encoder", "admin", "super-admin"].includes(
         normalizeRole(userRole),
       );
+    case "employees-list":
+      return ["admin", "super-admin"].includes(normalizeRole(userRole));
     case "profile-settings":
       return ["data-encoder", "admin", "super-admin"].includes(
         normalizeRole(userRole),

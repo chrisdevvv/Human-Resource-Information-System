@@ -1,11 +1,19 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Download, Plus, RefreshCcw, Trash2, X } from "lucide-react";
-import ArchiveConfirmationModal from "./ArchiveConfirmationModal";
+import {
+  Download,
+  ExternalLink,
+  FileText,
+  IdCard,
+  Plus,
+  RefreshCcw,
+  Trash2,
+  X,
+  XCircle,
+} from "lucide-react";
 import DeleteEntryConfirmation from "./DeleteEntryConfirmation";
 import MarkLeaveConfirmationModal from "./MarkLeaveConfirmationModal";
-import ArchiveSuccessMessage from "../ArchiveSuccessMessage";
 import type { LeaveModalRecord } from "../leaveTypes";
 import AddLeaveModal, { type AddLeaveFormValues } from "./AddLeaveModal";
 import LeaveHistoryTable from "../LeaveHistoryTable";
@@ -18,7 +26,6 @@ import {
   deleteLeave,
   getLeaveHistoryByEmployee,
   type LeaveHistoryRecord,
-  archiveEmployee,
 } from "../leaveApi";
 
 type LeaveManagementModalProps = {
@@ -45,10 +52,6 @@ export default function LeaveManagementModal({
   initialTab = "history",
   onLeaveStatusChanged,
 }: LeaveManagementModalProps) {
-  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
-  const [isArchiving, setIsArchiving] = useState(false);
-  const [archiveError, setArchiveError] = useState<string | null>(null);
-  const [showArchiveSuccess, setShowArchiveSuccess] = useState(false);
   const [isMarkedOnLeave, setIsMarkedOnLeave] = useState(false);
   const [employeeEmail, setEmployeeEmail] = useState("");
   const [employeeSchoolFromApi, setEmployeeSchoolFromApi] = useState("");
@@ -68,36 +71,15 @@ export default function LeaveManagementModal({
   const [pdfCooldownRemaining, setPdfCooldownRemaining] = useState(0);
   const pdfCooldownIntervalRef = useRef<number | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
-  const handleArchive = async (password: string) => {
-    setIsArchiving(true);
-    setArchiveError(null);
-    try {
-      if (!employeeId) {
-        throw new Error("Employee ID not found");
-      }
-      await archiveEmployee(employeeId, password);
-      setIsArchiveOpen(false);
-      setShowArchiveSuccess(true);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Failed to archive employee. Please try again.";
-      setArchiveError(errorMessage);
-    } finally {
-      setIsArchiving(false);
-    }
-  };
 
-  const handleArchiveSuccessClose = () => {
-    setShowArchiveSuccess(false);
-    onClose();
-  };
   const employeeId = leave?.employeeId ?? leave?.id ?? null;
   const employeeType = leave?.employeeType ?? "non-teaching";
   const employeeSchool =
     employeeSchoolFromApi || (leave?.schoolName || "").trim() || "N/A";
   const [activeTab, setActiveTab] = useState<"history" | "card">("history");
+  const [historyViewTab, setHistoryViewTab] = useState<
+    "leave-records" | "monthly-credit"
+  >("leave-records");
   const [historyRows, setHistoryRows] = useState<LeaveHistoryRecord[]>([]);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<Set<number>>(
@@ -108,6 +90,21 @@ export default function LeaveManagementModal({
 
   const employeeTypeLabel =
     employeeType === "non-teaching" ? "Non-Teaching" : "Teaching";
+
+  const isMonthlyCreditRow = (row: LeaveHistoryRecord) => {
+    const particulars = String(row.particulars || "")
+      .trim()
+      .toLowerCase();
+    return particulars.includes("monthly") && particulars.includes("credit");
+  };
+
+  const filteredHistoryRows = useMemo(() => {
+    if (historyViewTab === "monthly-credit") {
+      return historyRows.filter((row) => isMonthlyCreditRow(row));
+    }
+
+    return historyRows.filter((row) => !isMonthlyCreditRow(row));
+  }, [historyRows, historyViewTab]);
 
   const toBool = (value: unknown) => {
     if (value === true || value === 1 || value === "1") return true;
@@ -271,6 +268,7 @@ export default function LeaveManagementModal({
   useEffect(() => {
     if (!isOpen || !employeeId) return;
     setActiveTab(initialTab);
+    setHistoryViewTab("leave-records");
     setIsDeleteMode(false);
     setSelectedHistoryIds(new Set());
     setEmployeeSchoolFromApi("");
@@ -287,6 +285,11 @@ export default function LeaveManagementModal({
   }, [activeTab]);
 
   useEffect(() => {
+    setIsDeleteMode(false);
+    setSelectedHistoryIds(new Set());
+  }, [historyViewTab]);
+
+  useEffect(() => {
     return () => {
       if (pdfCooldownIntervalRef.current !== null) {
         window.clearInterval(pdfCooldownIntervalRef.current);
@@ -297,6 +300,9 @@ export default function LeaveManagementModal({
   if (!isOpen || !leave || !employeeId) {
     return null;
   }
+
+  const employeeNameDisplay = leave.fullName?.trim() || "N/A";
+  const employeeEmailDisplay = employeeEmail || "No email provided";
 
   const handleCreate = async (payload: AddLeaveFormValues) => {
     try {
@@ -370,7 +376,7 @@ export default function LeaveManagementModal({
   };
 
   const handleToggleAllHistoryRows = () => {
-    const allRowIds = historyRows.map((row) => row.id);
+    const allRowIds = filteredHistoryRows.map((row) => row.id);
     const areAllSelected =
       allRowIds.length > 0 &&
       allRowIds.every((rowId) => selectedHistoryIds.has(rowId));
@@ -431,21 +437,62 @@ export default function LeaveManagementModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 sm:px-4">
-      <div className="relative flex max-h-[94vh] w-full max-w-screen-2xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+      <div className="relative flex max-h-[94vh] w-full max-w-screen-2xl flex-col overflow-hidden rounded-xl border border-blue-200 bg-white shadow-2xl">
         <div className="border-b border-gray-200 px-5 py-4 sm:px-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0 flex-1">
               <h2 className="text-xl font-bold text-gray-800">
                 Leave Management Details
               </h2>
-              <p className="mt-1 text-sm text-gray-600">
-                Employee: {leave.fullName}
-              </p>
-              <p className="text-sm text-gray-500">Email: {employeeEmail}</p>
-              <p className="text-sm text-gray-500">
-                Employee Type: {employeeTypeLabel}
-              </p>
-              <p className="text-sm text-gray-500">School: {employeeSchool}</p>
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3">
+                <label className="flex flex-col gap-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:text-xs">
+                    Employee Name
+                  </span>
+                  <input
+                    type="text"
+                    value={employeeNameDisplay}
+                    readOnly
+                    className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1.5 text-xs text-gray-700 sm:px-3 sm:py-2 sm:text-sm"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:text-xs">
+                    Email Address
+                  </span>
+                  <input
+                    type="text"
+                    value={employeeEmailDisplay}
+                    readOnly
+                    className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1.5 text-xs text-gray-700 sm:px-3 sm:py-2 sm:text-sm"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:text-xs">
+                    Employee Type
+                  </span>
+                  <input
+                    type="text"
+                    value={employeeTypeLabel}
+                    readOnly
+                    className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1.5 text-xs text-gray-700 sm:px-3 sm:py-2 sm:text-sm"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:text-xs">
+                    School
+                  </span>
+                  <input
+                    type="text"
+                    value={employeeSchool}
+                    readOnly
+                    className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1.5 text-xs text-gray-700 sm:px-3 sm:py-2 sm:text-sm"
+                  />
+                </label>
+              </div>
               <div className="mt-3 flex items-start gap-3">
                 <input
                   id="mark-on-leave"
@@ -499,41 +546,50 @@ export default function LeaveManagementModal({
             </button>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
             <button
               type="button"
               onClick={() => setActiveTab("history")}
-              className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-medium transition ${
+              className={`w-full cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition sm:w-auto ${
                 activeTab === "history"
                   ? "hover:bg-blue-700 bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              Leave History
+              <span className="inline-flex items-center gap-1">
+                <FileText size={14} />
+                Leave History
+              </span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("card")}
-              className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-medium transition ${
+              className={`w-full cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition sm:w-auto ${
                 activeTab === "card"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              Printable Leave Card
+              <span className="inline-flex items-center gap-1">
+                <IdCard size={14} />
+                Printable Leave Card
+              </span>
             </button>
             <button
               type="button"
               onClick={handleOpenHistoryInNewTab}
-              className="cursor-pointer rounded-lg px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
+              className="w-full cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition sm:w-auto"
             >
-              Open in Another Tab
+              <span className="inline-flex items-center gap-1">
+                <ExternalLink size={14} />
+                Open in Another Tab
+              </span>
             </button>
             <button
               type="button"
               onClick={handleDeleteSelectedEntries}
               disabled={activeTab !== "history" || isDeletingEntries}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               <Trash2 size={14} />
               {isDeleteMode
@@ -545,18 +601,21 @@ export default function LeaveManagementModal({
                 type="button"
                 onClick={handleCancelDeleteMode}
                 disabled={isDeletingEntries}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
-                Cancel
+                <span className="inline-flex items-center gap-1">
+                  <XCircle size={14} />
+                  Cancel
+                </span>
               </button>
             ) : null}
 
-            <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap items-center gap-2">
+            <div className="col-span-2 grid w-full grid-cols-2 gap-2 sm:col-span-1 sm:ml-auto sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
               <button
                 type="button"
                 onClick={() => setIsAddOpen(true)}
                 disabled={isSaving}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
                 <Plus size={14} />
                 Add Leave
@@ -565,7 +624,7 @@ export default function LeaveManagementModal({
                 type="button"
                 onClick={() => fetchHistory(true)}
                 disabled={isSaving}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
                 <RefreshCcw size={14} />
                 Refresh
@@ -574,50 +633,55 @@ export default function LeaveManagementModal({
                 type="button"
                 onClick={handleDownloadPdf}
                 disabled={isSaving || pdfCooldownRemaining > 0}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="col-span-2 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-red-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1 sm:w-auto"
               >
                 <Download size={14} />
                 {pdfCooldownRemaining > 0
                   ? `Download PDF (${pdfCooldownRemaining}s)`
                   : "Download PDF"}
               </button>
-              <button
-                type="button"
-                onClick={() => setIsArchiveOpen(true)}
-                disabled={isSaving || isArchiving}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-800 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Archive
-              </button>
-              <ArchiveConfirmationModal
-                isOpen={isArchiveOpen}
-                onClose={() => setIsArchiveOpen(false)}
-                onConfirm={handleArchive}
-                isLoading={isArchiving}
-                error={archiveError}
-                employeeName={leave.fullName}
-              />
-              <ArchiveSuccessMessage
-                isVisible={showArchiveSuccess}
-                employeeName={leave.fullName}
-                onClose={handleArchiveSuccessClose}
-                autoCloseDuration={2000}
-              />
             </div>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 sm:p-6">
           {activeTab === "history" ? (
-            <LeaveHistoryTable
-              rows={historyRows}
-              loading={loading}
-              error={error}
-              selectable={isDeleteMode}
-              selectedIds={selectedHistoryIds}
-              onToggleRow={handleToggleHistoryRow}
-              onToggleAll={handleToggleAllHistoryRows}
-            />
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setHistoryViewTab("leave-records")}
+                  className={`cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                    historyViewTab === "leave-records"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  Leave Records
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryViewTab("monthly-credit")}
+                  className={`cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                    historyViewTab === "monthly-credit"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  Monthly Credit
+                </button>
+              </div>
+
+              <LeaveHistoryTable
+                rows={filteredHistoryRows}
+                loading={loading}
+                error={error}
+                selectable={isDeleteMode}
+                selectedIds={selectedHistoryIds}
+                onToggleRow={handleToggleHistoryRow}
+                onToggleAll={handleToggleAllHistoryRows}
+              />
+            </div>
           ) : (
             <PrintableLeaveCard
               ref={cardRef}

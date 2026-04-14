@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Check, Eye, EyeOff, X } from "lucide-react";
+import { createClearHandler } from "../../utils/clearFormUtils";
 
 type Props = {
   accountId: number;
@@ -90,7 +91,7 @@ export default function RoleAssignmentModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 relative">
+      <div className="bg-white rounded-xl border border-blue-200 shadow-2xl w-full max-w-md mx-4 p-6 relative">
         {/* ── Confirmation overlay ── */}
         {showConfirm && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white rounded-xl px-8 text-center">
@@ -131,16 +132,22 @@ export default function RoleAssignmentModal({
               <button
                 onClick={() => setShowConfirm(false)}
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer disabled:opacity-50"
+                className="flex-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer disabled:opacity-50"
               >
-                Back
+                <span className="inline-flex items-center gap-1">
+                  <ArrowLeft size={14} />
+                  Back
+                </span>
               </button>
               <button
                 onClick={handleConfirm}
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
+                className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
               >
-                {loading ? "Assigning…" : "Confirm"}
+                <span className="inline-flex items-center gap-1">
+                  <Check size={14} />
+                  {loading ? "Assigning…" : "Confirm"}
+                </span>
               </button>
             </div>
           </div>
@@ -163,7 +170,7 @@ export default function RoleAssignmentModal({
               setSelectedRole(e.target.value as "ADMIN" | "DATA_ENCODER")
             }
             disabled={loading}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer disabled:opacity-50"
+            className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer disabled:opacity-50"
           >
             <option value="DATA_ENCODER">Data Encoder</option>
             <option value="ADMIN">Admin</option>
@@ -207,18 +214,36 @@ export default function RoleAssignmentModal({
         )}
 
         {/* Actions */}
-        <div className="flex justify-end gap-3">
+        <div className="flex items-center justify-end gap-3">
+          {(selectedRole !== "DATA_ENCODER" || !!password) && (
+            <button
+              onClick={createClearHandler(
+                () => {
+                  setPassword("");
+                  setError(null);
+                  setSelectedRole("DATA_ENCODER");
+                },
+                selectedRole !== "DATA_ENCODER" || !!password,
+              )}
+              disabled={loading}
+              className="mr-auto cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline disabled:opacity-50 disabled:no-underline"
+            >
+              Clear All
+            </button>
+          )}
+
           <button
             onClick={onClose}
             disabled={loading}
-            className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer disabled:opacity-50"
+            className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer disabled:opacity-50"
           >
             Cancel
           </button>
+
           <button
             onClick={handleAssignClick}
             disabled={loading}
-            className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
+            className="px-4 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
           >
             Assign Role
           </button>

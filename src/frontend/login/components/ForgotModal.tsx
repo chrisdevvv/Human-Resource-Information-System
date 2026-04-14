@@ -3,6 +3,7 @@
 // Filename: ForgotModal.tsx
 // Purpose: Send password reset email
 import React, { useEffect, useState } from "react";
+import { Send, XCircle } from "lucide-react";
 import { Mail } from "../../assets/icons";
 
 const API_BASE_URL =
@@ -86,12 +87,12 @@ export default function ForgotModal({ visible, onClose }: Props) {
 
   return (
     <div
-      className={`${visible ? "flex" : "hidden"} fixed inset-0 items-center justify-center bg-black/40 z-50 px-4`}
+      className={`${visible ? "flex" : "hidden"} fixed inset-0 z-50 items-center justify-center bg-black/40 px-4`}
       aria-hidden={!visible}
     >
-      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6 shadow-lg sm:p-8">
+      <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-blue-200 bg-white p-6 shadow-2xl sm:p-8">
         <button
-          className="absolute right-2 top-2 text-xl hover:bg-red-500 hover:text-white rounded p-1 transition"
+          className="absolute right-2 top-2 rounded p-1 text-xl transition hover:bg-red-500 hover:text-white"
           id="forgotClose"
           onClick={() => {
             resetForm();
@@ -100,20 +101,24 @@ export default function ForgotModal({ visible, onClose }: Props) {
         >
           &times;
         </button>
-        <h3 className="text-center text-lg font-semibold text-sky-800">
-          Reset Password
-        </h3>
+        <div className="mb-1 flex items-center gap-2">
+          <Mail className="text-blue-600" size={20} />
+          <h2 className="text-xl font-bold text-gray-800">Reset Password</h2>
+        </div>
+        <p className="mb-5 text-sm text-gray-500">
+          Enter your account email to receive a password reset link.
+        </p>
 
-        <div id="forgotStepEmail" className="mt-3">
+        <div id="forgotStepEmail">
           {successMessage ? (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-md mb-4">
-              <p className="text-green-700">{successMessage}</p>
+            <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+              {successMessage}
             </div>
           ) : (
             <>
-              <label className="flex items-center gap-2 text-sky-900">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                 <Mail className="text-blue-600" size={18} />
-                Enter your account email <span className="text-red-500">*</span>
+                Email <span className="text-red-500">*</span>
               </label>
               <input
                 id="forgotEmail"
@@ -133,9 +138,7 @@ export default function ForgotModal({ visible, onClose }: Props) {
                     setEmailError("");
                   }
                 }}
-                className={`mt-2 w-full px-3 py-2 border rounded-md text-gray-800 placeholder:text-gray-500 ${
-                  emailError ? "border-red-500" : ""
-                }`}
+                className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm text-gray-700 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100 ${emailError ? "border-red-500" : "border-gray-300"}`}
                 disabled={isLoading}
               />
               {emailError && (
@@ -144,26 +147,28 @@ export default function ForgotModal({ visible, onClose }: Props) {
             </>
           )}
 
-          <div className="flex flex-col gap-3 items-center mt-4">
+          <div className="mt-4 flex flex-col items-center gap-3">
             {!successMessage && (
               <>
                 <button
                   id="sendReset"
-                  className="hover:cursor-pointer transition hover:bg-blue-700 px-6 py-2 bg-blue-600 text-white rounded-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex w-full cursor-pointer items-center justify-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={sendResetEmail}
                   disabled={isLoading}
                 >
+                  <Send size={14} />
                   {isLoading ? "Sending..." : "Send reset email"}
                 </button>
                 <button
                   id="cancelForgot"
-                  className="text-black hover:cursor-pointer bg-gray-200 px-6 py-2 border rounded-md w-full hover:bg-gray-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex w-full cursor-pointer items-center justify-center gap-1 rounded-lg border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={() => {
                     resetForm();
                     onClose();
                   }}
                   disabled={isLoading}
                 >
+                  <XCircle size={14} />
                   Cancel
                 </button>
               </>

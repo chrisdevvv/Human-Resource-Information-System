@@ -4,12 +4,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
+  CircleUser,
+  CalendarDays,
   LayoutDashboard,
   LogOut,
   Menu,
   SlidersHorizontal,
   X,
-  SettingsIcon,
   ShieldCheck,
   Users,
 } from "lucide-react";
@@ -37,9 +38,15 @@ const SIDEBAR_TABS: SidebarTab[] = [
     roles: ["admin", "super-admin"],
   },
   {
+    id: "employees-list",
+    label: "Employees Profile",
+    icon: Users,
+    roles: ["admin", "super-admin"],
+  },
+  {
     id: "employee-management",
     label: "Leave Management",
-    icon: Users,
+    icon: CalendarDays,
     roles: ALL_ROLES,
   },
   {
@@ -50,7 +57,7 @@ const SIDEBAR_TABS: SidebarTab[] = [
   },
   {
     id: "logs",
-    label: "Logs",
+    label: "Activity Logs",
     icon: Activity,
     roles: ["super-admin"],
   },
@@ -222,7 +229,7 @@ export default function SidebarMobile({
   role,
   activeTab,
   onTabChange,
-  title = "ELMS",
+  title = "CHRIS",
   className = "",
 }: SidebarMobileProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -342,8 +349,10 @@ export default function SidebarMobile({
 
       {/* Overlay */}
       <div
-        className={`fixed inset-0 bg-black/40 z-30 transition-opacity duration-200 ${
-          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        className={`fixed inset-0 z-30 transition-all duration-300 ease-out ${
+          isOpen
+            ? "opacity-100 bg-black/45 backdrop-blur-[1.5px]"
+            : "opacity-0 bg-black/0 backdrop-blur-0 pointer-events-none"
         }`}
         onClick={() => setIsOpen(false)}
       />
@@ -390,7 +399,7 @@ export default function SidebarMobile({
                 }`}
               >
                 <Icon size={20} className="shrink-0" />
-                <span className="text-sm font-medium">{tab.label}</span>
+                <span className="text-xs font-medium">{tab.label}</span>
               </button>
             );
           })}
@@ -404,7 +413,7 @@ export default function SidebarMobile({
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition text-blue-50 hover:bg-red-600"
           >
             <LogOut size={20} className="shrink-0" />
-            <span className="text-sm font-medium">Logout</span>
+            <span className="text-xs font-medium">Logout</span>
           </button>
           <button
             type="button"
@@ -415,8 +424,8 @@ export default function SidebarMobile({
                 : "text-blue-50 hover:bg-blue-700"
             }`}
           >
-            <SettingsIcon size={20} className="shrink-0" />
-            <span className="text-sm font-medium">Settings</span>
+            <CircleUser size={20} className="shrink-0" />
+            <span className="text-xs font-medium">Settings</span>
           </button>
         </div>
       </nav>

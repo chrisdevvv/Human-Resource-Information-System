@@ -222,10 +222,10 @@ export default function AdminDashboard({ onTabChange }: AdminDashboardProps) {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-8">
+      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-6 py-6">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600 mt-1">
-          Welcome back! Here's your system overview.
+          Welcome back! Here&apos;s your system overview.
         </p>
       </div>
 
@@ -242,7 +242,7 @@ export default function AdminDashboard({ onTabChange }: AdminDashboardProps) {
           {statCards.map((stat, index) => (
             <div
               key={index}
-              className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+              className="bg-white border border-blue-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">

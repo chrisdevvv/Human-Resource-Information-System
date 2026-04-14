@@ -6,6 +6,8 @@ import {
   ArrowDownAZ,
   ChevronLeft,
   ChevronRight,
+  Search,
+  UserCheck,
 } from "lucide-react";
 import UserRolesDetailsModal, {
   type RegistrationDetail,
@@ -47,6 +49,7 @@ export default function PendingAccountsMobile({
   const [letterFilter, setLetterFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [pageJumpInput, setPageJumpInput] = useState("1");
   const [data, setData] = useState<RegistrationRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,17 +66,28 @@ export default function PendingAccountsMobile({
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-  const fetchData = async (status: string, showSpinner = true) => {
+  const fetchData = async (
+    status: string,
+    page = currentPage,
+    pageSize = itemsPerPage,
+    showSpinner = true,
+  ) => {
     try {
       if (showSpinner) setLoading(true);
 
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
 
-      const url =
-        status === "ALL"
-          ? `${API_BASE}/api/registrations/`
-          : `${API_BASE}/api/registrations/?status=${status}`;
+      const params = new URLSearchParams();
+      if (status !== "ALL") params.set("status", status);
+      if (searchQuery) params.set("search", searchQuery);
+      if (letterFilter !== "ALL") params.set("letter", letterFilter);
+      params.set("sortOrder", sortOrder);
+      params.set("dateSortOrder", dateSortOrder);
+      params.set("page", String(page));
+      params.set("pageSize", String(pageSize));
+
+      const url = `${API_BASE}/api/registrations/?${params.toString()}`;
 
       const response = await fetch(url, {
         method: "GET",
@@ -101,58 +115,43 @@ export default function PendingAccountsMobile({
         }),
       );
       setData(formattedData);
+      setTotalItems(
+        typeof result.total === "number" ? result.total : formattedData.length,
+      );
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
-      if (showSpinner) setData([]);
+      if (showSpinner) {
+        setData([]);
+        setTotalItems(0);
+      }
     } finally {
       if (showSpinner) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData(statusFilter);
+    fetchData(statusFilter, currentPage, itemsPerPage);
     const intervalId = window.setInterval(
-      () => fetchData(statusFilter, false),
+      () => fetchData(statusFilter, currentPage, itemsPerPage, false),
       5000,
     );
     return () => window.clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
+  }, [
+    statusFilter,
+    searchQuery,
+    letterFilter,
+    sortOrder,
+    dateSortOrder,
+    currentPage,
+    itemsPerPage,
+  ]);
 
-  const filteredData = data
-    .filter((item) => {
-      const q = searchQuery.toLowerCase();
-      const matchesSearch =
-        item.firstName.toLowerCase().includes(q) ||
-        item.lastName.toLowerCase().includes(q) ||
-        item.email.toLowerCase().includes(q) ||
-        item.school.toLowerCase().includes(q);
-      const matchesLetter =
-        letterFilter === "ALL" ||
-        item.firstName.charAt(0).toUpperCase() === letterFilter;
-      return matchesSearch && matchesLetter;
-    })
-    .sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
+  const filteredData = data;
 
-      if (dateSortOrder === "newest") {
-        if (dateB !== dateA) return dateB - dateA;
-      } else {
-        if (dateA !== dateB) return dateA - dateB;
-      }
-
-      if (sortOrder === "asc") {
-        return a.firstName.localeCompare(b.firstName);
-      } else {
-        return b.firstName.localeCompare(a.firstName);
-      }
-    });
-
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredData.slice(startIdx, startIdx + itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const paginatedData = filteredData;
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
     Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
@@ -194,7 +193,10 @@ export default function PendingAccountsMobile({
 
   return (
     <div className="w-full px-3 py-4">
-      <h1 className="text-lg font-bold text-gray-900 mb-4">Pending Accounts</h1>
+      <h1 className="text-lg font-bold text-gray-900 mb-4 inline-flex items-center gap-2">
+        <UserCheck size={16} className="text-blue-600" />
+        Pending Accounts
+      </h1>
 
       {/* Filters */}
       <div className="flex flex-col gap-2 mb-4">
@@ -208,12 +210,13 @@ export default function PendingAccountsMobile({
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             onClick={() => setCurrentPage(1)}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer"
+            className="inline-flex items-center gap-1 px-4 py-1 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer"
           >
+            <Search size={14} />
             Search
           </button>
         </div>
@@ -226,7 +229,7 @@ export default function PendingAccountsMobile({
               setStatusFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            className="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
           >
             <option value="ALL">All Status</option>
             <option value="PENDING">Pending</option>
@@ -240,7 +243,7 @@ export default function PendingAccountsMobile({
               setLetterFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            className="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
           >
             <option value="ALL">All Letters</option>
             {alphabet.map((letter) => (
@@ -254,14 +257,14 @@ export default function PendingAccountsMobile({
             onClick={() =>
               setDateSortOrder(dateSortOrder === "newest" ? "oldest" : "newest")
             }
-            className="flex items-center justify-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 transition cursor-pointer"
+            className="flex items-center justify-center gap-1 px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 transition cursor-pointer"
           >
             {dateSortOrder === "newest" ? "Newest" : "Oldest"}
           </button>
 
           <button
             onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-            className="flex items-center justify-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 transition cursor-pointer"
+            className="flex items-center justify-center gap-1 px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 transition cursor-pointer"
           >
             {sortOrder === "asc" ? (
               <>
@@ -279,7 +282,7 @@ export default function PendingAccountsMobile({
       </div>
 
       {/* Account list */}
-      <div className="bg-white rounded-xl shadow-lg p-4 flex flex-col gap-4">
+      <div className="border border-blue-200 bg-white rounded-xl shadow-lg p-4 flex flex-col gap-4">
         {loading ? (
           <p className="text-center text-sm text-gray-500 py-8">
             Loading pending accounts...
@@ -297,7 +300,7 @@ export default function PendingAccountsMobile({
             {paginatedData.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg border border-gray-100"
+                className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-100"
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-gray-900 truncate">
@@ -305,25 +308,27 @@ export default function PendingAccountsMobile({
                   </p>
                   <p className="text-xs text-gray-500 truncate">{item.email}</p>
                 </div>
-                <button
-                  onClick={() =>
-                    setViewTarget({
-                      id: item.id,
-                      firstName: item.firstName,
-                      lastName: item.lastName,
-                      email: item.email,
-                      school: item.school,
-                      approved_role: item.approved_role,
-                      rejection_reason: item.rejection_reason,
-                      reviewed_at: item.reviewed_at,
-                      status: item.status,
-                      created_at: item.created_at,
-                    })
-                  }
-                  className="ml-3 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition cursor-pointer shrink-0"
-                >
-                  View
-                </button>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    onClick={() =>
+                      setViewTarget({
+                        id: item.id,
+                        firstName: item.firstName,
+                        lastName: item.lastName,
+                        email: item.email,
+                        school: item.school,
+                        approved_role: item.approved_role,
+                        rejection_reason: item.rejection_reason,
+                        reviewed_at: item.reviewed_at,
+                        status: item.status,
+                        created_at: item.created_at,
+                      })
+                    }
+                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition cursor-pointer shrink-0"
+                  >
+                    View
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -382,7 +387,7 @@ export default function PendingAccountsMobile({
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
               >
                 <ChevronLeft size={15} />
                 Prev
@@ -404,7 +409,7 @@ export default function PendingAccountsMobile({
                   setCurrentPage(Math.min(totalPages, currentPage + 1))
                 }
                 disabled={currentPage === totalPages}
-                className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
               >
                 Next
                 <ChevronRight size={15} />

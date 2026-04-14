@@ -6,8 +6,10 @@ import {
   ArrowDownAZ,
   ChevronLeft,
   ChevronRight,
+  UserCheck,
   Settings,
   Eye,
+  Search,
 } from "lucide-react";
 import PendingAccountsMobile from "./PendingAccountsMobile";
 import UserSettingModal from "../../components/UserSettingModal";
@@ -61,9 +63,26 @@ const normalizeRole = (value: unknown): string => {
 };
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+const USER_ROLES_TAB_KEY = "userRoles:activeTab";
+
+const getInitialUserRolesTab = (): "users" | "pending" => {
+  if (typeof window === "undefined") {
+    return "users";
+  }
+
+  const storedTab = window.localStorage.getItem(USER_ROLES_TAB_KEY);
+  if (storedTab === "pending") {
+    window.localStorage.removeItem(USER_ROLES_TAB_KEY);
+    return "pending";
+  }
+
+  return "users";
+};
 
 export default function UserRolesMobile() {
-  const [activeTab, setActiveTab] = useState<"users" | "pending">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "pending">(
+    getInitialUserRolesTab,
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [accountStatusFilter, setAccountStatusFilter] = useState<
@@ -73,6 +92,7 @@ export default function UserRolesMobile() {
   const [letterFilter, setLetterFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [pageJumpInput, setPageJumpInput] = useState("1");
   const [userData, setUserData] = useState<User[]>([]);
   const [userLoading, setUserLoading] = useState(true);
@@ -150,9 +170,18 @@ export default function UserRolesMobile() {
       if (!token) throw new Error("No authentication token found.");
 
       const params = new URLSearchParams();
+      if (searchQuery.trim()) params.set("search", searchQuery.trim());
+      if (roleFilter !== "ALL") params.set("role", roleFilter);
+      if (accountStatusFilter !== "ALL") {
+        params.set("is_active", accountStatusFilter === "ACTIVE" ? "1" : "0");
+      }
       if (currentUserRole === "SUPER_ADMIN" && schoolFilter !== "ALL") {
         params.set("school_id", schoolFilter);
       }
+      if (letterFilter !== "ALL") params.set("letter", letterFilter);
+      params.set("sortOrder", sortOrder);
+      params.set("page", String(currentPage));
+      params.set("pageSize", String(itemsPerPage));
 
       const response = await fetch(
         `${API_BASE}/api/users/${params.toString() ? `?${params.toString()}` : ""}`,
@@ -188,61 +217,46 @@ export default function UserRolesMobile() {
             )
           : formatted;
       setUserData(scopedData);
+      setTotalItems(
+        typeof (result as { total?: number }).total === "number"
+          ? Number((result as { total?: number }).total)
+          : scopedData.length,
+      );
       setUserError(null);
     } catch (err) {
       setUserError(err instanceof Error ? err.message : "An error occurred");
-      if (showSpinner) setUserData([]);
+      if (showSpinner) {
+        setUserData([]);
+        setTotalItems(0);
+      }
     } finally {
       if (showSpinner) setUserLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
-    const intervalId = window.setInterval(() => fetchUsers(false), 5000);
-    return () => window.clearInterval(intervalId);
+    const id = window.setTimeout(() => {
+      fetchUsers();
+    }, 300);
+    return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUserRole, currentUserSchoolId, schoolFilter]);
+  }, [
+    currentUserRole,
+    currentUserSchoolId,
+    searchQuery,
+    roleFilter,
+    accountStatusFilter,
+    schoolFilter,
+    letterFilter,
+    sortOrder,
+    currentPage,
+    itemsPerPage,
+  ]);
 
-  const filteredUsers = userData
-    .filter((user) => {
-      const q = searchQuery.toLowerCase();
-      const matchesSearch =
-        user.firstName.toLowerCase().includes(q) ||
-        user.lastName.toLowerCase().includes(q) ||
-        user.email.toLowerCase().includes(q) ||
-        user.schoolName.toLowerCase().includes(q);
-      const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
-      const matchesStatus =
-        accountStatusFilter === "ALL" ||
-        (accountStatusFilter === "ACTIVE" ? user.isActive : !user.isActive);
-      const matchesLetter =
-        letterFilter === "ALL" ||
-        user.firstName.charAt(0).toUpperCase() === letterFilter;
-      const matchesSchool =
-        currentUserRole !== "SUPER_ADMIN" ||
-        schoolFilter === "ALL" ||
-        String(user.schoolId) === schoolFilter;
-      return (
-        matchesSearch &&
-        matchesRole &&
-        matchesStatus &&
-        matchesLetter &&
-        matchesSchool
-      );
-    })
-    .sort((a, b) =>
-      sortOrder === "asc"
-        ? a.firstName.localeCompare(b.firstName)
-        : b.firstName.localeCompare(a.firstName),
-    );
+  const filteredUsers = userData;
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredUsers.length / itemsPerPage),
-  );
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIdx, startIdx + itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const paginatedUsers = filteredUsers;
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
     Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
@@ -282,6 +296,25 @@ export default function UserRolesMobile() {
     setPageJumpInput(String(nextPage));
   };
 
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setRoleFilter("ALL");
+    setAccountStatusFilter("ACTIVE");
+    setSchoolFilter("ALL");
+    setLetterFilter("ALL");
+    setSortOrder("asc");
+    setCurrentPage(1);
+    setPageJumpInput("1");
+  };
+
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 ||
+    roleFilter !== "ALL" ||
+    accountStatusFilter !== "ACTIVE" ||
+    schoolFilter !== "ALL" ||
+    letterFilter !== "ALL" ||
+    sortOrder !== "asc";
+
   return (
     <div className="w-full px-3 py-4">
       {/* Tabs */}
@@ -294,7 +327,10 @@ export default function UserRolesMobile() {
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          User &amp; Roles
+          <span className="inline-flex items-center gap-1.5">
+            <Settings size={14} />
+            User &amp; Roles
+          </span>
         </button>
         <button
           onClick={() => setActiveTab("pending")}
@@ -304,14 +340,20 @@ export default function UserRolesMobile() {
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          Pending Accounts
+          <span className="inline-flex items-center gap-1.5">
+            <UserCheck size={14} />
+            Pending Accounts
+          </span>
         </button>
       </div>
 
       {/* Users tab */}
       {activeTab === "users" && (
-        <div className="bg-white rounded-xl shadow-lg p-4 flex flex-col gap-4">
-          <h1 className="text-lg font-bold text-gray-900">User &amp; Roles</h1>
+        <div className="border border-blue-200 bg-white rounded-xl shadow-lg p-4 flex flex-col gap-4">
+          <h1 className="text-lg font-bold text-gray-900 inline-flex items-center gap-2">
+            <Settings size={16} className="text-blue-600" />
+            User &amp; Roles
+          </h1>
 
           {/* Filters */}
           <div className="flex flex-col gap-2">
@@ -325,12 +367,13 @@ export default function UserRolesMobile() {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 onClick={() => setCurrentPage(1)}
-                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer"
+                className="inline-flex items-center gap-1 px-4 py-1 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer"
               >
+                <Search size={14} />
                 Search
               </button>
             </div>
@@ -340,7 +383,7 @@ export default function UserRolesMobile() {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setShowAddUserModal(true)}
-                  className="px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition cursor-pointer"
+                  className="px-2.5 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition cursor-pointer"
                 >
                   Add User
                 </button>
@@ -351,7 +394,7 @@ export default function UserRolesMobile() {
                     setRoleFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  className="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 >
                   <option value="ALL">All Roles</option>
                   <option value="SUPER_ADMIN">Super Admin</option>
@@ -367,7 +410,7 @@ export default function UserRolesMobile() {
                     setSchoolFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  className="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                   disabled={schoolsLoading}
                 >
                   <option value="ALL">All Schools</option>
@@ -388,7 +431,7 @@ export default function UserRolesMobile() {
                     );
                     setCurrentPage(1);
                   }}
-                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  className="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 >
                   <option value="ACTIVE">Active</option>
                   <option value="INACTIVE">Inactive</option>
@@ -401,7 +444,7 @@ export default function UserRolesMobile() {
                     setLetterFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  className="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 >
                   <option value="ALL">All Letters</option>
                   {alphabet.map((letter) => (
@@ -415,7 +458,7 @@ export default function UserRolesMobile() {
                   onClick={() =>
                     setSortOrder(sortOrder === "asc" ? "desc" : "asc")
                   }
-                  className="flex items-center justify-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 transition cursor-pointer"
+                  className="flex items-center justify-center gap-1 px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 transition cursor-pointer"
                 >
                   {sortOrder === "asc" ? (
                     <>
@@ -430,6 +473,16 @@ export default function UserRolesMobile() {
                   )}
                 </button>
               </div>
+
+              {hasActiveFilters ? (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="text-sm text-gray-500 underline hover:text-gray-700 transition cursor-pointer text-center"
+                >
+                  Clear
+                </button>
+              ) : null}
             </div>
           </div>
 
@@ -451,7 +504,7 @@ export default function UserRolesMobile() {
               {paginatedUsers.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg border border-gray-100"
+                  className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-100"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-gray-900 truncate">
@@ -461,14 +514,16 @@ export default function UserRolesMobile() {
                       {user.email}
                     </p>
                   </div>
-                  <button
-                    onClick={() => setViewTarget(user)}
-                    className="ml-3 p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition cursor-pointer shrink-0"
-                    aria-label={`View details for ${user.firstName} ${user.lastName}`}
-                    title="View details"
-                  >
-                    <Eye size={14} />
-                  </button>
+                  <div className="mt-2 flex justify-end">
+                    <button
+                      onClick={() => setViewTarget(user)}
+                      className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition cursor-pointer shrink-0"
+                      aria-label={`View details for ${user.firstName} ${user.lastName}`}
+                      title="View details"
+                    >
+                      <Eye size={14} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -527,7 +582,7 @@ export default function UserRolesMobile() {
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
                 >
                   <ChevronLeft size={15} />
                   Prev
@@ -549,7 +604,7 @@ export default function UserRolesMobile() {
                     setCurrentPage(Math.min(totalPages, currentPage + 1))
                   }
                   disabled={currentPage === totalPages}
-                  className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
                 >
                   Next
                   <ChevronRight size={15} />

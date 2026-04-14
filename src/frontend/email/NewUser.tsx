@@ -238,7 +238,7 @@ export default function NewUser() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
       <div className="fixed inset-0 z-40 bg-black/40" />
 
-      <div className="relative z-50 bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+      <div className="relative z-50 bg-white rounded-xl border border-blue-200 shadow-2xl w-full max-w-md p-6">
         <div className="flex items-center gap-2 mb-1">
           <ShieldCheck size={20} className="text-blue-600" />
           <h1 className="text-xl font-bold text-gray-800">Security Update</h1>
@@ -336,7 +336,7 @@ export default function NewUser() {
               type="button"
               onClick={handleSaveChanges}
               disabled={saving}
-              className="mt-6 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer disabled:opacity-60"
+              className="mt-6 w-full px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer disabled:opacity-60"
             >
               {saving ? "Saving..." : "Save Changes"}
             </button>

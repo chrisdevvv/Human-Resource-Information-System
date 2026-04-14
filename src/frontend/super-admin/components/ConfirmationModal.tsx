@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Check, X } from "lucide-react";
 
 type ConfirmationModalProps = {
   visible: boolean;
@@ -33,7 +34,7 @@ export default function ConfirmationModal({
 
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/45">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
+      <div className="bg-white rounded-xl border border-blue-200 shadow-2xl w-full max-w-md mx-4 p-6">
         <h3 className="text-lg font-bold text-gray-800 mb-2">{title}</h3>
         <p className="text-sm text-gray-600 mb-3">{message}</p>
 
@@ -49,16 +50,22 @@ export default function ConfirmationModal({
           <button
             onClick={onCancel}
             disabled={loading}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium cursor-pointer disabled:opacity-50"
+            className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium cursor-pointer disabled:opacity-50"
           >
-            {cancelLabel}
+            <span className="inline-flex items-center gap-1">
+              <X size={14} />
+              {cancelLabel}
+            </span>
           </button>
           <button
             onClick={onConfirm}
             disabled={loading}
-            className={`px-4 py-2 rounded-lg transition text-sm font-medium cursor-pointer disabled:opacity-60 ${confirmClassName}`}
+            className={`px-3 py-1.5 rounded-lg transition text-sm font-medium cursor-pointer disabled:opacity-60 ${confirmClassName}`}
           >
-            {loading ? "Processing..." : confirmLabel}
+            <span className="inline-flex items-center gap-1">
+              <Check size={14} />
+              {loading ? "Processing..." : confirmLabel}
+            </span>
           </button>
         </div>
       </div>

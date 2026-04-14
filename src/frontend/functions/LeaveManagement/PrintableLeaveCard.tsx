@@ -68,6 +68,29 @@ const LeaveTableHeader = React.memo(function LeaveTableHeader() {
   return (
     <thead>
       <tr
+        className="text-[16px] uppercase tracking-wide"
+        style={{
+          backgroundColor: CARD_COLORS.headerGray,
+          fontWeight: "bold",
+        }}
+      >
+        <th
+          className="border px-2 py-2 text-center"
+          style={{ borderColor: CARD_COLORS.black, paddingBottom: "6px" }}
+          colSpan={6}
+        >
+          Vacation Leave
+        </th>
+        <th
+          className="border px-2 py-2 text-center"
+          style={{ borderColor: CARD_COLORS.black, paddingBottom: "6px" }}
+          colSpan={5}
+        >
+          Sick Leave
+        </th>
+      </tr>
+
+      <tr
         className="text-[10px] uppercase tracking-wide"
         style={{
           backgroundColor: CARD_COLORS.headerGray,
@@ -75,68 +98,72 @@ const LeaveTableHeader = React.memo(function LeaveTableHeader() {
         }}
       >
         <th
-          className="border px-2 py-2 text-left"
-          style={{ borderColor: CARD_COLORS.black, width: "100px" }}
+          className="border px-2 py-2 text-center"
+          style={{
+            borderColor: CARD_COLORS.black,
+            width: "100px",
+            paddingBottom: "10px",
+          }}
         >
           Period of Leave
         </th>
         <th
-          className="border px-2 py-2 text-left"
-          style={{ borderColor: CARD_COLORS.black }}
+          className="border px-2 py-2 text-center"
+          style={{ borderColor: CARD_COLORS.black, paddingBottom: "10px" }}
         >
           Particulars
         </th>
         <th
-          className="border px-2 py-2 text-right"
-          style={{ borderColor: CARD_COLORS.black }}
+          className="border px-2 py-2 text-center"
+          style={{ borderColor: CARD_COLORS.black, paddingBottom: "10px" }}
         >
           Earned VL
         </th>
         <th
-          className="border px-2 py-2 text-right"
-          style={{ borderColor: CARD_COLORS.black }}
+          className="border px-2 py-2 text-center"
+          style={{ borderColor: CARD_COLORS.black, paddingBottom: "10px" }}
         >
           Abs With Pay VL
         </th>
         <th
-          className="border px-2 py-2 text-right"
-          style={{ borderColor: CARD_COLORS.black }}
+          className="border px-2 py-2 text-center"
+          style={{ borderColor: CARD_COLORS.black, paddingBottom: "10px" }}
         >
           Abs Without Pay VL
         </th>
         <th
-          className="border px-2 py-2 text-right"
-          style={{ borderColor: CARD_COLORS.black }}
+          className="border px-2 py-2 text-center"
+          style={{ borderColor: CARD_COLORS.black, paddingBottom: "10px" }}
         >
           Bal VL
         </th>
         <th
-          className="border px-2 py-2 text-right"
-          style={{ borderColor: CARD_COLORS.black }}
+          className="border px-2 py-2 text-center"
+          style={{ borderColor: CARD_COLORS.black, paddingBottom: "10px" }}
         >
           Earned SL
         </th>
         <th
-          className="border px-2 py-2 text-right"
-          style={{ borderColor: CARD_COLORS.black }}
+          className="border px-2 py-2 text-center"
+          style={{ borderColor: CARD_COLORS.black, paddingBottom: "10px" }}
         >
           Abs With Pay SL
         </th>
         <th
-          className="border px-2 py-2 text-right"
-          style={{ borderColor: CARD_COLORS.black }}
+          className="border px-2 py-2 text-center"
+          style={{ borderColor: CARD_COLORS.black, paddingBottom: "10px" }}
         >
           Abs Without Pay SL
         </th>
         <th
-          className="border px-2 py-2 text-right"
-          style={{ borderColor: CARD_COLORS.black }}
+          className="border px-2 py-2 text-center"
+          style={{ borderColor: CARD_COLORS.black, paddingBottom: "10px" }}
         >
           Bal SL
         </th>
         <th
-          className="border px-2 py-2 text-left"
-          style={{ borderColor: CARD_COLORS.black }}
+          className="border px-2 py-2 text-center"
+          style={{ borderColor: CARD_COLORS.black, paddingBottom: "10px" }}
         >
           Date and Action Taken / Evaluation
         </th>
@@ -163,68 +190,73 @@ const LeaveDataRow = React.memo(function LeaveDataRow({
       }}
     >
       <td
-        className="border px-1.5 py-0.5 align-top"
-        style={{ borderColor: CARD_COLORS.black }}
+        className="border px-1.5 text-center align-top"
+        style={{
+          borderColor: CARD_COLORS.black,
+          paddingTop: "6px",
+          paddingBottom: "8px",
+          lineHeight: 1.3,
+        }}
       >
         {row.periodOfLeaveDisplay}
       </td>
       <td
-        className="border px-1.5 py-1 align-top"
-        style={{ borderColor: CARD_COLORS.black }}
+        className="border px-1.5 py-1 text-center align-top"
+        style={{ borderColor: CARD_COLORS.black, paddingBottom: "6px" }}
       >
         {row.particularsDisplay}
       </td>
       <td
-        className="border px-1.5 py-0.5 text-right align-top"
-        style={{ borderColor: CARD_COLORS.black }}
+        className="border px-1.5 py-0.5 text-center align-top"
+        style={{ borderColor: CARD_COLORS.black, paddingBottom: "4px" }}
       >
         {row.earnedVlDisplay}
       </td>
       <td
-        className="border px-1.5 py-1 text-right align-top"
-        style={{ borderColor: CARD_COLORS.black }}
+        className="border px-1.5 py-1 text-center align-top"
+        style={{ borderColor: CARD_COLORS.black, paddingBottom: "6px" }}
       >
         {row.absWithPayVlDisplay}
       </td>
       <td
-        className="border px-1.5 py-1 text-right align-top"
-        style={{ borderColor: CARD_COLORS.black }}
+        className="border px-1.5 py-1 text-center align-top"
+        style={{ borderColor: CARD_COLORS.black, paddingBottom: "6px" }}
       >
         {row.absWithoutPayVlDisplay}
       </td>
       <td
-        className="border px-1.5 py-1 text-right align-top"
-        style={{ borderColor: CARD_COLORS.black }}
+        className="border px-1.5 py-1 text-center align-top"
+        style={{ borderColor: CARD_COLORS.black, paddingBottom: "6px" }}
       >
         {row.balVlDisplay}
       </td>
       <td
-        className="border px-1.5 py-1 text-right align-top"
-        style={{ borderColor: CARD_COLORS.black }}
+        className="border px-1.5 py-1 text-center align-top"
+        style={{ borderColor: CARD_COLORS.black, paddingBottom: "6px" }}
       >
         {row.earnedSlDisplay}
       </td>
       <td
-        className="border px-1.5 py-1 text-right align-top"
-        style={{ borderColor: CARD_COLORS.black }}
+        className="border px-1.5 py-1 text-center align-top"
+        style={{ borderColor: CARD_COLORS.black, paddingBottom: "6px" }}
       >
         {row.absWithPaySlDisplay}
       </td>
       <td
-        className="border px-1.5 py-1 text-right align-top"
-        style={{ borderColor: CARD_COLORS.black }}
+        className="border px-1.5 py-1 text-center align-top"
+        style={{ borderColor: CARD_COLORS.black, paddingBottom: "6px" }}
       >
         {row.absWithoutPaySlDisplay}
       </td>
       <td
-        className="border px-1.5 py-1 text-right align-top"
-        style={{ borderColor: CARD_COLORS.black }}
+        className="border px-1.5 py-1 text-center align-top"
+        style={{ borderColor: CARD_COLORS.black, paddingBottom: "6px" }}
       >
         {row.balSlDisplay}
       </td>
       <td
-        className="border px-1.5 py-1 align-top"
-        style={{ borderColor: CARD_COLORS.black }}
+        className="border px-1.5 py-1 text-center align-top"
+        style={{ borderColor: CARD_COLORS.black, paddingBottom: "6px" }}
       >
         {row.dateOfActionDisplay}
       </td>
@@ -234,11 +266,13 @@ const LeaveDataRow = React.memo(function LeaveDataRow({
 
 const DocumentHeader = React.memo(function DocumentHeader({
   employeeName,
-  employeeType,
 }: {
   employeeName: string;
-  employeeType: "teaching" | "non-teaching";
 }) {
+  const employeeNameDisplay = employeeName.trim()
+    ? employeeName.trim().toUpperCase()
+    : "N/A";
+
   return (
     <>
       <div
@@ -266,19 +300,10 @@ const DocumentHeader = React.memo(function DocumentHeader({
         </p>
       </div>
 
-      <div
-        className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2"
-        style={{ fontSize: "10pt" }}
-      >
+      <div className="mb-4 grid grid-cols-1 gap-2" style={{ fontSize: "10pt" }}>
         <p>
-          <span className="font-semibold">Name of Employee:</span>{" "}
-          <span style={{ fontWeight: "bold" }}>{employeeName}</span>
-        </p>
-        <p>
-          <span className="font-semibold">Type:</span>{" "}
-          <span style={{ fontWeight: "bold" }}>
-            {employeeType === "non-teaching" ? "Non-Teaching" : "Teaching"}
-          </span>
+          Name of Employee:{" "}
+          <span style={{ fontWeight: "bold" }}>{employeeNameDisplay}</span>
         </p>
       </div>
     </>
@@ -295,7 +320,7 @@ const EmptyStateRow = React.memo(function EmptyStateRow() {
           borderColor: CARD_COLORS.black,
           color: CARD_COLORS.emptyGray,
           paddingTop: "calc(2rem - 2px)",
-          paddingBottom: "calc(2rem - 2px)",
+          paddingBottom: "2rem",
         }}
       >
         No leave entries available.
@@ -483,10 +508,7 @@ const PrintableLeaveCard = React.forwardRef<
             backgroundColor: CARD_COLORS.white,
           }}
         >
-          <DocumentHeader
-            employeeName={employeeName}
-            employeeType={employeeType}
-          />
+          <DocumentHeader employeeName={employeeName} />
           <div className="border" style={{ borderColor: CARD_COLORS.black }}>
             <table className="w-full border-collapse">
               <LeaveTableHeader />
@@ -566,12 +588,7 @@ const PrintableLeaveCard = React.forwardRef<
                 position: "relative",
               }}
             >
-              {isFirstPage && (
-                <DocumentHeader
-                  employeeName={employeeName}
-                  employeeType={employeeType}
-                />
-              )}
+              {isFirstPage && <DocumentHeader employeeName={employeeName} />}
 
               <div
                 className="border"

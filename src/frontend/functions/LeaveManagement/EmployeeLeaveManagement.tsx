@@ -1,30 +1,33 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import ArchivedEmployee from "./ArchivedEmployee";
 import {
   ArrowDownAZ,
   ArrowUpAZ,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   Info,
   FileText,
   Plus,
+  Search,
 } from "lucide-react";
 import LeaveManagementModal from "@/frontend/functions/LeaveManagement/Modals/LeaveManagementModal";
 import AddLeaveModal, {
   type AddLeaveFormValues,
 } from "@/frontend/functions/LeaveManagement/Modals/AddLeaveModal";
-import AddEmployeeModal from "./Modals/AddEmployeeModal";
+import MonthlyCredit from "@/frontend/functions/LeaveManagement/MonthlyCredit/MonthlyCredit";
 import { createLeave } from "@/frontend/functions/LeaveManagement/leaveApi";
 import type { LeaveModalRecord } from "@/frontend/functions/LeaveManagement/leaveTypes";
 
 type EmployeeRecordApi = {
   id: number;
   first_name: string;
+  middle_name?: string | null;
   last_name: string;
   email?: string | null;
   school_name?: string | null;
+  school_id?: number | null;
   employee_type?: "teaching" | "non-teaching";
   created_at?: string | null;
   on_leave?: boolean | number | string | null;
@@ -33,6 +36,7 @@ type EmployeeRecordApi = {
 type EmployeeRecord = LeaveModalRecord & {
   employeeId: number;
   email: string;
+  schoolId: number | null;
   schoolName: string;
   onLeave: boolean;
 };
@@ -68,13 +72,26 @@ const getScopedEmployeeEndpoint = () => {
       normalizedRole === "ADMIN" || normalizedRole === "DATA_ENCODER";
 
     if (isSchoolScopedRole && Number.isFinite(schoolId) && schoolId > 0) {
-      return `/api/employees/school/${schoolId}`;
+      return "/api/employees/";
     }
   } catch {
     // Fall back to broad endpoint when user payload is malformed.
   }
 
   return "/api/employees/";
+};
+
+const getCurrentUserRole = (): string => {
+  const rawUser = localStorage.getItem("user");
+  if (!rawUser) {
+    return "";
+  }
+  try {
+    const parsed = JSON.parse(rawUser) as SessionUser;
+    return normalizeRole(parsed.role);
+  } catch {
+    return "";
+  }
 };
 
 const toBoolean = (value: unknown) => {
@@ -87,8 +104,9 @@ const toBoolean = (value: unknown) => {
 
 const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
   const firstName = item.first_name?.trim() || "Unknown";
+  const middleName = item.middle_name?.trim() || "";
   const lastName = item.last_name?.trim() || "Employee";
-  const fullName = `${firstName} ${lastName}`.trim();
+  const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
 
   return {
     id: item.id,
@@ -101,6 +119,8 @@ const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
     balSl: 0,
     dateOfAction: "",
     email: item.email?.trim() || "",
+    schoolId:
+      typeof item.school_id === "number" ? item.school_id || null : null,
     schoolName: item.school_name?.trim() || "",
     onLeave: toBoolean(item.on_leave),
   };
@@ -108,14 +128,23 @@ const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
 
 type EmployeeApiResponse = {
   data?: EmployeeRecordApi[];
+  total?: number;
+  page?: number;
+  pageSize?: number;
   message?: string;
 };
 
 export default function EmployeeLeaveManagement() {
-  const [activeTab, setActiveTab] = useState<"list" | "archived">("list");
+  const [activeTab, setActiveTab] = useState<
+    "leave-records" | "monthly-credit"
+  >("leave-records");
   const [searchQuery, setSearchQuery] = useState("");
   const [employeeTypeFilter, setEmployeeTypeFilter] = useState<
-    "ALL" | "teaching" | "non-teaching"
+    "ALL" | "teaching" | "non-teaching" | "teaching-related"
+  >("ALL");
+  const [schoolFilter, setSchoolFilter] = useState("ALL");
+  const [leaveStatusFilter, setLeaveStatusFilter] = useState<
+    "ALL" | "on-leave" | "not-on-leave"
   >("ALL");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [letterFilter, setLetterFilter] = useState("ALL");
@@ -124,22 +153,26 @@ export default function EmployeeLeaveManagement() {
   const [pageJumpInput, setPageJumpInput] = useState("1");
 
   const [employeeData, setEmployeeData] = useState<EmployeeRecord[]>([]);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [employeeLoading, setEmployeeLoading] = useState(true);
   const [employeeError, setEmployeeError] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState("");
 
   const [leaveModalTarget, setLeaveModalTarget] =
     useState<LeaveModalRecord | null>(null);
   const [leaveModalInitialTab, setLeaveModalInitialTab] = useState<
     "history" | "card"
   >("history");
-  const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
-
   const [directAddTarget, setDirectAddTarget] = useState<EmployeeRecord | null>(
     null,
   );
   const [isDirectAdding, setIsDirectAdding] = useState(false);
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+  useEffect(() => {
+    setCurrentUserRole(getCurrentUserRole());
+  }, []);
 
   const fetchEmployees = async (showSpinner = true) => {
     try {
@@ -153,14 +186,35 @@ export default function EmployeeLeaveManagement() {
       }
 
       const scopedEndpoint = getScopedEmployeeEndpoint();
+      const params = new URLSearchParams();
+      if (searchQuery.trim()) params.set("search", searchQuery.trim());
+      if (employeeTypeFilter !== "ALL") {
+        params.set("employee_type", employeeTypeFilter);
+      }
+      if (currentUserRole === "SUPER_ADMIN" && schoolFilter !== "ALL") {
+        params.set("school_id", schoolFilter);
+      }
+      if (leaveStatusFilter !== "ALL") {
+        params.set(
+          "on_leave",
+          leaveStatusFilter === "on-leave" ? "true" : "false",
+        );
+      }
+      if (letterFilter !== "ALL") params.set("letter", letterFilter);
+      params.set("sortOrder", sortOrder);
+      params.set("page", String(currentPage));
+      params.set("pageSize", String(itemsPerPage));
 
-      const response = await fetch(`${API_BASE}${scopedEndpoint}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `${API_BASE}${scopedEndpoint}?${params.toString()}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       const body = (await response.json()) as EmployeeApiResponse;
       if (!response.ok) {
@@ -169,6 +223,9 @@ export default function EmployeeLeaveManagement() {
 
       const mapped = (body.data || []).map(toEmployeeRecord);
       setEmployeeData(mapped);
+      setTotalItems(
+        typeof body.total === "number" ? body.total : mapped.length,
+      );
       setEmployeeError(null);
     } catch (err) {
       setEmployeeError(
@@ -176,6 +233,7 @@ export default function EmployeeLeaveManagement() {
       );
       if (showSpinner) {
         setEmployeeData([]);
+        setTotalItems(0);
       }
     } finally {
       if (showSpinner) {
@@ -185,54 +243,40 @@ export default function EmployeeLeaveManagement() {
   };
 
   useEffect(() => {
-    fetchEmployees();
+    const id = window.setTimeout(() => {
+      fetchEmployees();
+    }, 300);
 
-    const intervalId = window.setInterval(() => {
-      fetchEmployees(false);
-    }, 5000);
-
-    return () => window.clearInterval(intervalId);
+    return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [
+    searchQuery,
+    employeeTypeFilter,
+    schoolFilter,
+    leaveStatusFilter,
+    letterFilter,
+    sortOrder,
+    currentPage,
+    itemsPerPage,
+    currentUserRole,
+  ]);
 
-  const filteredEmployees = useMemo(() => {
-    return employeeData
-      .filter((employee) => {
-        const query = searchQuery.trim().toLowerCase();
-        const matchesSearch =
-          !query ||
-          employee.fullName.toLowerCase().includes(query) ||
-          employee.email.toLowerCase().includes(query) ||
-          employee.schoolName.toLowerCase().includes(query);
+  const filteredEmployees = useMemo(() => employeeData, [employeeData]);
 
-        const matchesEmployeeType =
-          employeeTypeFilter === "ALL" ||
-          employee.employeeType === employeeTypeFilter;
+  const schoolOptions = useMemo(() => {
+    const unique = new Map<number, string>();
+    employeeData.forEach((employee) => {
+      if (employee.schoolId && employee.schoolName.trim()) {
+        unique.set(employee.schoolId, employee.schoolName.trim());
+      }
+    });
+    return Array.from(unique.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [employeeData]);
 
-        const matchesLetter =
-          letterFilter === "ALL" ||
-          employee.fullName.charAt(0).toUpperCase() === letterFilter;
-
-        return matchesSearch && matchesEmployeeType && matchesLetter;
-      })
-      .sort((a, b) => {
-        if (sortOrder === "asc") {
-          return a.fullName.localeCompare(b.fullName);
-        }
-
-        return b.fullName.localeCompare(a.fullName);
-      });
-  }, [employeeData, searchQuery, employeeTypeFilter, letterFilter, sortOrder]);
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredEmployees.length / itemsPerPage),
-  );
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedEmployees = filteredEmployees.slice(
-    startIdx,
-    startIdx + itemsPerPage,
-  );
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const paginatedEmployees = filteredEmployees;
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
     Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
@@ -265,6 +309,17 @@ export default function EmployeeLeaveManagement() {
     setPageJumpInput("1");
   };
 
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setEmployeeTypeFilter("ALL");
+    setSchoolFilter("ALL");
+    setLeaveStatusFilter("ALL");
+    setLetterFilter("ALL");
+    setSortOrder("asc");
+    setCurrentPage(1);
+    setPageJumpInput("1");
+  };
+
   const handleJumpToPage = () => {
     const parsed = Number.parseInt(pageJumpInput, 10);
     if (Number.isNaN(parsed)) {
@@ -276,6 +331,14 @@ export default function EmployeeLeaveManagement() {
     setCurrentPage(nextPage);
     setPageJumpInput(String(nextPage));
   };
+
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 ||
+    employeeTypeFilter !== "ALL" ||
+    schoolFilter !== "ALL" ||
+    leaveStatusFilter !== "ALL" ||
+    letterFilter !== "ALL" ||
+    sortOrder !== "asc";
 
   const handleDirectCreate = async (payload: AddLeaveFormValues) => {
     try {
@@ -322,80 +385,107 @@ export default function EmployeeLeaveManagement() {
   };
 
   return (
-    <div className="w-full">
-      <div className="flex justify-center gap-2 mb-4">
+    <div className="w-full min-w-0">
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-start">
         <button
-          onClick={() => setActiveTab("list")}
-          className={`px-6 py-2 font-medium text-sm rounded-t-lg transition cursor-pointer ${
-            activeTab === "list"
+          type="button"
+          onClick={() => setActiveTab("leave-records")}
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+            activeTab === "leave-records"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          Employees List
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
+            <FileText size={14} />
+            Leave Records
+          </span>
         </button>
         <button
-          onClick={() => setActiveTab("archived")}
-          className={`px-6 py-2 font-medium text-sm rounded-t-lg transition cursor-pointer ${
-            activeTab === "archived"
+          type="button"
+          onClick={() => setActiveTab("monthly-credit")}
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+            activeTab === "monthly-credit"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          Archived Employee
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
+            <CalendarDays size={14} />
+            Monthly Credit
+          </span>
         </button>
       </div>
 
-      {activeTab === "list" ? (
-        <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-3 sm:p-6 sticky top-0 sm:top-4 h-screen sm:h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-6">
+      {activeTab === "leave-records" ? (
+        <div className="w-full min-w-0 bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-0 sm:top-4 flex flex-col">
+          <h1
+            style={{ fontSize: "20px" }}
+            className="font-bold text-gray-900 mb-2 sm:mb-4 inline-flex items-center gap-2"
+          >
+            <FileText size={22} className="text-blue-600" />
             Employee Leave Management
           </h1>
 
           <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="flex-1 relative">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="flex-1 relative min-w-0">
                 <input
                   type="text"
                   placeholder="Search employee"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="text-gray-500 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="text-gray-500 w-full px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
               <button
                 onClick={handleSearch}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+                className="inline-flex shrink-0 items-center gap-1 px-4 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer sm:px-5"
               >
+                <Search size={14} />
                 Search
               </button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4">
-              <button
-                type="button"
-                onClick={() => setIsAddEmployeeOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
-              >
-                <Plus size={16} />
-                Add Employee
-              </button>
-
-              <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap items-center gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-4">
+              <div className="col-span-2 grid grid-cols-2 gap-2 sm:col-span-1 sm:w-auto sm:flex sm:flex-wrap sm:items-center sm:gap-3">
                 <select
                   value={employeeTypeFilter}
                   onChange={(e) => {
                     setEmployeeTypeFilter(
-                      e.target.value as "ALL" | "teaching" | "non-teaching",
+                      e.target.value as
+                        | "ALL"
+                        | "teaching"
+                        | "non-teaching"
+                        | "teaching-related",
                     );
                     setCurrentPage(1);
                   }}
-                  className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  className="w-full sm:w-auto text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ALL">All Employee Types</option>
                   <option value="teaching">Teaching</option>
                   <option value="non-teaching">Non-Teaching</option>
+                  <option value="teaching-related">Teaching-Related</option>
                 </select>
+
+                {currentUserRole === "SUPER_ADMIN" ? (
+                  <select
+                    value={schoolFilter}
+                    onChange={(e) => {
+                      setSchoolFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full sm:w-auto text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  >
+                    <option value="ALL">All Schools</option>
+                    {schoolOptions.map((school) => (
+                      <option key={school.id} value={school.id}>
+                        {school.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : null}
 
                 <select
                   value={letterFilter}
@@ -403,7 +493,7 @@ export default function EmployeeLeaveManagement() {
                     setLetterFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full sm:w-auto text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  className="w-full sm:w-auto text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ALL">All Letters</option>
                   {alphabet.map((letter) => (
@@ -413,11 +503,26 @@ export default function EmployeeLeaveManagement() {
                   ))}
                 </select>
 
+                <select
+                  value={leaveStatusFilter}
+                  onChange={(e) => {
+                    setLeaveStatusFilter(
+                      e.target.value as "ALL" | "on-leave" | "not-on-leave",
+                    );
+                    setCurrentPage(1);
+                  }}
+                  className="w-full sm:w-auto text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                >
+                  <option value="ALL">All Leave Status</option>
+                  <option value="on-leave">On Leave</option>
+                  <option value="not-on-leave">Not On Leave</option>
+                </select>
+
                 <button
                   onClick={() => {
                     setSortOrder(sortOrder === "asc" ? "desc" : "asc");
                   }}
-                  className="w-full sm:w-auto text-gray-500 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
+                  className="w-full sm:w-auto text-gray-500 flex items-center justify-center gap-2 px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
                 >
                   {sortOrder === "asc" ? (
                     <>
@@ -431,56 +536,50 @@ export default function EmployeeLeaveManagement() {
                     </>
                   )}
                 </button>
+
+                {hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="col-span-2 sm:col-span-1 sm:w-auto text-sm text-gray-500 underline hover:text-gray-700 transition cursor-pointer text-right sm:text-left"
+                  >
+                    Clear
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>
 
-          <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+          <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
             {employeeLoading ? (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex items-center justify-center py-10">
                 <p className="text-gray-500">Loading employees...</p>
               </div>
             ) : employeeError ? (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex items-center justify-center py-10">
                 <p className="text-red-500">Error: {employeeError}</p>
               </div>
             ) : (
-              <table className="w-full">
-                <thead className="sticky top-0 z-10 bg-white">
-                  <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
-                      Name
-                    </th>
-                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
-                      Employee Type
-                    </th>
-                    <th className="text-left py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
-                      Leave Status
-                    </th>
-                    <th className="text-right py-2 px-3 font-semibold text-blue-600 uppercase text-xs bg-white">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
+              <>
+                <div className="flex flex-col gap-2 sm:hidden">
                   {paginatedEmployees.length > 0 ? (
                     paginatedEmployees.map((employee) => {
                       const isOnLeave = employee.onLeave;
 
                       return (
-                        <tr
+                        <div
                           key={employee.id}
-                          className="border-b border-gray-100 hover:bg-gray-50 transition"
+                          className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
                         >
-                          <td className="py-2 px-3 text-gray-900 text-sm font-medium">
+                          <p className="text-sm font-semibold text-gray-900 truncate">
                             {employee.fullName}
-                          </td>
-                          <td className="py-2 px-3 text-gray-500 text-sm capitalize">
+                          </p>
+                          <p className="text-xs text-gray-500 capitalize">
                             {employee.employeeType}
-                          </td>
-                          <td className="py-2 px-3 text-sm">
+                          </p>
+                          <div className="mt-1">
                             <span
-                              className={`inline-flex rounded-full px-3 py-1 font-bold ${
+                              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
                                 isOnLeave
                                   ? "bg-red-100 text-red-700"
                                   : "bg-green-100 text-green-700"
@@ -488,66 +587,166 @@ export default function EmployeeLeaveManagement() {
                             >
                               {isOnLeave ? "On leave" : "Not on leave"}
                             </span>
-                          </td>
-                          <td className="py-2 px-3">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  openLeaveModal(employee, "history")
-                                }
-                                aria-label="View details"
-                                title="Details"
-                                className="p-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer"
-                              >
-                                <Info size={14} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setDirectAddTarget(employee)}
-                                aria-label="Add leave"
-                                title="Add Leave"
-                                className="p-2 bg-amber-100 text-amber-700 rounded hover:bg-amber-200 transition cursor-pointer"
-                              >
-                                <Plus size={14} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  window.open(
-                                    `/leave-card/${employee.id}`,
-                                    "_blank",
-                                  )
-                                }
-                                aria-label="Preview leave PDF"
-                                title="Preview PDF"
-                                className="p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition cursor-pointer"
-                              >
-                                <FileText size={14} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
+                          </div>
+
+                          <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openLeaveModal(employee, "history")
+                              }
+                              aria-label="View details"
+                              title="Details"
+                              className="inline-flex items-center gap-1 rounded bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-200 transition cursor-pointer"
+                            >
+                              <Info size={12} />
+                              View
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDirectAddTarget(employee)}
+                              aria-label="Add leave"
+                              title="Add Leave"
+                              className="inline-flex items-center gap-1 rounded bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200 transition cursor-pointer"
+                            >
+                              <Plus size={12} />
+                              Add
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                window.open(
+                                  `/leave-card/${employee.id}`,
+                                  "_blank",
+                                )
+                              }
+                              aria-label="Preview leave PDF"
+                              title="Preview PDF"
+                              className="inline-flex items-center gap-1 rounded bg-red-100 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-200 transition cursor-pointer"
+                            >
+                              <FileText size={12} />
+                              PDF
+                            </button>
+                          </div>
+                        </div>
                       );
                     })
                   ) : (
-                    <tr>
-                      <td
-                        colSpan={4}
-                        className="py-8 text-center text-gray-500"
-                      >
-                        No employees found.
-                      </td>
-                    </tr>
+                    <p className="py-8 text-center text-gray-500 text-sm">
+                      No employees found.
+                    </p>
                   )}
-                </tbody>
-              </table>
+                </div>
+
+                <div className="hidden sm:block">
+                  <table className="w-full">
+                    <thead className="sticky top-0 z-10 bg-blue-100">
+                      <tr className="border-b-2 border-gray-200">
+                        <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                          Name
+                        </th>
+                        <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                          Employee Type
+                        </th>
+                        <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                          Leave Status
+                        </th>
+                        <th className="text-right py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedEmployees.length > 0 ? (
+                        paginatedEmployees.map((employee) => {
+                          const isOnLeave = employee.onLeave;
+
+                          return (
+                            <tr
+                              key={employee.id}
+                              className="border-b border-gray-100 hover:bg-gray-50 transition"
+                            >
+                              <td className="py-1 px-3 text-gray-900 text-sm font-medium">
+                                {employee.fullName}
+                              </td>
+                              <td className="py-1 px-3 text-gray-500 text-sm capitalize">
+                                {employee.employeeType}
+                              </td>
+                              <td className="py-1 px-3 text-gray-500 text-sm">
+                                <span
+                                  className={`inline-flex rounded-full px-2.5 py-0.5 text-sm font-semibold ${
+                                    isOnLeave
+                                      ? "bg-red-100 text-red-700"
+                                      : "bg-green-100 text-green-700"
+                                  }`}
+                                >
+                                  {isOnLeave ? "On leave" : "Not on leave"}
+                                </span>
+                              </td>
+                              <td className="py-1 px-3">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      openLeaveModal(employee, "history")
+                                    }
+                                    aria-label="View details"
+                                    title="Details"
+                                    className="inline-flex items-center gap-1 rounded bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-200 transition cursor-pointer"
+                                  >
+                                    <Info size={12} />
+                                    View
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setDirectAddTarget(employee)}
+                                    aria-label="Add leave"
+                                    title="Add Leave"
+                                    className="inline-flex items-center gap-1 rounded bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200 transition cursor-pointer"
+                                  >
+                                    <Plus size={12} />
+                                    Add
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      window.open(
+                                        `/leave-card/${employee.id}`,
+                                        "_blank",
+                                      )
+                                    }
+                                    aria-label="Preview leave PDF"
+                                    title="Preview PDF"
+                                    className="inline-flex items-center gap-1 rounded bg-red-100 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-200 transition cursor-pointer"
+                                  >
+                                    <FileText size={12} />
+                                    PDF
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={4}
+                            className="py-8 text-center text-gray-500"
+                          >
+                            No employees found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
 
           {filteredEmployees.length > 0 && (
             <div className="mt-6 space-y-3">
-              <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+              <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
                 <label className="flex items-center gap-2 text-sm text-gray-600">
                   Show
                   <select
@@ -568,7 +767,58 @@ export default function EmployeeLeaveManagement() {
                   entries
                 </label>
 
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center justify-center gap-2 sm:justify-self-center">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+
+                  {pageNumberItems.map(
+                    (item: number | "ellipsis", index: number) => {
+                      if (item === "ellipsis") {
+                        return (
+                          <span
+                            key={`ellipsis-${index}`}
+                            className="px-2 text-sm text-gray-400 select-none"
+                          >
+                            ...
+                          </span>
+                        );
+                      }
+
+                      return (
+                        <button
+                          key={item}
+                          onClick={() => setCurrentPage(item)}
+                          className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
+                            currentPage === item
+                              ? "bg-blue-600 text-white"
+                              : "text-gray-500 hover:bg-gray-100"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      );
+                    },
+                  )}
+
+                  <button
+                    onClick={() =>
+                      setCurrentPage(Math.min(totalPages, currentPage + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2 text-sm text-gray-600 sm:justify-self-end">
                   <span>Jump to</span>
                   <input
                     type="number"
@@ -592,62 +842,11 @@ export default function EmployeeLeaveManagement() {
                   </button>
                 </div>
               </div>
-
-              <div className="flex items-center justify-center gap-2">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-
-                {pageNumberItems.map(
-                  (item: number | "ellipsis", index: number) => {
-                    if (item === "ellipsis") {
-                      return (
-                        <span
-                          key={`ellipsis-${index}`}
-                          className="px-2 text-sm text-gray-400 select-none"
-                        >
-                          ...
-                        </span>
-                      );
-                    }
-
-                    return (
-                      <button
-                        key={item}
-                        onClick={() => setCurrentPage(item)}
-                        className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
-                          currentPage === item
-                            ? "bg-blue-600 text-white"
-                            : "text-gray-500 hover:bg-gray-100"
-                        }`}
-                      >
-                        {item}
-                      </button>
-                    );
-                  },
-                )}
-
-                <button
-                  onClick={() =>
-                    setCurrentPage(Math.min(totalPages, currentPage + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-                  aria-label="Next page"
-                >
-                  <ChevronRight size={18} />
-                </button>
-              </div>
             </div>
           )}
         </div>
       ) : (
-        <ArchivedEmployee />
+        <MonthlyCredit />
       )}
 
       <LeaveManagementModal
@@ -657,15 +856,6 @@ export default function EmployeeLeaveManagement() {
         onLeaveStatusChanged={() => fetchEmployees(false)}
         onClose={() => setLeaveModalTarget(null)}
       />
-      <AddEmployeeModal
-        isOpen={isAddEmployeeOpen}
-        onClose={() => setIsAddEmployeeOpen(false)}
-        onSuccess={() => {
-          setIsAddEmployeeOpen(false);
-          fetchEmployees(false);
-        }}
-      />
-
       <AddLeaveModal
         isOpen={Boolean(directAddTarget)}
         employeeId={directAddTarget?.id ?? null}

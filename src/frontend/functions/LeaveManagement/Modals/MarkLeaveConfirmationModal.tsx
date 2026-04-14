@@ -1,4 +1,5 @@
 import React from "react";
+import { Check, XCircle } from "lucide-react";
 
 type MarkLeaveConfirmationModalProps = {
   isOpen: boolean;
@@ -28,7 +29,7 @@ export default function MarkLeaveConfirmationModal({
       className="fixed inset-0 flex items-center justify-center bg-black/50 px-3 sm:px-4"
       style={{ zIndex: 9999 }}
     >
-      <div className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+      <div className="relative w-full max-w-md rounded-xl border border-blue-200 bg-white p-6 shadow-2xl">
         <h2 className="mb-2 text-lg font-bold text-gray-800">
           {isMarkAction ? "Mark Employee On Leave" : "Unmark Employee On Leave"}
         </h2>
@@ -51,17 +52,23 @@ export default function MarkLeaveConfirmationModal({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="cursor-pointer rounded bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-60"
+            className="cursor-pointer rounded bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-60"
           >
-            Cancel
+            <span className="inline-flex items-center gap-2">
+              <XCircle size={14} />
+              Cancel
+            </span>
           </button>
           <button
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            className="cursor-pointer rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+            className="cursor-pointer rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
           >
-            {isLoading ? "Processing..." : "Yes"}
+            <span className="inline-flex items-center gap-2">
+              <Check size={14} />
+              {isLoading ? "Processing..." : "Yes"}
+            </span>
           </button>
         </div>
       </div>

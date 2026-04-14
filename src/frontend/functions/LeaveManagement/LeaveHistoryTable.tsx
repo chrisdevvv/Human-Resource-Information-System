@@ -72,7 +72,7 @@ export default function LeaveHistoryTable({
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200">
       <table className="w-full min-w-full border-collapse text-sm">
-        <thead className="bg-gray-50">
+        <thead className="bg-blue-100">
           <tr className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-600 whitespace-nowrap">
             {selectable && (
               <th className="px-3 py-2 text-center">
@@ -101,18 +101,14 @@ export default function LeaveHistoryTable({
         </thead>
         <tbody>
           {rows.length > 0 ? (
-            rows.map((row) => {
-              const isMonthlyCredit = row.particulars
-                .trim()
-                .toLowerCase()
-                .includes("monthly leave credit");
+            rows.map((row, index) => {
+              const rowBackgroundClass =
+                index % 2 === 1 ? "bg-sky-100" : "bg-white";
 
               return (
                 <tr
                   key={row.id}
-                  className={`border-b border-gray-100 ${
-                    isMonthlyCredit ? "bg-emerald-50/40" : "bg-white"
-                  }`}
+                  className={`border-b border-gray-100 ${rowBackgroundClass}`}
                 >
                   {selectable && (
                     <td className="px-3 py-2 text-center">
@@ -133,10 +129,10 @@ export default function LeaveHistoryTable({
                   <td className="px-3 py-2 text-gray-700">
                     {row.particulars || "-"}
                   </td>
-                  <td className="px-3 py-2 text-right text-gray-700">
+                  <td className="px-3 py-2 text-right font-medium text-green-700">
                     {formatNumber(row.earnedVl)}
                   </td>
-                  <td className="px-3 py-2 text-right text-gray-700">
+                  <td className="px-3 py-2 text-right font-medium text-red-700">
                     {formatNumber(row.absWithPayVl)}
                   </td>
                   <td className="px-3 py-2 text-right text-gray-700">
@@ -145,10 +141,10 @@ export default function LeaveHistoryTable({
                   <td className="px-3 py-2 text-right font-semibold text-gray-900">
                     {formatNumber(row.balVl)}
                   </td>
-                  <td className="px-3 py-2 text-right text-gray-700">
+                  <td className="px-3 py-2 text-right font-medium text-green-700">
                     {formatNumber(row.earnedSl)}
                   </td>
-                  <td className="px-3 py-2 text-right text-gray-700">
+                  <td className="px-3 py-2 text-right font-medium text-red-700">
                     {formatNumber(row.absWithPaySl)}
                   </td>
                   <td className="px-3 py-2 text-right text-gray-700">

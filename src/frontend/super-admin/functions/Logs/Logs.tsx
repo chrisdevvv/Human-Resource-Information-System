@@ -2,7 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import {
+  Archive,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  FileDown,
+  FileText,
+  Search,
+} from "lucide-react";
 import ViewLogsModal from "../../components/ViewLogsModal";
 import LogsReportGeneration, {
   downloadLogsReportPdf,
@@ -20,6 +28,21 @@ type Log = {
   action: string;
   details: string;
   createdAt: string;
+  createdAtMs: number;
+  searchIndex: string;
+};
+
+type LogApiRow = {
+  id: number;
+  user_id: number;
+  first_name?: string;
+  last_name?: string;
+  role?: string;
+  email?: string;
+  school_name?: string;
+  action?: string;
+  details?: string;
+  created_at: string;
 };
 
 type ArchiveFlowStep = "range" | "generate-prompt" | "confirm" | "success";
@@ -28,6 +51,39 @@ const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
+const createLogSearchIndex = (log: {
+  firstName: string;
+  lastName: string;
+  action: string;
+  createdAt: string;
+}) => {
+  const createdAtDate = new Date(log.createdAt);
+  const parts = [
+    `${log.firstName} ${log.lastName}`.trim(),
+    log.action,
+    log.createdAt,
+  ];
+
+  if (!Number.isNaN(createdAtDate.getTime())) {
+    parts.push(
+      createdAtDate.toISOString().slice(0, 10),
+      createdAtDate.toLocaleDateString("en-PH"),
+      createdAtDate.toLocaleString("en-PH", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }),
+      createdAtDate.toLocaleString("en-PH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+    );
+  }
+
+  return parts.join(" ").toLowerCase();
+};
 
 export default function Logs() {
   const router = useRouter();
@@ -39,6 +95,7 @@ export default function Logs() {
   >("date-desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [pageJumpInput, setPageJumpInput] = useState("1");
 
   const [dateFrom, setDateFrom] = useState("");
@@ -46,52 +103,25 @@ export default function Logs() {
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-  const MAX_RANGE_DAYS = 30;
-
-  // Overall allowed window: today and the 30 days before it
   const todayStr = new Date().toISOString().slice(0, 10);
-  const thirtyDaysAgoStr = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - MAX_RANGE_DAYS);
-    return d.toISOString().slice(0, 10);
-  })();
 
-  // When dateFrom changes, clamp dateTo so the range never exceeds 30 days
+  // Keep date inputs valid while allowing custom long ranges.
   const handleDateFrom = (value: string) => {
     setDateFrom(value);
     setCurrentPage(1);
-    if (value && dateTo) {
-      const from = new Date(value);
-      const to = new Date(dateTo);
-      const maxTo = new Date(from);
-      maxTo.setDate(maxTo.getDate() + MAX_RANGE_DAYS);
-      if (to > maxTo) setDateTo(maxTo.toISOString().slice(0, 10));
-      if (to < from) setDateTo(value);
+    if (value && dateTo && new Date(dateTo) < new Date(value)) {
+      setDateTo(value);
     }
   };
 
-  // When dateTo changes, clamp so range never exceeds 30 days
+  // Keep date inputs valid while allowing custom long ranges.
   const handleDateTo = (value: string) => {
-    if (value && dateFrom) {
-      const from = new Date(dateFrom);
-      const to = new Date(value);
-      const maxTo = new Date(from);
-      maxTo.setDate(maxTo.getDate() + MAX_RANGE_DAYS);
-      if (to > maxTo) value = maxTo.toISOString().slice(0, 10);
-      if (to < from) value = dateFrom;
+    if (value && dateFrom && new Date(value) < new Date(dateFrom)) {
+      value = dateFrom;
     }
     setDateTo(value);
     setCurrentPage(1);
   };
-
-  // max selectable end date = min(dateFrom + 30 days, today)
-  const maxDateTo = (() => {
-    if (!dateFrom) return todayStr;
-    const d = new Date(dateFrom);
-    d.setDate(d.getDate() + MAX_RANGE_DAYS);
-    const candidate = d.toISOString().slice(0, 10);
-    return candidate < todayStr ? candidate : todayStr;
-  })();
 
   const [logsData, setLogsData] = useState<Log[]>([]);
   const [selectedLog, setSelectedLog] = useState<Log | null>(null);
@@ -114,7 +144,7 @@ export default function Logs() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  const archiveRange = React.useMemo(() => {
+  const defaultArchiveRange = React.useMemo(() => {
     const now = new Date();
     const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const to = new Date(from);
@@ -135,6 +165,45 @@ export default function Logs() {
       }),
     };
   }, []);
+
+  const archiveRange = React.useMemo(() => {
+    let fromIso = defaultArchiveRange.fromIso;
+    let toIso = defaultArchiveRange.toIso;
+
+    if (dateFrom || dateTo) {
+      fromIso = dateFrom || dateTo || defaultArchiveRange.fromIso;
+      toIso = dateTo || todayStr;
+
+      if (new Date(toIso) < new Date(fromIso)) {
+        toIso = fromIso;
+      }
+    }
+
+    const from = new Date(`${fromIso}T00:00:00`);
+    const to = new Date(`${toIso}T00:00:00`);
+
+    return {
+      fromIso,
+      toIso,
+      fromLabel: from.toLocaleDateString("en-PH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      toLabel: to.toLocaleDateString("en-PH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      usesCustomRange: Boolean(dateFrom || dateTo),
+    };
+  }, [
+    dateFrom,
+    dateTo,
+    defaultArchiveRange.fromIso,
+    defaultArchiveRange.toIso,
+    todayStr,
+  ]);
 
   const archiveReportRows = React.useMemo<LogsReportRecord[]>(() => {
     const from = new Date(`${archiveRange.fromIso}T00:00:00`);
@@ -212,6 +281,8 @@ export default function Logs() {
       setArchiveBusy(true);
       setArchiveMessage(null);
 
+      const archiveTargetIds = filteredLogs.map((log) => log.id);
+
       if (archiveShouldGenerateReport) {
         await downloadArchiveRangeReport();
       }
@@ -228,6 +299,7 @@ export default function Logs() {
         body: JSON.stringify({
           from: archiveRange.fromIso,
           to: archiveRange.toIso,
+          ids: archiveTargetIds,
         }),
       });
 
@@ -244,6 +316,13 @@ export default function Logs() {
           ? `${count} log record${count !== 1 ? "s" : ""} archived successfully.`
           : "No logs found for the selected archive range.",
       );
+
+      if (count > 0 && archiveTargetIds.length > 0) {
+        // Immediate UI refresh: remove just-archived rows from active logs list.
+        setLogsData((prev) =>
+          prev.filter((log) => !archiveTargetIds.includes(log.id)),
+        );
+      }
 
       await fetchLogs(false);
     } catch (err) {
@@ -277,10 +356,22 @@ export default function Logs() {
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
 
+      const params = new URLSearchParams();
+      params.set("include_archived", "false");
+      if (searchQuery.trim()) params.set("search", searchQuery.trim());
+      if (roleFilter !== "ALL") params.set("role", roleFilter);
+      if (letterFilter !== "ALL") params.set("letter", letterFilter);
+      if (dateFrom) params.set("from", dateFrom);
+      if (dateTo) params.set("to", dateTo);
+      params.set("sortMode", sortMode);
+      params.set("page", String(currentPage));
+      params.set("pageSize", String(itemsPerPage));
+
       const response = await fetch(
-        `${API_BASE}/api/backlogs?include_archived=false`,
+        `${API_BASE}/api/backlogs?${params.toString()}`,
         {
           method: "GET",
+          cache: "no-store",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
@@ -291,7 +382,8 @@ export default function Logs() {
       if (!response.ok) throw new Error("Failed to fetch logs");
 
       const result = await response.json();
-      const formatted = (result.data || []).map((item: any) => ({
+      const rows = (result.data || []) as LogApiRow[];
+      const formatted = rows.map((item) => ({
         id: item.id,
         userId: item.user_id,
         firstName: item.first_name || "Unknown",
@@ -302,13 +394,24 @@ export default function Logs() {
         action: item.action || "N/A",
         details: item.details || "",
         createdAt: item.created_at,
+        createdAtMs: new Date(item.created_at).getTime(),
+        searchIndex: createLogSearchIndex({
+          firstName: item.first_name || "Unknown",
+          lastName: item.last_name || "",
+          action: item.action || "N/A",
+          createdAt: item.created_at,
+        }),
       }));
       setLogsData(formatted);
+      setTotalItems(
+        typeof result.total === "number" ? result.total : formatted.length,
+      );
       setLogsError(null);
     } catch (err) {
       setLogsError(err instanceof Error ? err.message : "An error occurred");
       if (showSpinner) {
         setLogsData([]);
+        setTotalItems(0);
       }
     } finally {
       if (showSpinner) {
@@ -318,74 +421,31 @@ export default function Logs() {
   };
 
   useEffect(() => {
-    fetchLogs();
+    const id = window.setTimeout(() => {
+      fetchLogs();
+    }, 300);
 
-    const intervalId = window.setInterval(() => {
-      fetchLogs(false);
-    }, 5000);
-
-    return () => window.clearInterval(intervalId);
+    return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [
+    searchQuery,
+    roleFilter,
+    letterFilter,
+    sortMode,
+    dateFrom,
+    dateTo,
+    currentPage,
+    itemsPerPage,
+  ]);
 
-  const filteredLogs = logsData
-    .filter((log) => {
-      const query = searchQuery.trim().toLowerCase();
-      const fullName = `${log.firstName} ${log.lastName}`.toLowerCase();
-      const logDate = new Date(log.createdAt);
+  const filteredLogs = React.useMemo(() => logsData, [logsData]);
 
-      const searchableDateParts = Number.isNaN(logDate.getTime())
-        ? []
-        : [
-            log.createdAt.toLowerCase(),
-            logDate.toISOString().slice(0, 10),
-            logDate.toLocaleDateString("en-PH"),
-            logDate.toLocaleString("en-PH", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            }),
-            logDate.toLocaleString("en-PH", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            }),
-          ].map((value) => value.toLowerCase());
+  const totalPages = React.useMemo(
+    () => Math.max(1, Math.ceil(totalItems / itemsPerPage)),
+    [totalItems, itemsPerPage],
+  );
 
-      const matchesSearch =
-        !query ||
-        fullName.includes(query) ||
-        log.action.toLowerCase().includes(query) ||
-        searchableDateParts.some((datePart) => datePart.includes(query));
-      const matchesRole = roleFilter === "ALL" || log.role === roleFilter;
-      const matchesLetter =
-        letterFilter === "ALL" ||
-        log.firstName.charAt(0).toUpperCase() === letterFilter;
-      const afterFrom = !dateFrom || logDate >= new Date(dateFrom);
-      const beforeTo = !dateTo
-        ? true
-        : (() => {
-            const end = new Date(dateTo);
-            end.setHours(23, 59, 59, 999);
-            return logDate <= end;
-          })();
-      return (
-        matchesSearch && matchesRole && matchesLetter && afterFrom && beforeTo
-      );
-    })
-    .sort((a, b) => {
-      if (sortMode === "name-asc")
-        return a.firstName.localeCompare(b.firstName);
-      if (sortMode === "name-desc")
-        return b.firstName.localeCompare(a.firstName);
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
-      return sortMode === "date-desc" ? dateB - dateA : dateA - dateB;
-    });
-
-  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / itemsPerPage));
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedLogs = filteredLogs.slice(startIdx, startIdx + itemsPerPage);
+  const paginatedLogs = React.useMemo(() => filteredLogs, [filteredLogs]);
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
     Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
@@ -393,16 +453,21 @@ export default function Logs() {
     totalPages,
     pageGroupStart + PAGE_WINDOW_SIZE - 1,
   );
-  const pageNumberItems: Array<number | "ellipsis"> = Array.from(
-    { length: pageGroupEnd - pageGroupStart + 1 },
-    (_, i) => pageGroupStart + i,
-  );
-  if (pageGroupEnd < totalPages) {
-    if (totalPages - pageGroupEnd > 1) {
-      pageNumberItems.push("ellipsis");
+  const pageNumberItems = React.useMemo<Array<number | "ellipsis">>(() => {
+    const items: Array<number | "ellipsis"> = Array.from(
+      { length: pageGroupEnd - pageGroupStart + 1 },
+      (_, i) => pageGroupStart + i,
+    );
+
+    if (pageGroupEnd < totalPages) {
+      if (totalPages - pageGroupEnd > 1) {
+        items.push("ellipsis");
+      }
+      items.push(totalPages);
     }
-    pageNumberItems.push(totalPages);
-  }
+
+    return items;
+  }, [pageGroupEnd, pageGroupStart, totalPages]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -424,6 +489,25 @@ export default function Logs() {
     setCurrentPage(nextPage);
     setPageJumpInput(String(nextPage));
   };
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setRoleFilter("ALL");
+    setLetterFilter("ALL");
+    setSortMode("date-desc");
+    setDateFrom("");
+    setDateTo("");
+    setCurrentPage(1);
+    setPageJumpInput("1");
+  };
+
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 ||
+    roleFilter !== "ALL" ||
+    letterFilter !== "ALL" ||
+    sortMode !== "date-desc" ||
+    Boolean(dateFrom) ||
+    Boolean(dateTo);
 
   const formatDateTime = (isoString: string) => {
     if (!isoString) return "N/A";
@@ -500,6 +584,22 @@ export default function Logs() {
           : "Updated an employee record.";
       case "EMPLOYEE_DELETED":
         return d ? `Removed ${d} from the system.` : "Removed an employee.";
+      case "EMPLOYEE_ARCHIVED":
+        return d
+          ? `Archived ${d} from the active employee list.`
+          : "Archived an employee.";
+      case "EMPLOYEE_UNARCHIVED":
+        return d
+          ? `Restored ${d} to the active employee list.`
+          : "Restored an employee.";
+      case "EMPLOYEE_MARKED_ON_LEAVE":
+        return d
+          ? `Marked ${d} as currently on leave.`
+          : "Marked an employee as on leave.";
+      case "EMPLOYEE_MARKED_AVAILABLE":
+        return d
+          ? `Marked ${d} as available for work.`
+          : "Marked an employee as available.";
       case "LEAVE_CREATED":
         return d ? `Filed a leave request for ${d}.` : "Filed a leave request.";
       case "LEAVE_UPDATED":
@@ -510,6 +610,24 @@ export default function Logs() {
         return d
           ? `Deleted the leave request for ${d}.`
           : "Deleted a leave request.";
+      case "SCHOOL_CREATED":
+        return d ? `Added ${d} as a new school.` : "Added a new school.";
+      case "SCHOOL_UPDATED":
+        return d ? `Updated the school details for ${d}.` : "Updated a school.";
+      case "SCHOOL_DELETED":
+        return d ? `Removed ${d} from the school list.` : "Removed a school.";
+      case "LEAVE_PARTICULAR_CREATED":
+        return d
+          ? `Added ${d} as a leave particular.`
+          : "Added a leave particular.";
+      case "LEAVE_PARTICULAR_UPDATED":
+        return d
+          ? `Updated the leave particular ${d}.`
+          : "Updated a leave particular.";
+      case "LEAVE_PARTICULAR_DELETED":
+        return d
+          ? `Removed ${d} from the leave particulars list.`
+          : "Removed a leave particular.";
       case "LEAVE_MONTHLY_CREDIT": {
         // d: "Name — Period"
         const sep = d.indexOf(" \u2014 ");
@@ -593,8 +711,14 @@ export default function Logs() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-6 sticky top-4 h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Activity Logs</h1>
+    <div className="w-full min-w-0 bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col">
+      <h1
+        style={{ fontSize: "20px" }}
+        className="font-bold text-gray-900 mb-4 inline-flex items-center gap-2"
+      >
+        <FileText size={24} className="text-blue-600" />
+        Activity Logs
+      </h1>
 
       {/* Filters */}
       <div className="flex flex-col gap-4 mb-6">
@@ -609,26 +733,29 @@ export default function Logs() {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="text-gray-500 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="text-gray-500 w-full px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage(1)}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+              className="inline-flex items-center gap-1 px-5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
             >
+              <Search size={14} />
               Search
             </button>
             <button
               onClick={openLogsReport}
-              className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium text-sm cursor-pointer"
+              className="inline-flex items-center gap-1 px-5 py-1 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium text-sm cursor-pointer"
             >
+              <FileDown size={14} />
               Generate Report
             </button>
             <button
               onClick={openArchiveModal}
-              className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition font-medium text-sm cursor-pointer"
+              className="inline-flex items-center gap-1 px-5 py-1 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition font-medium text-sm cursor-pointer"
             >
+              <Archive size={14} />
               Archive
             </button>
           </div>
@@ -643,7 +770,7 @@ export default function Logs() {
               setRoleFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
           >
             <option value="ALL">All Roles</option>
             <option value="SUPER_ADMIN">Super Admin</option>
@@ -658,7 +785,7 @@ export default function Logs() {
               setLetterFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
           >
             <option value="ALL">All Letters</option>
             {alphabet.map((letter) => (
@@ -675,7 +802,7 @@ export default function Logs() {
               setSortMode(e.target.value as typeof sortMode);
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
           >
             <option value="date-desc">Newest First</option>
             <option value="date-asc">Oldest First</option>
@@ -691,10 +818,9 @@ export default function Logs() {
             <input
               type="date"
               value={dateFrom}
-              min={thirtyDaysAgoStr}
               max={todayStr}
               onChange={(e) => handleDateFrom(e.target.value)}
-              className="text-gray-500 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+              className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
             />
             <label className="text-sm text-gray-500 whitespace-nowrap">
               To
@@ -702,10 +828,10 @@ export default function Logs() {
             <input
               type="date"
               value={dateTo}
-              min={dateFrom || thirtyDaysAgoStr}
-              max={maxDateTo}
+              min={dateFrom || ""}
+              max={todayStr}
               onChange={(e) => handleDateTo(e.target.value)}
-              className="text-gray-500 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+              className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
             />
             {(dateFrom || dateTo) && (
               <button
@@ -725,36 +851,46 @@ export default function Logs() {
           <span className="text-sm text-gray-400 sm:ml-auto">
             {filteredLogs.length} record{filteredLogs.length !== 1 ? "s" : ""}
           </span>
+
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="text-sm text-gray-500 underline hover:text-gray-700 transition cursor-pointer"
+            >
+              Clear
+            </button>
+          ) : null}
         </div>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+      <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
         {logsLoading ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center py-10">
             <p className="text-gray-500">Loading logs...</p>
           </div>
         ) : logsError ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center py-10">
             <p className="text-red-500">Error: {logsError}</p>
           </div>
         ) : (
           <table className="w-full">
-            <thead className="sticky top-0 z-10 bg-white">
+            <thead className="sticky top-0 z-10 bg-blue-100">
               <tr className="border-b-2 border-gray-200">
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Date &amp; Time
                 </th>
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Name
                 </th>
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Role
                 </th>
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Action Taken
                 </th>
-                <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   View
                 </th>
               </tr>
@@ -766,26 +902,31 @@ export default function Logs() {
                     key={log.id}
                     className="border-b border-gray-100 hover:bg-gray-50 transition"
                   >
-                    <td className="py-1 px-3 text-gray-500 text-sm whitespace-nowrap">
+                    <td className="py-0.5 px-3 text-gray-500 text-sm whitespace-nowrap">
                       {formatDateTime(log.createdAt)}
                     </td>
-                    <td className="py-1 px-3 text-gray-900 text-sm font-medium">
+                    <td className="py-0.5 px-3 text-gray-900 text-sm font-medium">
                       {log.firstName} {log.lastName}
                     </td>
-                    <td className="py-1 px-3 text-gray-500 text-sm">
+                    <td className="py-0.5 px-3 text-gray-500 text-sm">
                       {roleLabelMap[log.role] ?? log.role.replace(/_/g, " ")}
                     </td>
-                    <td className="py-1 px-3 text-gray-500 text-sm">
-                      {formatAction(log.action, log.details)}
+                    <td className="py-0.5 px-3 text-gray-500 text-sm">
+                      <span
+                        className="block max-w-[24rem] truncate"
+                        title={formatAction(log.action, log.details)}
+                      >
+                        {formatAction(log.action, log.details)}
+                      </span>
                     </td>
-                    <td className="py-1 px-3 text-center">
+                    <td className="py-0.5 px-3 text-center">
                       <button
                         onClick={() => setSelectedLog(log)}
-                        className="p-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer"
+                        className="p-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer"
                         aria-label={`View log #${log.id}`}
                         title="View details"
                       >
-                        <Eye size={14} />
+                        <Eye size={12} />
                       </button>
                     </td>
                   </tr>
@@ -805,7 +946,7 @@ export default function Logs() {
       {/* Pagination */}
       {filteredLogs.length > 0 && (
         <div className="mt-6 space-y-3">
-          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
             <label className="flex items-center gap-2 text-sm text-gray-600">
               Show
               <select
@@ -826,7 +967,50 @@ export default function Logs() {
               entries
             </label>
 
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center justify-center gap-2 sm:justify-self-center">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                aria-label="Previous page"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              {pageNumberItems.map((item, index) =>
+                item === "ellipsis" ? (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="px-2 text-sm text-gray-400 select-none"
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    onClick={() => setCurrentPage(item)}
+                    className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
+                      currentPage === item
+                        ? "bg-blue-600 text-white"
+                        : "text-gray-500 hover:bg-gray-100"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ),
+              )}
+              <button
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                aria-label="Next page"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-gray-600 sm:justify-self-end">
               <span>Jump to</span>
               <input
                 type="number"
@@ -849,49 +1033,6 @@ export default function Logs() {
                 Go
               </button>
             </div>
-          </div>
-
-          <div className="flex items-center justify-center gap-2">
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-              aria-label="Previous page"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            {pageNumberItems.map((item, index) =>
-              item === "ellipsis" ? (
-                <span
-                  key={`ellipsis-${index}`}
-                  className="px-2 text-sm text-gray-400 select-none"
-                >
-                  ...
-                </span>
-              ) : (
-                <button
-                  key={item}
-                  onClick={() => setCurrentPage(item)}
-                  className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
-                    currentPage === item
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-500 hover:bg-gray-100"
-                  }`}
-                >
-                  {item}
-                </button>
-              ),
-            )}
-            <button
-              onClick={() =>
-                setCurrentPage(Math.min(totalPages, currentPage + 1))
-              }
-              disabled={currentPage === totalPages}
-              className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-              aria-label="Next page"
-            >
-              <ChevronRight size={18} />
-            </button>
           </div>
         </div>
       )}
@@ -934,19 +1075,19 @@ export default function Logs() {
 
       {archiveModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-2xl">
+          <div className="w-full max-w-lg rounded-xl border border-blue-200 bg-white p-5 shadow-2xl">
             <h2 className="text-lg font-bold text-gray-900">Archive Logs</h2>
 
             {archiveStep === "range" && (
               <>
-                <p className="mt-2 text-sm text-gray-600">
-                  Archive range for last month window:
-                </p>
+                <p className="mt-2 text-sm text-gray-600">Archive range:</p>
                 <p className="mt-1 text-sm font-semibold text-gray-800">
-                  {archiveRange.fromLabel} to {archiveRange.toLabel} (30 days)
+                  {archiveRange.fromLabel} to {archiveRange.toLabel}
                 </p>
                 <p className="mt-3 text-xs text-gray-500">
-                  You can generate the report now or continue to archive.
+                  {archiveRange.usesCustomRange
+                    ? "Using your selected date filter range."
+                    : "No date filter selected, using the default monthly archive window."}
                 </p>
 
                 {archiveMessage && (
@@ -958,7 +1099,7 @@ export default function Logs() {
                 <div className="mt-5 flex flex-wrap justify-end gap-2">
                   <button
                     onClick={closeArchiveModal}
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -980,17 +1121,18 @@ export default function Logs() {
                       }
                     }}
                     disabled={archiveBusy}
-                    className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Generate Report
                   </button>
                   <button
                     onClick={() => {
-                      setArchiveStep("generate-prompt");
+                      setArchiveStep("confirm");
+                      setArchiveShouldGenerateReport(false);
                       setArchiveMessage(null);
                     }}
                     disabled={archiveBusy}
-                    className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Continue to Archive
                   </button>
@@ -1006,7 +1148,7 @@ export default function Logs() {
                 <div className="mt-5 flex flex-wrap justify-end gap-2">
                   <button
                     onClick={() => setArchiveStep("range")}
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
                   >
                     Back
                   </button>
@@ -1015,7 +1157,7 @@ export default function Logs() {
                       setArchiveShouldGenerateReport(false);
                       setArchiveStep("confirm");
                     }}
-                    className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 cursor-pointer"
+                    className="rounded-lg bg-gray-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800 cursor-pointer"
                   >
                     No, Archive Only
                   </button>
@@ -1024,7 +1166,7 @@ export default function Logs() {
                       setArchiveShouldGenerateReport(true);
                       setArchiveStep("confirm");
                     }}
-                    className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 cursor-pointer"
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 cursor-pointer"
                   >
                     Yes, Generate Then Archive
                   </button>
@@ -1052,16 +1194,16 @@ export default function Logs() {
 
                 <div className="mt-5 flex flex-wrap justify-end gap-2">
                   <button
-                    onClick={() => setArchiveStep("generate-prompt")}
+                    onClick={() => setArchiveStep("range")}
                     disabled={archiveBusy}
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Back
                   </button>
                   <button
                     onClick={performArchive}
                     disabled={archiveBusy}
-                    className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {archiveBusy ? "Processing..." : "Confirm Archive"}
                   </button>
@@ -1079,7 +1221,7 @@ export default function Logs() {
                 <div className="mt-5 flex justify-end">
                   <button
                     onClick={closeArchiveModal}
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 cursor-pointer"
+                    className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 cursor-pointer"
                   >
                     Done
                   </button>

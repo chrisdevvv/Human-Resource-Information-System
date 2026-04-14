@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { AlertTriangle, Check, X } from "lucide-react";
 import ConfirmationAddLeave from "../ConfirmationAddLeave";
 import AddLeaveSuccess from "../AddLeaveSuccess";
 import { getLeaveHistoryByEmployee, getLeaveParticulars } from "../leaveApi";
+import { createClearHandler, hasFormData } from "../../../utils/clearFormUtils";
 
 export type AddLeaveFormValues = {
   employee_id: number;
@@ -78,6 +80,11 @@ const defaultForm: AddLeaveFormState = {
   abs_without_pay_sl: "",
 };
 
+type BalanceErrorState = {
+  title: string;
+  desc: string;
+};
+
 export default function AddLeaveModal({
   isOpen,
   employeeId,
@@ -104,6 +111,9 @@ export default function AddLeaveModal({
   const [particularInputValue, setParticularInputValue] = useState("");
   const [showParticularDropdown, setShowParticularDropdown] = useState(false);
   const [formError, setFormError] = useState("");
+  const [balanceError, setBalanceError] = useState<BalanceErrorState | null>(
+    null,
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -117,8 +127,22 @@ export default function AddLeaveModal({
       setIsSuccessOpen(false);
       setSuccessData(null);
       setFormError("");
+      setBalanceError(null);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!balanceError) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [balanceError]);
 
   useEffect(() => {
     const loadParticularOptions = async () => {
@@ -231,6 +255,7 @@ export default function AddLeaveModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
+    setBalanceError(null);
 
     if (!form.period_of_leave.trim()) {
       setFormError("Period of leave is required.");
@@ -249,6 +274,43 @@ export default function AddLeaveModal({
 
     if (!particularOptions.includes(form.particulars.trim())) {
       setFormError("Please select a valid Particulars option.");
+      return;
+    }
+
+    const parseNumber = (value: string) => Number(value || 0);
+    const balanceIssues: string[] = [];
+
+    if (currentBalVl !== null) {
+      const projectedVl =
+        Number(currentBalVl) +
+        parseNumber(form.earned_vl) -
+        parseNumber(form.abs_with_pay_vl);
+
+      if (!Number.isFinite(projectedVl) || projectedVl < 0) {
+        balanceIssues.push(
+          `Vacation Leave balance would become ${projectedVl.toFixed(3)}.`,
+        );
+      }
+    }
+
+    if (currentBalSl !== null) {
+      const projectedSl =
+        Number(currentBalSl) +
+        parseNumber(form.earned_sl) -
+        parseNumber(form.abs_with_pay_sl);
+
+      if (!Number.isFinite(projectedSl) || projectedSl < 0) {
+        balanceIssues.push(
+          `Sick Leave balance would become ${projectedSl.toFixed(3)}.`,
+        );
+      }
+    }
+
+    if (balanceIssues.length > 0) {
+      setBalanceError({
+        title: "Invalid Leave Balance",
+        desc: `${balanceIssues.join(" ")} Please adjust the leave entry before saving.`,
+      });
       return;
     }
 
@@ -302,12 +364,24 @@ export default function AddLeaveModal({
     }
   }
 
+  function closeBalanceError() {
+    setBalanceError(null);
+  }
+
   function handleCancelConfirm() {
     if (isSaving) {
       return;
     }
 
     setIsConfirmOpen(false);
+  }
+
+  function handleClearAllFields() {
+    setForm(defaultForm);
+    setParticularInputValue("");
+    setShowParticularDropdown(false);
+    setFormError("");
+    setBalanceError(null);
   }
 
   const inputClass =
@@ -341,12 +415,12 @@ export default function AddLeaveModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl bg-white p-6 shadow-2xl">
+      <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-blue-200 bg-white p-6 shadow-2xl">
         <h2 className="text-xl font-bold text-gray-800">Add Leave Entry</h2>
         <p className="mt-1 text-sm text-gray-500">Employee: {employeeName}</p>
 
         {formError && (
-          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             {formError}
           </div>
         )}
@@ -398,13 +472,13 @@ export default function AddLeaveModal({
                 }`}
               />
               {showParticularDropdown && (
-                <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-md border border-gray-300 bg-white shadow-lg max-h-64 overflow-y-auto">
+                <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-md border border-blue-200 bg-white shadow-lg max-h-64 overflow-y-auto">
                   {particularsLoading ? (
-                    <div className="px-4 py-3 text-center text-sm text-gray-500">
+                    <div className="px-3 py-2 text-center text-sm text-gray-500">
                       Loading particulars...
                     </div>
                   ) : particularOptions.length === 0 ? (
-                    <div className="px-4 py-3 text-center text-sm text-gray-500">
+                    <div className="px-3 py-2 text-center text-sm text-gray-500">
                       No particulars available
                     </div>
                   ) : filteredParticularOptions.length > 0 ? (
@@ -423,7 +497,7 @@ export default function AddLeaveModal({
                             particulars: option,
                           }));
                         }}
-                        className={`w-full px-4 py-2 text-left text-sm transition hover:bg-blue-50 ${
+                        className={`w-full px-3 py-2 text-left text-sm transition hover:bg-blue-50 ${
                           form.particulars === option
                             ? "bg-blue-100 font-medium text-blue-700"
                             : "text-gray-700"
@@ -433,8 +507,8 @@ export default function AddLeaveModal({
                       </button>
                     ))
                   ) : (
-                    <div className="px-4 py-3 text-center text-sm text-gray-500">
-                      No particulars match "{particularInputValue}"
+                    <div className="px-3 py-2 text-center text-sm text-gray-500">
+                      No particulars match &quot;{particularInputValue}&quot;
                     </div>
                   )}
                 </div>
@@ -639,25 +713,77 @@ export default function AddLeaveModal({
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex items-center justify-end gap-3 pt-2">
+            {hasFormData(form, defaultForm) && (
+              <button
+                type="button"
+                onClick={createClearHandler(
+                  handleClearAllFields,
+                  hasFormData(form, defaultForm),
+                )}
+                className="mr-auto cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline disabled:opacity-60 disabled:no-underline"
+                disabled={isSaving || isConfirmOpen}
+              >
+                Clear All
+              </button>
+            )}
+
             <button
               type="button"
               onClick={onClose}
-              className="cursor-pointer rounded-lg bg-gray-100 px-5 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
+              className="cursor-pointer rounded-lg bg-gray-100 px-4 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
               disabled={isSaving || isConfirmOpen}
             >
-              Cancel
+              <span className="inline-flex items-center gap-1.5">
+                <X size={14} />
+                Cancel
+              </span>
             </button>
 
             <button
               type="submit"
               disabled={isSaving || isConfirmOpen}
-              className="cursor-pointer rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="cursor-pointer rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSaving ? "Saving..." : "Save Leave"}
+              <span className="inline-flex items-center gap-1.5">
+                <Check size={14} />
+                {isSaving ? "Saving..." : "Save Leave"}
+              </span>
             </button>
           </div>
         </form>
+
+        {balanceError && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40 px-4">
+            <div className="relative w-full max-w-md rounded-xl border border-red-200 bg-white p-6 shadow-2xl">
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-red-50 p-2 text-red-600">
+                  <AlertTriangle size={20} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-gray-800">
+                    {balanceError.title}
+                  </h3>
+                </div>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-gray-600">
+                {balanceError.desc}
+              </p>
+              <div className="mt-5 flex justify-end">
+                <button
+                  type="button"
+                  onClick={closeBalanceError}
+                  className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <X size={14} />
+                    Okay
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <ConfirmationAddLeave
           isOpen={isConfirmOpen}

@@ -32,11 +32,11 @@ export default function SidebarPreviewPage() {
           role={role}
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          title="ELMS Preview"
+          title="CHRIS Preview"
         />
 
         <main className="flex-1 p-6 md:p-10">
-          <div className="max-w-4xl mx-auto bg-white border border-slate-200 rounded-xl shadow-sm p-6 md:p-8">
+          <div className="max-w-4xl mx-auto bg-white border border-blue-200 rounded-xl shadow-sm p-6 md:p-8">
             <h1 className="text-2xl font-bold text-slate-800">
               Sidebar Preview
             </h1>

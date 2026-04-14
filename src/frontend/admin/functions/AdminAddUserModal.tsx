@@ -1,8 +1,17 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, EyeOff, UserPlus } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  UserPlus,
+  XCircle,
+} from "lucide-react";
 import ConfirmationModal from "../../super-admin/components/ConfirmationModal";
+import { createClearHandler } from "../../utils/clearFormUtils";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -86,6 +95,7 @@ export default function AdminAddUserModal({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [birthdate, setBirthdate] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -94,6 +104,7 @@ export default function AdminAddUserModal({
   const [firstNameError, setFirstNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [birthdateError, setBirthdateError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
 
@@ -154,6 +165,16 @@ export default function AdminAddUserModal({
       hasError = true;
     } else {
       setEmailError("");
+    }
+
+    if (!birthdate) {
+      setBirthdateError("Birthdate is required");
+      hasError = true;
+    } else if (new Date(birthdate) > new Date()) {
+      setBirthdateError("Birthdate cannot be in the future");
+      hasError = true;
+    } else {
+      setBirthdateError("");
     }
 
     if (hasError) {
@@ -231,6 +252,7 @@ export default function AdminAddUserModal({
             first_name: firstName.trim(),
             last_name: lastName.trim(),
             email: email.trim(),
+            birthdate,
             password,
           }),
         },
@@ -259,7 +281,7 @@ export default function AdminAddUserModal({
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-        <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto">
+        <div className="bg-white rounded-xl border border-blue-200 shadow-2xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto">
           <div className="flex items-center gap-2 mb-1">
             <UserPlus size={20} className="text-blue-600" />
             <h2 className="text-xl font-bold text-gray-800">Add User</h2>
@@ -327,6 +349,25 @@ export default function AdminAddUserModal({
                 />
                 {emailError && (
                   <p className="text-xs text-red-600 mt-1">{emailError}</p>
+                )}
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Birthdate
+                </label>
+                <input
+                  type="date"
+                  value={birthdate}
+                  onChange={(e) => {
+                    setBirthdate(e.target.value);
+                    if (birthdateError) setBirthdateError("");
+                  }}
+                  max={new Date().toISOString().slice(0, 10)}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700"
+                />
+                {birthdateError && (
+                  <p className="text-xs text-red-600 mt-1">{birthdateError}</p>
                 )}
               </div>
 
@@ -412,7 +453,7 @@ export default function AdminAddUserModal({
             </div>
           )}
 
-          <div className="mt-6 flex justify-end gap-3">
+          <div className="mt-6 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={() => {
@@ -423,28 +464,67 @@ export default function AdminAddUserModal({
                 setStep(1);
               }}
               disabled={loading}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium cursor-pointer disabled:opacity-60"
+              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium cursor-pointer disabled:opacity-60"
             >
-              {step === 1 ? "Cancel" : "Back"}
+              <span className="inline-flex items-center gap-1">
+                <XCircle size={14} />
+                {step === 1 ? "Cancel" : "Back"}
+              </span>
             </button>
+
+            {!!(firstName || lastName || email || birthdate || password) && (
+              <button
+                type="button"
+                onClick={createClearHandler(
+                  () => {
+                    setFirstName("");
+                    setLastName("");
+                    setEmail("");
+                    setBirthdate("");
+                    setPassword("");
+                    setConfirmPassword("");
+                    setError("");
+                    setFirstNameError("");
+                    setLastNameError("");
+                    setEmailError("");
+                    setBirthdateError("");
+                    setPasswordError("");
+                    setConfirmPasswordError("");
+                    setStep(1);
+                    setShowConfirm(false);
+                  },
+                  !!(firstName || lastName || email || birthdate || password),
+                )}
+                disabled={loading}
+                className="mr-auto cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline disabled:opacity-60 disabled:no-underline"
+              >
+                Clear All
+              </button>
+            )}
 
             {step === 1 ? (
               <button
                 type="button"
                 onClick={handleNext}
                 disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer disabled:opacity-60"
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer disabled:opacity-60"
               >
-                Next
+                <span className="inline-flex items-center gap-1">
+                  <ArrowRight size={14} />
+                  Next
+                </span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={handleOpenConfirm}
                 disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer disabled:opacity-60"
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer disabled:opacity-60"
               >
-                Add User
+                <span className="inline-flex items-center gap-1">
+                  <UserPlus size={14} />
+                  Add User
+                </span>
               </button>
             )}
           </div>
@@ -466,7 +546,7 @@ export default function AdminAddUserModal({
 
       {showSuccess && (
         <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/45 px-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 text-center">
+          <div className="bg-white rounded-xl border border-blue-200 shadow-2xl w-full max-w-md p-6 text-center">
             <h3 className="text-xl font-bold text-gray-800 mb-2">
               User Added Successfully
             </h3>
@@ -479,9 +559,12 @@ export default function AdminAddUserModal({
                 setShowSuccess(false);
                 onSuccess();
               }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer"
+              className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer"
             >
-              Done
+              <span className="inline-flex items-center gap-1">
+                <CheckCircle2 size={14} />
+                Done
+              </span>
             </button>
           </div>
         </div>

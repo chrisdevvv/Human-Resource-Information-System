@@ -4,11 +4,11 @@ import React, { useEffect, useState } from "react";
 import {
   Users,
   FileText,
-  Settings,
   UserCheck,
   UserMinus,
   Archive,
   Building2,
+  LayoutDashboard,
 } from "lucide-react";
 
 const API_BASE_URL =
@@ -91,14 +91,15 @@ type StatCard = {
   subtitle?: string;
   icon: React.ReactNode;
   textColor: string;
+  tab?: string;
+  intent?: {
+    key: string;
+    value: string;
+  };
 };
 
-type Shortcut = {
-  label: string;
-  icon: React.ReactNode;
-  tab: string;
-  description: string;
-};
+const EMPLOYEES_LIST_TAB_KEY = "employeesList:activeTab";
+const USER_ROLES_TAB_KEY = "userRoles:activeTab";
 
 type DashboardProps = {
   onTabChange?: (tab: string) => void;
@@ -285,6 +286,7 @@ export default function Dashboard({
       subtitle: "Active employees in system",
       icon: <Users className="w-8 h-8" />,
       textColor: "text-blue-700",
+      tab: "employees-list",
     },
     {
       title: "Total Users",
@@ -292,6 +294,7 @@ export default function Dashboard({
       subtitle: "Registered system users",
       icon: <UserCheck className="w-8 h-8" />,
       textColor: "text-green-700",
+      tab: "user-roles",
     },
     ...(isSuperAdmin
       ? [
@@ -301,6 +304,7 @@ export default function Dashboard({
             subtitle: "Registered schools in system",
             icon: <Building2 className="w-8 h-8" />,
             textColor: "text-cyan-700",
+            tab: "configuration",
           } as StatCard,
         ]
       : []),
@@ -310,6 +314,7 @@ export default function Dashboard({
       subtitle: "Currently marked on leave",
       icon: <UserMinus className="w-8 h-8" />,
       textColor: "text-amber-700",
+      tab: "employee-management",
     },
     {
       title: "Archived Employees",
@@ -317,6 +322,8 @@ export default function Dashboard({
       subtitle: "Inactive archived employee records",
       icon: <Archive className="w-8 h-8" />,
       textColor: "text-rose-700",
+      tab: "employees-list",
+      intent: { key: EMPLOYEES_LIST_TAB_KEY, value: "archived" },
     },
     {
       title: "Pending Registrations",
@@ -324,27 +331,18 @@ export default function Dashboard({
       subtitle: "New accounts awaiting approval",
       icon: <FileText className="w-8 h-8" />,
       textColor: "text-purple-700",
-    },
-  ];
-
-  const shortcuts: Shortcut[] = [
-    {
-      label: "Employee Management",
-      icon: <Users className="w-6 h-6" />,
-      tab: "employee-management",
-      description: "View and manage employees",
-    },
-    {
-      label: "User & Roles",
-      icon: <Settings className="w-6 h-6" />,
       tab: "user-roles",
-      description: "Manage users and permissions",
+      intent: { key: USER_ROLES_TAB_KEY, value: "pending" },
     },
   ];
 
-  const handleShortcutClick = (tab: string) => {
-    if (onTabChange) {
-      onTabChange(tab);
+  const handleCardClick = (card: StatCard) => {
+    if (card.intent && typeof window !== "undefined") {
+      window.localStorage.setItem(card.intent.key, card.intent.value);
+    }
+
+    if (card.tab && onTabChange) {
+      onTabChange(card.tab);
     }
   };
 
@@ -392,10 +390,13 @@ export default function Dashboard({
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-6 py-8">
+        <h1 className="text-3xl font-bold text-gray-900 inline-flex items-center gap-2">
+          <LayoutDashboard className="h-7 w-7 text-blue-600" />
+          Dashboard
+        </h1>
         <p className="text-gray-600 mt-1">
-          Welcome back! Here's your system overview.
+          Welcome back! Here&apos;s your system overview.
         </p>
       </div>
 
@@ -412,7 +413,16 @@ export default function Dashboard({
           {statCards.map((stat, index) => (
             <div
               key={index}
-              className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+              role="button"
+              tabIndex={0}
+              onClick={() => handleCardClick(stat)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  handleCardClick(stat);
+                }
+              }}
+              className="cursor-pointer bg-white border border-blue-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -434,83 +444,78 @@ export default function Dashboard({
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {showRecentLogs && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6 lg:col-span-2">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <h2 className="text-lg font-bold text-yellow-600">
-                  Recent Logs
-                </h2>
-                <button
-                  type="button"
-                  onClick={handleViewLogs}
-                  className="cursor-pointer rounded-md bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-200"
-                >
-                  View Logs
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {recentLogs.length === 0 ? (
-                  <p className="text-sm text-gray-500">No recent logs found.</p>
-                ) : (
-                  recentLogs.map((log, index) => (
-                    <div
-                      key={log.id || index}
-                      className="rounded-lg border border-gray-200 p-3"
-                    >
-                      <p className="text-sm font-semibold text-gray-900">
-                        {(log.action || "Activity").replaceAll("_", " ")}
-                      </p>
-                      <p className="mt-1 text-xs text-gray-600">
-                        {log.details || "No details available."}
-                      </p>
-                      <p className="mt-1 text-[11px] text-gray-500">
-                        {getLogActor(log)} • {formatLogDate(log.created_at)}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
+        {showRecentLogs && (
+          <div className="mb-8 bg-white rounded-lg border border-gray-200 p-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-bold text-yellow-600">Recent Logs</h2>
+              <button
+                type="button"
+                onClick={handleViewLogs}
+                className="cursor-pointer rounded-md bg-gray-100 px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-200"
+              >
+                View Logs
+              </button>
             </div>
-          )}
 
-          <div
-            className={`flex flex-col gap-6 ${
-              showRecentLogs ? "lg:col-span-1" : "lg:col-span-3"
-            }`}
-          >
-            {/* Shortcuts */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">
-                Shortcuts
-              </h2>
-              <div className="flex flex-col gap-3">
-                {shortcuts.map((shortcut, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleShortcutClick(shortcut.tab)}
-                    className="cursor-pointer w-full bg-linear-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 hover:shadow-lg hover:border-blue-400 transition-all text-left group"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="text-blue-700 group-hover:scale-110 transition-transform">
-                        {shortcut.icon}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          {shortcut.label}
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          {shortcut.description}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-180 border-collapse text-sm">
+                <thead className="bg-blue-100">
+                  <tr className="border-b-2 border-gray-200">
+                    <th className="px-3 py-1.5 text-left text-sm font-semibold uppercase tracking-wide text-blue-600">
+                      Date &amp; Time
+                    </th>
+                    <th className="px-3 py-1.5 text-left text-sm font-semibold uppercase tracking-wide text-blue-600">
+                      Name
+                    </th>
+                    <th className="px-3 py-1.5 text-left text-sm font-semibold uppercase tracking-wide text-blue-600">
+                      Action Taken
+                    </th>
+                    <th className="px-3 py-1.5 text-left text-sm font-semibold uppercase tracking-wide text-blue-600">
+                      Details
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentLogs.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-3 py-6 text-center text-gray-500"
+                      >
+                        No recent logs found.
+                      </td>
+                    </tr>
+                  ) : (
+                    recentLogs.map((log, index) => (
+                      <tr
+                        key={log.id || index}
+                        className="border-b border-gray-100 hover:bg-gray-50 transition"
+                      >
+                        <td className="px-3 py-1.5 whitespace-nowrap text-sm text-gray-500">
+                          {formatLogDate(log.created_at)}
+                        </td>
+                        <td className="px-3 py-1.5 text-sm font-medium text-gray-900 whitespace-nowrap">
+                          {getLogActor(log)}
+                        </td>
+                        <td className="px-3 py-1.5 text-sm text-gray-700 whitespace-nowrap">
+                          {(log.action || "Activity").replaceAll("_", " ")}
+                        </td>
+                        <td className="px-3 py-1.5 text-sm text-gray-600">
+                          <span
+                            className="block max-w-md truncate"
+                            title={log.details || "No details available."}
+                          >
+                            {log.details || "No details available."}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

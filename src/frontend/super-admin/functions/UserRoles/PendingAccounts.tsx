@@ -6,6 +6,8 @@ import {
   ChevronRight,
   ArrowUpAZ,
   ArrowDownAZ,
+  Search,
+  UserCheck,
 } from "lucide-react";
 import UserRolesDetailsModal, {
   type RegistrationDetail,
@@ -22,6 +24,19 @@ type RegistrationRequest = {
   lastName: string;
   email: string;
   school: string;
+  approved_role?: string | null;
+  rejection_reason?: string | null;
+  reviewed_at?: string | null;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  created_at: string;
+};
+
+type RegistrationApiRow = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  school_name: string;
   approved_role?: string | null;
   rejection_reason?: string | null;
   reviewed_at?: string | null;
@@ -47,6 +62,7 @@ export default function PendingAccounts({
   const [letterFilter, setLetterFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [pageJumpInput, setPageJumpInput] = useState("1");
   const [data, setData] = useState<RegistrationRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +84,12 @@ export default function PendingAccounts({
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
   // Fetch registrations from backend and optionally skip the full-page spinner for polling refreshes.
-  const fetchData = async (status: string, showSpinner = true) => {
+  const fetchData = async (
+    status: string,
+    page = currentPage,
+    pageSize = itemsPerPage,
+    showSpinner = true,
+  ) => {
     try {
       if (showSpinner) {
         setLoading(true);
@@ -79,10 +100,16 @@ export default function PendingAccounts({
         throw new Error("No authentication token found. Please login first.");
       }
 
-      const url =
-        status === "ALL"
-          ? `${API_BASE}/api/registrations/`
-          : `${API_BASE}/api/registrations/?status=${status}`;
+      const params = new URLSearchParams();
+      if (status !== "ALL") params.set("status", status);
+      if (searchQuery) params.set("search", searchQuery);
+      if (letterFilter !== "ALL") params.set("letter", letterFilter);
+      params.set("sortOrder", sortOrder);
+      params.set("dateSortOrder", dateSortOrder);
+      params.set("page", String(page));
+      params.set("pageSize", String(pageSize));
+
+      const url = `${API_BASE}/api/registrations/?${params.toString()}`;
 
       const response = await fetch(url, {
         method: "GET",
@@ -97,7 +124,8 @@ export default function PendingAccounts({
       }
 
       const result = await response.json();
-      const formattedData = (result.data || []).map((item: any) => ({
+      const rows = (result.data || []) as RegistrationApiRow[];
+      const formattedData = rows.map((item) => ({
         id: item.id,
         firstName: item.first_name,
         lastName: item.last_name,
@@ -110,11 +138,15 @@ export default function PendingAccounts({
         created_at: item.created_at,
       }));
       setData(formattedData);
+      setTotalItems(
+        typeof result.total === "number" ? result.total : formattedData.length,
+      );
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       if (showSpinner) {
         setData([]);
+        setTotalItems(0);
       }
     } finally {
       if (showSpinner) {
@@ -124,50 +156,28 @@ export default function PendingAccounts({
   };
 
   useEffect(() => {
-    fetchData(statusFilter);
+    fetchData(statusFilter, currentPage, itemsPerPage);
 
     const intervalId = window.setInterval(() => {
-      fetchData(statusFilter, false);
+      fetchData(statusFilter, currentPage, itemsPerPage, false);
     }, 5000);
 
     return () => window.clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
+  }, [
+    statusFilter,
+    searchQuery,
+    letterFilter,
+    sortOrder,
+    dateSortOrder,
+    currentPage,
+    itemsPerPage,
+  ]);
 
-  const filteredData = data
-    .filter((item) => {
-      const matchesSearch =
-        item.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.school.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesLetter =
-        letterFilter === "ALL" ||
-        item.firstName.charAt(0).toUpperCase() === letterFilter;
-      return matchesSearch && matchesLetter;
-    })
-    .sort((a, b) => {
-      // First sort by date
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
+  const filteredData = data;
 
-      if (dateSortOrder === "newest") {
-        if (dateB !== dateA) return dateB - dateA;
-      } else {
-        if (dateA !== dateB) return dateA - dateB;
-      }
-
-      // Then sort by name if dates are equal
-      if (sortOrder === "asc") {
-        return a.firstName.localeCompare(b.firstName);
-      } else {
-        return b.firstName.localeCompare(a.firstName);
-      }
-    });
-
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredData.slice(startIdx, startIdx + itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const paginatedData = filteredData;
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
     Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
@@ -213,8 +223,12 @@ export default function PendingAccounts({
   };
 
   return (
-    <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-6 sticky top-4 h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">
+    <div className="w-full bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col">
+      <h1
+        style={{ fontSize: "20px" }}
+        className="font-bold text-gray-900 mb-4 inline-flex items-center gap-2"
+      >
+        <UserCheck size={24} className="text-blue-600" />
         Pending Accounts
       </h1>
 
@@ -228,13 +242,14 @@ export default function PendingAccounts({
               placeholder="Search name, email, or school"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="text-gray-500 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="text-gray-500 w-full px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
           </div>
           <button
             onClick={handleSearch}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+            className="inline-flex items-center gap-1 px-5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
           >
+            <Search size={14} />
             Search
           </button>
         </div>
@@ -248,7 +263,7 @@ export default function PendingAccounts({
               setStatusFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
           >
             <option value="ALL">All</option>
             <option value="PENDING">Pending</option>
@@ -263,7 +278,7 @@ export default function PendingAccounts({
               setLetterFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
           >
             <option value="ALL">All Letters</option>
             {alphabet.map((letter) => (
@@ -280,7 +295,7 @@ export default function PendingAccounts({
               setDateSortOrder(e.target.value as "newest" | "oldest");
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
           >
             <option value="newest">Newest</option>
             <option value="oldest">Oldest</option>
@@ -291,7 +306,7 @@ export default function PendingAccounts({
             onClick={() => {
               setSortOrder(sortOrder === "asc" ? "desc" : "asc");
             }}
-            className="text-gray-500 flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
+            className="text-gray-500 flex items-center gap-2 px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
           >
             {sortOrder === "asc" ? (
               <>
@@ -309,26 +324,26 @@ export default function PendingAccounts({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+      <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
         {loading ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center py-10">
             <p className="text-gray-500">Loading pending accounts...</p>
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center py-10">
             <p className="text-red-500">Error: {error}</p>
           </div>
         ) : (
           <table className="w-full">
-            <thead className="sticky top-0 z-10 bg-white">
+            <thead className="sticky top-0 z-10 bg-blue-100">
               <tr className="border-b-2 border-gray-200">
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Name
                 </th>
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Email
                 </th>
-                <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                   Actions
                 </th>
               </tr>
@@ -340,13 +355,13 @@ export default function PendingAccounts({
                     key={item.id}
                     className="border-b border-gray-100 hover:bg-gray-50 transition"
                   >
-                    <td className="py-1 px-3 text-gray-900 text-sm font-medium">
+                    <td className="py-0.5 px-3 text-gray-900 text-sm font-medium">
                       {item.firstName} {item.lastName}
                     </td>
-                    <td className="py-1 px-3 text-gray-500 text-sm">
+                    <td className="py-0.5 px-3 text-gray-500 text-sm">
                       {item.email}
                     </td>
-                    <td className="py-1 px-3">
+                    <td className="py-0.5 px-3">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() =>
@@ -363,7 +378,7 @@ export default function PendingAccounts({
                               created_at: item.created_at,
                             })
                           }
-                          className="px-4 py-1.5 bg-blue-400 text-white rounded hover:bg-blue-500 transition text-sm font-medium cursor-pointer"
+                          className="px-3 py-0.5 bg-blue-400 text-white rounded hover:bg-blue-500 transition text-sm font-medium cursor-pointer"
                         >
                           Details
                         </button>
@@ -376,7 +391,7 @@ export default function PendingAccounts({
                                   name: `${item.firstName} ${item.lastName}`,
                                 })
                               }
-                              className="px-4 py-1.5 bg-green-400 text-white rounded hover:bg-green-500 transition text-sm font-medium cursor-pointer"
+                              className="px-3 py-0.5 bg-green-400 text-white rounded hover:bg-green-500 transition text-sm font-medium cursor-pointer"
                             >
                               Assign Role
                             </button>
@@ -387,14 +402,14 @@ export default function PendingAccounts({
                                   name: `${item.firstName} ${item.lastName}`,
                                 })
                               }
-                              className="px-4 py-1.5 bg-red-400 text-white rounded hover:bg-red-500 transition text-sm font-medium cursor-pointer"
+                              className="px-3 py-0.5 bg-red-400 text-white rounded hover:bg-red-500 transition text-sm font-medium cursor-pointer"
                             >
                               Reject
                             </button>
                           </>
                         ) : (
                           <span
-                            className={`px-4 py-1.5 rounded text-sm font-semibold ${
+                            className={`px-3 py-0.5 rounded text-sm font-semibold ${
                               item.status === "APPROVED"
                                 ? "bg-green-100 text-green-700"
                                 : "bg-red-100 text-red-700"
@@ -424,7 +439,7 @@ export default function PendingAccounts({
       {/* Pagination */}
       {filteredData.length > 0 && (
         <div className="mt-6 space-y-3">
-          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
             <label className="flex items-center gap-2 text-sm text-gray-600">
               Show
               <select
@@ -445,7 +460,50 @@ export default function PendingAccounts({
               entries
             </label>
 
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center justify-center gap-2 sm:justify-self-center">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                aria-label="Previous page"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              {pageNumberItems.map((item, index) =>
+                item === "ellipsis" ? (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="px-2 text-sm text-gray-400 select-none"
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    onClick={() => setCurrentPage(item)}
+                    className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
+                      currentPage === item
+                        ? "bg-blue-600 text-white"
+                        : "text-gray-500 hover:bg-gray-100"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ),
+              )}
+              <button
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                aria-label="Next page"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-gray-600 sm:justify-self-end">
               <span>Jump to</span>
               <input
                 type="number"
@@ -468,49 +526,6 @@ export default function PendingAccounts({
                 Go
               </button>
             </div>
-          </div>
-
-          <div className="flex items-center justify-center gap-2">
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-              aria-label="Previous page"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            {pageNumberItems.map((item, index) =>
-              item === "ellipsis" ? (
-                <span
-                  key={`ellipsis-${index}`}
-                  className="px-2 text-sm text-gray-400 select-none"
-                >
-                  ...
-                </span>
-              ) : (
-                <button
-                  key={item}
-                  onClick={() => setCurrentPage(item)}
-                  className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
-                    currentPage === item
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-500 hover:bg-gray-100"
-                  }`}
-                >
-                  {item}
-                </button>
-              ),
-            )}
-            <button
-              onClick={() =>
-                setCurrentPage(Math.min(totalPages, currentPage + 1))
-              }
-              disabled={currentPage === totalPages}
-              className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-              aria-label="Next page"
-            >
-              <ChevronRight size={18} />
-            </button>
           </div>
         </div>
       )}

@@ -15,6 +15,7 @@ import {
 type EmployeeInfo = {
   id: number;
   first_name: string;
+  middle_name?: string | null;
   last_name: string;
   employee_type: "teaching" | "non-teaching";
 };
@@ -31,6 +32,7 @@ export default function LeaveCardPreviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
+  const [isPrintLoading, setIsPrintLoading] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,8 +51,9 @@ export default function LeaveCardPreviewPage() {
           getLeaveHistoryByEmployee(employeeId),
         ]);
 
-        if (!empRes.ok)
+        if (!empRes.ok) {
           throw new Error("Failed to fetch employee information.");
+        }
 
         const empData = (await empRes.json()) as
           | EmployeeInfo
@@ -62,6 +65,7 @@ export default function LeaveCardPreviewPage() {
 
         setEmployee(emp);
         setRows(leaveRows);
+        setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong.");
       } finally {
@@ -73,25 +77,45 @@ export default function LeaveCardPreviewPage() {
   }, [employeeId]);
 
   const handleDownload = async () => {
-    if (!cardRef.current || !employee) return;
+    if (!employee || !cardRef.current) return;
+
     try {
       setIsPdfLoading(true);
       const employeeName =
-        `${employee.first_name} ${employee.last_name}`.trim() || "Employee";
+        [employee.first_name, employee.middle_name, employee.last_name]
+          .filter(Boolean)
+          .join(" ") || "Employee";
       await downloadLeaveCardPdf(
         cardRef.current,
         createLeaveCardFileName(employeeName),
       );
-    } catch {
-      alert("Failed to generate PDF.");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to generate PDF.");
     } finally {
       setIsPdfLoading(false);
     }
   };
 
+  const handlePrint = async () => {
+    if (!cardRef.current) return;
+
+    try {
+      setIsPrintLoading(true);
+      // Wait one frame so the latest UI state is painted before opening print.
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      });
+      window.print();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to open print view.");
+    } finally {
+      setIsPrintLoading(false);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50 text-gray-500 text-sm">
+      <div className="flex h-screen items-center justify-center bg-gray-50 text-sm text-gray-500">
         Loading leave card...
       </div>
     );
@@ -105,23 +129,29 @@ export default function LeaveCardPreviewPage() {
     );
   }
 
-  const fullName = `${employee.first_name} ${employee.last_name}`.trim();
+  const fullName = [
+    employee.first_name,
+    employee.middle_name,
+    employee.last_name,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Toolbar — hidden when printing */}
+    <div className="min-h-screen bg-gray-100 print:min-h-0 print:bg-white">
       <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-200 bg-white px-6 py-3 shadow-sm print:hidden">
         <span className="text-sm font-medium text-gray-700">
-          Leave Card Preview — <span className="text-gray-900">{fullName}</span>
+          Leave Card Preview - <span className="text-gray-900">{fullName}</span>
         </span>
         <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
-            onClick={() => window.print()}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
+            onClick={handlePrint}
+            disabled={isPrintLoading}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Printer size={14} />
-            Print
+            {isPrintLoading ? "Opening..." : "Print"}
           </button>
           <button
             type="button"
@@ -130,12 +160,11 @@ export default function LeaveCardPreviewPage() {
             className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Download size={14} />
-            {isPdfLoading ? "Generating…" : "Download PDF"}
+            {isPdfLoading ? "Generating..." : "Download PDF"}
           </button>
         </div>
       </div>
 
-      {/* Leave card */}
       <div className="p-6 print:p-0">
         <PrintableLeaveCard
           ref={cardRef}

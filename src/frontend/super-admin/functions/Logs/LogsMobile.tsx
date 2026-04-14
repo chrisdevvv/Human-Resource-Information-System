@@ -2,7 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Archive,
+  ChevronLeft,
+  ChevronRight,
+  FileDown,
+  FileText,
+  Search,
+} from "lucide-react";
 import ViewLogsModal from "../../components/ViewLogsModal";
 import LogsReportGeneration, {
   downloadLogsReportPdf,
@@ -20,6 +27,8 @@ type Log = {
   action: string;
   details: string;
   createdAt: string;
+  createdAtMs: number;
+  searchIndex: string;
 };
 
 type ArchiveFlowStep = "range" | "generate-prompt" | "confirm" | "success";
@@ -28,6 +37,39 @@ const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
+const createLogSearchIndex = (log: {
+  firstName: string;
+  lastName: string;
+  action: string;
+  createdAt: string;
+}) => {
+  const createdAtDate = new Date(log.createdAt);
+  const parts = [
+    `${log.firstName} ${log.lastName}`.trim(),
+    log.action,
+    log.createdAt,
+  ];
+
+  if (!Number.isNaN(createdAtDate.getTime())) {
+    parts.push(
+      createdAtDate.toISOString().slice(0, 10),
+      createdAtDate.toLocaleDateString("en-PH"),
+      createdAtDate.toLocaleString("en-PH", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }),
+      createdAtDate.toLocaleString("en-PH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+    );
+  }
+
+  return parts.join(" ").toLowerCase();
+};
 
 export default function LogsMobile() {
   const router = useRouter();
@@ -39,53 +81,30 @@ export default function LogsMobile() {
   >("date-desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [pageJumpInput, setPageJumpInput] = useState("1");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-  const MAX_RANGE_DAYS = 30;
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const thirtyDaysAgoStr = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - MAX_RANGE_DAYS);
-    return d.toISOString().slice(0, 10);
-  })();
 
   const handleDateFrom = (value: string) => {
     setDateFrom(value);
     setCurrentPage(1);
-    if (value && dateTo) {
-      const from = new Date(value);
-      const to = new Date(dateTo);
-      const maxTo = new Date(from);
-      maxTo.setDate(maxTo.getDate() + MAX_RANGE_DAYS);
-      if (to > maxTo) setDateTo(maxTo.toISOString().slice(0, 10));
-      if (to < from) setDateTo(value);
+    if (value && dateTo && new Date(dateTo) < new Date(value)) {
+      setDateTo(value);
     }
   };
 
   const handleDateTo = (value: string) => {
-    if (value && dateFrom) {
-      const from = new Date(dateFrom);
-      const to = new Date(value);
-      const maxTo = new Date(from);
-      maxTo.setDate(maxTo.getDate() + MAX_RANGE_DAYS);
-      if (to > maxTo) value = maxTo.toISOString().slice(0, 10);
-      if (to < from) value = dateFrom;
+    if (value && dateFrom && new Date(value) < new Date(dateFrom)) {
+      value = dateFrom;
     }
     setDateTo(value);
     setCurrentPage(1);
   };
-
-  const maxDateTo = (() => {
-    if (!dateFrom) return todayStr;
-    const d = new Date(dateFrom);
-    d.setDate(d.getDate() + MAX_RANGE_DAYS);
-    const candidate = d.toISOString().slice(0, 10);
-    return candidate < todayStr ? candidate : todayStr;
-  })();
 
   const [logsData, setLogsData] = useState<Log[]>([]);
   const [selectedLog, setSelectedLog] = useState<Log | null>(null);
@@ -108,7 +127,7 @@ export default function LogsMobile() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  const archiveRange = React.useMemo(() => {
+  const defaultArchiveRange = React.useMemo(() => {
     const now = new Date();
     const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const to = new Date(from);
@@ -129,6 +148,45 @@ export default function LogsMobile() {
       }),
     };
   }, []);
+
+  const archiveRange = React.useMemo(() => {
+    let fromIso = defaultArchiveRange.fromIso;
+    let toIso = defaultArchiveRange.toIso;
+
+    if (dateFrom || dateTo) {
+      fromIso = dateFrom || dateTo || defaultArchiveRange.fromIso;
+      toIso = dateTo || todayStr;
+
+      if (new Date(toIso) < new Date(fromIso)) {
+        toIso = fromIso;
+      }
+    }
+
+    const from = new Date(`${fromIso}T00:00:00`);
+    const to = new Date(`${toIso}T00:00:00`);
+
+    return {
+      fromIso,
+      toIso,
+      fromLabel: from.toLocaleDateString("en-PH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      toLabel: to.toLocaleDateString("en-PH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      usesCustomRange: Boolean(dateFrom || dateTo),
+    };
+  }, [
+    dateFrom,
+    dateTo,
+    defaultArchiveRange.fromIso,
+    defaultArchiveRange.toIso,
+    todayStr,
+  ]);
 
   const archiveReportRows = React.useMemo<LogsReportRecord[]>(() => {
     const from = new Date(`${archiveRange.fromIso}T00:00:00`);
@@ -206,6 +264,8 @@ export default function LogsMobile() {
       setArchiveBusy(true);
       setArchiveMessage(null);
 
+      const archiveTargetIds = filteredLogs.map((log) => log.id);
+
       if (archiveShouldGenerateReport) {
         await downloadArchiveRangeReport();
       }
@@ -222,6 +282,7 @@ export default function LogsMobile() {
         body: JSON.stringify({
           from: archiveRange.fromIso,
           to: archiveRange.toIso,
+          ids: archiveTargetIds,
         }),
       });
 
@@ -238,6 +299,13 @@ export default function LogsMobile() {
           ? `${count} log record${count !== 1 ? "s" : ""} archived successfully.`
           : "No logs found for the selected archive range.",
       );
+
+      if (count > 0 && archiveTargetIds.length > 0) {
+        // Immediate UI refresh: remove just-archived rows from active logs list.
+        setLogsData((prev) =>
+          prev.filter((log) => !archiveTargetIds.includes(log.id)),
+        );
+      }
 
       await fetchLogs(false);
     } catch (err) {
@@ -269,10 +337,22 @@ export default function LogsMobile() {
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
 
+      const params = new URLSearchParams();
+      params.set("include_archived", "false");
+      if (searchQuery.trim()) params.set("search", searchQuery.trim());
+      if (roleFilter !== "ALL") params.set("role", roleFilter);
+      if (letterFilter !== "ALL") params.set("letter", letterFilter);
+      if (dateFrom) params.set("from", dateFrom);
+      if (dateTo) params.set("to", dateTo);
+      params.set("sortMode", sortMode);
+      params.set("page", String(currentPage));
+      params.set("pageSize", String(itemsPerPage));
+
       const response = await fetch(
-        `${API_BASE}/api/backlogs?include_archived=false`,
+        `${API_BASE}/api/backlogs?${params.toString()}`,
         {
           method: "GET",
+          cache: "no-store",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
@@ -295,83 +375,58 @@ export default function LogsMobile() {
           action: (item.action as string) || "N/A",
           details: (item.details as string) || "",
           createdAt: item.created_at as string,
+          createdAtMs: new Date(item.created_at as string).getTime(),
+          searchIndex: createLogSearchIndex({
+            firstName: (item.first_name as string) || "Unknown",
+            lastName: (item.last_name as string) || "",
+            action: (item.action as string) || "N/A",
+            createdAt: item.created_at as string,
+          }),
         }),
       );
       setLogsData(formatted);
+      setTotalItems(
+        typeof (result as { total?: number }).total === "number"
+          ? Number((result as { total?: number }).total)
+          : formatted.length,
+      );
       setLogsError(null);
     } catch (err) {
       setLogsError(err instanceof Error ? err.message : "An error occurred");
-      if (showSpinner) setLogsData([]);
+      if (showSpinner) {
+        setLogsData([]);
+        setTotalItems(0);
+      }
     } finally {
       if (showSpinner) setLogsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLogs();
-    const intervalId = window.setInterval(() => fetchLogs(false), 5000);
-    return () => window.clearInterval(intervalId);
+    const id = window.setTimeout(() => {
+      fetchLogs();
+    }, 300);
+    return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [
+    searchQuery,
+    roleFilter,
+    letterFilter,
+    sortMode,
+    dateFrom,
+    dateTo,
+    currentPage,
+    itemsPerPage,
+  ]);
 
-  const filteredLogs = logsData
-    .filter((log) => {
-      const query = searchQuery.trim().toLowerCase();
-      const fullName = `${log.firstName} ${log.lastName}`.toLowerCase();
-      const logDate = new Date(log.createdAt);
+  const filteredLogs = React.useMemo(() => logsData, [logsData]);
 
-      const searchableDateParts = Number.isNaN(logDate.getTime())
-        ? []
-        : [
-            log.createdAt.toLowerCase(),
-            logDate.toISOString().slice(0, 10),
-            logDate.toLocaleDateString("en-PH"),
-            logDate.toLocaleString("en-PH", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            }),
-            logDate.toLocaleString("en-PH", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            }),
-          ].map((value) => value.toLowerCase());
+  const totalPages = React.useMemo(
+    () => Math.max(1, Math.ceil(totalItems / itemsPerPage)),
+    [totalItems, itemsPerPage],
+  );
 
-      const matchesSearch =
-        !query ||
-        fullName.includes(query) ||
-        log.action.toLowerCase().includes(query) ||
-        searchableDateParts.some((datePart) => datePart.includes(query));
-      const matchesRole = roleFilter === "ALL" || log.role === roleFilter;
-      const matchesLetter =
-        letterFilter === "ALL" ||
-        log.firstName.charAt(0).toUpperCase() === letterFilter;
-      const afterFrom = !dateFrom || logDate >= new Date(dateFrom);
-      const beforeTo = !dateTo
-        ? true
-        : (() => {
-            const end = new Date(dateTo);
-            end.setHours(23, 59, 59, 999);
-            return logDate <= end;
-          })();
-      return (
-        matchesSearch && matchesRole && matchesLetter && afterFrom && beforeTo
-      );
-    })
-    .sort((a, b) => {
-      if (sortMode === "name-asc")
-        return a.firstName.localeCompare(b.firstName);
-      if (sortMode === "name-desc")
-        return b.firstName.localeCompare(a.firstName);
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
-      return sortMode === "date-desc" ? dateB - dateA : dateA - dateB;
-    });
-
-  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / itemsPerPage));
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedLogs = filteredLogs.slice(startIdx, startIdx + itemsPerPage);
+  const paginatedLogs = React.useMemo(() => filteredLogs, [filteredLogs]);
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
     Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
@@ -379,16 +434,21 @@ export default function LogsMobile() {
     totalPages,
     pageGroupStart + PAGE_WINDOW_SIZE - 1,
   );
-  const pageNumberItems: Array<number | "ellipsis"> = Array.from(
-    { length: pageGroupEnd - pageGroupStart + 1 },
-    (_, i) => pageGroupStart + i,
-  );
-  if (pageGroupEnd < totalPages) {
-    if (totalPages - pageGroupEnd > 1) {
-      pageNumberItems.push("ellipsis");
+  const pageNumberItems = React.useMemo<Array<number | "ellipsis">>(() => {
+    const items: Array<number | "ellipsis"> = Array.from(
+      { length: pageGroupEnd - pageGroupStart + 1 },
+      (_, i) => pageGroupStart + i,
+    );
+
+    if (pageGroupEnd < totalPages) {
+      if (totalPages - pageGroupEnd > 1) {
+        items.push("ellipsis");
+      }
+      items.push(totalPages);
     }
-    pageNumberItems.push(totalPages);
-  }
+
+    return items;
+  }, [pageGroupEnd, pageGroupStart, totalPages]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -410,6 +470,25 @@ export default function LogsMobile() {
     setCurrentPage(nextPage);
     setPageJumpInput(String(nextPage));
   };
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setRoleFilter("ALL");
+    setLetterFilter("ALL");
+    setSortMode("date-desc");
+    setDateFrom("");
+    setDateTo("");
+    setCurrentPage(1);
+    setPageJumpInput("1");
+  };
+
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 ||
+    roleFilter !== "ALL" ||
+    letterFilter !== "ALL" ||
+    sortMode !== "date-desc" ||
+    Boolean(dateFrom) ||
+    Boolean(dateTo);
 
   const formatDateTime = (isoString: string) => {
     if (!isoString) return "N/A";
@@ -486,6 +565,22 @@ export default function LogsMobile() {
           : "Updated an employee record.";
       case "EMPLOYEE_DELETED":
         return d ? `Removed ${d} from the system.` : "Removed an employee.";
+      case "EMPLOYEE_ARCHIVED":
+        return d
+          ? `Archived ${d} from the active employee list.`
+          : "Archived an employee.";
+      case "EMPLOYEE_UNARCHIVED":
+        return d
+          ? `Restored ${d} to the active employee list.`
+          : "Restored an employee.";
+      case "EMPLOYEE_MARKED_ON_LEAVE":
+        return d
+          ? `Marked ${d} as currently on leave.`
+          : "Marked an employee as on leave.";
+      case "EMPLOYEE_MARKED_AVAILABLE":
+        return d
+          ? `Marked ${d} as available for work.`
+          : "Marked an employee as available.";
       case "LEAVE_CREATED":
         return d ? `Filed a leave request for ${d}.` : "Filed a leave request.";
       case "LEAVE_UPDATED":
@@ -496,6 +591,24 @@ export default function LogsMobile() {
         return d
           ? `Deleted the leave request for ${d}.`
           : "Deleted a leave request.";
+      case "SCHOOL_CREATED":
+        return d ? `Added ${d} as a new school.` : "Added a new school.";
+      case "SCHOOL_UPDATED":
+        return d ? `Updated the school details for ${d}.` : "Updated a school.";
+      case "SCHOOL_DELETED":
+        return d ? `Removed ${d} from the school list.` : "Removed a school.";
+      case "LEAVE_PARTICULAR_CREATED":
+        return d
+          ? `Added ${d} as a leave particular.`
+          : "Added a leave particular.";
+      case "LEAVE_PARTICULAR_UPDATED":
+        return d
+          ? `Updated the leave particular ${d}.`
+          : "Updated a leave particular.";
+      case "LEAVE_PARTICULAR_DELETED":
+        return d
+          ? `Removed ${d} from the leave particulars list.`
+          : "Removed a leave particular.";
       case "USER_ROLE_UPDATED": {
         const match = d.match(/^(.+?):\s*(.+?)\s*(?:→|->|to)\s*(.+)$/i);
         if (match) {
@@ -559,7 +672,10 @@ export default function LogsMobile() {
 
   return (
     <div className="w-full px-3 py-4">
-      <h1 className="text-lg font-bold text-gray-900 mb-4">Activity Logs</h1>
+      <h1 className="text-lg font-bold text-gray-900 mb-4 inline-flex items-center gap-2">
+        <FileText size={16} className="text-blue-600" />
+        Activity Logs
+      </h1>
 
       {/* Filters */}
       <div className="flex flex-col gap-2 mb-4">
@@ -573,24 +689,27 @@ export default function LogsMobile() {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             onClick={() => setCurrentPage(1)}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer"
+            className="inline-flex items-center gap-1 px-4 py-1 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer"
           >
+            <Search size={14} />
             Search
           </button>
           <button
             onClick={openLogsReport}
-            className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition cursor-pointer"
+            className="inline-flex items-center gap-1 px-4 py-1 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition cursor-pointer"
           >
+            <FileDown size={14} />
             Generate Report
           </button>
           <button
             onClick={openArchiveModal}
-            className="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition cursor-pointer"
+            className="inline-flex items-center gap-1 px-4 py-1 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition cursor-pointer"
           >
+            <Archive size={14} />
             Archive
           </button>
         </div>
@@ -603,7 +722,7 @@ export default function LogsMobile() {
               setRoleFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            className="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
           >
             <option value="ALL">All Roles</option>
             <option value="SUPER_ADMIN">Super Admin</option>
@@ -617,7 +736,7 @@ export default function LogsMobile() {
               setLetterFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            className="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
           >
             <option value="ALL">All Letters</option>
             {alphabet.map((letter) => (
@@ -633,7 +752,7 @@ export default function LogsMobile() {
               setSortMode(e.target.value as typeof sortMode);
               setCurrentPage(1);
             }}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            className="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
           >
             <option value="date-desc">Newest First</option>
             <option value="date-asc">Oldest First</option>
@@ -651,7 +770,7 @@ export default function LogsMobile() {
                 setPageJumpInput("1");
               }
             }}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            className="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
           >
             <option value="">Date Range</option>
             <option value="clear">Clear Dates</option>
@@ -667,10 +786,9 @@ export default function LogsMobile() {
             <input
               type="date"
               value={dateFrom}
-              min={thirtyDaysAgoStr}
               max={todayStr}
               onChange={(e) => handleDateFrom(e.target.value)}
-              className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             />
           </div>
           <div className="flex gap-2 items-center">
@@ -680,10 +798,10 @@ export default function LogsMobile() {
             <input
               type="date"
               value={dateTo}
-              min={dateFrom || thirtyDaysAgoStr}
-              max={maxDateTo}
+              min={dateFrom || ""}
+              max={todayStr}
               onChange={(e) => handleDateTo(e.target.value)}
-              className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             />
           </div>
         </div>
@@ -691,10 +809,20 @@ export default function LogsMobile() {
         <p className="text-xs text-gray-400">
           {filteredLogs.length} record{filteredLogs.length !== 1 ? "s" : ""}
         </p>
+
+        {hasActiveFilters ? (
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="text-sm text-gray-500 underline hover:text-gray-700 transition cursor-pointer text-center"
+          >
+            Clear
+          </button>
+        ) : null}
       </div>
 
       {/* Logs list */}
-      <div className="bg-white rounded-xl shadow-lg p-4 flex flex-col gap-4">
+      <div className="border border-blue-200 bg-white rounded-xl shadow-lg p-4 flex flex-col gap-4">
         {logsLoading ? (
           <p className="text-center text-sm text-gray-500 py-8">
             Loading logs...
@@ -712,7 +840,7 @@ export default function LogsMobile() {
             {paginatedLogs.map((log) => (
               <div
                 key={log.id}
-                className="flex items-start justify-between px-4 py-3 bg-gray-50 rounded-lg border border-gray-100"
+                className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-100"
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-gray-400 truncate">
@@ -725,12 +853,14 @@ export default function LogsMobile() {
                     {formatAction(log.action, log.details)}
                   </p>
                 </div>
-                <button
-                  onClick={() => setSelectedLog(log)}
-                  className="ml-3 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition cursor-pointer shrink-0"
-                >
-                  View
-                </button>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    onClick={() => setSelectedLog(log)}
+                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition cursor-pointer shrink-0"
+                  >
+                    View
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -789,7 +919,7 @@ export default function LogsMobile() {
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
               >
                 <ChevronLeft size={15} />
                 Prev
@@ -811,7 +941,7 @@ export default function LogsMobile() {
                   setCurrentPage(Math.min(totalPages, currentPage + 1))
                 }
                 disabled={currentPage === totalPages}
-                className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
               >
                 Next
                 <ChevronRight size={15} />
@@ -880,19 +1010,19 @@ export default function LogsMobile() {
 
       {archiveModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
-          <div className="w-full max-w-md rounded-t-2xl bg-white p-4 shadow-2xl sm:rounded-xl sm:p-5">
+          <div className="w-full max-w-md rounded-t-2xl border border-blue-200 bg-white p-4 shadow-2xl sm:rounded-xl sm:p-5">
             <h2 className="text-base font-bold text-gray-900">Archive Logs</h2>
 
             {archiveStep === "range" && (
               <>
-                <p className="mt-2 text-sm text-gray-600">
-                  Archive range for last month window:
-                </p>
+                <p className="mt-2 text-sm text-gray-600">Archive range:</p>
                 <p className="mt-1 text-sm font-semibold text-gray-800">
-                  {archiveRange.fromLabel} to {archiveRange.toLabel} (30 days)
+                  {archiveRange.fromLabel} to {archiveRange.toLabel}
                 </p>
                 <p className="mt-3 text-xs text-gray-500">
-                  You can generate the report now or continue to archive.
+                  {archiveRange.usesCustomRange
+                    ? "Using your selected date filter range."
+                    : "No date filter selected, using the default monthly archive window."}
                 </p>
 
                 {archiveMessage && (
@@ -904,7 +1034,7 @@ export default function LogsMobile() {
                 <div className="mt-5 flex flex-wrap justify-end gap-2">
                   <button
                     onClick={closeArchiveModal}
-                    className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer"
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -926,17 +1056,18 @@ export default function LogsMobile() {
                       }
                     }}
                     disabled={archiveBusy}
-                    className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Generate Report
                   </button>
                   <button
                     onClick={() => {
-                      setArchiveStep("generate-prompt");
+                      setArchiveStep("confirm");
+                      setArchiveShouldGenerateReport(false);
                       setArchiveMessage(null);
                     }}
                     disabled={archiveBusy}
-                    className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Continue to Archive
                   </button>
@@ -952,7 +1083,7 @@ export default function LogsMobile() {
                 <div className="mt-5 flex flex-wrap justify-end gap-2">
                   <button
                     onClick={() => setArchiveStep("range")}
-                    className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer"
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer"
                   >
                     Back
                   </button>
@@ -961,7 +1092,7 @@ export default function LogsMobile() {
                       setArchiveShouldGenerateReport(false);
                       setArchiveStep("confirm");
                     }}
-                    className="rounded-lg bg-gray-700 px-3 py-2 text-xs font-medium text-white hover:bg-gray-800 cursor-pointer"
+                    className="rounded-lg bg-gray-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800 cursor-pointer"
                   >
                     No, Archive Only
                   </button>
@@ -970,7 +1101,7 @@ export default function LogsMobile() {
                       setArchiveShouldGenerateReport(true);
                       setArchiveStep("confirm");
                     }}
-                    className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 cursor-pointer"
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 cursor-pointer"
                   >
                     Yes, Generate Then Archive
                   </button>
@@ -998,16 +1129,16 @@ export default function LogsMobile() {
 
                 <div className="mt-5 flex flex-wrap justify-end gap-2">
                   <button
-                    onClick={() => setArchiveStep("generate-prompt")}
+                    onClick={() => setArchiveStep("range")}
                     disabled={archiveBusy}
-                    className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Back
                   </button>
                   <button
                     onClick={performArchive}
                     disabled={archiveBusy}
-                    className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {archiveBusy ? "Processing..." : "Confirm Archive"}
                   </button>
@@ -1025,7 +1156,7 @@ export default function LogsMobile() {
                 <div className="mt-5 flex justify-end">
                   <button
                     onClick={closeArchiveModal}
-                    className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 cursor-pointer"
+                    className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 cursor-pointer"
                   >
                     Done
                   </button>

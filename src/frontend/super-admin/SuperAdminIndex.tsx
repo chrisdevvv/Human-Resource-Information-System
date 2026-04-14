@@ -7,7 +7,10 @@ import Logs from "./functions/Logs/Logs";
 import LogsMobile from "./functions/Logs/LogsMobile";
 import SuperAdminProfileSettings from "./functions/SuperAdminProfileSettings";
 import ConfigurationPage from "./functions/Configuration/page";
+import MonthlyCreditSimulation from "./functions/MonthlyCreditSimulation";
 import EmployeeLeaveManagement from "../functions/LeaveManagement/EmployeeLeaveManagement";
+import EmployeesListLayout from "../functions/EmployeesList/EmployeesProfile";
+import EServiceRecord from "../functions/eservice/EServiceRecord";
 import Dashboard from "../functions/Dashboard/Dashboard";
 import DashboardMobile from "../functions/Dashboard/DashboardMobile";
 import styles from "./styles.module.css";
@@ -36,6 +39,10 @@ export default function SuperAdmin({
 
   const renderContent = () => {
     switch (activeTab) {
+      case "employees-list":
+        return <EmployeesListLayout key={tabKey} />;
+      case "eservice":
+        return <EServiceRecord key={tabKey} />;
       case "employee-management":
         return <EmployeeLeaveManagement key={tabKey} />;
       case "user-roles":
@@ -62,6 +69,8 @@ export default function SuperAdmin({
         );
       case "configuration":
         return <ConfigurationPage key={tabKey} />;
+      case "monthly-credit-simulation":
+        return <MonthlyCreditSimulation key={tabKey} />;
       case "profile-settings":
         return <SuperAdminProfileSettings key={tabKey} />;
       default:

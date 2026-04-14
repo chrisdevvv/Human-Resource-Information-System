@@ -5,15 +5,23 @@ import {
   Building2,
   CheckCircle2,
   ListChecks,
+  Briefcase,
+  MapPinned,
+  Users,
   Plus,
-  ShieldCheck,
+  Trash2,
   X,
   AlertCircle,
-  ArrowUpAZ,
 } from "lucide-react";
 
 import SchoolsList from "./SchoolsList";
 import ParticularsList from "./ParticularsList";
+import Reason from "./Reason";
+import District from "./District";
+import CivilStatus from "./CivilStatus";
+import Positions from "./Positions";
+import Sex from "./Sex";
+import SuccessMessage from "./SuccessMessage";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -24,15 +32,17 @@ type School = {
   school_code: string;
 };
 
-type ConfigurationItem = {
-  id: number | string;
-  name: string;
-};
+type ConfigTab =
+  | "schools"
+  | "particulars"
+  | "archiving"
+  | "district"
+  | "civil-status"
+  | "positions"
+  | "sex";
 
 export default function ConfigurationPage() {
-  const [activeTab, setActiveTab] = useState<"schools" | "particulars">(
-    "schools",
-  );
+  const [activeTab, setActiveTab] = useState<ConfigTab>("schools");
   const [schoolSearch, setSchoolSearch] = useState("");
   const [particularSearch, setParticularSearch] = useState("");
   const [schoolSort, setSchoolSort] = useState<"a-z" | "z-a">("a-z");
@@ -42,10 +52,11 @@ export default function ConfigurationPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showEntryModal, setShowEntryModal] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
+  const [feedbackVisible, setFeedbackVisible] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackVariant, setFeedbackVariant] = useState<"success" | "error">(
+    "success",
+  );
   const [modalInput, setModalInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [showAddConfirm, setShowAddConfirm] = useState(false);
@@ -57,21 +68,11 @@ export default function ConfigurationPage() {
   } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const showSuccessFeedback = (message: string) => {
-    setSuccessMessage(message);
-    setShowSuccessModal(true);
+  const showFeedback = (variant: "success" | "error", message: string) => {
+    setFeedbackVariant(variant);
+    setFeedbackMessage(message);
+    setFeedbackVisible(true);
   };
-
-  useEffect(() => {
-    if (!showSuccessModal) return;
-
-    const timer = setTimeout(() => {
-      setShowSuccessModal(false);
-      setSuccessMessage("");
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [showSuccessModal]);
 
   const refreshConfigurationData = async (showSpinner = false) => {
     if (showSpinner) {
@@ -91,9 +92,25 @@ export default function ConfigurationPage() {
         "Content-Type": "application/json",
       };
 
+      const schoolParams = new URLSearchParams();
+      if (schoolSearch.trim()) schoolParams.set("search", schoolSearch.trim());
+      schoolParams.set("sortOrder", schoolSort);
+
+      const particularParams = new URLSearchParams();
+      if (particularSearch.trim()) {
+        particularParams.set("search", particularSearch.trim());
+      }
+      particularParams.set("sortOrder", particularSort);
+
       const [schoolsRes, particularsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/schools`, { headers }),
-        fetch(`${API_BASE_URL}/api/leave/particulars`, { headers }),
+        fetch(
+          `${API_BASE_URL}/api/schools/config/list?${schoolParams.toString()}`,
+          { headers },
+        ),
+        fetch(
+          `${API_BASE_URL}/api/leave/particulars/config?${particularParams.toString()}`,
+          { headers },
+        ),
       ]);
 
       if (schoolsRes.ok) {
@@ -134,7 +151,7 @@ export default function ConfigurationPage() {
   useEffect(() => {
     void refreshConfigurationData(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [schoolSearch, schoolSort, particularSearch, particularSort]);
 
   const handleDeleteSchool = (id: number, name: string) => {
     setDeleteTarget({ id, name, type: "school" });
@@ -149,12 +166,15 @@ export default function ConfigurationPage() {
   const confirmDelete = async () => {
     if (!deleteTarget) return;
 
+    const target = deleteTarget;
+    setShowDeleteConfirm(false);
+    setDeleteTarget(null);
+
     setIsDeleting(true);
     try {
       const token = localStorage.getItem("authToken");
       if (!token) {
-        setToastMessage("No auth token found");
-        setShowToast(true);
+        showFeedback("error", "No auth token found");
         setIsDeleting(false);
         return;
       }
@@ -164,99 +184,78 @@ export default function ConfigurationPage() {
         "Content-Type": "application/json",
       };
 
-      if (deleteTarget.type === "school") {
-        const res = await fetch(
-          `${API_BASE_URL}/api/schools/${deleteTarget.id}`,
-          {
-            method: "DELETE",
-            headers,
-          },
-        );
+      if (target.type === "school") {
+        const res = await fetch(`${API_BASE_URL}/api/schools/${target.id}`, {
+          method: "DELETE",
+          headers,
+        });
 
         if (res.ok) {
-          showSuccessFeedback(
-            `School "${deleteTarget.name}" deleted successfully`,
+          showFeedback(
+            "success",
+            `School "${target.name}" deleted successfully`,
           );
           await refreshConfigurationData();
         } else {
           const errData = await res.json().catch(() => ({}));
-          setToastMessage(errData.message || "Failed to delete school");
-          setShowToast(true);
+          showFeedback("error", errData.message || "Failed to delete school");
         }
       } else {
         const res = await fetch(`${API_BASE_URL}/api/leave/particulars`, {
           method: "DELETE",
           headers,
           body: JSON.stringify({
-            particular: deleteTarget.name,
+            particular: target.name,
           }),
         });
 
         if (res.ok) {
-          showSuccessFeedback(
-            `Particular "${deleteTarget.name}" deleted successfully`,
+          showFeedback(
+            "success",
+            `Particular "${target.name}" deleted successfully`,
           );
           await refreshConfigurationData();
         } else {
           const errData = await res.json().catch(() => ({}));
-          setToastMessage(errData.message || "Failed to delete particular");
-          setShowToast(true);
+          showFeedback(
+            "error",
+            errData.message || "Failed to delete particular",
+          );
         }
       }
-
-      setShowDeleteConfirm(false);
-      setDeleteTarget(null);
     } catch (err) {
-      setToastMessage(err instanceof Error ? err.message : "An error occurred");
-      setShowToast(true);
+      showFeedback(
+        "error",
+        err instanceof Error ? err.message : "An error occurred",
+      );
     } finally {
       setIsDeleting(false);
     }
   };
 
-  const filteredSchools = useMemo(() => {
-    const query = schoolSearch.trim().toLowerCase();
+  const filteredSchools = useMemo(() => schools, [schools]);
 
-    const safeSchools = schools.filter(
-      (item): item is School =>
-        Boolean(item) && typeof item.school_name === "string",
-    );
+  const filteredParticulars = useMemo(() => particulars, [particulars]);
 
-    const results = query
-      ? safeSchools.filter((item) =>
-          item.school_name.toLowerCase().includes(query),
-        )
-      : safeSchools;
+  const hasActiveSchoolFilters =
+    schoolSearch.trim().length > 0 || schoolSort !== "a-z";
+  const hasActiveParticularFilters =
+    particularSearch.trim().length > 0 || particularSort !== "a-z";
+  const canManageItems = activeTab === "schools" || activeTab === "particulars";
 
-    return [...results].sort((a, b) => {
-      const schoolA = a.school_name ?? "";
-      const schoolB = b.school_name ?? "";
-      return schoolSort === "a-z"
-        ? schoolA.localeCompare(schoolB)
-        : schoolB.localeCompare(schoolA);
-    });
-  }, [schoolSearch, schools, schoolSort]);
+  const handleClearSchoolFilters = () => {
+    setSchoolSearch("");
+    setSchoolSort("a-z");
+  };
 
-  const filteredParticulars = useMemo(() => {
-    const query = particularSearch.trim().toLowerCase();
-
-    const safeParticulars = particulars.filter(
-      (item): item is string => typeof item === "string",
-    );
-
-    const results = query
-      ? safeParticulars.filter((item) => item.toLowerCase().includes(query))
-      : safeParticulars;
-
-    return [...results].sort((a, b) =>
-      particularSort === "a-z" ? a.localeCompare(b) : b.localeCompare(a),
-    );
-  }, [particularSearch, particulars, particularSort]);
+  const handleClearParticularFilters = () => {
+    setParticularSearch("");
+    setParticularSort("a-z");
+  };
 
   const requestAddItem = () => {
     if (!modalInput.trim()) {
-      setToastMessage("Please enter a name");
-      setShowToast(true);
+      showFeedback("error", "Please enter a name");
       return;
     }
 
@@ -266,19 +265,19 @@ export default function ConfigurationPage() {
   const handleAddItem = async () => {
     if (!modalInput.trim()) {
       setShowAddConfirm(false);
-      setToastMessage("Please enter a name");
-      setShowToast(true);
+      setShowEntryModal(false);
+      showFeedback("error", "Please enter a name");
       return;
     }
 
     setShowAddConfirm(false);
+    setShowEntryModal(false);
 
     setIsSaving(true);
     try {
       const token = localStorage.getItem("authToken");
       if (!token) {
-        setToastMessage("No auth token found");
-        setShowToast(true);
+        showFeedback("error", "No auth token found");
         setIsSaving(false);
         return;
       }
@@ -307,12 +306,11 @@ export default function ConfigurationPage() {
 
         if (res.ok) {
           await res.json().catch(() => ({}));
-          showSuccessFeedback("School added successfully");
+          showFeedback("success", "School added successfully");
           await refreshConfigurationData();
         } else {
           const errData = await res.json().catch(() => ({}));
-          setToastMessage(errData.message || "Failed to add school");
-          setShowToast(true);
+          showFeedback("error", errData.message || "Failed to add school");
         }
       } else {
         // Create particular
@@ -325,132 +323,201 @@ export default function ConfigurationPage() {
         });
 
         if (res.ok) {
-          showSuccessFeedback("Particular added successfully");
+          showFeedback("success", "Particular added successfully");
           await refreshConfigurationData();
         } else {
           const errData = await res.json().catch(() => ({}));
-          setToastMessage(errData.message || "Failed to add particular");
-          setShowToast(true);
+          showFeedback("error", errData.message || "Failed to add particular");
         }
       }
-
-      setShowEntryModal(false);
       setModalInput("");
     } catch (err) {
-      setToastMessage(err instanceof Error ? err.message : "An error occurred");
-      setShowToast(true);
+      showFeedback(
+        "error",
+        err instanceof Error ? err.message : "An error occurred",
+      );
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <section className="w-full space-y-4 sm:space-y-6">
-      <div className="rounded-2xl bg-linear-to-r from-blue-700 to-blue-500 p-4 text-white shadow-sm sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-sm font-medium text-blue-100">Configuration</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
-              Manage dropdown options
-            </h1>
-            <p className="mt-1 max-w-3xl text-sm text-blue-100">
-              Organize schools and particulars used across forms.
-            </p>
-          </div>
+    <section className="w-full min-w-0 bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col gap-4">
+      <h1
+        style={{ fontSize: "20px" }}
+        className="font-bold text-gray-900 inline-flex items-center gap-2"
+      >
+        <ListChecks size={24} className="text-blue-600" />
+        Configuration
+      </h1>
 
-          <div className="w-full rounded-xl border border-white/20 bg-white/10 p-3 lg:w-auto">
-            <div className="flex items-center gap-2 text-sm text-blue-50">
-              <ShieldCheck size={16} />
-              Signed in as <span className="font-semibold">Super Admin</span>
-            </div>
-            <p className="mt-1 text-xs text-blue-100">
-              You can manage configuration items.
-            </p>
-          </div>
-        </div>
-
-        {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="mt-0.5 text-red-600" size={18} />
-              <div>
-                <p className="text-sm font-semibold text-red-900">Error</p>
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 text-red-600" size={18} />
+            <div>
+              <p className="text-sm font-semibold text-red-900">Error</p>
+              <p className="text-sm text-red-700">{error}</p>
             </div>
           </div>
-        )}
-
-        <div className="mt-3 rounded-2xl border border-gray-200 bg-white p-2 shadow-sm sm:mt-4">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => setActiveTab("schools")}
-              className={`cursor-pointer rounded-xl px-3 py-2 text-sm font-medium transition sm:px-4 ${
-                activeTab === "schools"
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              <span className="inline-flex items-center justify-center gap-2">
-                <Building2 size={16} />
-                Schools
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("particulars")}
-              className={`cursor-pointer rounded-xl px-3 py-2 text-sm font-medium transition sm:px-4 ${
-                activeTab === "particulars"
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              <span className="inline-flex items-center justify-center gap-2">
-                <ListChecks size={16} />
-                Particulars
-              </span>
-            </button>
-          </div>
         </div>
-      </div>
-
-      {isLoading ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-          <div className="inline-flex animate-spin">
-            <div className="h-6 w-6 rounded-full border-4 border-gray-200 border-t-blue-600" />
-          </div>
-          <p className="mt-4 text-sm text-gray-600">Loading configuration...</p>
-        </div>
-      ) : activeTab === "schools" ? (
-        <SchoolsList
-          items={filteredSchools}
-          searchValue={schoolSearch}
-          onSearchChange={setSchoolSearch}
-          onAdd={() => setShowEntryModal(true)}
-          onDelete={handleDeleteSchool}
-          sortValue={schoolSort}
-          onSortChange={setSchoolSort}
-        />
-      ) : (
-        <ParticularsList
-          items={filteredParticulars.map((particular, index) => ({
-            id: index,
-            name: particular,
-          }))}
-          searchValue={particularSearch}
-          onSearchChange={setParticularSearch}
-          onAdd={() => setShowEntryModal(true)}
-          onDelete={handleDeleteParticular}
-          sortValue={particularSort}
-          onSortChange={setParticularSort}
-        />
       )}
 
-      {showEntryModal ? (
+      <div className="grid grid-cols-2 gap-2 mb-1 sm:flex sm:flex-wrap sm:justify-start">
+        <button
+          type="button"
+          onClick={() => setActiveTab("civil-status")}
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+            activeTab === "civil-status"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
+            <Users size={16} />
+            Civil Status
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("district")}
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+            activeTab === "district"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
+            <MapPinned size={16} />
+            District
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("particulars")}
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+            activeTab === "particulars"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
+            <ListChecks size={16} />
+            Particulars
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("archiving")}
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+            activeTab === "archiving"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
+            <AlertCircle size={16} />
+            Reason (Deactivate)
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("positions")}
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+            activeTab === "positions"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
+            <Briefcase size={16} />
+            Positions
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("schools")}
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+            activeTab === "schools"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
+            <Building2 size={16} />
+            Schools
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("sex")}
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+            activeTab === "sex"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
+            <Users size={16} />
+            Sex
+          </span>
+        </button>
+      </div>
+
+      <div className="min-h-[62vh]">
+        {isLoading ? (
+          <div className="h-full rounded-2xl border border-blue-200 bg-white p-8 text-center shadow-sm">
+            <div className="inline-flex animate-spin">
+              <div className="h-6 w-6 rounded-full border-4 border-gray-200 border-t-blue-600" />
+            </div>
+            <p className="mt-4 text-sm text-gray-600">
+              Loading configuration...
+            </p>
+          </div>
+        ) : activeTab === "schools" ? (
+          <SchoolsList
+            items={filteredSchools}
+            searchValue={schoolSearch}
+            onSearchChange={setSchoolSearch}
+            hasActiveFilters={hasActiveSchoolFilters}
+            onClearFilters={handleClearSchoolFilters}
+            onAdd={() => setShowEntryModal(true)}
+            onDelete={handleDeleteSchool}
+            sortValue={schoolSort}
+            onSortChange={setSchoolSort}
+          />
+        ) : activeTab === "particulars" ? (
+          <ParticularsList
+            items={filteredParticulars.map((particular, index) => ({
+              id: index,
+              name: particular,
+            }))}
+            searchValue={particularSearch}
+            onSearchChange={setParticularSearch}
+            hasActiveFilters={hasActiveParticularFilters}
+            onClearFilters={handleClearParticularFilters}
+            onAdd={() => setShowEntryModal(true)}
+            onDelete={handleDeleteParticular}
+            sortValue={particularSort}
+            onSortChange={setParticularSort}
+          />
+        ) : activeTab === "archiving" ? (
+          <Reason />
+        ) : activeTab === "district" ? (
+          <District />
+        ) : activeTab === "civil-status" ? (
+          <CivilStatus />
+        ) : activeTab === "positions" ? (
+          <Positions />
+        ) : (
+          <Sex />
+        )}
+      </div>
+
+      {showEntryModal && canManageItems ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
-            <div className="flex items-start justify-between border-b border-gray-200 px-5 py-4">
+            <div className="border-b border-gray-200 px-5 py-4">
               <div>
                 <h2 className="text-lg font-bold text-gray-900">
                   Add {activeTab === "schools" ? "School" : "Particular"}
@@ -461,17 +528,6 @@ export default function ConfigurationPage() {
                   to add it to the system.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowEntryModal(false);
-                  setModalInput("");
-                }}
-                className="cursor-pointer rounded-md p-1 text-gray-500 hover:bg-gray-100"
-                aria-label="Close"
-              >
-                <X size={16} />
-              </button>
             </div>
             <div className="space-y-4 px-5 py-4">
               <label className="block text-sm font-medium text-gray-700">
@@ -502,7 +558,7 @@ export default function ConfigurationPage() {
                   setShowEntryModal(false);
                   setModalInput("");
                 }}
-                className="cursor-pointer rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                className="cursor-pointer rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
                 disabled={isSaving}
               >
                 Cancel
@@ -511,7 +567,7 @@ export default function ConfigurationPage() {
                 type="button"
                 onClick={requestAddItem}
                 disabled={isSaving}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
                 {isSaving ? (
                   <>
@@ -530,7 +586,7 @@ export default function ConfigurationPage() {
         </div>
       ) : null}
 
-      {showAddConfirm ? (
+      {showAddConfirm && canManageItems ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl">
             <div className="border-b border-gray-200 px-5 py-4">
@@ -551,18 +607,24 @@ export default function ConfigurationPage() {
               <button
                 type="button"
                 onClick={() => setShowAddConfirm(false)}
-                className="cursor-pointer rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                className="cursor-pointer rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
                 disabled={isSaving}
               >
-                Cancel
+                <span className="inline-flex items-center gap-1">
+                  <X size={14} />
+                  Cancel
+                </span>
               </button>
               <button
                 type="button"
                 onClick={handleAddItem}
                 disabled={isSaving}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                {isSaving ? "Saving..." : "Confirm Add"}
+                <span className="inline-flex items-center gap-1">
+                  <CheckCircle2 size={14} />
+                  {isSaving ? "Saving..." : "Confirm Add"}
+                </span>
               </button>
             </div>
           </div>
@@ -594,16 +656,19 @@ export default function ConfigurationPage() {
                   setShowDeleteConfirm(false);
                   setDeleteTarget(null);
                 }}
-                className="cursor-pointer rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                className="cursor-pointer rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
                 disabled={isDeleting}
               >
-                Cancel
+                <span className="inline-flex items-center gap-1">
+                  <X size={14} />
+                  Cancel
+                </span>
               </button>
               <button
                 type="button"
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
               >
                 {isDeleting ? (
                   <>
@@ -611,7 +676,10 @@ export default function ConfigurationPage() {
                     Deleting...
                   </>
                 ) : (
-                  "Delete"
+                  <span className="inline-flex items-center gap-1">
+                    <Trash2 size={14} />
+                    Delete
+                  </span>
                 )}
               </button>
             </div>
@@ -619,44 +687,12 @@ export default function ConfigurationPage() {
         </div>
       ) : null}
 
-      {showSuccessModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="mt-0.5 text-emerald-600" size={20} />
-              <div>
-                <p className="text-sm font-semibold text-gray-900">Success</p>
-                <p className="text-sm text-gray-600">{successMessage}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {showToast ? (
-        <div className="fixed bottom-5 right-5 z-50 w-[min(360px,calc(100vw-2rem))] rounded-xl border border-gray-200 bg-white p-4 shadow-lg">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="mt-0.5 text-emerald-600" size={18} />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-900">
-                {toastMessage.includes("Error") ||
-                toastMessage.includes("Failed")
-                  ? "Error"
-                  : "Success"}
-              </p>
-              <p className="text-sm text-gray-600">{toastMessage}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowToast(false)}
-              className="cursor-pointer text-gray-400 hover:text-gray-700"
-              aria-label="Close toast"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <SuccessMessage
+        isVisible={feedbackVisible}
+        message={feedbackMessage}
+        variant={feedbackVariant}
+        onClose={() => setFeedbackVisible(false)}
+      />
     </section>
   );
 }

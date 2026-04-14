@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import type { LeaveHistoryRecord, UpdateLeavePayload } from "../leaveApi";
+import { createClearHandler } from "../../../utils/clearFormUtils";
 
 type EditLeaveModalProps = {
   isOpen: boolean;
@@ -34,6 +35,9 @@ export default function EditLeaveModal({
   isSaving = false,
 }: EditLeaveModalProps) {
   const [form, setForm] = useState<EditLeaveFormValues | null>(null);
+  const [initialForm, setInitialForm] = useState<EditLeaveFormValues | null>(
+    null,
+  );
 
   const formatNumber = (value: number) => {
     const safeValue = Number.isFinite(value) ? value : 0;
@@ -47,13 +51,14 @@ export default function EditLeaveModal({
   useEffect(() => {
     if (!leave) {
       setForm(null);
+      setInitialForm(null);
       return;
     }
 
     const isMonetization =
       (leave.particulars || "").trim().toLowerCase() === "monetization";
 
-    setForm({
+    const formData = {
       period_of_leave: leave.periodOfLeave || "",
       particulars: isMonetization ? "Monetization" : leave.particulars || "",
       isMonetization,
@@ -63,7 +68,10 @@ export default function EditLeaveModal({
       earned_sl: Number(leave.earnedSl),
       abs_with_pay_sl: Number(leave.absWithPaySl),
       abs_without_pay_sl: Number(leave.absWithoutPaySl),
-    });
+    };
+
+    setForm(formData);
+    setInitialForm(formData);
   }, [leave]);
 
   if (!isOpen || !leave || !form) {
@@ -139,6 +147,12 @@ export default function EditLeaveModal({
     });
   }
 
+  function handleClearAllFields() {
+    if (initialForm) {
+      setForm(initialForm);
+    }
+  }
+
   const inputClass =
     "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
   const readOnlyClass =
@@ -147,7 +161,7 @@ export default function EditLeaveModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl bg-white p-6 shadow-2xl">
+      <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-blue-200 bg-white p-6 shadow-2xl">
         <h2 className="text-xl font-bold text-gray-800">Edit Leave</h2>
         <p className="mt-1 text-sm text-gray-500">
           Employee: {currentLeave.fullName || "Employee"}
@@ -321,12 +335,30 @@ export default function EditLeaveModal({
             </p>
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex items-center justify-end gap-3 pt-2">
+            {form !== null &&
+              initialForm !== null &&
+              JSON.stringify(form) !== JSON.stringify(initialForm) && (
+                <button
+                  type="button"
+                  onClick={createClearHandler(
+                    handleClearAllFields,
+                    form !== null && initialForm !== null
+                      ? JSON.stringify(form) !== JSON.stringify(initialForm)
+                      : false,
+                  )}
+                  disabled={isSaving}
+                  className="mr-auto cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Clear All
+                </button>
+              )}
+
             <button
               type="button"
               onClick={onClose}
               disabled={isSaving}
-              className="cursor-pointer rounded-lg bg-gray-100 px-5 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
+              className="cursor-pointer rounded-lg bg-gray-100 px-4 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
@@ -334,7 +366,7 @@ export default function EditLeaveModal({
             <button
               type="submit"
               disabled={isSaving}
-              className="cursor-pointer rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="cursor-pointer rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? "Saving..." : "Save Changes"}
             </button>

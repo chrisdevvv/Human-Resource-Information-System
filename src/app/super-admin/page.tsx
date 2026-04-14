@@ -5,15 +5,20 @@ import SuperAdmin from "../../frontend/super-admin/SuperAdminIndex";
 import SidebarIndex from "../../frontend/sidebar/SidebarIndex";
 import SidebarMobile from "../../frontend/sidebar/SidebarMobile";
 import StickyHeader from "../../frontend/components/StickyHeader";
+import AppFooter from "../../frontend/footer/page";
 import { hasAccessToFeature } from "../../frontend/auth/roleAccess";
+import { setPageTitle } from "../../frontend/utils/pageTitle";
 
 const ACTIVE_TAB_STORAGE_KEY = "activeTab:super-admin";
 const ALLOWED_TABS = new Set([
   "dashboard",
   "employee-management",
+  "employees-list",
+  "eservice",
   "user-roles",
   "logs",
   "configuration",
+  "monthly-credit-simulation",
   "profile-settings",
 ]);
 
@@ -87,6 +92,10 @@ export default function Page() {
     return () => window.removeEventListener("pageshow", verifyAuth);
   }, [router]);
 
+  useEffect(() => {
+    setPageTitle(activeTab);
+  }, [activeTab]);
+
   if (!isAuthorized) {
     return null;
   }
@@ -114,11 +123,11 @@ export default function Page() {
           role={role}
           activeTab={activeTab}
           onTabChange={handleTabChange}
-          title="ELMS"
+          title="CHRIS"
         />
       </div>
 
-      <div className="hidden md:flex min-h-screen">
+      <div className="hidden md:flex min-h-screen items-stretch">
         <SidebarIndex
           role={role}
           activeTab={activeTab}
@@ -127,17 +136,32 @@ export default function Page() {
           onToggleCollapse={setSidebarCollapsed}
         />
 
-        <div className="flex-1 min-w-0">
-          <StickyHeader onMenuClick={handleToggleSidebar} />
-          <main className="p-6 bg-white min-h-[calc(100vh-88px)] w-full transition-all duration-300">
+        <div className="flex min-w-0 flex-1 flex-col min-h-screen">
+          <StickyHeader
+            onMenuClick={handleToggleSidebar}
+            isSidebarCollapsed={sidebarCollapsed}
+          />
+          <main
+            className={`bg-white flex-1 min-w-0 w-full transition-all duration-300 ${
+              activeTab === "employees-list" ? "p-3 sm:p-4" : "p-6"
+            }`}
+          >
             <SuperAdmin activeTab={activeTab} onTabChange={handleTabChange} />
           </main>
+          <AppFooter />
         </div>
       </div>
 
-      <main className="md:hidden p-4 bg-white min-h-[calc(100vh-72px)] w-full">
-        <SuperAdmin activeTab={activeTab} onTabChange={handleTabChange} />
-      </main>
+      <div className="md:hidden min-h-screen flex flex-col">
+        <main
+          className={`bg-white flex-1 w-full ${
+            activeTab === "employees-list" ? "p-3" : "p-4"
+          }`}
+        >
+          <SuperAdmin activeTab={activeTab} onTabChange={handleTabChange} />
+        </main>
+        <AppFooter />
+      </div>
     </div>
   );
 }

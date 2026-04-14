@@ -9,15 +9,22 @@ import RegistrationSuccessModal from "./RegistrationSuccessModal";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
+const SCHOOLS_DIVISION_OFFICE = "Schools Division Office";
+
 type StepId = 1 | 2;
 
 export default function RegistrationMobile() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [step, setStep] = useState<StepId>(1);
   const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [noMiddleName, setNoMiddleName] = useState(false);
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [birthdate, setBirthdate] = useState("");
   const [school, setSchool] = useState("");
+  const [useSchoolsDivisionOffice, setUseSchoolsDivisionOffice] =
+    useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -25,8 +32,10 @@ export default function RegistrationMobile() {
   const [submitted, setSubmitted] = useState(false);
 
   const [firstNameError, setFirstNameError] = useState("");
+  const [middleNameError, setMiddleNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [birthdateError, setBirthdateError] = useState("");
   const [schoolError, setSchoolError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
@@ -81,16 +90,22 @@ export default function RegistrationMobile() {
   function resetForm() {
     setStep(1);
     setFirstName("");
+    setMiddleName("");
+    setNoMiddleName(false);
     setLastName("");
     setEmail("");
+    setBirthdate("");
     setSchool("");
+    setUseSchoolsDivisionOffice(false);
     setPassword("");
     setConfirmPassword("");
     setError("");
     setSubmitted(false);
     setFirstNameError("");
+    setMiddleNameError("");
     setLastNameError("");
     setEmailError("");
+    setBirthdateError("");
     setSchoolError("");
     setPasswordError("");
     setConfirmPasswordError("");
@@ -122,6 +137,19 @@ export default function RegistrationMobile() {
       hasError = true;
     }
 
+    if (!noMiddleName) {
+      if (!middleName.trim()) {
+        setMiddleNameError("Middle name is required");
+        hasError = true;
+      } else if (!validateName(middleName)) {
+        setMiddleNameError("Middle name must be at least 2 letters");
+        hasError = true;
+      } else if (!startsWithCapital(middleName)) {
+        setMiddleNameError("Middle name must start with a capital letter");
+        hasError = true;
+      }
+    }
+
     if (!email.trim()) {
       setEmailError("Email is required");
       hasError = true;
@@ -130,8 +158,18 @@ export default function RegistrationMobile() {
       hasError = true;
     }
 
-    if (!school.trim()) {
+    if (useSchoolsDivisionOffice) {
+      setSchoolError("");
+    } else if (!school.trim()) {
       setSchoolError("School is required");
+      hasError = true;
+    }
+
+    if (!birthdate) {
+      setBirthdateError("Birthdate is required");
+      hasError = true;
+    } else if (new Date(birthdate) > new Date()) {
+      setBirthdateError("Birthdate cannot be in the future");
       hasError = true;
     }
 
@@ -175,11 +213,16 @@ export default function RegistrationMobile() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName,
-          lastName,
+          first_name: firstName,
+          middle_name: noMiddleName ? null : middleName,
+          no_middle_name: noMiddleName,
+          last_name: lastName,
           email,
+          birthdate,
           password,
-          school,
+          school_name: useSchoolsDivisionOffice
+            ? SCHOOLS_DIVISION_OFFICE
+            : school,
         }),
       });
 
@@ -273,6 +316,48 @@ export default function RegistrationMobile() {
 
                   <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
                     <User className="text-blue-600" size={18} />
+                    Middle name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    value={middleName}
+                    onChange={(e) => {
+                      setMiddleName(e.target.value);
+                      if (middleNameError) setMiddleNameError("");
+                    }}
+                    disabled={noMiddleName}
+                    placeholder={
+                      noMiddleName ? "No middle name provided" : "Middle name"
+                    }
+                    className={`mt-2 w-full px-3 py-2 border rounded-md placeholder:text-gray-500 ${
+                      noMiddleName
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "text-gray-700"
+                    } ${middleNameError ? "border-red-500" : ""}`}
+                  />
+                  <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={noMiddleName}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setNoMiddleName(checked);
+                        if (checked) {
+                          setMiddleName("");
+                          setMiddleNameError("");
+                        }
+                      }}
+                      className="h-4 w-4 cursor-pointer"
+                    />
+                    I don't have a middle name
+                  </label>
+                  {middleNameError && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {middleNameError}
+                    </p>
+                  )}
+
+                  <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+                    <User className="text-blue-600" size={18} />
                     Last name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -299,10 +384,30 @@ export default function RegistrationMobile() {
                       if (emailError) setEmailError("");
                     }}
                     placeholder="name@deped.gov.ph"
-                    className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${emailError ? "border-red-500" : ""}`}
+                    className={`mt-1 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${emailError ? "border-red-500" : ""}`}
                   />
                   {emailError && (
                     <p className="text-sm text-red-600 mt-1">{emailError}</p>
+                  )}
+
+                  <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+                    <User className="text-blue-600" size={18} />
+                    Birthdate <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={birthdate}
+                    onChange={(e) => {
+                      setBirthdate(e.target.value);
+                      if (birthdateError) setBirthdateError("");
+                    }}
+                    max={new Date().toISOString().slice(0, 10)}
+                    className={`mt-1 w-full text-gray-700 px-3 py-2 border rounded-md ${birthdateError ? "border-red-500" : ""}`}
+                  />
+                  {birthdateError && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {birthdateError}
+                    </p>
                   )}
 
                   <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
@@ -310,14 +415,42 @@ export default function RegistrationMobile() {
                     School <span className="text-red-500">*</span>
                   </label>
                   <input
-                    value={school}
+                    value={
+                      useSchoolsDivisionOffice
+                        ? SCHOOLS_DIVISION_OFFICE
+                        : school
+                    }
                     onChange={(e) => {
                       setSchool(e.target.value);
                       if (schoolError) setSchoolError("");
                     }}
                     placeholder="Enter school name"
-                    className={`mt-2 w-full text-gray-700 px-3 py-2 border rounded-md placeholder:text-gray-500 ${schoolError ? "border-red-500" : ""}`}
+                    readOnly={useSchoolsDivisionOffice}
+                    disabled={useSchoolsDivisionOffice}
+                    className={`mt-2 w-full px-3 py-2 border rounded-md placeholder:text-gray-500 ${schoolError ? "border-red-500" : ""} ${
+                      useSchoolsDivisionOffice
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "text-gray-700"
+                    }`}
                   />
+                  <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={useSchoolsDivisionOffice}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setUseSchoolsDivisionOffice(checked);
+                        if (checked) {
+                          setSchool(SCHOOLS_DIVISION_OFFICE);
+                          setSchoolError("");
+                        } else {
+                          setSchool("");
+                        }
+                      }}
+                      className="h-4 w-4 cursor-pointer"
+                    />
+                    Schools Division Office
+                  </label>
                   {schoolError && (
                     <p className="text-sm text-red-600 mt-1">{schoolError}</p>
                   )}

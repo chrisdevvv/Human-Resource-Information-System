@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Download, Plus, RefreshCcw, X } from "lucide-react";
-import ArchiveConfirmationModal from "./Modals/ArchiveConfirmationModal";
+import ArchiveConfirmationModal from "../EmployeesList/modals/ArchiveConfirmationModal";
 import MarkLeaveConfirmationModal from "./Modals/MarkLeaveConfirmationModal";
 import ArchiveSuccessMessage from "./ArchiveSuccessMessage";
 import type { LeaveModalRecord } from "./leaveTypes";
@@ -60,14 +60,14 @@ export default function LeaveManagementModal({
   const [pdfCooldownRemaining, setPdfCooldownRemaining] = useState(0);
   const pdfCooldownIntervalRef = useRef<number | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
-  const handleArchive = async (password: string) => {
+  const handleArchive = async (password: string, archiveReason: string) => {
     setIsArchiving(true);
     setArchiveError(null);
     try {
       if (!employeeId) {
         throw new Error("Employee ID not found");
       }
-      await archiveEmployee(employeeId, password);
+      await archiveEmployee(employeeId, password, archiveReason);
       setIsArchiveOpen(false);
       setShowArchiveSuccess(true);
     } catch (err) {
@@ -309,7 +309,9 @@ export default function LeaveManagementModal({
     try {
       setActiveTab("card");
       await new Promise((resolve) => window.setTimeout(resolve, 120));
-      if (!cardRef.current) return;
+      if (!cardRef.current) {
+        throw new Error("Leave card preview is not ready yet.");
+      }
       await downloadLeaveCardPdf(cardRef.current, pdfFileName);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to export PDF.");
@@ -388,7 +390,7 @@ export default function LeaveManagementModal({
             <button
               type="button"
               onClick={() => setActiveTab("history")}
-              className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-medium transition ${
+              className={`cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition ${
                 activeTab === "history"
                   ? "hover:bg-blue-700 bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -399,7 +401,7 @@ export default function LeaveManagementModal({
             <button
               type="button"
               onClick={() => setActiveTab("card")}
-              className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-medium transition ${
+              className={`cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition ${
                 activeTab === "card"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -413,7 +415,7 @@ export default function LeaveManagementModal({
                 type="button"
                 onClick={() => setIsAddOpen(true)}
                 disabled={isSaving}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Plus size={14} />
                 Add Leave
@@ -422,7 +424,7 @@ export default function LeaveManagementModal({
                 type="button"
                 onClick={() => fetchHistory(true)}
                 disabled={isSaving}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RefreshCcw size={14} />
                 Refresh
@@ -431,7 +433,7 @@ export default function LeaveManagementModal({
                 type="button"
                 onClick={handleDownloadPdf}
                 disabled={isSaving || pdfCooldownRemaining > 0}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Download size={14} />
                 {pdfCooldownRemaining > 0
@@ -442,7 +444,7 @@ export default function LeaveManagementModal({
                 type="button"
                 onClick={() => setIsArchiveOpen(true)}
                 disabled={isSaving || isArchiving}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-800 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-800 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Archive
               </button>

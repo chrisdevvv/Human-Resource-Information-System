@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { FileText } from "lucide-react";
 import LeaveHistoryTable from "@/frontend/functions/LeaveManagement/LeaveHistoryTable";
 import {
   getLeaveHistoryByEmployee,
@@ -11,6 +12,7 @@ import {
 type EmployeeInfo = {
   id: number;
   first_name: string;
+  middle_name?: string | null;
   last_name: string;
   employee_type: "teaching" | "non-teaching";
   email?: string | null;
@@ -79,12 +81,17 @@ export default function LeaveHistoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 sm:px-6">
-      <div className="mx-auto max-w-7xl rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
-        <h1 className="text-2xl font-bold text-gray-900">Leave History</h1>
+      <div className="mx-auto max-w-7xl rounded-xl border border-blue-200 bg-white p-4 shadow-sm sm:p-6">
+        <h1 className="text-2xl font-bold text-gray-900 inline-flex items-center gap-2">
+          <FileText size={24} className="text-blue-600" />
+          Leave History
+        </h1>
         <p className="mt-1 text-sm text-gray-600">
           Employee:{" "}
           {employee
-            ? `${employee.first_name} ${employee.last_name}`.trim()
+            ? [employee.first_name, employee.middle_name, employee.last_name]
+                .filter(Boolean)
+                .join(" ")
             : "Loading..."}
         </p>
 

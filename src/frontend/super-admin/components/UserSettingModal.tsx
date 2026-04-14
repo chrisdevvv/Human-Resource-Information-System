@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { X, Eye, EyeOff } from "lucide-react";
 import ConfirmationModal from "./ConfirmationModal";
+import { createClearHandler } from "../../utils/clearFormUtils";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -191,7 +192,7 @@ export default function UserSettingModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 relative">
+      <div className="bg-white rounded-xl border border-blue-200 shadow-2xl w-full max-w-md mx-4 p-6 relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 cursor-pointer"
@@ -229,16 +230,36 @@ export default function UserSettingModal({
                 <option value="ADMIN">Admin</option>
                 <option value="DATA_ENCODER">Data Encoder</option>
               </select>
-              <button
-                onClick={() => {
-                  setError(null);
-                  setConfirmAction("role");
-                }}
-                disabled={savingRole || savingStatus}
-                className="mt-3 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
-              >
-                Save Role
-              </button>
+              <div className="mt-3 flex w-full items-center gap-2">
+                {(selectedRole !== initialRole || !!superAdminPassword) && (
+                  <button
+                    onClick={createClearHandler(
+                      () => {
+                        setSelectedRole(initialRole);
+                        setSuperAdminPassword("");
+                        setError(null);
+                        setShowPassword(false);
+                      },
+                      selectedRole !== initialRole || !!superAdminPassword,
+                    )}
+                    disabled={savingRole || savingStatus}
+                    className="mr-auto cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline disabled:opacity-60 disabled:no-underline"
+                  >
+                    Clear All
+                  </button>
+                )}
+
+                <button
+                  onClick={() => {
+                    setError(null);
+                    setConfirmAction("role");
+                  }}
+                  disabled={savingRole || savingStatus}
+                  className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
+                >
+                  Save Role
+                </button>
+              </div>
             </div>
 
             <div className="pt-4 border-t border-gray-200">
@@ -264,7 +285,7 @@ export default function UserSettingModal({
                   savingRole ||
                   (isActive && currentRole === "SUPER_ADMIN")
                 }
-                className={`w-full px-4 py-2 rounded-lg transition font-medium text-sm cursor-pointer disabled:opacity-60 ${
+                className={`w-full px-3 py-1.5 rounded-lg transition font-medium text-sm cursor-pointer disabled:opacity-60 ${
                   isActive && currentRole === "SUPER_ADMIN"
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : isActive

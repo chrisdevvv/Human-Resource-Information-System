@@ -7,7 +7,10 @@ import {
   ArrowUpAZ,
   ArrowDownAZ,
   Settings,
+  UserPlus,
+  UserCheck,
   Eye,
+  Search,
 } from "lucide-react";
 import PendingAccounts from "./PendingAccounts";
 import UserSettingModal from "../../components/UserSettingModal";
@@ -32,6 +35,17 @@ type SchoolOption = {
   school_name: string;
 };
 
+type UserApiRow = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  school_id?: number | null;
+  school_name?: string | null;
+  role: "SUPER_ADMIN" | "ADMIN" | "DATA_ENCODER";
+  is_active: unknown;
+};
+
 const normalizeIsActive = (value: unknown): boolean => {
   return value === true || value === 1 || value === "1" || value === "true";
 };
@@ -45,9 +59,31 @@ const normalizeRole = (value: unknown): string => {
 };
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+const USER_ROLES_TAB_KEY = "userRoles:activeTab";
 
-export default function UserRoles() {
-  const [activeTab, setActiveTab] = useState<"users" | "pending">("users");
+type UserRolesProps = {
+  mode?: "super-admin" | "admin";
+};
+
+const getInitialUserRolesTab = (): "users" | "pending" => {
+  if (typeof window === "undefined") {
+    return "users";
+  }
+
+  const storedTab = window.localStorage.getItem(USER_ROLES_TAB_KEY);
+  if (storedTab === "pending") {
+    window.localStorage.removeItem(USER_ROLES_TAB_KEY);
+    return "pending";
+  }
+
+  return "users";
+};
+
+export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
+  const isAdminMode = mode === "admin";
+  const [activeTab, setActiveTab] = useState<"users" | "pending">(
+    getInitialUserRolesTab,
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [accountStatusFilter, setAccountStatusFilter] = useState<
@@ -57,6 +93,7 @@ export default function UserRoles() {
   const [letterFilter, setLetterFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [pageJumpInput, setPageJumpInput] = useState("1");
   const [userData, setUserData] = useState<User[]>([]);
   const [userLoading, setUserLoading] = useState(true);
@@ -127,7 +164,10 @@ export default function UserRoles() {
     fetchSchools();
   }, [currentUserRole]);
 
-  const fetchUsers = async (showSpinner = true) => {
+  const fetchUsers = async (
+    showSpinner = true,
+    overrides: { page?: number; pageSize?: number } = {},
+  ) => {
     try {
       if (showSpinner) {
         setUserLoading(true);
@@ -137,12 +177,23 @@ export default function UserRoles() {
       if (!token) throw new Error("No authentication token found.");
 
       const params = new URLSearchParams();
+      if (searchQuery) params.set("search", searchQuery);
+      if (roleFilter && roleFilter !== "ALL") params.set("role", roleFilter);
+      if (accountStatusFilter && accountStatusFilter !== "ALL") {
+        params.set("is_active", accountStatusFilter === "ACTIVE" ? "1" : "0");
+      }
       if (currentUserRole === "SUPER_ADMIN" && schoolFilter !== "ALL") {
         params.set("school_id", schoolFilter);
       }
+      if (letterFilter !== "ALL") params.set("letter", letterFilter);
+      if (sortOrder) params.set("sortOrder", sortOrder);
+      const nextPage = overrides.page ?? currentPage;
+      const nextPageSize = overrides.pageSize ?? itemsPerPage;
+      params.set("page", String(nextPage));
+      params.set("pageSize", String(nextPageSize));
 
       const response = await fetch(
-        `${API_BASE}/api/users/${params.toString() ? `?${params.toString()}` : ""}`,
+        `${API_BASE}/api/users/?${params.toString()}`,
         {
           method: "GET",
           headers: {
@@ -155,7 +206,8 @@ export default function UserRoles() {
       if (!response.ok) throw new Error("Failed to fetch users");
 
       const result = await response.json();
-      const formatted = (result.data || []).map((item: any) => ({
+      const rows = (result.data || []) as UserApiRow[];
+      const formatted = rows.map((item) => ({
         id: item.id,
         firstName: item.first_name,
         lastName: item.last_name,
@@ -165,19 +217,17 @@ export default function UserRoles() {
         role: item.role,
         isActive: normalizeIsActive(item.is_active),
       }));
-      const scopedData =
-        currentUserRole !== "SUPER_ADMIN" && currentUserSchoolId
-          ? formatted.filter(
-              (item: User) =>
-                Number(item.schoolId) === Number(currentUserSchoolId),
-            )
-          : formatted;
-      setUserData(scopedData);
+      const resultTotal = (result as { total?: number }).total;
+      setUserData(formatted);
+      setTotalItems(
+        typeof resultTotal === "number" ? resultTotal : formatted.length,
+      );
       setUserError(null);
     } catch (err) {
       setUserError(err instanceof Error ? err.message : "An error occurred");
       if (showSpinner) {
         setUserData([]);
+        setTotalItems(0);
       }
     } finally {
       if (showSpinner) {
@@ -195,45 +245,33 @@ export default function UserRoles() {
 
     return () => window.clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUserRole, currentUserSchoolId, schoolFilter]);
+  }, [
+    isAdminMode,
+    currentUserRole,
+    currentUserSchoolId,
+    schoolFilter,
+    currentPage,
+    itemsPerPage,
+    roleFilter,
+    accountStatusFilter,
+    letterFilter,
+    sortOrder,
+  ]);
 
-  const filteredUsers = userData
-    .filter((user) => {
-      const matchesSearch =
-        user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.schoolName.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
-      const matchesAccountStatus =
-        accountStatusFilter === "ALL" ||
-        (accountStatusFilter === "ACTIVE" ? user.isActive : !user.isActive);
-      const matchesLetter =
-        letterFilter === "ALL" ||
-        user.firstName.charAt(0).toUpperCase() === letterFilter;
-      const matchesSchool =
-        currentUserRole !== "SUPER_ADMIN" ||
-        schoolFilter === "ALL" ||
-        String(user.schoolId) === schoolFilter;
-      return (
-        matchesSearch &&
-        matchesRole &&
-        matchesAccountStatus &&
-        matchesLetter &&
-        matchesSchool
-      );
-    })
-    .sort((a, b) => {
-      if (sortOrder === "asc") return a.firstName.localeCompare(b.firstName);
-      return b.firstName.localeCompare(a.firstName);
-    });
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setCurrentPage(1);
+      fetchUsers(true, { page: 1, pageSize: itemsPerPage });
+    }, 350);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredUsers.length / itemsPerPage),
-  );
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIdx, startIdx + itemsPerPage);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
+
+  const filteredUsers = userData;
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const paginatedUsers = filteredUsers;
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
     Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
@@ -264,6 +302,18 @@ export default function UserRoles() {
   const handleSearch = () => {
     setCurrentPage(1);
     setPageJumpInput("1");
+    fetchUsers(true, { page: 1, pageSize: itemsPerPage });
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setRoleFilter("ALL");
+    setAccountStatusFilter("ACTIVE");
+    setSchoolFilter("ALL");
+    setLetterFilter("ALL");
+    setSortOrder("asc");
+    setCurrentPage(1);
+    setPageJumpInput("1");
   };
 
   const handleJumpToPage = () => {
@@ -278,67 +328,87 @@ export default function UserRoles() {
     setPageJumpInput(String(nextPage));
   };
 
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 ||
+    roleFilter !== "ALL" ||
+    accountStatusFilter !== "ACTIVE" ||
+    schoolFilter !== "ALL" ||
+    letterFilter !== "ALL" ||
+    sortOrder !== "asc";
+
   return (
     <div className="w-full">
       {/* Tabs */}
-      <div className="flex justify-center gap-2 mb-4">
+      <div className="flex flex-col sm:flex-row justify-start gap-2 mb-4">
         <button
           onClick={() => setActiveTab("users")}
-          className={`px-6 py-2 font-medium text-sm rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-4 py-2 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "users"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          User & Roles
+          <span className="inline-flex items-center gap-2">
+            <Settings size={16} />
+            User & Roles
+          </span>
         </button>
         <button
           onClick={() => setActiveTab("pending")}
-          className={`px-6 py-2 font-medium text-sm rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-4 py-2 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "pending"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          Pending Accounts
+          <span className="inline-flex items-center gap-2">
+            <UserCheck size={16} />
+            Pending Accounts
+          </span>
         </button>
       </div>
 
       {/* Tab Content */}
       {activeTab === "users" && (
-        <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-6 sticky top-4 h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">
-            User & Roles
+        <div className="w-full min-w-0 bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col">
+          <h1
+            style={{ fontSize: "20px" }}
+            className="font-bold text-gray-900 mb-4 inline-flex items-center gap-2"
+          >
+            <Settings size={24} className="text-blue-600" />
+            {isAdminMode ? "User & Roles (Admin Only)" : "User & Roles"}
           </h1>
 
           {/* Header with search and controls */}
           <div className="flex flex-col gap-4 mb-6">
             {/* Search and Status Row */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="grid gap-3 sm:flex sm:flex-row sm:items-center">
               <div className="flex-1 relative">
                 <input
                   type="text"
                   placeholder="Search name, email, or school"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="text-gray-500 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="text-gray-500 w-full px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
               <button
                 onClick={handleSearch}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-1 px-5 py-2 sm:py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
               >
+                <Search size={14} />
                 Search
               </button>
             </div>
 
             {/* Filters Row */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-center lg:justify-start">
+              <div className="grid gap-3 sm:grid-cols-2 lg:flex lg:flex-row lg:items-center">
                 <button
                   onClick={() => setShowAddUserModal(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer"
+                  className="inline-flex items-center justify-center gap-1 px-3 py-2 sm:py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer whitespace-nowrap shrink-0"
                 >
+                  <UserPlus size={14} />
                   Add User
                 </button>
 
@@ -348,12 +418,14 @@ export default function UserRoles() {
                     setRoleFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  className="text-gray-500 w-full sm:w-auto sm:min-w-36 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ALL">All Roles</option>
-                  <option value="SUPER_ADMIN">Super Admin</option>
                   <option value="ADMIN">Admin</option>
                   <option value="DATA_ENCODER">Data Encoder</option>
+                  {!isAdminMode && (
+                    <option value="SUPER_ADMIN">Super Admin</option>
+                  )}
                 </select>
 
                 {currentUserRole === "SUPER_ADMIN" && (
@@ -363,7 +435,7 @@ export default function UserRoles() {
                       setSchoolFilter(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="w-full sm:w-56 lg:w-64 text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                    className="w-full sm:w-auto sm:min-w-48 lg:max-w-[18rem] text-gray-500 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                     disabled={schoolsLoading}
                   >
                     <option value="ALL">All Schools</option>
@@ -376,7 +448,7 @@ export default function UserRoles() {
                 )}
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="grid gap-3 sm:grid-cols-2 lg:flex lg:flex-row lg:items-center">
                 <select
                   value={accountStatusFilter}
                   onChange={(e) => {
@@ -385,7 +457,7 @@ export default function UserRoles() {
                     );
                     setCurrentPage(1);
                   }}
-                  className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  className="text-gray-500 w-full sm:w-auto sm:min-w-42 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ACTIVE">Active Accounts</option>
                   <option value="INACTIVE">Inactive Accounts</option>
@@ -398,7 +470,7 @@ export default function UserRoles() {
                     setLetterFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="text-gray-500 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+                  className="text-gray-500 w-full sm:w-auto sm:min-w-34 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
                   <option value="ALL">All Letters</option>
                   {alphabet.map((letter) => (
@@ -412,7 +484,7 @@ export default function UserRoles() {
                   onClick={() => {
                     setSortOrder(sortOrder === "asc" ? "desc" : "asc");
                   }}
-                  className="text-gray-500 flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
+                  className="text-gray-500 flex items-center justify-center gap-2 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer whitespace-nowrap shrink-0"
                 >
                   {sortOrder === "asc" ? (
                     <>
@@ -426,37 +498,47 @@ export default function UserRoles() {
                     </>
                   )}
                 </button>
+
+                {hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="text-sm text-gray-500 underline hover:text-gray-700 transition cursor-pointer lg:self-center"
+                  >
+                    Clear
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+          <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
             {userLoading ? (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex items-center justify-center py-10">
                 <p className="text-gray-500">Loading users...</p>
               </div>
             ) : userError ? (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex items-center justify-center py-10">
                 <p className="text-red-500">Error: {userError}</p>
               </div>
             ) : (
               <table className="w-full">
-                <thead className="sticky top-0 z-10 bg-white">
+                <thead className="sticky top-0 z-10 bg-blue-100">
                   <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Name
                     </th>
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Email
                     </th>
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Role
                     </th>
-                    <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                    <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Status
                     </th>
-                    <th className="text-right py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-white">
+                    <th className="text-right py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                       Actions
                     </th>
                   </tr>
@@ -468,18 +550,18 @@ export default function UserRoles() {
                         key={user.id}
                         className="border-b border-gray-100 hover:bg-gray-50 transition"
                       >
-                        <td className="py-1 px-3 text-gray-900 text-sm font-medium">
+                        <td className="py-0.5 px-3 text-gray-900 text-sm font-medium">
                           {user.firstName} {user.lastName}
                         </td>
-                        <td className="py-1 px-3 text-gray-500 text-sm">
+                        <td className="py-0.5 px-3 text-gray-500 text-sm">
                           {user.email}
                         </td>
-                        <td className="py-1 px-3 text-gray-500 text-sm">
+                        <td className="py-0.5 px-3 text-gray-500 text-sm">
                           {user.role.replace(/_/g, " ")}
                         </td>
-                        <td className="py-1 px-3 text-center">
+                        <td className="py-0.5 px-3 text-center">
                           <span
-                            className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                            className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                               user.isActive
                                 ? "bg-green-100 text-green-800"
                                 : "bg-red-100 text-red-800"
@@ -488,23 +570,46 @@ export default function UserRoles() {
                             {user.isActive ? "Active" : "Inactive"}
                           </span>
                         </td>
-                        <td className="py-1 px-3">
+                        <td className="py-0.5 px-3">
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => setDetailsTargetId(user.id)}
-                              className="p-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer"
+                              className="p-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer"
                               aria-label={`View details for ${user.firstName} ${user.lastName}`}
                               title="View details"
                             >
-                              <Eye size={14} />
+                              <Eye size={12} />
                             </button>
                             <button
                               onClick={() => setSettingsTarget(user)}
-                              className="p-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition cursor-pointer"
-                              aria-label={`Open settings for ${user.firstName} ${user.lastName}`}
-                              title="User settings"
+                              disabled={
+                                isAdminMode &&
+                                (user.role === "SUPER_ADMIN" ||
+                                  user.role === "ADMIN")
+                              }
+                              className={`p-1.5 rounded transition ${
+                                isAdminMode &&
+                                (user.role === "SUPER_ADMIN" ||
+                                  user.role === "ADMIN")
+                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer"
+                              }`}
+                              aria-label={
+                                isAdminMode &&
+                                (user.role === "SUPER_ADMIN" ||
+                                  user.role === "ADMIN")
+                                  ? `Settings disabled for ${user.firstName} ${user.lastName}`
+                                  : `Open settings for ${user.firstName} ${user.lastName}`
+                              }
+                              title={
+                                isAdminMode &&
+                                (user.role === "SUPER_ADMIN" ||
+                                  user.role === "ADMIN")
+                                  ? "Settings disabled for Admin and Super Admin"
+                                  : "User settings"
+                              }
                             >
-                              <Settings size={14} />
+                              <Settings size={12} />
                             </button>
                           </div>
                         </td>
@@ -528,7 +633,7 @@ export default function UserRoles() {
           {/* Pagination */}
           {filteredUsers.length > 0 && (
             <div className="mt-6 space-y-3">
-              <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+              <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
                 <label className="flex items-center gap-2 text-sm text-gray-600">
                   Show
                   <select
@@ -549,7 +654,50 @@ export default function UserRoles() {
                   entries
                 </label>
 
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center justify-center gap-2 sm:justify-self-center">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  {pageNumberItems.map((item, index) =>
+                    item === "ellipsis" ? (
+                      <span
+                        key={`ellipsis-${index}`}
+                        className="px-2 text-sm text-gray-400 select-none"
+                      >
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={item}
+                        onClick={() => setCurrentPage(item)}
+                        className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
+                          currentPage === item
+                            ? "bg-blue-600 text-white"
+                            : "text-gray-500 hover:bg-gray-100"
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    ),
+                  )}
+                  <button
+                    onClick={() =>
+                      setCurrentPage(Math.min(totalPages, currentPage + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2 text-sm text-gray-600 sm:justify-self-end">
                   <span>Jump to</span>
                   <input
                     type="number"
@@ -572,49 +720,6 @@ export default function UserRoles() {
                     Go
                   </button>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-center gap-2">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                {pageNumberItems.map((item, index) =>
-                  item === "ellipsis" ? (
-                    <span
-                      key={`ellipsis-${index}`}
-                      className="px-2 text-sm text-gray-400 select-none"
-                    >
-                      ...
-                    </span>
-                  ) : (
-                    <button
-                      key={item}
-                      onClick={() => setCurrentPage(item)}
-                      className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
-                        currentPage === item
-                          ? "bg-blue-600 text-white"
-                          : "text-gray-500 hover:bg-gray-100"
-                      }`}
-                    >
-                      {item}
-                    </button>
-                  ),
-                )}
-                <button
-                  onClick={() =>
-                    setCurrentPage(Math.min(totalPages, currentPage + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
-                  aria-label="Next page"
-                >
-                  <ChevronRight size={18} />
-                </button>
               </div>
             </div>
           )}
@@ -738,7 +843,7 @@ function UserDetailsModalInline({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 relative">
+      <div className="bg-white rounded-xl border border-blue-200 shadow-2xl w-full max-w-md mx-4 p-6 relative">
         <h2 className="text-xl font-bold text-gray-800 mb-5">User Details</h2>
 
         {loading ? (
@@ -774,7 +879,7 @@ function UserDetailsModalInline({
         <div className="mt-6 flex justify-end">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer"
+            className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm cursor-pointer"
           >
             Close
           </button>
@@ -786,11 +891,13 @@ function UserDetailsModalInline({
 
 function DetailsRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between items-start py-2 border-b border-gray-100">
-      <span className="text-sm font-medium text-gray-500 shrink-0 mr-4">
+    <div className="flex flex-col gap-1 py-2 border-b border-gray-100 sm:flex-row sm:items-start sm:justify-between">
+      <span className="text-sm font-medium text-gray-500 shrink-0 sm:mr-4">
         {label}
       </span>
-      <span className="text-sm text-gray-800 text-right">{value}</span>
+      <span className="text-sm text-gray-800 text-left sm:text-right wrap-break-word">
+        {value}
+      </span>
     </div>
   );
 }

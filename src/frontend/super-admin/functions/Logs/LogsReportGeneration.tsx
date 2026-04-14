@@ -32,7 +32,7 @@ type FormattedLogsReportRecord = LogsReportRecord & {
 const CARD_COLORS = {
   white: "#ffffff",
   black: "#000000",
-  headerGray: "#f3f4f6",
+  headerGray: "#dbeafe",
   stripeGray: "#f3f4f6",
   emptyGray: "#374151",
 };
