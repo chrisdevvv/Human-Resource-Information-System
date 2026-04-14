@@ -34,12 +34,22 @@ const getScopedSchoolId = async (user) => {
 
 const getAllUsers = async (req, res) => {
   try {
-    const { search, role, is_active, page, pageSize } = req.query;
+    const {
+      search,
+      role,
+      is_active,
+      school_id,
+      letter,
+      sortOrder,
+      page,
+      pageSize,
+    } = req.query;
     const requesterRole = normalizeRole(req.user?.role);
 
+    const requestedSchoolId = school_id ? Number(school_id) : null;
     const scopeSchoolId =
       requesterRole === "SUPER_ADMIN"
-        ? null
+        ? requestedSchoolId
         : await getScopedSchoolId(req.user);
 
     if (requesterRole !== "SUPER_ADMIN" && !scopeSchoolId) {
@@ -53,6 +63,8 @@ const getAllUsers = async (req, res) => {
       role: role || null,
       is_active: is_active !== undefined ? Number(is_active) : null,
       school_id: scopeSchoolId,
+      letter: letter || null,
+      sortOrder: sortOrder || null,
     };
 
     const pagination = page

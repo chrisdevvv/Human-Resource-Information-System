@@ -214,17 +214,23 @@ export default function RoleAssignmentModal({
         )}
 
         {/* Actions */}
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={createClearHandler(() => {
-              setPassword("");
-              setError(null);
-            }, !!password)}
-            disabled={loading}
-            className="mr-auto px-4 py-1.5 bg-gray-50 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition font-medium text-sm cursor-pointer disabled:opacity-50"
-          >
-            Clear All
-          </button>
+        <div className="flex items-center justify-end gap-3">
+          {(selectedRole !== "DATA_ENCODER" || !!password) && (
+            <button
+              onClick={createClearHandler(
+                () => {
+                  setPassword("");
+                  setError(null);
+                  setSelectedRole("DATA_ENCODER");
+                },
+                selectedRole !== "DATA_ENCODER" || !!password,
+              )}
+              disabled={loading}
+              className="mr-auto cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline disabled:opacity-50 disabled:no-underline"
+            >
+              Clear All
+            </button>
+          )}
 
           <button
             onClick={onClose}

@@ -92,6 +92,7 @@ export default function UserRolesMobile() {
   const [letterFilter, setLetterFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [pageJumpInput, setPageJumpInput] = useState("1");
   const [userData, setUserData] = useState<User[]>([]);
   const [userLoading, setUserLoading] = useState(true);
@@ -169,9 +170,18 @@ export default function UserRolesMobile() {
       if (!token) throw new Error("No authentication token found.");
 
       const params = new URLSearchParams();
+      if (searchQuery.trim()) params.set("search", searchQuery.trim());
+      if (roleFilter !== "ALL") params.set("role", roleFilter);
+      if (accountStatusFilter !== "ALL") {
+        params.set("is_active", accountStatusFilter === "ACTIVE" ? "1" : "0");
+      }
       if (currentUserRole === "SUPER_ADMIN" && schoolFilter !== "ALL") {
         params.set("school_id", schoolFilter);
       }
+      if (letterFilter !== "ALL") params.set("letter", letterFilter);
+      params.set("sortOrder", sortOrder);
+      params.set("page", String(currentPage));
+      params.set("pageSize", String(itemsPerPage));
 
       const response = await fetch(
         `${API_BASE}/api/users/${params.toString() ? `?${params.toString()}` : ""}`,
@@ -207,61 +217,46 @@ export default function UserRolesMobile() {
             )
           : formatted;
       setUserData(scopedData);
+      setTotalItems(
+        typeof (result as { total?: number }).total === "number"
+          ? Number((result as { total?: number }).total)
+          : scopedData.length,
+      );
       setUserError(null);
     } catch (err) {
       setUserError(err instanceof Error ? err.message : "An error occurred");
-      if (showSpinner) setUserData([]);
+      if (showSpinner) {
+        setUserData([]);
+        setTotalItems(0);
+      }
     } finally {
       if (showSpinner) setUserLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
-    const intervalId = window.setInterval(() => fetchUsers(false), 5000);
-    return () => window.clearInterval(intervalId);
+    const id = window.setTimeout(() => {
+      fetchUsers();
+    }, 300);
+    return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUserRole, currentUserSchoolId, schoolFilter]);
+  }, [
+    currentUserRole,
+    currentUserSchoolId,
+    searchQuery,
+    roleFilter,
+    accountStatusFilter,
+    schoolFilter,
+    letterFilter,
+    sortOrder,
+    currentPage,
+    itemsPerPage,
+  ]);
 
-  const filteredUsers = userData
-    .filter((user) => {
-      const q = searchQuery.toLowerCase();
-      const matchesSearch =
-        user.firstName.toLowerCase().includes(q) ||
-        user.lastName.toLowerCase().includes(q) ||
-        user.email.toLowerCase().includes(q) ||
-        user.schoolName.toLowerCase().includes(q);
-      const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
-      const matchesStatus =
-        accountStatusFilter === "ALL" ||
-        (accountStatusFilter === "ACTIVE" ? user.isActive : !user.isActive);
-      const matchesLetter =
-        letterFilter === "ALL" ||
-        user.firstName.charAt(0).toUpperCase() === letterFilter;
-      const matchesSchool =
-        currentUserRole !== "SUPER_ADMIN" ||
-        schoolFilter === "ALL" ||
-        String(user.schoolId) === schoolFilter;
-      return (
-        matchesSearch &&
-        matchesRole &&
-        matchesStatus &&
-        matchesLetter &&
-        matchesSchool
-      );
-    })
-    .sort((a, b) =>
-      sortOrder === "asc"
-        ? a.firstName.localeCompare(b.firstName)
-        : b.firstName.localeCompare(a.firstName),
-    );
+  const filteredUsers = userData;
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredUsers.length / itemsPerPage),
-  );
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIdx, startIdx + itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const paginatedUsers = filteredUsers;
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
     Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;

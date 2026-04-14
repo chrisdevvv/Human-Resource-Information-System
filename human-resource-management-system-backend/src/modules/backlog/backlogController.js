@@ -180,7 +180,17 @@ const getAllBacklogs = async (req, res) => {
     const pagination = page
       ? { page: Number(page), pageSize: Number(pageSize || 25) }
       : undefined;
-    const results = await Backlog.getAll(pagination, { includeArchived });
+    const results = await Backlog.getAll(pagination, {
+      includeArchived,
+      search: req.query.search || null,
+      role: req.query.role || null,
+      letter: req.query.letter || null,
+      sortMode: req.query.sortMode || null,
+      from: req.query.from
+        ? `${String(req.query.from).slice(0, 10)} 00:00:00`
+        : null,
+      to: req.query.to ? `${String(req.query.to).slice(0, 10)} 23:59:59` : null,
+    });
 
     if (!pagination) return res.status(200).json({ data: results });
     return res.status(200).json({
@@ -317,7 +327,11 @@ const generateBacklogReport = async (req, res) => {
     const rows = await Backlog.getReport({
       from,
       to,
+      search: req.query.search || null,
       action: req.query.action || null,
+      role: req.query.role || null,
+      letter: req.query.letter || null,
+      sortMode: req.query.sortMode || null,
       userId: req.query.user_id ? Number(req.query.user_id) : null,
       schoolId: req.query.school_id ? Number(req.query.school_id) : null,
       employeeId: req.query.employee_id ? Number(req.query.employee_id) : null,
@@ -342,6 +356,8 @@ const generateBacklogReport = async (req, res) => {
         from: req.query.from || null,
         to: req.query.to || null,
         action: req.query.action || null,
+        role: req.query.role || null,
+        letter: req.query.letter || null,
         include_archived: includeArchived,
       });
 
@@ -359,7 +375,11 @@ const generateBacklogReport = async (req, res) => {
       filters: {
         from: req.query.from || null,
         to: req.query.to || null,
+        search: req.query.search || null,
         action: req.query.action || null,
+        role: req.query.role || null,
+        letter: req.query.letter || null,
+        sortMode: req.query.sortMode || null,
         user_id: req.query.user_id || null,
         school_id: req.query.school_id || null,
         employee_id: req.query.employee_id || null,

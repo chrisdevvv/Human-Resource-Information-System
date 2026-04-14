@@ -8,7 +8,11 @@ const {
 
 const scopedRoles = new Set(["ADMIN", "DATA_ENCODER"]);
 const normalizeRole = (role) => {
-  const raw = String(role || "").trim().toUpperCase().replace(/\s+/g, "_").replace(/-/g, "_");
+  const raw = String(role || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .replace(/-/g, "_");
   if (raw === "SUPER_ADMIN") return "SUPER_ADMIN";
   if (raw === "ADMIN") return "ADMIN";
   if (raw === "DATA_ENCODER") return "DATA_ENCODER";
@@ -22,7 +26,9 @@ const resolveScope = async (user) => {
   }
 
   if (!scopedRoles.has(role)) {
-    const err = new Error("Only admin, data encoder, or super admin can review registrations");
+    const err = new Error(
+      "Only admin, data encoder, or super admin can review registrations",
+    );
     err.statusCode = 403;
     throw err;
   }
@@ -50,7 +56,8 @@ const resolveScope = async (user) => {
 
 const getAllRegistrations = async (req, res) => {
   try {
-    const { status, search, page, pageSize } = req.query;
+    const { status, search, letter, sortOrder, dateSortOrder, page, pageSize } =
+      req.query;
     const scope = await resolveScope(req.user);
     const pagination = page
       ? { page: Number(page), pageSize: Number(pageSize || 25) }
@@ -60,6 +67,9 @@ const getAllRegistrations = async (req, res) => {
       {
         status: status || null,
         search: search || null,
+        letter: letter || null,
+        sortOrder: sortOrder || null,
+        dateSortOrder: dateSortOrder || null,
       },
       {
         schoolName: scope.schoolName,
@@ -100,9 +110,10 @@ const getPendingRegistrations = async (req, res) => {
   } catch (err) {
     const statusCode = err.statusCode || 500;
     res.status(statusCode).json({
-      message: statusCode === 500
-        ? `Error retrieving pending registrations: ${err.message}`
-        : err.message,
+      message:
+        statusCode === 500
+          ? `Error retrieving pending registrations: ${err.message}`
+          : err.message,
       error: err.message,
     });
   }
@@ -154,14 +165,12 @@ const approveRegistration = async (req, res) => {
       ? "DATA_ENCODER"
       : approved_role || registration.requested_role || "DATA_ENCODER";
 
-    if (
-      isScopedApprover &&
-      approved_role &&
-      approved_role !== "DATA_ENCODER"
-    ) {
+    if (isScopedApprover && approved_role && approved_role !== "DATA_ENCODER") {
       return res
         .status(403)
-        .json({ message: "Admin/Data Encoder can only approve Data Encoder accounts" });
+        .json({
+          message: "Admin/Data Encoder can only approve Data Encoder accounts",
+        });
     }
 
     await Registration.approve(
@@ -203,7 +212,8 @@ const approveRegistration = async (req, res) => {
       .status(200)
       .json({ message: "Registration request approved successfully" });
   } catch (err) {
-    const statusCode = err.statusCode || (err.message.includes("not found") ? 404 : 500);
+    const statusCode =
+      err.statusCode || (err.message.includes("not found") ? 404 : 500);
     res.status(statusCode).json({
       message: "Error approving registration",
       error: err.message,

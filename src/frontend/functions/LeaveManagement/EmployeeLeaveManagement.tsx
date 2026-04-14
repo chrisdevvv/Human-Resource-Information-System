@@ -27,6 +27,7 @@ type EmployeeRecordApi = {
   last_name: string;
   email?: string | null;
   school_name?: string | null;
+  school_id?: number | null;
   employee_type?: "teaching" | "non-teaching";
   created_at?: string | null;
   on_leave?: boolean | number | string | null;
@@ -35,6 +36,7 @@ type EmployeeRecordApi = {
 type EmployeeRecord = LeaveModalRecord & {
   employeeId: number;
   email: string;
+  schoolId: number | null;
   schoolName: string;
   onLeave: boolean;
 };
@@ -70,7 +72,7 @@ const getScopedEmployeeEndpoint = () => {
       normalizedRole === "ADMIN" || normalizedRole === "DATA_ENCODER";
 
     if (isSchoolScopedRole && Number.isFinite(schoolId) && schoolId > 0) {
-      return `/api/employees/school/${schoolId}`;
+      return "/api/employees/";
     }
   } catch {
     // Fall back to broad endpoint when user payload is malformed.
@@ -117,6 +119,8 @@ const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
     balSl: 0,
     dateOfAction: "",
     email: item.email?.trim() || "",
+    schoolId:
+      typeof item.school_id === "number" ? item.school_id || null : null,
     schoolName: item.school_name?.trim() || "",
     onLeave: toBoolean(item.on_leave),
   };
@@ -124,6 +128,9 @@ const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
 
 type EmployeeApiResponse = {
   data?: EmployeeRecordApi[];
+  total?: number;
+  page?: number;
+  pageSize?: number;
   message?: string;
 };
 
@@ -146,6 +153,7 @@ export default function EmployeeLeaveManagement() {
   const [pageJumpInput, setPageJumpInput] = useState("1");
 
   const [employeeData, setEmployeeData] = useState<EmployeeRecord[]>([]);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [employeeLoading, setEmployeeLoading] = useState(true);
   const [employeeError, setEmployeeError] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState("");
@@ -178,14 +186,35 @@ export default function EmployeeLeaveManagement() {
       }
 
       const scopedEndpoint = getScopedEmployeeEndpoint();
+      const params = new URLSearchParams();
+      if (searchQuery.trim()) params.set("search", searchQuery.trim());
+      if (employeeTypeFilter !== "ALL") {
+        params.set("employee_type", employeeTypeFilter);
+      }
+      if (currentUserRole === "SUPER_ADMIN" && schoolFilter !== "ALL") {
+        params.set("school_id", schoolFilter);
+      }
+      if (leaveStatusFilter !== "ALL") {
+        params.set(
+          "on_leave",
+          leaveStatusFilter === "on-leave" ? "true" : "false",
+        );
+      }
+      if (letterFilter !== "ALL") params.set("letter", letterFilter);
+      params.set("sortOrder", sortOrder);
+      params.set("page", String(currentPage));
+      params.set("pageSize", String(itemsPerPage));
 
-      const response = await fetch(`${API_BASE}${scopedEndpoint}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `${API_BASE}${scopedEndpoint}?${params.toString()}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       const body = (await response.json()) as EmployeeApiResponse;
       if (!response.ok) {
@@ -194,6 +223,9 @@ export default function EmployeeLeaveManagement() {
 
       const mapped = (body.data || []).map(toEmployeeRecord);
       setEmployeeData(mapped);
+      setTotalItems(
+        typeof body.total === "number" ? body.total : mapped.length,
+      );
       setEmployeeError(null);
     } catch (err) {
       setEmployeeError(
@@ -201,6 +233,7 @@ export default function EmployeeLeaveManagement() {
       );
       if (showSpinner) {
         setEmployeeData([]);
+        setTotalItems(0);
       }
     } finally {
       if (showSpinner) {
@@ -210,86 +243,40 @@ export default function EmployeeLeaveManagement() {
   };
 
   useEffect(() => {
-    fetchEmployees();
+    const id = window.setTimeout(() => {
+      fetchEmployees();
+    }, 300);
 
-    const intervalId = window.setInterval(() => {
-      fetchEmployees(false);
-    }, 5000);
-
-    return () => window.clearInterval(intervalId);
+    return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const filteredEmployees = useMemo(() => {
-    return employeeData
-      .filter((employee) => {
-        const query = searchQuery.trim().toLowerCase();
-        const matchesSearch =
-          !query ||
-          employee.fullName.toLowerCase().includes(query) ||
-          employee.email.toLowerCase().includes(query) ||
-          employee.schoolName.toLowerCase().includes(query);
-
-        const matchesEmployeeType =
-          employeeTypeFilter === "ALL" ||
-          employee.employeeType === employeeTypeFilter;
-
-        const matchesSchool =
-          schoolFilter === "ALL" || employee.schoolName === schoolFilter;
-
-        const matchesLeaveStatus =
-          leaveStatusFilter === "ALL" ||
-          (leaveStatusFilter === "on-leave"
-            ? employee.onLeave
-            : !employee.onLeave);
-
-        const matchesLetter =
-          letterFilter === "ALL" ||
-          employee.fullName.charAt(0).toUpperCase() === letterFilter;
-
-        return (
-          matchesSearch &&
-          matchesEmployeeType &&
-          matchesSchool &&
-          matchesLeaveStatus &&
-          matchesLetter
-        );
-      })
-      .sort((a, b) => {
-        if (sortOrder === "asc") {
-          return a.fullName.localeCompare(b.fullName);
-        }
-
-        return b.fullName.localeCompare(a.fullName);
-      });
   }, [
-    employeeData,
     searchQuery,
     employeeTypeFilter,
     schoolFilter,
     leaveStatusFilter,
     letterFilter,
     sortOrder,
+    currentPage,
+    itemsPerPage,
+    currentUserRole,
   ]);
 
+  const filteredEmployees = useMemo(() => employeeData, [employeeData]);
+
   const schoolOptions = useMemo(() => {
-    const unique = new Set(
-      employeeData
-        .map((employee) => employee.schoolName.trim())
-        .filter((name) => Boolean(name)),
-    );
-    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+    const unique = new Map<number, string>();
+    employeeData.forEach((employee) => {
+      if (employee.schoolId && employee.schoolName.trim()) {
+        unique.set(employee.schoolId, employee.schoolName.trim());
+      }
+    });
+    return Array.from(unique.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [employeeData]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredEmployees.length / itemsPerPage),
-  );
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedEmployees = filteredEmployees.slice(
-    startIdx,
-    startIdx + itemsPerPage,
-  );
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const paginatedEmployees = filteredEmployees;
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
     Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
@@ -492,9 +479,9 @@ export default function EmployeeLeaveManagement() {
                     className="w-full sm:w-auto text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                   >
                     <option value="ALL">All Schools</option>
-                    {schoolOptions.map((schoolName) => (
-                      <option key={schoolName} value={schoolName}>
-                        {schoolName}
+                    {schoolOptions.map((school) => (
+                      <option key={school.id} value={school.id}>
+                        {school.name}
                       </option>
                     ))}
                   </select>

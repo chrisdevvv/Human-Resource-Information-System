@@ -92,9 +92,25 @@ export default function ConfigurationPage() {
         "Content-Type": "application/json",
       };
 
+      const schoolParams = new URLSearchParams();
+      if (schoolSearch.trim()) schoolParams.set("search", schoolSearch.trim());
+      schoolParams.set("sortOrder", schoolSort);
+
+      const particularParams = new URLSearchParams();
+      if (particularSearch.trim()) {
+        particularParams.set("search", particularSearch.trim());
+      }
+      particularParams.set("sortOrder", particularSort);
+
       const [schoolsRes, particularsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/schools/config/list`, { headers }),
-        fetch(`${API_BASE_URL}/api/leave/particulars/config`, { headers }),
+        fetch(
+          `${API_BASE_URL}/api/schools/config/list?${schoolParams.toString()}`,
+          { headers },
+        ),
+        fetch(
+          `${API_BASE_URL}/api/leave/particulars/config?${particularParams.toString()}`,
+          { headers },
+        ),
       ]);
 
       if (schoolsRes.ok) {
@@ -135,7 +151,7 @@ export default function ConfigurationPage() {
   useEffect(() => {
     void refreshConfigurationData(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [schoolSearch, schoolSort, particularSearch, particularSort]);
 
   const handleDeleteSchool = (id: number, name: string) => {
     setDeleteTarget({ id, name, type: "school" });
@@ -217,44 +233,9 @@ export default function ConfigurationPage() {
     }
   };
 
-  const filteredSchools = useMemo(() => {
-    const query = schoolSearch.trim().toLowerCase();
+  const filteredSchools = useMemo(() => schools, [schools]);
 
-    const safeSchools = schools.filter(
-      (item): item is School =>
-        Boolean(item) && typeof item.school_name === "string",
-    );
-
-    const results = query
-      ? safeSchools.filter((item) =>
-          item.school_name.toLowerCase().includes(query),
-        )
-      : safeSchools;
-
-    return [...results].sort((a, b) => {
-      const schoolA = a.school_name ?? "";
-      const schoolB = b.school_name ?? "";
-      return schoolSort === "a-z"
-        ? schoolA.localeCompare(schoolB)
-        : schoolB.localeCompare(schoolA);
-    });
-  }, [schoolSearch, schools, schoolSort]);
-
-  const filteredParticulars = useMemo(() => {
-    const query = particularSearch.trim().toLowerCase();
-
-    const safeParticulars = particulars.filter(
-      (item): item is string => typeof item === "string",
-    );
-
-    const results = query
-      ? safeParticulars.filter((item) => item.toLowerCase().includes(query))
-      : safeParticulars;
-
-    return [...results].sort((a, b) =>
-      particularSort === "a-z" ? a.localeCompare(b) : b.localeCompare(a),
-    );
-  }, [particularSearch, particulars, particularSort]);
+  const filteredParticulars = useMemo(() => particulars, [particulars]);
 
   const hasActiveSchoolFilters =
     schoolSearch.trim().length > 0 || schoolSort !== "a-z";

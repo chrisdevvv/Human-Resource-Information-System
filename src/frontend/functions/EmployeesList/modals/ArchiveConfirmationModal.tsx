@@ -37,6 +37,7 @@ function ArchiveConfirmationModal({
   const [showReasonDropdown, setShowReasonDropdown] = useState(false);
   const [touched, setTouched] = useState(false);
   const [reasonTouched, setReasonTouched] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
@@ -108,6 +109,7 @@ function ArchiveConfirmationModal({
     setArchiveReason("");
     setTouched(false);
     setReasonTouched(false);
+    setHasChanges(false);
   };
 
   const handleClose = () => {
@@ -116,6 +118,7 @@ function ArchiveConfirmationModal({
     setShowReasonDropdown(false);
     setTouched(false);
     setReasonTouched(false);
+    setHasChanges(false);
     onClose();
   };
 
@@ -144,7 +147,10 @@ function ArchiveConfirmationModal({
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setHasChanges(true);
+              }}
               onBlur={() => setTouched(true)}
               className="text-black w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter your password"
@@ -198,6 +204,7 @@ function ArchiveConfirmationModal({
                         onClick={() => {
                           setArchiveReason(option.reason_name);
                           setReasonTouched(true);
+                          setHasChanges(true);
                           setShowReasonDropdown(false);
                         }}
                         className={`w-full px-3 py-2 text-left text-sm transition hover:bg-blue-50 ${
@@ -223,7 +230,23 @@ function ArchiveConfirmationModal({
             )}
           </div>
           {error && <p className="text-xs text-red-500">{error}</p>}
-          <div className="flex justify-end gap-2 mt-4">
+          <div className="flex items-center justify-end gap-2 mt-4">
+            {hasChanges && (
+              <button
+                type="button"
+                onClick={createClearHandler(() => {
+                  setPassword("");
+                  setArchiveReason("");
+                  setTouched(false);
+                  setReasonTouched(false);
+                  setHasChanges(false);
+                }, hasChanges)}
+                disabled={isLoading}
+                className="mr-auto cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline disabled:opacity-60 disabled:no-underline"
+              >
+                Clear All
+              </button>
+            )}
             <button
               type="button"
               onClick={handleClose}
@@ -234,22 +257,6 @@ function ArchiveConfirmationModal({
                 <XCircle size={14} />
                 Cancel
               </span>
-            </button>
-            <button
-              type="button"
-              onClick={createClearHandler(
-                () => {
-                  setPassword("");
-                  setArchiveReason("");
-                  setTouched(false);
-                  setReasonTouched(false);
-                },
-                !!(password || archiveReason),
-              )}
-              disabled={isLoading}
-              className="order-first mr-auto cursor-pointer rounded px-3 py-1.5 text-sm font-medium bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100 disabled:opacity-60"
-            >
-              <span className="inline-flex items-center gap-1">Clear All</span>
             </button>
             <button
               type="submit"

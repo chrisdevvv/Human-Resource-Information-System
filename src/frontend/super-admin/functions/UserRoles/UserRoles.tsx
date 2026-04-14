@@ -164,7 +164,10 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
     fetchSchools();
   }, [currentUserRole]);
 
-  const fetchUsers = async (showSpinner = true) => {
+  const fetchUsers = async (
+    showSpinner = true,
+    overrides: { page?: number; pageSize?: number } = {},
+  ) => {
     try {
       if (showSpinner) {
         setUserLoading(true);
@@ -173,26 +176,24 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
 
+      const params = new URLSearchParams();
+      if (searchQuery) params.set("search", searchQuery);
+      if (roleFilter && roleFilter !== "ALL") params.set("role", roleFilter);
+      if (accountStatusFilter && accountStatusFilter !== "ALL") {
+        params.set("is_active", accountStatusFilter === "ACTIVE" ? "1" : "0");
+      }
+      if (currentUserRole === "SUPER_ADMIN" && schoolFilter !== "ALL") {
+        params.set("school_id", schoolFilter);
+      }
+      if (letterFilter !== "ALL") params.set("letter", letterFilter);
+      if (sortOrder) params.set("sortOrder", sortOrder);
+      const nextPage = overrides.page ?? currentPage;
+      const nextPageSize = overrides.pageSize ?? itemsPerPage;
+      params.set("page", String(nextPage));
+      params.set("pageSize", String(nextPageSize));
+
       const response = await fetch(
-        isAdminMode
-          ? `${API_BASE}/api/users/?${new URLSearchParams({
-              ...(searchQuery ? { search: searchQuery } : {}),
-              ...(roleFilter && roleFilter !== "ALL"
-                ? { role: roleFilter }
-                : {}),
-              ...(accountStatusFilter && accountStatusFilter !== "ALL"
-                ? {
-                    is_active: accountStatusFilter === "ACTIVE" ? "1" : "0",
-                  }
-                : {}),
-              page: String(currentPage),
-              pageSize: String(itemsPerPage),
-            }).toString()}`
-          : `${API_BASE}/api/users/${
-              currentUserRole === "SUPER_ADMIN" && schoolFilter !== "ALL"
-                ? `?${new URLSearchParams({ school_id: schoolFilter }).toString()}`
-                : ""
-            }`,
+        `${API_BASE}/api/users/?${params.toString()}`,
         {
           method: "GET",
           headers: {
@@ -216,19 +217,10 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
         role: item.role,
         isActive: normalizeIsActive(item.is_active),
       }));
-      const scopedData =
-        !isAdminMode && currentUserRole !== "SUPER_ADMIN" && currentUserSchoolId
-          ? formatted.filter(
-              (item: User) =>
-                Number(item.schoolId) === Number(currentUserSchoolId),
-            )
-          : formatted;
       const resultTotal = (result as { total?: number }).total;
-      setUserData(scopedData);
+      setUserData(formatted);
       setTotalItems(
-        isAdminMode && typeof resultTotal === "number"
-          ? resultTotal
-          : scopedData.length,
+        typeof resultTotal === "number" ? resultTotal : formatted.length,
       );
       setUserError(null);
     } catch (err) {
@@ -262,74 +254,24 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
     itemsPerPage,
     roleFilter,
     accountStatusFilter,
+    letterFilter,
+    sortOrder,
   ]);
 
   useEffect(() => {
-    if (!isAdminMode) {
-      return;
-    }
-
     const id = window.setTimeout(() => {
       setCurrentPage(1);
-      fetchUsers();
+      fetchUsers(true, { page: 1, pageSize: itemsPerPage });
     }, 350);
 
     return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, isAdminMode]);
+  }, [searchQuery]);
 
-  const filteredUsers = isAdminMode
-    ? userData
-        .filter((user) => {
-          const matchesLetter =
-            letterFilter === "ALL" ||
-            user.firstName.charAt(0).toUpperCase() === letterFilter;
-          return matchesLetter;
-        })
-        .sort((a, b) => {
-          if (sortOrder === "asc")
-            return a.firstName.localeCompare(b.firstName);
-          return b.firstName.localeCompare(a.firstName);
-        })
-    : userData
-        .filter((user) => {
-          const matchesSearch =
-            user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            user.schoolName.toLowerCase().includes(searchQuery.toLowerCase());
-          const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
-          const matchesAccountStatus =
-            accountStatusFilter === "ALL" ||
-            (accountStatusFilter === "ACTIVE" ? user.isActive : !user.isActive);
-          const matchesLetter =
-            letterFilter === "ALL" ||
-            user.firstName.charAt(0).toUpperCase() === letterFilter;
-          const matchesSchool =
-            currentUserRole !== "SUPER_ADMIN" ||
-            schoolFilter === "ALL" ||
-            String(user.schoolId) === schoolFilter;
-          return (
-            matchesSearch &&
-            matchesRole &&
-            matchesAccountStatus &&
-            matchesLetter &&
-            matchesSchool
-          );
-        })
-        .sort((a, b) => {
-          if (sortOrder === "asc")
-            return a.firstName.localeCompare(b.firstName);
-          return b.firstName.localeCompare(a.firstName);
-        });
+  const filteredUsers = userData;
 
-  const totalPages = isAdminMode
-    ? Math.max(1, Math.ceil(totalItems / itemsPerPage))
-    : Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedUsers = isAdminMode
-    ? filteredUsers
-    : filteredUsers.slice(startIdx, startIdx + itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const paginatedUsers = filteredUsers;
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
     Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
@@ -360,9 +302,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
   const handleSearch = () => {
     setCurrentPage(1);
     setPageJumpInput("1");
-    if (isAdminMode) {
-      fetchUsers();
-    }
+    fetchUsers(true, { page: 1, pageSize: itemsPerPage });
   };
 
   const handleResetFilters = () => {

@@ -514,17 +514,19 @@ export default function EditEmployee({
 
         {canEdit && isEditing ? (
           <>
-            <button
-              type="button"
-              onClick={createClearHandler(() => {
-                setDraft(createInitialDraft(employee));
-                setErrorMessage(null);
-              }, hasDraftChanges)}
-              disabled={isSaving}
-              className="mr-auto rounded-lg border border-gray-300 bg-gray-50 px-5 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 transition cursor-pointer disabled:opacity-60"
-            >
-              <span className="inline-flex items-center gap-1">Clear All</span>
-            </button>
+            {hasDraftChanges && (
+              <button
+                type="button"
+                onClick={createClearHandler(() => {
+                  setDraft(createInitialDraft(employee));
+                  setErrorMessage(null);
+                }, hasDraftChanges)}
+                disabled={isSaving}
+                className="mr-auto cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline disabled:opacity-60 disabled:no-underline"
+              >
+                Clear All
+              </button>
+            )}
 
             <button
               type="button"

@@ -183,7 +183,7 @@ export default function AddUserModal({
       }
     };
 
-    loadSchools();
+    void loadSchools();
 
     return () => {
       disposed = true;
@@ -669,7 +669,7 @@ export default function AddUserModal({
             </div>
           )}
 
-          <div className="mt-6 flex justify-end gap-3">
+          <div className="mt-6 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={() => {

@@ -3,7 +3,10 @@ const Backlog = require("../backlog/backlogModel");
 
 const getAllSchools = async (req, res) => {
   try {
-    const results = await School.getAll();
+    const results = await School.getAll({
+      search: req.query.search || null,
+      sortOrder: req.query.sortOrder || null,
+    });
     res.status(200).json({ data: results });
   } catch (err) {
     res

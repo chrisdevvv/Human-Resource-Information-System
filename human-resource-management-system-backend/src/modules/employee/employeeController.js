@@ -95,7 +95,18 @@ const applyRetirableBusinessRule = (payload, existingEmployee = null) => {
 
 const getAllEmployees = async (req, res) => {
   try {
-    const { page, pageSize, include_archived, on_leave } = req.query;
+    const {
+      search,
+      employee_type,
+      school_id,
+      letter,
+      retirement,
+      sortOrder,
+      page,
+      pageSize,
+      include_archived,
+      on_leave,
+    } = req.query;
     const includeArchivedRequested = toBoolean(include_archived);
     const includeArchived =
       includeArchivedRequested && isAdminLevel(req.user?.role);
@@ -105,9 +116,10 @@ const getAllEmployees = async (req, res) => {
         ? undefined
         : toBoolean(on_leave);
 
+    const requestedSchoolId = school_id ? Number(school_id) : null;
     const scopedSchoolId = isSchoolScopedWriteRole(req.user?.role)
       ? getScopedSchoolId(req)
-      : null;
+      : requestedSchoolId;
 
     if (isSchoolScopedWriteRole(req.user?.role) && !scopedSchoolId) {
       return res.status(403).json({
@@ -116,6 +128,11 @@ const getAllEmployees = async (req, res) => {
     }
 
     const filters = {
+      search: search || null,
+      employeeType: employee_type || null,
+      letter: letter || null,
+      retirement: retirement || null,
+      sortOrder: sortOrder || null,
       page: page ? Number(page) : undefined,
       pageSize: pageSize ? Number(pageSize) : undefined,
       includeArchived,
@@ -204,10 +221,17 @@ const getEmployeesBySchool = async (req, res) => {
         ? undefined
         : toBoolean(req.query?.on_leave);
 
-    const results = await Employee.getBySchool(requestedSchoolId, {
+    const filters = {
+      search: req.query?.search || null,
+      employeeType: req.query?.employee_type || null,
+      letter: req.query?.letter || null,
+      retirement: req.query?.retirement || null,
+      sortOrder: req.query?.sortOrder || null,
       includeArchived,
       onLeave,
-    });
+    };
+
+    const results = await Employee.getBySchool(requestedSchoolId, filters);
     res.status(200).json({ data: results });
   } catch (err) {
     res
@@ -262,6 +286,13 @@ const getEmployeeStatusCounts = async (req, res) => {
 
 const createEmployee = async (req, res) => {
   try {
+    const requestedSchoolId = Number(req.body?.school_id);
+    if (!Number.isFinite(requestedSchoolId) || requestedSchoolId <= 0) {
+      return res.status(400).json({
+        message: "A valid school is required to create an employee record.",
+      });
+    }
+
     if (isSchoolScopedWriteRole(req.user?.role)) {
       if (!isSameSchool(req.user?.school_id, req.body?.school_id)) {
         return res.status(403).json({
@@ -269,6 +300,23 @@ const createEmployee = async (req, res) => {
             "You can only create employee records under your assigned school",
         });
       }
+
+      // Enforce trusted school assignment for scoped roles.
+      req.body.school_id = Number(req.user?.school_id);
+    } else {
+      req.body.school_id = requestedSchoolId;
+    }
+
+    const [schoolRows] = await pool
+      .promise()
+      .query("SELECT id FROM schools WHERE id = ? LIMIT 1", [
+        req.body.school_id,
+      ]);
+
+    if (!schoolRows.length) {
+      return res.status(400).json({
+        message: "Selected school does not exist.",
+      });
     }
 
     applyRetirableBusinessRule(req.body);
@@ -296,6 +344,32 @@ const createEmployee = async (req, res) => {
       return res.status(409).json({
         message:
           "An employee record with one of the provided unique values already exists.",
+      });
+    }
+
+    if (err.code === "ER_NO_REFERENCED_ROW_2") {
+      return res.status(400).json({
+        message:
+          "One of the selected values (school, position, civil status, or sex) is no longer valid. Please refresh and try again.",
+      });
+    }
+
+    if (err.code === "ER_DATA_TOO_LONG") {
+      const columnMatch = String(err.message || "").match(
+        /for column '([^']+)'/i,
+      );
+      const columnName = columnMatch?.[1]
+        ? columnMatch[1].replace(/_/g, " ")
+        : "One of the fields";
+
+      return res.status(400).json({
+        message: `${columnName} exceeds the allowed length.`,
+      });
+    }
+
+    if (err.code === "ER_BAD_NULL_ERROR") {
+      return res.status(400).json({
+        message: "A required employee field is missing.",
       });
     }
 

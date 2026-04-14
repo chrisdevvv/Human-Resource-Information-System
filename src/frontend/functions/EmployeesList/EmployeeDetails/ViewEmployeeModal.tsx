@@ -1696,17 +1696,19 @@ export default function ViewEmployeeModal({
 
             {isEditing && (
               <>
-                <button
-                  type="button"
-                  onClick={createClearHandler(
-                    handleClearEditChanges,
-                    hasEditChanges,
-                  )}
-                  disabled={isSaving}
-                  className="mr-auto inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-gray-300 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Clear All
-                </button>
+                {hasEditChanges && (
+                  <button
+                    type="button"
+                    onClick={createClearHandler(
+                      handleClearEditChanges,
+                      hasEditChanges,
+                    )}
+                    disabled={isSaving}
+                    className="mr-auto cursor-pointer items-center gap-1.5 rounded-xl text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Clear All
+                  </button>
+                )}
 
                 <button
                   type="button"

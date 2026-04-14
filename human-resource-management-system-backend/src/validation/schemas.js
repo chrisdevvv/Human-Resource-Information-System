@@ -145,6 +145,20 @@ const employeeUpdateBodySchema = Joi.object({
 });
 
 const employeeListQuerySchema = Joi.object({
+  search: Joi.string().trim().max(255),
+  employee_type: Joi.string().valid(
+    "teaching",
+    "non-teaching",
+    "teaching-related",
+  ),
+  school_id: Joi.number().integer().positive(),
+  letter: Joi.string()
+    .trim()
+    .length(1)
+    .uppercase()
+    .pattern(/^[A-Z]$/),
+  retirement: Joi.string().valid("ALL", "retirable", "mandatory"),
+  sortOrder: Joi.string().valid("asc", "desc"),
   page: Joi.number().integer().min(1),
   pageSize: Joi.number().integer().min(1).max(200),
   include_archived: Joi.alternatives().try(
@@ -234,6 +248,12 @@ const usersQuerySchema = Joi.object({
   search: Joi.string().trim().max(255),
   role: Joi.string().valid("SUPER_ADMIN", "ADMIN", "DATA_ENCODER"),
   school_id: Joi.number().integer().positive(),
+  letter: Joi.string()
+    .trim()
+    .length(1)
+    .uppercase()
+    .pattern(/^[A-Z]$/),
+  sortOrder: Joi.string().valid("asc", "desc"),
   is_active: Joi.alternatives().try(
     Joi.number().valid(0, 1),
     Joi.string().valid("0", "1"),
@@ -243,6 +263,13 @@ const usersQuerySchema = Joi.object({
 const registrationStatusQuerySchema = Joi.object({
   status: Joi.string().valid("PENDING", "APPROVED", "REJECTED"),
   search: Joi.string().trim().max(255),
+  letter: Joi.string()
+    .trim()
+    .length(1)
+    .uppercase()
+    .pattern(/^[A-Z]$/),
+  sortOrder: Joi.string().valid("asc", "desc"),
+  dateSortOrder: Joi.string().valid("newest", "oldest"),
   page: Joi.number().integer().min(1),
   pageSize: Joi.number().integer().min(1).max(200),
 });
@@ -328,7 +355,20 @@ const backlogReportQuerySchema = Joi.object({
   format: Joi.string().valid("json", "csv", "pdf").default("json"),
   from: Joi.date().iso(),
   to: Joi.date().iso(),
+  search: Joi.string().trim().max(255),
   action: Joi.string().trim().max(100),
+  role: Joi.string().trim().max(50),
+  letter: Joi.string()
+    .trim()
+    .length(1)
+    .uppercase()
+    .pattern(/^[A-Z]$/),
+  sortMode: Joi.string().valid(
+    "date-desc",
+    "date-asc",
+    "name-asc",
+    "name-desc",
+  ),
   user_id: Joi.number().integer().positive(),
   school_id: Joi.number().integer().positive(),
   employee_id: Joi.number().integer().positive(),

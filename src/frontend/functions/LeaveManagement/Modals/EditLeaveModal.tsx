@@ -335,20 +335,24 @@ export default function EditLeaveModal({
             </p>
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={createClearHandler(
-                handleClearAllFields,
-                form !== null && initialForm !== null
-                  ? JSON.stringify(form) !== JSON.stringify(initialForm)
-                  : false,
+          <div className="flex items-center justify-end gap-3 pt-2">
+            {form !== null &&
+              initialForm !== null &&
+              JSON.stringify(form) !== JSON.stringify(initialForm) && (
+                <button
+                  type="button"
+                  onClick={createClearHandler(
+                    handleClearAllFields,
+                    form !== null && initialForm !== null
+                      ? JSON.stringify(form) !== JSON.stringify(initialForm)
+                      : false,
+                  )}
+                  disabled={isSaving}
+                  className="mr-auto cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Clear All
+                </button>
               )}
-              disabled={isSaving}
-              className="mr-auto cursor-pointer rounded-lg border border-gray-300 bg-gray-50 px-4 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Clear All
-            </button>
 
             <button
               type="button"

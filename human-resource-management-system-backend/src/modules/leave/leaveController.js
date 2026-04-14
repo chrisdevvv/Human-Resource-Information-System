@@ -700,10 +700,28 @@ const autoCreditCurrentMonth = async () => {
   return result;
 };
 
-const getLeaveParticulars = async (_req, res) => {
+const getLeaveParticulars = async (req, res) => {
   try {
     const data = await Leave.getParticulars();
-    return res.status(200).json({ data, total: data.length });
+    const search = String(req.query?.search || "")
+      .trim()
+      .toLowerCase();
+    const sortOrder =
+      String(req.query?.sortOrder || "a-z").toLowerCase() === "z-a"
+        ? "z-a"
+        : "a-z";
+
+    const filtered = search
+      ? data.filter((item) => String(item).toLowerCase().includes(search))
+      : data;
+
+    const sorted = [...filtered].sort((a, b) =>
+      sortOrder === "a-z"
+        ? String(a).localeCompare(String(b))
+        : String(b).localeCompare(String(a)),
+    );
+
+    return res.status(200).json({ data: sorted, total: sorted.length });
   } catch (err) {
     return res.status(500).json({
       message: "Error retrieving leave particulars",

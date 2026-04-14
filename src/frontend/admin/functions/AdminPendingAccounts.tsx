@@ -101,6 +101,9 @@ export default function AdminPendingAccounts({
       const params = new URLSearchParams();
       if (status && status !== "ALL") params.set("status", status);
       if (searchQuery) params.set("search", searchQuery);
+      if (letterFilter !== "ALL") params.set("letter", letterFilter);
+      params.set("sortOrder", sortOrder);
+      params.set("dateSortOrder", dateSortOrder);
       params.set("page", String(page));
       params.set("pageSize", String(pageSize));
 
@@ -177,29 +180,14 @@ export default function AdminPendingAccounts({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
-  // data is server-paginated. Apply only letter filter and sorting locally on the current page
-  const filteredData = data
-    .filter((item) => {
-      const matchesLetter =
-        letterFilter === "ALL" ||
-        item.firstName.charAt(0).toUpperCase() === letterFilter;
-      return matchesLetter;
-    })
-    .sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchData(statusFilter, 1, itemsPerPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [letterFilter, sortOrder, dateSortOrder]);
 
-      if (dateSortOrder === "newest") {
-        if (dateB !== dateA) return dateB - dateA;
-      } else {
-        if (dateA !== dateB) return dateA - dateB;
-      }
-
-      if (sortOrder === "asc") {
-        return a.firstName.localeCompare(b.firstName);
-      }
-      return b.firstName.localeCompare(a.firstName);
-    });
+  // data is server-paginated and server-filtered
+  const filteredData = data;
 
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const paginatedData = filteredData; // server already paginated

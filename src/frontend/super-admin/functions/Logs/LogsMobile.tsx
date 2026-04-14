@@ -81,6 +81,7 @@ export default function LogsMobile() {
   >("date-desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [pageJumpInput, setPageJumpInput] = useState("1");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -336,8 +337,19 @@ export default function LogsMobile() {
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
 
+      const params = new URLSearchParams();
+      params.set("include_archived", "false");
+      if (searchQuery.trim()) params.set("search", searchQuery.trim());
+      if (roleFilter !== "ALL") params.set("role", roleFilter);
+      if (letterFilter !== "ALL") params.set("letter", letterFilter);
+      if (dateFrom) params.set("from", dateFrom);
+      if (dateTo) params.set("to", dateTo);
+      params.set("sortMode", sortMode);
+      params.set("page", String(currentPage));
+      params.set("pageSize", String(itemsPerPage));
+
       const response = await fetch(
-        `${API_BASE}/api/backlogs?include_archived=false`,
+        `${API_BASE}/api/backlogs?${params.toString()}`,
         {
           method: "GET",
           cache: "no-store",
@@ -373,90 +385,48 @@ export default function LogsMobile() {
         }),
       );
       setLogsData(formatted);
+      setTotalItems(
+        typeof (result as { total?: number }).total === "number"
+          ? Number((result as { total?: number }).total)
+          : formatted.length,
+      );
       setLogsError(null);
     } catch (err) {
       setLogsError(err instanceof Error ? err.message : "An error occurred");
-      if (showSpinner) setLogsData([]);
+      if (showSpinner) {
+        setLogsData([]);
+        setTotalItems(0);
+      }
     } finally {
       if (showSpinner) setLogsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLogs();
-    const intervalId = window.setInterval(() => fetchLogs(false), 5000);
-    return () => window.clearInterval(intervalId);
+    const id = window.setTimeout(() => {
+      fetchLogs();
+    }, 300);
+    return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const normalizedSearchQuery = React.useMemo(
-    () => searchQuery.trim().toLowerCase(),
-    [searchQuery],
-  );
-
-  const fromTimestamp = React.useMemo(
-    () => (dateFrom ? new Date(dateFrom).getTime() : null),
-    [dateFrom],
-  );
-
-  const toTimestamp = React.useMemo(() => {
-    if (!dateTo) return null;
-
-    const end = new Date(dateTo);
-    end.setHours(23, 59, 59, 999);
-    return end.getTime();
-  }, [dateTo]);
-
-  const filteredLogs = React.useMemo(() => {
-    const filtered = logsData.filter((log) => {
-      const matchesSearch =
-        !normalizedSearchQuery ||
-        log.searchIndex.includes(normalizedSearchQuery);
-      const matchesRole = roleFilter === "ALL" || log.role === roleFilter;
-      const matchesLetter =
-        letterFilter === "ALL" ||
-        log.firstName.charAt(0).toUpperCase() === letterFilter;
-      const afterFrom =
-        fromTimestamp === null || log.createdAtMs >= fromTimestamp;
-      const beforeTo = toTimestamp === null || log.createdAtMs <= toTimestamp;
-
-      return (
-        matchesSearch && matchesRole && matchesLetter && afterFrom && beforeTo
-      );
-    });
-
-    return filtered.sort((a, b) => {
-      if (sortMode === "name-asc") {
-        return a.firstName.localeCompare(b.firstName);
-      }
-
-      if (sortMode === "name-desc") {
-        return b.firstName.localeCompare(a.firstName);
-      }
-
-      return sortMode === "date-desc"
-        ? b.createdAtMs - a.createdAtMs
-        : a.createdAtMs - b.createdAtMs;
-    });
   }, [
-    fromTimestamp,
-    letterFilter,
-    logsData,
-    normalizedSearchQuery,
+    searchQuery,
     roleFilter,
+    letterFilter,
     sortMode,
-    toTimestamp,
+    dateFrom,
+    dateTo,
+    currentPage,
+    itemsPerPage,
   ]);
 
+  const filteredLogs = React.useMemo(() => logsData, [logsData]);
+
   const totalPages = React.useMemo(
-    () => Math.max(1, Math.ceil(filteredLogs.length / itemsPerPage)),
-    [filteredLogs.length, itemsPerPage],
+    () => Math.max(1, Math.ceil(totalItems / itemsPerPage)),
+    [totalItems, itemsPerPage],
   );
 
-  const paginatedLogs = React.useMemo(() => {
-    const startIdx = (currentPage - 1) * itemsPerPage;
-    return filteredLogs.slice(startIdx, startIdx + itemsPerPage);
-  }, [currentPage, filteredLogs, itemsPerPage]);
+  const paginatedLogs = React.useMemo(() => filteredLogs, [filteredLogs]);
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
     Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;

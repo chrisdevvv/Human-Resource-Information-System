@@ -2,7 +2,13 @@ const pool = require("../../config/db");
 
 const Registration = {
   getAll: async (filters = {}, options = {}, pagination) => {
-    const { status = null, search = null } = filters;
+    const {
+      status = null,
+      search = null,
+      letter = null,
+      sortOrder = "asc",
+      dateSortOrder = "newest",
+    } = filters;
     const baseQuery = `
                  SELECT rr.id, rr.first_name, rr.middle_name, rr.last_name, rr.email, rr.school_name, rr.requested_role,
                    rr.birthdate,
@@ -30,6 +36,13 @@ const Registration = {
       params.push(keyword, keyword, keyword, keyword, keyword);
     }
 
+    const normalizedLetter =
+      typeof letter === "string" ? letter.trim().toUpperCase() : "";
+    if (normalizedLetter) {
+      whereParts.push("UPPER(LEFT(COALESCE(rr.first_name, ''), 1)) = ?");
+      params.push(normalizedLetter);
+    }
+
     if (options.schoolName) {
       whereParts.push("LOWER(TRIM(rr.school_name)) = LOWER(TRIM(?))");
       params.push(options.schoolName);
@@ -37,7 +50,11 @@ const Registration = {
 
     const whereClause =
       whereParts.length > 0 ? ` WHERE ${whereParts.join(" AND ")}` : "";
-    const orderClause = " ORDER BY rr.created_at DESC";
+    const createdDirection =
+      String(dateSortOrder).toLowerCase() === "oldest" ? "ASC" : "DESC";
+    const nameDirection =
+      String(sortOrder).toLowerCase() === "desc" ? "DESC" : "ASC";
+    const orderClause = ` ORDER BY rr.created_at ${createdDirection}, rr.first_name ${nameDirection}, rr.last_name ${nameDirection}, rr.id ASC`;
 
     if (!pagination || !pagination.page) {
       const [rows] = await pool
@@ -60,10 +77,11 @@ const Registration = {
 
     const [rows] = await pool
       .promise()
-      .query(
-        `${baseQuery}${whereClause}${orderClause} LIMIT ? OFFSET ?`,
-        [...params, pageSize, offset],
-      );
+      .query(`${baseQuery}${whereClause}${orderClause} LIMIT ? OFFSET ?`, [
+        ...params,
+        pageSize,
+        offset,
+      ]);
 
     return { data: rows, total: Number(total), page, pageSize };
   },

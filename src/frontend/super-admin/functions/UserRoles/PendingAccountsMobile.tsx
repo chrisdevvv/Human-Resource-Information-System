@@ -49,6 +49,7 @@ export default function PendingAccountsMobile({
   const [letterFilter, setLetterFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [pageJumpInput, setPageJumpInput] = useState("1");
   const [data, setData] = useState<RegistrationRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,17 +66,28 @@ export default function PendingAccountsMobile({
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-  const fetchData = async (status: string, showSpinner = true) => {
+  const fetchData = async (
+    status: string,
+    page = currentPage,
+    pageSize = itemsPerPage,
+    showSpinner = true,
+  ) => {
     try {
       if (showSpinner) setLoading(true);
 
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
 
-      const url =
-        status === "ALL"
-          ? `${API_BASE}/api/registrations/`
-          : `${API_BASE}/api/registrations/?status=${status}`;
+      const params = new URLSearchParams();
+      if (status !== "ALL") params.set("status", status);
+      if (searchQuery) params.set("search", searchQuery);
+      if (letterFilter !== "ALL") params.set("letter", letterFilter);
+      params.set("sortOrder", sortOrder);
+      params.set("dateSortOrder", dateSortOrder);
+      params.set("page", String(page));
+      params.set("pageSize", String(pageSize));
+
+      const url = `${API_BASE}/api/registrations/?${params.toString()}`;
 
       const response = await fetch(url, {
         method: "GET",
@@ -103,58 +115,43 @@ export default function PendingAccountsMobile({
         }),
       );
       setData(formattedData);
+      setTotalItems(
+        typeof result.total === "number" ? result.total : formattedData.length,
+      );
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
-      if (showSpinner) setData([]);
+      if (showSpinner) {
+        setData([]);
+        setTotalItems(0);
+      }
     } finally {
       if (showSpinner) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData(statusFilter);
+    fetchData(statusFilter, currentPage, itemsPerPage);
     const intervalId = window.setInterval(
-      () => fetchData(statusFilter, false),
+      () => fetchData(statusFilter, currentPage, itemsPerPage, false),
       5000,
     );
     return () => window.clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
+  }, [
+    statusFilter,
+    searchQuery,
+    letterFilter,
+    sortOrder,
+    dateSortOrder,
+    currentPage,
+    itemsPerPage,
+  ]);
 
-  const filteredData = data
-    .filter((item) => {
-      const q = searchQuery.toLowerCase();
-      const matchesSearch =
-        item.firstName.toLowerCase().includes(q) ||
-        item.lastName.toLowerCase().includes(q) ||
-        item.email.toLowerCase().includes(q) ||
-        item.school.toLowerCase().includes(q);
-      const matchesLetter =
-        letterFilter === "ALL" ||
-        item.firstName.charAt(0).toUpperCase() === letterFilter;
-      return matchesSearch && matchesLetter;
-    })
-    .sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
+  const filteredData = data;
 
-      if (dateSortOrder === "newest") {
-        if (dateB !== dateA) return dateB - dateA;
-      } else {
-        if (dateA !== dateB) return dateA - dateB;
-      }
-
-      if (sortOrder === "asc") {
-        return a.firstName.localeCompare(b.firstName);
-      } else {
-        return b.firstName.localeCompare(a.firstName);
-      }
-    });
-
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredData.slice(startIdx, startIdx + itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const paginatedData = filteredData;
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
     Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;

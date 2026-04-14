@@ -151,6 +151,36 @@ const Employee = {
     const pageSize = Math.min(Number(filters.pageSize) || 25, 200);
     const includeArchived = Boolean(filters.includeArchived);
     const whereParts = [];
+    const params = [];
+
+    const normalizeEmployeeTypeForFilter = (value) => {
+      if (typeof value !== "string") return null;
+      const normalized = value
+        .trim()
+        .toLowerCase()
+        .replace(/[_\s]+/g, "-");
+      return ["teaching", "non-teaching", "teaching-related"].includes(
+        normalized,
+      )
+        ? normalized
+        : null;
+    };
+
+    const search =
+      typeof filters.search === "string" ? filters.search.trim() : "";
+    const letter =
+      typeof filters.letter === "string"
+        ? filters.letter.trim().toUpperCase()
+        : "";
+    const retirement =
+      typeof filters.retirement === "string"
+        ? filters.retirement.trim().toLowerCase()
+        : "ALL";
+    const employeeType = normalizeEmployeeTypeForFilter(filters.employeeType);
+    const sortOrder =
+      String(filters.sortOrder || "asc").toLowerCase() === "desc"
+        ? "DESC"
+        : "ASC";
 
     if (!includeArchived) {
       whereParts.push("employees.is_archived = 0");
@@ -164,22 +194,49 @@ const Employee = {
 
     if (filters.schoolId) {
       whereParts.push("employees.school_id = ?");
+      params.push(filters.schoolId);
     }
 
-    const params = [];
-    if (filters.schoolId) {
-      params.push(filters.schoolId);
+    if (employeeType) {
+      whereParts.push(
+        "LOWER(REPLACE(REPLACE(employees.employee_type, '_', '-'), ' ', '-')) = ?",
+      );
+      params.push(employeeType);
+    }
+
+    if (search) {
+      whereParts.push(
+        "(employees.first_name LIKE ? OR employees.middle_name LIKE ? OR employees.last_name LIKE ? OR employees.email LIKE ? OR employees.employee_no LIKE ? OR employees.work_email LIKE ? OR employees.position LIKE ? OR schools.school_name LIKE ?)",
+      );
+      const like = `%${search}%`;
+      params.push(like, like, like, like, like, like, like, like);
+    }
+
+    if (letter) {
+      whereParts.push("UPPER(LEFT(COALESCE(employees.first_name, ''), 1)) = ?");
+      params.push(letter);
+    }
+
+    if (retirement === "retirable") {
+      whereParts.push(
+        "COALESCE(employees.age, TIMESTAMPDIFF(YEAR, employees.birthdate, CURDATE())) >= 60 AND COALESCE(employees.age, TIMESTAMPDIFF(YEAR, employees.birthdate, CURDATE())) < 65",
+      );
+    } else if (retirement === "mandatory") {
+      whereParts.push(
+        "COALESCE(employees.age, TIMESTAMPDIFF(YEAR, employees.birthdate, CURDATE())) >= 65",
+      );
     }
 
     const whereClause =
       whereParts.length > 0 ? `WHERE ${whereParts.join(" AND ")}` : "";
     const baseQuery = `FROM employees JOIN schools ON employees.school_id = schools.id ${whereClause}`;
+    const orderClause = ` ORDER BY employees.first_name ${sortOrder}, employees.last_name ${sortOrder}, employees.id ASC`;
 
     if (!page) {
       const [rows] = await pool
         .promise()
         .query(
-          `SELECT ${EMPLOYEE_SELECT_WITH_AGE} ${baseQuery} ORDER BY employees.id ASC`,
+          `SELECT ${EMPLOYEE_SELECT_WITH_AGE} ${baseQuery}${orderClause}`,
           params,
         );
       return rows;
@@ -194,7 +251,7 @@ const Employee = {
     const [rows] = await pool
       .promise()
       .query(
-        `SELECT ${EMPLOYEE_SELECT_WITH_AGE} ${baseQuery} ORDER BY employees.id ASC LIMIT ? OFFSET ?`,
+        `SELECT ${EMPLOYEE_SELECT_WITH_AGE} ${baseQuery}${orderClause} LIMIT ? OFFSET ?`,
         [...params, pageSize, offset],
       );
 
@@ -220,28 +277,7 @@ const Employee = {
   },
 
   getBySchool: async (school_id, options = {}) => {
-    const includeArchived = Boolean(options.includeArchived);
-    const whereParts = ["employees.school_id = ?"];
-
-    if (!includeArchived) {
-      whereParts.push("employees.is_archived = 0");
-    }
-
-    if (options.onLeave === true) {
-      whereParts.push("employees.on_leave = 1");
-    } else if (options.onLeave === false) {
-      whereParts.push("employees.on_leave = 0");
-    }
-
-    const whereClause = whereParts.join(" AND ");
-    const [rows] = await pool.promise().query(
-      `SELECT ${EMPLOYEE_SELECT_WITH_AGE}
-       FROM employees
-       JOIN schools ON employees.school_id = schools.id
-       WHERE ${whereClause}`,
-      [school_id],
-    );
-    return rows;
+    return Employee.getAll({ ...options, schoolId: school_id });
   },
 
   create: async (data) => {
@@ -309,7 +345,7 @@ const Employee = {
     const [result] = await pool
       .promise()
       .query(
-        "INSERT INTO employees (first_name, middle_name, last_name, middle_initial, email, mobile_number, home_address, place_of_birth, civil_status, civil_status_id, sex, sex_id, employee_type, school_id, employee_no, work_email, district, `position`, position_id, plantilla_no, prc_license_no, tin, gsis_bp_no, gsis_crn_no, pagibig_no, philhealth_no, age, birthdate, date_of_first_appointment, years_in_service, loyalty_bonus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO employees (first_name, middle_name, last_name, middle_initial, email, mobile_number, home_address, place_of_birth, civil_status, civil_status_id, sex, sex_id, employee_type, school_id, employee_no, work_email, district, `position`, position_id, plantilla_no, prc_license_no, tin, gsis_bp_no, gsis_crn_no, pagibig_no, philhealth_no, age, birthdate, date_of_first_appointment, years_in_service, loyalty_bonus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           first_name,
           middle_name || null,

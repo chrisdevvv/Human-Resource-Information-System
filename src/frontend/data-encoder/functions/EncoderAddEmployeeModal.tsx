@@ -497,33 +497,35 @@ export default function EncoderAddUserModal({
               </span>
             </button>
 
-            <button
-              type="button"
-              onClick={createClearHandler(
-                () => {
-                  setFirstName("");
-                  setLastName("");
-                  setEmail("");
-                  setBirthdate("");
-                  setPassword("");
-                  setConfirmPassword("");
-                  setError("");
-                  setFirstNameError("");
-                  setLastNameError("");
-                  setEmailError("");
-                  setBirthdateError("");
-                  setPasswordError("");
-                  setConfirmPasswordError("");
-                  setStep(1);
-                  setShowConfirm(false);
-                },
-                !!(firstName || lastName || email || password),
-              )}
-              disabled={loading}
-              className="order-first mr-auto px-3 py-1.5 bg-gray-50 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition text-sm font-medium cursor-pointer disabled:opacity-60"
-            >
-              <span className="inline-flex items-center gap-1">Clear All</span>
-            </button>
+            {!!(firstName || lastName || email || password) && (
+              <button
+                type="button"
+                onClick={createClearHandler(
+                  () => {
+                    setFirstName("");
+                    setLastName("");
+                    setEmail("");
+                    setBirthdate("");
+                    setPassword("");
+                    setConfirmPassword("");
+                    setError("");
+                    setFirstNameError("");
+                    setLastNameError("");
+                    setEmailError("");
+                    setBirthdateError("");
+                    setPasswordError("");
+                    setConfirmPasswordError("");
+                    setStep(1);
+                    setShowConfirm(false);
+                  },
+                  !!(firstName || lastName || email || password),
+                )}
+                disabled={loading}
+                className="mr-auto cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline disabled:opacity-60 disabled:no-underline"
+              >
+                Clear All
+              </button>
+            )}
 
             {step === 1 ? (
               <button

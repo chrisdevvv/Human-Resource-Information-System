@@ -50,6 +50,9 @@ type EmployeeRecord = {
 
 type EmployeeApiResponse = {
   data?: EmployeeRecordApi[];
+  total?: number;
+  page?: number;
+  pageSize?: number;
   message?: string;
 };
 
@@ -85,7 +88,7 @@ const normalizeRole = (role: unknown) =>
     .toUpperCase()
     .replace(/-/g, "_");
 
-const getScopedEmployeeEndpoint = () => {
+const getEmployeesEndpoint = () => {
   const rawUser = localStorage.getItem("user");
   if (!rawUser) {
     return "/api/employees/";
@@ -99,7 +102,7 @@ const getScopedEmployeeEndpoint = () => {
       normalizedRole === "ADMIN" || normalizedRole === "DATA_ENCODER";
 
     if (isSchoolScopedRole && Number.isFinite(schoolId) && schoolId > 0) {
-      return `/api/employees/school/${schoolId}`;
+      return "/api/employees/";
     }
   } catch {
     // Fall back to broad endpoint when user payload is malformed.
@@ -175,6 +178,7 @@ export default function EmployeesListLayout() {
   const [pageJumpInput, setPageJumpInput] = useState("1");
 
   const [employeeData, setEmployeeData] = useState<EmployeeRecord[]>([]);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [employeeLoading, setEmployeeLoading] = useState(true);
   const [employeeError, setEmployeeError] = useState<string | null>(null);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
@@ -205,14 +209,32 @@ export default function EmployeesListLayout() {
         throw new Error("No authentication token found.");
       }
 
-      const scopedEndpoint = getScopedEmployeeEndpoint();
-      const response = await fetch(`${API_BASE}${scopedEndpoint}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const scopedEndpoint = getEmployeesEndpoint();
+      const params = new URLSearchParams();
+      if (searchQuery.trim()) params.set("search", searchQuery.trim());
+      if (employeeTypeFilter !== "ALL") {
+        params.set("employee_type", employeeTypeFilter);
+      }
+      if (currentUserRole === "SUPER_ADMIN" && schoolFilter !== "ALL") {
+        params.set("school_id", schoolFilter);
+      }
+      if (letterFilter !== "ALL") params.set("letter", letterFilter);
+      if (retirementFilter !== "ALL")
+        params.set("retirement", retirementFilter);
+      params.set("sortOrder", sortOrder);
+      params.set("page", String(currentPage));
+      params.set("pageSize", String(itemsPerPage));
+
+      const response = await fetch(
+        `${API_BASE}${scopedEndpoint}?${params.toString()}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       const body = (await response.json()) as EmployeeApiResponse;
       if (!response.ok) {
@@ -221,6 +243,9 @@ export default function EmployeesListLayout() {
 
       const mapped = (body.data || []).map(toEmployeeRecord);
       setEmployeeData(mapped);
+      setTotalItems(
+        typeof body.total === "number" ? body.total : mapped.length,
+      );
       setEmployeeError(null);
     } catch (err) {
       setEmployeeError(
@@ -228,6 +253,7 @@ export default function EmployeesListLayout() {
       );
       if (showSpinner) {
         setEmployeeData([]);
+        setTotalItems(0);
       }
     } finally {
       if (showSpinner) {
@@ -241,87 +267,41 @@ export default function EmployeesListLayout() {
       return;
     }
 
-    fetchEmployees();
-    const intervalId = window.setInterval(() => {
-      fetchEmployees(false);
-    }, 5000);
+    const id = window.setTimeout(() => {
+      fetchEmployees();
+    }, 300);
 
-    return () => window.clearInterval(intervalId);
+    return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
-
-  const filteredEmployees = useMemo(() => {
-    return employeeData
-      .filter((employee) => {
-        const query = searchQuery.trim().toLowerCase();
-        const matchesSearch =
-          !query ||
-          employee.fullName.toLowerCase().includes(query) ||
-          employee.email.toLowerCase().includes(query) ||
-          employee.schoolName.toLowerCase().includes(query);
-
-        const matchesEmployeeType =
-          employeeTypeFilter === "ALL" ||
-          employee.employeeType === employeeTypeFilter;
-
-        const matchesSchool =
-          schoolFilter === "ALL" || employee.schoolName === schoolFilter;
-
-        const matchesLetter =
-          letterFilter === "ALL" ||
-          employee.fullName.charAt(0).toUpperCase() === letterFilter;
-
-        const matchesRetirement = (() => {
-          if (retirementFilter === "ALL") return true;
-          const age = computeAge(employee.birthdate);
-          if (age === null) return false;
-          if (retirementFilter === "mandatory") return age >= 65;
-          if (retirementFilter === "retirable") return age >= 60 && age < 65;
-          return false;
-        })();
-
-        return (
-          matchesSearch &&
-          matchesEmployeeType &&
-          matchesSchool &&
-          matchesLetter &&
-          matchesRetirement
-        );
-      })
-      .sort((a, b) => {
-        if (sortOrder === "asc") {
-          return a.fullName.localeCompare(b.fullName);
-        }
-        return b.fullName.localeCompare(a.fullName);
-      });
   }, [
-    employeeData,
+    activeTab,
     searchQuery,
     employeeTypeFilter,
     schoolFilter,
     letterFilter,
     retirementFilter,
     sortOrder,
+    currentPage,
+    itemsPerPage,
+    currentUserRole,
   ]);
 
+  const filteredEmployees = useMemo(() => employeeData, [employeeData]);
+
   const schoolOptions = useMemo(() => {
-    const unique = new Set(
-      employeeData
-        .map((employee) => employee.schoolName.trim())
-        .filter((name) => Boolean(name)),
-    );
-    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+    const unique = new Map<number, string>();
+    employeeData.forEach((employee) => {
+      if (employee.schoolId && employee.schoolName.trim()) {
+        unique.set(employee.schoolId, employee.schoolName.trim());
+      }
+    });
+    return Array.from(unique.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [employeeData]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredEmployees.length / itemsPerPage),
-  );
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedEmployees = filteredEmployees.slice(
-    startIdx,
-    startIdx + itemsPerPage,
-  );
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const paginatedEmployees = filteredEmployees;
 
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
@@ -545,9 +525,9 @@ export default function EmployeesListLayout() {
                     className="w-full sm:w-auto text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                   >
                     <option value="ALL">All Schools</option>
-                    {schoolOptions.map((schoolName) => (
-                      <option key={schoolName} value={schoolName}>
-                        {schoolName}
+                    {schoolOptions.map((school) => (
+                      <option key={school.id} value={String(school.id)}>
+                        {school.name}
                       </option>
                     ))}
                   </select>

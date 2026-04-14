@@ -19,9 +19,9 @@ const Backlog = {
   // Also applies filtering by is_archived by default for better performance
   getAll: async (pagination, options = {}) => {
     const includeArchived = options.includeArchived || false; // Default to NOT including archived (optimization)
-    
+
     // Build cache key for read operations
-    const cacheKey = `getAll_${pagination?.page || 'all'}_${pagination?.pageSize || 'all'}_${includeArchived}`;
+    const cacheKey = `getAll_${JSON.stringify({ pagination: pagination || null, options: { ...options, includeArchived } })}`;
     if (isCacheFresh(cacheKey)) {
       const cached = getCacheKey(cacheKey);
       return cached?.data;
@@ -44,23 +44,74 @@ const Backlog = {
       users.email,
       schools.school_name
     `;
-    
+
     const baseQuery = `FROM backlogs 
       LEFT JOIN users ON backlogs.user_id = users.id 
       LEFT JOIN schools ON users.school_id = schools.id`;
-    
-    // Use composite index (is_archived, created_at DESC) for better query performance
-    const whereClause = !includeArchived 
-      ? "WHERE backlogs.is_archived = 0" 
+
+    const whereParts = [];
+    const params = [];
+
+    if (!includeArchived) {
+      whereParts.push("backlogs.is_archived = 0");
+    }
+
+    const search =
+      typeof options.search === "string" ? options.search.trim() : "";
+    if (search) {
+      whereParts.push(
+        "(backlogs.action LIKE ? OR backlogs.details LIKE ? OR users.first_name LIKE ? OR users.last_name LIKE ? OR users.email LIKE ? OR schools.school_name LIKE ?)",
+      );
+      const like = `%${search}%`;
+      params.push(like, like, like, like, like, like);
+    }
+
+    if (options.role) {
+      whereParts.push("users.role = ?");
+      params.push(options.role);
+    }
+
+    const normalizedLetter =
+      typeof options.letter === "string"
+        ? options.letter.trim().toUpperCase()
+        : "";
+    if (normalizedLetter) {
+      whereParts.push("UPPER(LEFT(COALESCE(users.first_name, ''), 1)) = ?");
+      params.push(normalizedLetter);
+    }
+
+    if (options.from) {
+      whereParts.push("backlogs.created_at >= ?");
+      params.push(options.from);
+    }
+
+    if (options.to) {
+      whereParts.push("backlogs.created_at <= ?");
+      params.push(options.to);
+    }
+
+    const sortMode = String(options.sortMode || "date-desc");
+    const orderClause =
+      sortMode === "date-asc"
+        ? " ORDER BY backlogs.created_at ASC, users.first_name ASC, users.last_name ASC, backlogs.id ASC"
+        : sortMode === "name-desc"
+          ? " ORDER BY users.first_name DESC, users.last_name DESC, backlogs.created_at DESC, backlogs.id DESC"
+          : sortMode === "name-asc"
+            ? " ORDER BY users.first_name ASC, users.last_name ASC, backlogs.created_at DESC, backlogs.id ASC"
+            : " ORDER BY backlogs.created_at DESC, users.first_name ASC, users.last_name ASC, backlogs.id DESC";
+
+    const whereClause = whereParts.length
+      ? `WHERE ${whereParts.join(" AND ")}`
       : "";
 
     if (!pagination || !pagination.page) {
       const [rows] = await pool
         .promise()
         .query(
-          `SELECT ${selectColumns} ${baseQuery} ${whereClause} ORDER BY backlogs.created_at DESC LIMIT 500`,
+          `SELECT ${selectColumns} ${baseQuery} ${whereClause}${orderClause} LIMIT 500`,
+          params,
         );
-      
+
       setCacheValue(cacheKey, rows);
       return rows;
     }
@@ -72,13 +123,13 @@ const Backlog = {
     // Optimized pagination: use LIMIT clause early to reduce rows examined
     const [[{ total }]] = await pool
       .promise()
-      .query(`SELECT COUNT(1) as total ${baseQuery} ${whereClause}`);
+      .query(`SELECT COUNT(1) as total ${baseQuery} ${whereClause}`, params);
 
     const [rows] = await pool
       .promise()
       .query(
-        `SELECT ${selectColumns} ${baseQuery} ${whereClause} ORDER BY backlogs.created_at DESC LIMIT ? OFFSET ?`,
-        [pageSize, offset],
+        `SELECT ${selectColumns} ${baseQuery} ${whereClause}${orderClause} LIMIT ? OFFSET ?`,
+        [...params, pageSize, offset],
       );
 
     const result = { data: rows, total: Number(total), page, pageSize };
@@ -109,7 +160,7 @@ const Backlog = {
       users.email,
       schools.school_name
     `;
-    
+
     const [rows] = await pool.promise().query(
       `SELECT ${selectColumns}
        FROM backlogs
@@ -118,7 +169,7 @@ const Backlog = {
        WHERE backlogs.id = ?`,
       [id],
     );
-    
+
     const result = rows[0];
     if (result) setCacheValue(cacheKey, result);
     return result;
@@ -132,10 +183,10 @@ const Backlog = {
         "INSERT INTO backlogs (user_id, school_id, employee_id, leave_id, action, details) VALUES (?, ?, ?, ?, ?, ?)",
         [user_id, school_id, employee_id, leave_id, action, details],
       );
-    
+
     // Invalidate relevant caches when new log is created
     queryCache.clear();
-    
+
     return result;
   },
 
@@ -184,6 +235,30 @@ const Backlog = {
       whereParts.push("backlogs.is_archived = 0");
     }
 
+    const search =
+      typeof filters.search === "string" ? filters.search.trim() : "";
+    if (search) {
+      whereParts.push(
+        "(backlogs.action LIKE ? OR backlogs.details LIKE ? OR users.first_name LIKE ? OR users.last_name LIKE ? OR users.email LIKE ? OR schools.school_name LIKE ?)",
+      );
+      const like = `%${search}%`;
+      params.push(like, like, like, like, like, like);
+    }
+
+    if (filters.role) {
+      whereParts.push("users.role = ?");
+      params.push(filters.role);
+    }
+
+    const normalizedLetter =
+      typeof filters.letter === "string"
+        ? filters.letter.trim().toUpperCase()
+        : "";
+    if (normalizedLetter) {
+      whereParts.push("UPPER(LEFT(COALESCE(users.first_name, ''), 1)) = ?");
+      params.push(normalizedLetter);
+    }
+
     // Apply date range filters first (uses created_at index)
     if (filters.from) {
       whereParts.push("backlogs.created_at >= ?");
@@ -220,6 +295,16 @@ const Backlog = {
       params.push(filters.leaveId);
     }
 
+    const sortMode = String(filters.sortMode || "date-desc");
+    const orderClause =
+      sortMode === "date-asc"
+        ? "ORDER BY backlogs.created_at ASC, users.first_name ASC, users.last_name ASC, backlogs.id ASC"
+        : sortMode === "name-desc"
+          ? "ORDER BY users.first_name DESC, users.last_name DESC, backlogs.created_at DESC, backlogs.id DESC"
+          : sortMode === "name-asc"
+            ? "ORDER BY users.first_name ASC, users.last_name ASC, backlogs.created_at DESC, backlogs.id ASC"
+            : "ORDER BY backlogs.created_at DESC, users.first_name ASC, users.last_name ASC, backlogs.id DESC";
+
     const whereClause = whereParts.length
       ? `WHERE ${whereParts.join(" AND ")}`
       : "";
@@ -248,7 +333,7 @@ const Backlog = {
        LEFT JOIN users ON backlogs.user_id = users.id
        LEFT JOIN schools ON users.school_id = schools.id
        ${whereClause}
-       ORDER BY backlogs.created_at DESC
+       ${orderClause}
        LIMIT 10000`,
       params,
     );

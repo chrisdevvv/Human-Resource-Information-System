@@ -808,16 +808,18 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                 </div>
 
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                  <button
-                    type="button"
-                    onClick={createClearHandler(
-                      handleClearAllFields,
-                      hasUnsavedChanges,
-                    )}
-                    className="cursor-pointer w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100 sm:mr-auto sm:w-auto"
-                  >
-                    Clear All
-                  </button>
+                  {hasUnsavedChanges && (
+                    <button
+                      type="button"
+                      onClick={createClearHandler(
+                        handleClearAllFields,
+                        hasUnsavedChanges,
+                      )}
+                      className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline sm:mr-auto"
+                    >
+                      Clear All
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={handleReset}
@@ -928,17 +930,19 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                 )}
 
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                  <button
-                    type="button"
-                    onClick={createClearHandler(
-                      handleClearAllFields,
-                      hasUnsavedChanges,
-                    )}
-                    disabled={isLoading || isConfirmOpen}
-                    className="cursor-pointer w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 sm:mr-auto sm:w-auto"
-                  >
-                    Clear All
-                  </button>
+                  {hasUnsavedChanges && (
+                    <button
+                      type="button"
+                      onClick={createClearHandler(
+                        handleClearAllFields,
+                        hasUnsavedChanges,
+                      )}
+                      disabled={isLoading || isConfirmOpen}
+                      className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline disabled:cursor-not-allowed disabled:opacity-50 sm:mr-auto"
+                    >
+                      Clear All
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => {
