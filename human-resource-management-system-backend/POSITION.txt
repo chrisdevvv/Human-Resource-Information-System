@@ -4,24 +4,24 @@ Accountant III
 Accountant IV
 Accounting Analyst
 Accounting Clerk II
-Accounting Staff 1
-Accounting Staff 2
-Accounting Staff 3
-Accounting Staff 4
-Accounting Staff 5
-Admin Support 1
-Admin Support 10
-Admin Support 11
-Admin Support 12
-Admin Support 13
-Admin Support 2
-Admin Support 3
-Admin Support 4
-Admin Support 5
-Admin Support 6
-Admin Support 7
-Admin Support 8
-Admin Support 9
+Accounting Staff I
+Accounting Staff II
+Accounting Staff III
+Accounting Staff IV
+Accounting Staff V
+Administrative Support I
+Administrative Support X
+Administrative Support XI
+Administrative Support XII
+Administrative Support XIII
+Administrative Support II
+Administrative Support III
+Administrative Support IV
+Administrative Support V
+Administrative Support VI
+Administrative Support VII
+Administrative Support VIII
+Administrative Support IX
 Administrative Aide I
 Administrative Aide II
 Administrative Aide III
@@ -44,9 +44,9 @@ Agriculturist II
 Aquacultural Technician II
 Aquaculturist I
 Architech Consultant
-Architect 2
-Architect 3
-Architect 4
+Architect II
+Architect III
+Architect IV
 Architect I
 Architect II
 Artist-Illustrator II
@@ -111,9 +111,9 @@ Dormitory Manager I
 Dormitory Manager II
 Draftsman I
 Draftsman II
-Driver 1
-Driver 2
-Driver 3
+Driver I
+Driver II
+Driver III
 Driver I
 Education Program Specialist I
 Education Program Specialist II
@@ -122,8 +122,8 @@ Education Research Assistant II
 Education Supervisor I
 Electrical Engineer
 Encoder
-Engineer 1
-Engineer 2
+Engineer I
+Engineer II
 Engineer II
 Engineer III
 Engineer IV
@@ -293,10 +293,10 @@ Teacher VI
 Teacher VII
 Teachers Camp Superintendent
 Teaching Aids Specialist
-Technical Assistant 1
-Technical Assistant 2
-Technical Assistant 3
-Technical Assistant 4
+Technical Assistant I
+Technical Assistant II
+Technical Assistant III
+Technical Assistant IV
 Typesetter II
 Undersecretary
 Utility Foreman
