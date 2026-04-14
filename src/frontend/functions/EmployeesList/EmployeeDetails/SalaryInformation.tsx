@@ -14,10 +14,10 @@ type InfoFieldProps = {
 type SalaryInformationProps = {
   InfoField: React.ComponentType<InfoFieldProps>;
   isEditing: boolean;
-  editDateOfFirstAppointment: string;
+  salaryDateOfFirstAppointment: string | null | undefined;
   setEditDateOfFirstAppointment: (value: string) => void;
-  yearsInService: number | string | null | undefined;
-  loyaltyBonus: string | number | boolean | null | undefined;
+  salaryYearsInService: number | string | null | undefined;
+  salaryLoyaltyBonus: string | number | boolean | null | undefined;
   formatDate: (value: string | null | undefined) => string;
   formatYearsInService: (value: number | string | null | undefined) => string;
   formatLoyaltyBonus: (
@@ -29,10 +29,10 @@ type SalaryInformationProps = {
 export default function SalaryInformation({
   InfoField,
   isEditing,
-  editDateOfFirstAppointment,
+  salaryDateOfFirstAppointment,
   setEditDateOfFirstAppointment,
-  yearsInService,
-  loyaltyBonus,
+  salaryYearsInService,
+  salaryLoyaltyBonus,
   formatDate,
   formatYearsInService,
   formatLoyaltyBonus,
@@ -51,13 +51,13 @@ export default function SalaryInformation({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
           <InfoField
             label="Date of First Appointment"
-            value={formatDate(editDateOfFirstAppointment)}
+            value={formatDate(salaryDateOfFirstAppointment)}
             isEditing={isEditing}
             errorMessage={getValidationError("Date of First Appointment")}
           >
             <input
               type="date"
-              value={editDateOfFirstAppointment}
+              value={salaryDateOfFirstAppointment || ""}
               onChange={(e) => setEditDateOfFirstAppointment(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
             />
@@ -65,12 +65,12 @@ export default function SalaryInformation({
 
           <InfoField
             label="Years in Service"
-            value={formatYearsInService(yearsInService)}
+            value={formatYearsInService(salaryYearsInService)}
           />
 
           <InfoField
             label="Loyalty Bonus"
-            value={formatLoyaltyBonus(loyaltyBonus)}
+            value={formatLoyaltyBonus(salaryLoyaltyBonus)}
           />
         </div>
       </div>

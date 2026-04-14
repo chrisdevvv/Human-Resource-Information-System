@@ -261,6 +261,36 @@ const formatLoyaltyBonus = (
   return "N/A";
 };
 
+const computeServiceMetrics = (
+  dateOfFirstAppointment: string | null | undefined,
+): { yearsInService: number | null; loyaltyBonus: "Yes" | "No" } => {
+  const normalizedDate = String(dateOfFirstAppointment || "").trim();
+  if (!normalizedDate) {
+    return { yearsInService: null, loyaltyBonus: "No" };
+  }
+
+  const [yearPart, monthPart, dayPart] = normalizedDate.split("-").map(Number);
+  if (!yearPart || !monthPart || !dayPart) {
+    return { yearsInService: null, loyaltyBonus: "No" };
+  }
+
+  const now = new Date();
+  let years = now.getFullYear() - yearPart;
+  const hasReachedAnniversary =
+    now.getMonth() + 1 > monthPart ||
+    (now.getMonth() + 1 === monthPart && now.getDate() >= dayPart);
+
+  if (!hasReachedAnniversary) {
+    years -= 1;
+  }
+
+  const yearsInService = Math.max(0, years);
+  const loyaltyBonus =
+    yearsInService > 0 && yearsInService % 5 === 0 ? "Yes" : "No";
+
+  return { yearsInService, loyaltyBonus };
+};
+
 const createEditSnapshotFromDetails = (
   data: EmployeeDetailsResponse,
 ): EditSnapshot => {
@@ -662,6 +692,17 @@ export default function ViewEmployeeModal({
   }, [employee]);
 
   const resolvedDetails = details || fallbackDetails;
+  const resolvedSalaryDate = isEditing
+    ? editDateOfFirstAppointment
+    : resolvedDetails?.date_of_first_appointment || null;
+  const computedSalaryMetrics = computeServiceMetrics(resolvedSalaryDate);
+  const resolvedYearsInService = isEditing
+    ? computedSalaryMetrics.yearsInService
+    : (resolvedDetails?.years_in_service ??
+      computedSalaryMetrics.yearsInService);
+  const resolvedLoyaltyBonus = isEditing
+    ? computedSalaryMetrics.loyaltyBonus
+    : (resolvedDetails?.loyalty_bonus ?? computedSalaryMetrics.loyaltyBonus);
 
   useEffect(() => {
     if (!visible || !employee) return;
@@ -951,20 +992,6 @@ export default function ViewEmployeeModal({
       newErrors.push({ field: "Last Name", message: "Last name is required" });
     }
 
-    if (!editMiddleName.trim()) {
-      newErrors.push({
-        field: "Middle Name",
-        message: "Middle name is required",
-      });
-    }
-
-    if (!editMiddleInitial.trim()) {
-      newErrors.push({
-        field: "Middle Initial",
-        message: "Middle initial is required",
-      });
-    }
-
     if (editMiddleInitial.trim().length > 2) {
       newErrors.push({
         field: "M.I.",
@@ -976,55 +1003,6 @@ export default function ViewEmployeeModal({
       newErrors.push({
         field: "Date of Birth",
         message: "Date of birth is required",
-      });
-    }
-
-    if (!editHomeAddress.trim()) {
-      newErrors.push({
-        field: "Home Address",
-        message: "Home address is required",
-      });
-    }
-
-    if (!editPlaceOfBirth.trim()) {
-      newErrors.push({
-        field: "Place of Birth",
-        message: "Place of birth is required",
-      });
-    }
-
-    if (!editCivilStatus.trim()) {
-      newErrors.push({
-        field: "Civil Status",
-        message: "Civil status is required",
-      });
-    }
-
-    if (!editSex.trim()) {
-      newErrors.push({
-        field: "Sex",
-        message: "Sex is required",
-      });
-    }
-
-    if (!editDistrict.trim()) {
-      newErrors.push({
-        field: "District",
-        message: "District is required",
-      });
-    }
-
-    if (!editPosition.trim()) {
-      newErrors.push({
-        field: "Position",
-        message: "Position is required",
-      });
-    }
-
-    if (!editPlantillaNo.trim()) {
-      newErrors.push({
-        field: "Plantilla Number",
-        message: "Plantilla number is required",
       });
     }
 
@@ -1050,53 +1028,39 @@ export default function ViewEmployeeModal({
       }
     }
 
-    if (!editPersonalEmail.trim()) {
-      newErrors.push({
-        field: "Personal Email",
-        message: "Personal email is required",
-      });
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editPersonalEmail.trim())) {
+    if (
+      editPersonalEmail.trim() &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editPersonalEmail.trim())
+    ) {
       newErrors.push({
         field: "Personal Email",
         message: "Personal email must be a valid email",
       });
     }
 
-    if (!editMobileNumber.trim()) {
-      newErrors.push({
-        field: "Mobile Number",
-        message: "Mobile number is required",
-      });
-    } else if (!/^\d{11}$/.test(editMobileNumber.trim())) {
+    if (editMobileNumber.trim() && !/^\d{11}$/.test(editMobileNumber.trim())) {
       newErrors.push({
         field: "Mobile Number",
         message: "Mobile number must be exactly 11 digits",
       });
     }
 
-    if (!editEmployeeNo.trim()) {
-      newErrors.push({
-        field: "Employee Number",
-        message: "Employee number is required",
-      });
-    } else if (!/^\d{7}$/.test(editEmployeeNo.trim())) {
+    if (editEmployeeNo.trim() && !/^\d{7}$/.test(editEmployeeNo.trim())) {
       newErrors.push({
         field: "Employee Number",
         message: "Employee number must be exactly 7 digits",
       });
     }
 
-    if (!editWorkEmail.trim()) {
-      newErrors.push({
-        field: "DepEd Email",
-        message: "DepEd email is required",
-      });
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editWorkEmail.trim())) {
+    if (
+      editWorkEmail.trim() &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editWorkEmail.trim())
+    ) {
       newErrors.push({
         field: "DepEd Email",
         message: "DepEd email must be a valid email",
       });
-    } else if (!isValidDepEdEmail(editWorkEmail)) {
+    } else if (editWorkEmail.trim() && !isValidDepEdEmail(editWorkEmail)) {
       newErrors.push({
         field: "DepEd Email",
         message: "DepEd email must end with @deped.gov.ph",
@@ -1287,48 +1251,87 @@ export default function ViewEmployeeModal({
         throw new Error("No authentication token found. Please log in again.");
       }
 
+      const firstAppointmentMetrics = computeServiceMetrics(
+        firstAppointmentDate || null,
+      );
+      const normalizedMiddleName = editMiddleName.trim();
+      const updatePayload = {
+        first_name: editFirstName.trim(),
+        middle_name: normalizedMiddleName || null,
+        no_middle_name: !normalizedMiddleName,
+        middle_initial: normalizeMiddleInitialInput(editMiddleInitial.trim()),
+        last_name: editLastName.trim(),
+        birthdate: editBirthdate,
+        email: editPersonalEmail.trim(),
+        personal_email: editPersonalEmail.trim(),
+        mobile_number: editMobileNumber.trim(),
+        home_address: editHomeAddress.trim(),
+        place_of_birth: editPlaceOfBirth.trim(),
+        civil_status: editCivilStatus.trim(),
+        civil_status_id: editCivilStatusId,
+        sex: editSex.trim(),
+        sex_id: editSexId,
+        employee_no: editEmployeeNo.trim(),
+        work_email: editWorkEmail.trim(),
+        district: editDistrict.trim(),
+        position: editPosition.trim(),
+        position_id: editPositionId,
+        plantilla_no: editPlantillaNo.trim(),
+        date_of_first_appointment: firstAppointmentDate || null,
+        // Compatibility keys for backend variants while keeping current API contract.
+        dateOfFirstAppointment: firstAppointmentDate || null,
+        years_in_service: firstAppointmentMetrics.yearsInService,
+        yearsInService: firstAppointmentMetrics.yearsInService,
+        loyalty_bonus: firstAppointmentMetrics.loyaltyBonus,
+        loyaltyBonus: firstAppointmentMetrics.loyaltyBonus,
+        employee_type: editEmployeeType,
+        school_id: editSchoolId,
+        prc_license_no: editLicenseNoPrc.trim(),
+        license_no_prc: editLicenseNoPrc.trim(),
+        tin: editTin.trim(),
+        gsis_bp_no: editGsisBpNo.trim(),
+        gsis_crn_no: editGsisCrnNo.trim(),
+        pagibig_no: editPagibigNo.trim(),
+        philhealth_no: editPhilhealthNo.trim(),
+      };
+
       const response = await fetch(`${API_BASE}/api/employees/${employee.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          first_name: editFirstName.trim(),
-          middle_name: editMiddleName.trim(),
-          middle_initial: normalizeMiddleInitialInput(editMiddleInitial.trim()),
-          last_name: editLastName.trim(),
-          birthdate: editBirthdate,
-          email: editPersonalEmail.trim(),
-          personal_email: editPersonalEmail.trim(),
-          mobile_number: editMobileNumber.trim(),
-          home_address: editHomeAddress.trim(),
-          place_of_birth: editPlaceOfBirth.trim(),
-          civil_status: editCivilStatus.trim(),
-          civil_status_id: editCivilStatusId,
-          sex: editSex.trim(),
-          sex_id: editSexId,
-          employee_no: editEmployeeNo.trim(),
-          work_email: editWorkEmail.trim(),
-          district: editDistrict.trim(),
-          position: editPosition.trim(),
-          position_id: editPositionId,
-          plantilla_no: editPlantillaNo.trim(),
-          date_of_first_appointment: firstAppointmentDate || null,
-          employee_type: editEmployeeType,
-          school_id: editSchoolId,
-          prc_license_no: editLicenseNoPrc.trim(),
-          license_no_prc: editLicenseNoPrc.trim(),
-          tin: editTin.trim(),
-          gsis_bp_no: editGsisBpNo.trim(),
-          gsis_crn_no: editGsisCrnNo.trim(),
-          pagibig_no: editPagibigNo.trim(),
-          philhealth_no: editPhilhealthNo.trim(),
-        }),
+        body: JSON.stringify(updatePayload),
       });
 
-      const body = (await response.json()) as { message?: string };
-      if (!response.ok) {
+      let updateResponse = response;
+      if (
+        !response.ok &&
+        (response.status === 404 ||
+          response.status === 405 ||
+          response.status === 501)
+      ) {
+        updateResponse = await fetch(
+          `${API_BASE}/api/employees/${employee.id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(updatePayload),
+          },
+        );
+      }
+
+      let body: { message?: string } = {};
+      try {
+        body = (await updateResponse.json()) as { message?: string };
+      } catch {
+        body = {};
+      }
+
+      if (!updateResponse.ok) {
         throw new Error(body.message || "Failed to update employee");
       }
 
@@ -1667,10 +1670,10 @@ export default function ViewEmployeeModal({
             <SalaryInformation
               InfoField={InfoField}
               isEditing={isEditing}
-              editDateOfFirstAppointment={editDateOfFirstAppointment}
+              salaryDateOfFirstAppointment={resolvedSalaryDate}
               setEditDateOfFirstAppointment={setEditDateOfFirstAppointment}
-              yearsInService={resolvedDetails?.years_in_service}
-              loyaltyBonus={resolvedDetails?.loyalty_bonus}
+              salaryYearsInService={resolvedYearsInService}
+              salaryLoyaltyBonus={resolvedLoyaltyBonus}
               formatDate={formatDate}
               formatYearsInService={formatYearsInService}
               formatLoyaltyBonus={formatLoyaltyBonus}
