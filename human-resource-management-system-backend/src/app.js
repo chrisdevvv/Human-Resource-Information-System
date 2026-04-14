@@ -469,6 +469,12 @@ const ensureEmployeeProfileSchema = async () => {
 const syncEmployeeServiceMetrics = async () => {
   await pool.promise().query(`
     UPDATE employees
+    SET date_of_first_appointment = NULL
+    WHERE date_of_first_appointment = '0000-00-00';
+  `);
+
+  await pool.promise().query(`
+    UPDATE employees
     SET years_in_service = CASE
           WHEN date_of_first_appointment IS NULL THEN NULL
           WHEN date_of_first_appointment > CURDATE() THEN 0
