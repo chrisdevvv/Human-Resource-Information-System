@@ -26,7 +26,7 @@ type EmployeeRecordApi = {
   email?: string | null;
   school_name?: string | null;
   school_id?: number | null;
-  employee_type?: "teaching" | "non-teaching";
+  employee_type?: "teaching" | "non-teaching" | "teaching-related";
   created_at?: string | null;
   birthdate?: string | null;
   is_archived?: number;
@@ -39,7 +39,7 @@ type EmployeeRecord = {
   middleName: string;
   lastName: string;
   fullName: string;
-  employeeType: "teaching" | "non-teaching";
+  employeeType: "teaching" | "non-teaching" | "teaching-related";
   email: string;
   schoolName: string;
   schoolId: number | null;
@@ -116,7 +116,7 @@ type EmployeeApiResponse = {
 export default function ArchivedEmployee() {
   const [searchQuery, setSearchQuery] = useState("");
   const [employeeTypeFilter, setEmployeeTypeFilter] = useState<
-    "ALL" | "teaching" | "non-teaching"
+    "ALL" | "teaching" | "non-teaching" | "teaching-related"
   >("ALL");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [letterFilter, setLetterFilter] = useState("ALL");

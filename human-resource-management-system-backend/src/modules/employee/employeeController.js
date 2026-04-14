@@ -30,69 +30,6 @@ const isSameSchool = (userSchoolId, targetSchoolId) =>
 const buildFullName = (firstName, middleName, lastName) =>
   [firstName, middleName, lastName].filter(Boolean).join(" ").trim();
 
-const toFiniteAge = (value) => {
-  if (value === null || value === undefined || value === "") {
-    return null;
-  }
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) {
-    return null;
-  }
-  return Math.trunc(parsed);
-};
-
-const computeAgeFromBirthdate = (birthdate) => {
-  if (!birthdate) {
-    return null;
-  }
-
-  const date = new Date(birthdate);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  const today = new Date();
-  let age = today.getFullYear() - date.getFullYear();
-  const monthDiff = today.getMonth() - date.getMonth();
-  const hasNotHadBirthdayThisYear =
-    monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate());
-
-  if (hasNotHadBirthdayThisYear) {
-    age -= 1;
-  }
-
-  return age;
-};
-
-const getRetirableFromAge = (age) => {
-  if (!Number.isFinite(age)) {
-    return null;
-  }
-  if (age >= 65) {
-    return "Mandatory Retirement";
-  }
-  if (age >= 60) {
-    return "Yes";
-  }
-  return "No";
-};
-
-const applyRetirableBusinessRule = (payload, existingEmployee = null) => {
-  const payloadAge = toFiniteAge(payload?.age);
-  const payloadBirthdateAge = computeAgeFromBirthdate(payload?.birthdate);
-
-  const effectiveAge =
-    payloadAge ??
-    payloadBirthdateAge ??
-    toFiniteAge(existingEmployee?.age) ??
-    computeAgeFromBirthdate(existingEmployee?.birthdate);
-
-  const computedRetirable = getRetirableFromAge(effectiveAge);
-  if (computedRetirable) {
-    payload.retirable = computedRetirable;
-  }
-};
-
 const getAllEmployees = async (req, res) => {
   try {
     const {
@@ -319,8 +256,6 @@ const createEmployee = async (req, res) => {
       });
     }
 
-    applyRetirableBusinessRule(req.body);
-
     const result = await Employee.create(req.body);
     const { first_name, middle_name, last_name, employee_type, school_id } =
       req.body;
@@ -388,6 +323,20 @@ const updateEmployee = async (req, res) => {
       return res.status(404).json({ message: "Employee not found" });
     }
 
+    const hasExplicitSchoolId =
+      req.body?.school_id !== undefined &&
+      req.body?.school_id !== null &&
+      req.body?.school_id !== "";
+    const resolvedSchoolId = hasExplicitSchoolId
+      ? Number(req.body.school_id)
+      : Number(existing.school_id);
+
+    if (!Number.isFinite(resolvedSchoolId) || resolvedSchoolId <= 0) {
+      return res.status(400).json({
+        message: "A valid school is required to update an employee record.",
+      });
+    }
+
     if (isSchoolScopedWriteRole(req.user?.role)) {
       if (!isSameSchool(req.user?.school_id, existing.school_id)) {
         return res.status(403).json({
@@ -396,15 +345,18 @@ const updateEmployee = async (req, res) => {
         });
       }
 
-      if (!isSameSchool(req.user?.school_id, req.body?.school_id)) {
+      if (!isSameSchool(req.user?.school_id, resolvedSchoolId)) {
         return res.status(403).json({
           message:
             "You can only assign employee records to your assigned school",
         });
       }
-    }
 
-    applyRetirableBusinessRule(req.body, existing);
+      // Enforce trusted school assignment for scoped roles.
+      req.body.school_id = Number(req.user?.school_id);
+    } else {
+      req.body.school_id = resolvedSchoolId;
+    }
 
     const result = await Employee.update(req.params.id, req.body);
     if (result.affectedRows === 0) {

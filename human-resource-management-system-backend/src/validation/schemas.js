@@ -8,6 +8,15 @@ const schoolIdParamSchema = Joi.object({
   school_id: Joi.number().integer().positive().required(),
 });
 
+const employeeIdParamSchema = Joi.object({
+  employee_id: Joi.number().integer().positive().required(),
+});
+
+const salaryInformationIdParamSchema = Joi.object({
+  employee_id: Joi.number().integer().positive().required(),
+  id: Joi.number().integer().positive().required(),
+});
+
 const birthdateSchema = Joi.date().iso().max("now");
 const firstAppointmentDateSchema = Joi.date().iso().max("now");
 const noMiddleNameSchema = Joi.alternatives().try(
@@ -144,6 +153,11 @@ const employeeUpdateBodySchema = Joi.object({
   age: ageSchema,
 });
 
+const employeePatchBodySchema = employeeUpdateBodySchema.fork(
+  Object.keys(employeeUpdateBodySchema.describe().keys),
+  (schema) => schema.optional(),
+);
+
 const employeeListQuerySchema = Joi.object({
   search: Joi.string().trim().max(255),
   employee_type: Joi.string().valid(
@@ -187,6 +201,32 @@ const employeeStatusCountsQuerySchema = Joi.object({
     Joi.number().valid(0, 1),
   ),
 });
+
+const salaryInformationListQuerySchema = Joi.object({
+  page: Joi.number().integer().min(1),
+  pageSize: Joi.number().integer().min(1).max(200),
+  sortOrder: Joi.string().valid("asc", "desc"),
+});
+
+const salaryInformationCreateBodySchema = Joi.object({
+  date: Joi.date().iso().required(),
+  plantilla: Joi.string().trim().max(100).allow(null, ""),
+  sg: Joi.string().trim().max(20).allow(null, ""),
+  step: Joi.string().trim().max(20).allow(null, ""),
+  salary: Joi.number().min(0).precision(2).required(),
+  increment: Joi.number().min(0).precision(2).allow(null),
+  remarks: Joi.string().trim().max(500).allow(null, ""),
+});
+
+const salaryInformationUpdateBodySchema = Joi.object({
+  date: Joi.date().iso(),
+  plantilla: Joi.string().trim().max(100).allow(null, ""),
+  sg: Joi.string().trim().max(20).allow(null, ""),
+  step: Joi.string().trim().max(20).allow(null, ""),
+  salary: Joi.number().min(0).precision(2),
+  increment: Joi.number().min(0).precision(2).allow(null),
+  remarks: Joi.string().trim().max(500).allow(null, ""),
+}).min(1);
 
 const schoolBodySchema = Joi.object({
   school_name: Joi.string().trim().min(1).max(255).required(),
@@ -389,11 +429,17 @@ const backlogArchiveBodySchema = Joi.object({
 module.exports = {
   idParamSchema,
   schoolIdParamSchema,
+  employeeIdParamSchema,
+  salaryInformationIdParamSchema,
   employeeCreateBodySchema,
   employeeUpdateBodySchema,
+  employeePatchBodySchema,
   employeeListQuerySchema,
   employeeMarkOnLeaveBodySchema,
   employeeStatusCountsQuerySchema,
+  salaryInformationListQuerySchema,
+  salaryInformationCreateBodySchema,
+  salaryInformationUpdateBodySchema,
   employeeArchiveBodySchema,
   employeeUnarchiveBodySchema,
   schoolBodySchema,

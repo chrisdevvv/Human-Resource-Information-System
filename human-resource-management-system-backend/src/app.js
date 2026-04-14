@@ -741,6 +741,30 @@ const ensureEmployeeCivilStatusSexFK = async () => {
   }
 };
 
+const ensureSalaryInformationTable = async () => {
+  await pool.promise().query(`
+    CREATE TABLE IF NOT EXISTS salary_information (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      employee_id INT NOT NULL,
+      salary_date DATE NOT NULL,
+      plantilla VARCHAR(100) NULL,
+      sg VARCHAR(20) NULL,
+      step VARCHAR(20) NULL,
+      salary DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+      increment_amount DECIMAL(12,2) NULL,
+      remarks VARCHAR(500) NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT fk_salary_information_employee_id
+        FOREIGN KEY (employee_id)
+        REFERENCES employees(id)
+        ON DELETE CASCADE,
+      INDEX idx_salary_information_employee_id (employee_id),
+      INDEX idx_salary_information_employee_date (employee_id, salary_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `);
+};
+
 const ensureIndexes = async () => {
   // Create helpful indexes for common filters/sorts. Errors ignored if index already exists.
   const stmts = [
@@ -1308,6 +1332,9 @@ app.listen(PORT, async () => {
 
     await ensureEmployeeCivilStatusSexFK();
     console.log("✔  Employee civil status and sex foreign keys are ready");
+
+    await ensureSalaryInformationTable();
+    console.log("✔  Salary information table is ready");
 
     await ensureIndexes();
     console.log("✔  Database indexes ensured (best-effort)");

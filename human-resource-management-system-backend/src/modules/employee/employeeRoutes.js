@@ -12,17 +12,30 @@ const {
   markEmployeeOnLeave,
   markEmployeeAvailable,
 } = require("./employeeController");
+const {
+  getSalaryInformationByEmployee,
+  getSalaryInformationById,
+  createSalaryInformation,
+  updateSalaryInformation,
+  deleteSalaryInformation,
+} = require("./salaryInformationController");
 const authMiddleware = require("../../middleware/authMiddleware");
 const { roleAuthMiddleware } = require("../../middleware/roleAuthMiddleware");
 const { validateRequest } = require("../../middleware/validateRequest");
 const {
   idParamSchema,
   schoolIdParamSchema,
+  employeeIdParamSchema,
+  salaryInformationIdParamSchema,
   employeeCreateBodySchema,
   employeeUpdateBodySchema,
+  employeePatchBodySchema,
   employeeListQuerySchema,
   employeeMarkOnLeaveBodySchema,
   employeeStatusCountsQuerySchema,
+  salaryInformationListQuerySchema,
+  salaryInformationCreateBodySchema,
+  salaryInformationUpdateBodySchema,
   employeeArchiveBodySchema,
   employeeUnarchiveBodySchema,
 } = require("../../validation/schemas");
@@ -52,6 +65,50 @@ router.get(
   getEmployeeStatusCounts,
 );
 router.get(
+  "/:employee_id/salary-information",
+  authMiddleware,
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  validateRequest({
+    params: employeeIdParamSchema,
+    query: salaryInformationListQuerySchema,
+  }),
+  getSalaryInformationByEmployee,
+);
+router.get(
+  "/:employee_id/salary-information/:id",
+  authMiddleware,
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  validateRequest({ params: salaryInformationIdParamSchema }),
+  getSalaryInformationById,
+);
+router.post(
+  "/:employee_id/salary-information",
+  authMiddleware,
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  validateRequest({
+    params: employeeIdParamSchema,
+    body: salaryInformationCreateBodySchema,
+  }),
+  createSalaryInformation,
+);
+router.patch(
+  "/:employee_id/salary-information/:id",
+  authMiddleware,
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  validateRequest({
+    params: salaryInformationIdParamSchema,
+    body: salaryInformationUpdateBodySchema,
+  }),
+  updateSalaryInformation,
+);
+router.delete(
+  "/:employee_id/salary-information/:id",
+  authMiddleware,
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  validateRequest({ params: salaryInformationIdParamSchema }),
+  deleteSalaryInformation,
+);
+router.get(
   "/:id",
   authMiddleware,
   roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
@@ -78,7 +135,7 @@ router.patch(
   "/:id",
   authMiddleware,
   roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
-  validateRequest({ params: idParamSchema, body: employeeUpdateBodySchema }),
+  validateRequest({ params: idParamSchema, body: employeePatchBodySchema }),
   updateEmployee,
 );
 router.delete(
