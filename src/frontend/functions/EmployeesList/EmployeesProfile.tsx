@@ -139,7 +139,8 @@ const computeAge = (birthdate: string | null | undefined): number | null => {
 
 const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
   const firstName = item.first_name?.trim() || "Unknown";
-  const middleName = item.middle_name?.trim() || "";
+  const rawMiddleName = item.middle_name?.trim() || "";
+  const middleName = rawMiddleName.toUpperCase() === "N/A" ? "" : rawMiddleName;
   const lastName = item.last_name?.trim() || "Employee";
   const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
 
