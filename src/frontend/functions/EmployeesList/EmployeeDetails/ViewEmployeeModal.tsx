@@ -51,6 +51,7 @@ type ValidationError = {
 type EditSnapshot = {
   firstName: string;
   middleName: string;
+  noMiddleName: boolean;
   middleInitial: string;
   lastName: string;
   birthdate: string;
@@ -105,6 +106,7 @@ type EmployeeDetailsResponse = {
   id: number;
   first_name: string;
   middle_name?: string | null;
+  no_middle_name?: boolean | null;
   middle_initial?: string | null;
   last_name: string;
   email?: string | null;
@@ -302,12 +304,18 @@ const createEditSnapshotFromDetails = (
   const nextPagibigNo = String(data.pagibig_no || "").trim();
   const nextPhilhealthNo = String(data.philhealth_no || "").trim();
 
+  const normalizedMiddleName = String(data.middle_name || "").trim();
+  const explicitNoMiddleName = Boolean(data.no_middle_name);
+  const computedNoMiddleName =
+    explicitNoMiddleName || normalizedMiddleName.toUpperCase() === "N/A";
+
   return {
     firstName: data.first_name || "",
-    middleName: data.middle_name || "",
-    middleInitial: data.middle_initial || "",
+    middleName: computedNoMiddleName ? "N/A" : normalizedMiddleName,
+    noMiddleName: computedNoMiddleName,
+    middleInitial: computedNoMiddleName ? "N/A" : data.middle_initial || "",
     lastName: data.last_name || "",
-    birthdate: data.birthdate || "",
+    birthdate: toDateInputValue(data.birthdate),
     personalEmail: data.email || "",
     mobileNumber: data.mobile_number || "",
     homeAddress: data.home_address || "",
@@ -577,6 +585,7 @@ export default function ViewEmployeeModal({
 
   const [editFirstName, setEditFirstName] = useState("");
   const [editMiddleName, setEditMiddleName] = useState("");
+  const [noMiddleName, setNoMiddleName] = useState(false);
   const [editMiddleInitial, setEditMiddleInitial] = useState("");
   const [editLastName, setEditLastName] = useState("");
   const [editBirthdate, setEditBirthdate] = useState("");
@@ -638,6 +647,7 @@ export default function ViewEmployeeModal({
   const applyEditSnapshot = (snapshot: EditSnapshot) => {
     setEditFirstName(snapshot.firstName);
     setEditMiddleName(snapshot.middleName);
+    setNoMiddleName(snapshot.noMiddleName);
     setEditMiddleInitial(snapshot.middleInitial);
     setEditLastName(snapshot.lastName);
     setEditBirthdate(snapshot.birthdate);
@@ -938,6 +948,7 @@ export default function ViewEmployeeModal({
     JSON.stringify({
       firstName: editFirstName,
       middleName: editMiddleName,
+      noMiddleName,
       middleInitial: editMiddleInitial,
       lastName: editLastName,
       birthdate: editBirthdate,
@@ -1259,9 +1270,11 @@ export default function ViewEmployeeModal({
       const normalizedMiddleName = editMiddleName.trim();
       const updatePayload = {
         first_name: editFirstName.trim(),
-        middle_name: normalizedMiddleName || null,
-        no_middle_name: !normalizedMiddleName,
-        middle_initial: normalizeMiddleInitialInput(editMiddleInitial.trim()),
+        middle_name: noMiddleName ? "N/A" : normalizedMiddleName || null,
+        no_middle_name: noMiddleName,
+        middle_initial: noMiddleName
+          ? "N/A"
+          : normalizeMiddleInitialInput(editMiddleInitial.trim()),
         last_name: editLastName.trim(),
         birthdate: editBirthdate,
         email: editPersonalEmail.trim(),
@@ -1566,6 +1579,8 @@ export default function ViewEmployeeModal({
               setEditFirstName={setEditFirstName}
               editMiddleName={editMiddleName}
               setEditMiddleName={setEditMiddleName}
+              noMiddleName={noMiddleName}
+              setNoMiddleName={setNoMiddleName}
               editMiddleInitial={editMiddleInitial}
               setEditMiddleInitial={setEditMiddleInitial}
               normalizeMiddleInitialInput={normalizeMiddleInitialInput}

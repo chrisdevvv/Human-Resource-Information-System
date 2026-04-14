@@ -123,9 +123,10 @@ type PendingEmployeePayload = {
   gsis_crn_no: string;
   pagibig_no: string;
   philhealth_no: string;
+  date_of_first_appointment: string;
 };
 
-type StepKey = "personal" | "work";
+type StepKey = "personal" | "work" | "salary";
 
 type ValidationError = {
   field: string;
@@ -266,6 +267,71 @@ const computeAgeFromBirthdate = (birthdate: string): number => {
   return Math.max(0, age);
 };
 
+const isValidDateValue = (value: string): boolean => {
+  const trimmed = value.trim();
+  if (!trimmed) return true;
+  return !Number.isNaN(new Date(trimmed).getTime());
+};
+
+const formatYearsInService = (
+  value: number | string | null | undefined,
+): string => {
+  if (value === null || value === undefined) return "N/A";
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? String(value) : "N/A";
+  }
+  const text = String(value).trim();
+  return text ? text : "N/A";
+};
+
+const formatLoyaltyBonus = (
+  value: string | number | boolean | null | undefined,
+): string => {
+  if (value === null || value === undefined) return "N/A";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "number") {
+    if (value === 1) return "Yes";
+    if (value === 0) return "No";
+    return "N/A";
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+  if (!normalized) return "N/A";
+  if (["yes", "true", "1"].includes(normalized)) return "Yes";
+  if (["no", "false", "0"].includes(normalized)) return "No";
+  return "N/A";
+};
+
+const computeServiceMetrics = (
+  dateOfFirstAppointment: string | null | undefined,
+): { yearsInService: number | null; loyaltyBonus: "Yes" | "No" } => {
+  const normalizedDate = String(dateOfFirstAppointment || "").trim();
+  if (!normalizedDate) {
+    return { yearsInService: null, loyaltyBonus: "No" };
+  }
+
+  const [yearPart, monthPart, dayPart] = normalizedDate.split("-").map(Number);
+  if (!yearPart || !monthPart || !dayPart) {
+    return { yearsInService: null, loyaltyBonus: "No" };
+  }
+
+  const now = new Date();
+  let years = now.getFullYear() - yearPart;
+  const hasReachedAnniversary =
+    now.getMonth() + 1 > monthPart ||
+    (now.getMonth() + 1 === monthPart && now.getDate() >= dayPart);
+
+  if (!hasReachedAnniversary) {
+    years -= 1;
+  }
+
+  const yearsInService = Math.max(0, years);
+  const loyaltyBonus =
+    yearsInService > 0 && yearsInService % 5 === 0 ? "Yes" : "No";
+
+  return { yearsInService, loyaltyBonus };
+};
+
 export default function AddEmployeeModal({
   isOpen,
   onClose,
@@ -317,6 +383,7 @@ export default function AddEmployeeModal({
   const [gsisCrnNo, setGsisCrnNo] = useState("");
   const [pagibigNo, setPagibigNo] = useState("");
   const [philhealthNo, setPhilhealthNo] = useState("");
+  const [dateOfFirstAppointment, setDateOfFirstAppointment] = useState("");
   const [tinNotAvailable, setTinNotAvailable] = useState(false);
   const [gsisBpNotAvailable, setGsisBpNotAvailable] = useState(false);
   const [gsisCrnNotAvailable, setGsisCrnNotAvailable] = useState(false);
@@ -343,6 +410,10 @@ export default function AddEmployeeModal({
     useState<PendingEmployeePayload | null>(null);
 
   const age = useMemo(() => computeAgeFromBirthdate(birthdate), [birthdate]);
+  const computedSalaryMetrics = useMemo(
+    () => computeServiceMetrics(dateOfFirstAppointment),
+    [dateOfFirstAppointment],
+  );
 
   const sortedSchools = useMemo(
     () =>
@@ -471,6 +542,7 @@ export default function AddEmployeeModal({
     setGsisCrnNo("");
     setPagibigNo("");
     setPhilhealthNo("");
+    setDateOfFirstAppointment("");
     setTinNotAvailable(false);
     setGsisBpNotAvailable(false);
     setGsisCrnNotAvailable(false);
@@ -1080,17 +1152,69 @@ export default function AddEmployeeModal({
     return school;
   };
 
+  const validateStepThree = (): boolean => {
+    const fieldErrors: ValidationError[] = [];
+
+    if (!dateOfFirstAppointment.trim()) {
+      fieldErrors.push({
+        field: "Date of First Appointment",
+        message: "Date of First Appointment is required.",
+      });
+    }
+
+    if (!isValidDateValue(dateOfFirstAppointment)) {
+      fieldErrors.push({
+        field: "Date of First Appointment",
+        message: "Date of First Appointment must be a valid date.",
+      });
+    }
+
+    if (dateOfFirstAppointment) {
+      const appointmentDate = new Date(dateOfFirstAppointment);
+      const today = new Date();
+      if (appointmentDate > today) {
+        fieldErrors.push({
+          field: "Date of First Appointment",
+          message: "Date of First Appointment cannot be in the future.",
+        });
+      }
+    }
+
+    if (fieldErrors.length > 0) {
+      setValidationErrors(fieldErrors);
+      setErrorMessage(null);
+      return false;
+    }
+
+    setValidationErrors([]);
+    setErrorMessage(null);
+    return true;
+  };
+
   const handleGoNext = () => {
-    if (!validateStepOne()) {
+    if (step === "personal") {
+      if (!validateStepOne()) {
+        return;
+      }
+      setStep("work");
       return;
     }
 
-    setStep("work");
+    if (step === "work") {
+      if (!validateStepTwo()) {
+        return;
+      }
+      setStep("salary");
+    }
   };
 
   const handleGoBack = () => {
     setErrorMessage(null);
     setValidationErrors([]);
+    if (step === "salary") {
+      setStep("work");
+      return;
+    }
     setStep("personal");
   };
 
@@ -1212,8 +1336,15 @@ export default function AddEmployeeModal({
     }
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+  };
+
+  const handleAddEmployee = async () => {
+    // Never allow submit flow before the final salary step.
+    if (step !== "salary") {
+      return;
+    }
 
     if (!validateStepOne()) {
       setStep("personal");
@@ -1223,6 +1354,11 @@ export default function AddEmployeeModal({
     const school = validateStepTwo();
     if (!school) {
       setStep("work");
+      return;
+    }
+
+    if (!validateStepThree()) {
+      setStep("salary");
       return;
     }
 
@@ -1296,6 +1432,7 @@ export default function AddEmployeeModal({
       gsis_crn_no: gsisCrnNo.trim(),
       pagibig_no: pagibigNo.trim(),
       philhealth_no: philhealthNo.trim(),
+      date_of_first_appointment: dateOfFirstAppointment.trim(),
     });
     setIsConfirmOpen(true);
   };
@@ -1352,6 +1489,8 @@ export default function AddEmployeeModal({
           gsis_crn_no: pendingPayload.gsis_crn_no,
           pagibig_no: pendingPayload.pagibig_no,
           philhealth_no: pendingPayload.philhealth_no,
+          date_of_first_appointment:
+            pendingPayload.date_of_first_appointment || null,
         }),
       });
 
@@ -1425,6 +1564,7 @@ export default function AddEmployeeModal({
     setGsisCrnNo("");
     setPagibigNo("");
     setPhilhealthNo("");
+    setDateOfFirstAppointment("");
     setTinNotAvailable(false);
     setGsisBpNotAvailable(false);
     setGsisCrnNotAvailable(false);
@@ -1448,15 +1588,15 @@ export default function AddEmployeeModal({
               Add Employee
             </h2>
             <p className="mt-1 text-xs text-gray-500 sm:text-sm">
-              Fill out personal details first, then work details.
+              Fill out personal, work, and salary details.
             </p>
           </div>
           <div className="rounded-lg bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 sm:text-sm">
-            Step {step === "personal" ? "1" : "2"} of 2
+            Step {step === "personal" ? "1" : step === "work" ? "2" : "3"} of 3
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="mt-4 grid grid-cols-3 gap-2">
           <div
             className={`rounded-lg border px-3 py-2 text-center text-xs font-medium sm:text-sm ${
               step === "personal"
@@ -1474,6 +1614,15 @@ export default function AddEmployeeModal({
             }`}
           >
             Work Information
+          </div>
+          <div
+            className={`rounded-lg border px-3 py-2 text-center text-xs font-medium sm:text-sm ${
+              step === "salary"
+                ? "border-blue-300 bg-blue-50 text-blue-700"
+                : "border-gray-200 bg-gray-50 text-gray-600"
+            }`}
+          >
+            Salary Information
           </div>
         </div>
 
@@ -2199,6 +2348,65 @@ export default function AddEmployeeModal({
             </div>
           )}
 
+          {step === "salary" && (
+            <div className="rounded-2xl border border-gray-200 bg-white p-3 sm:p-4">
+              <div className="mb-3 sm:mb-4">
+                <h3 className="text-lg font-bold text-gray-800">
+                  Salary Information
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Employment timeline and bonus information
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Date of First Appointment{" "}
+                    <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={dateOfFirstAppointment}
+                    onChange={(e) => setDateOfFirstAppointment(e.target.value)}
+                    max={new Date().toISOString().slice(0, 10)}
+                    required
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                  />
+                  {renderFieldError("Date of First Appointment")}
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Years in Service
+                  </label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={formatYearsInService(
+                      computedSalaryMetrics.yearsInService,
+                    )}
+                    className="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Loyalty Bonus
+                  </label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={formatLoyaltyBonus(
+                      computedSalaryMetrics.loyaltyBonus,
+                    )}
+                    className="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {errorMessage && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
               {errorMessage}
@@ -2219,7 +2427,8 @@ export default function AddEmployeeModal({
               selectedDistrictId ||
               schoolId ||
               tin ||
-              gsisBpNo
+              gsisBpNo ||
+              dateOfFirstAppointment
             ) && (
               <button
                 type="button"
@@ -2238,7 +2447,8 @@ export default function AddEmployeeModal({
                     selectedDistrictId ||
                     schoolId ||
                     tin ||
-                    gsisBpNo
+                    gsisBpNo ||
+                    dateOfFirstAppointment
                   ),
                 )}
                 className="mr-auto cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline disabled:opacity-60 disabled:no-underline"
@@ -2260,7 +2470,7 @@ export default function AddEmployeeModal({
               </span>
             </button>
 
-            {step === "work" && (
+            {step !== "personal" && (
               <button
                 type="button"
                 onClick={handleGoBack}
@@ -2274,7 +2484,21 @@ export default function AddEmployeeModal({
               </button>
             )}
 
-            {step === "personal" ? (
+            {step === "salary" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  void handleAddEmployee();
+                }}
+                disabled={submitLoading || isConfirmOpen || schoolsLoading}
+                className="cursor-pointer rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <span className="inline-flex items-center gap-1">
+                  <UserPlus size={14} />
+                  {submitLoading ? "Saving..." : "Add Employee"}
+                </span>
+              </button>
+            ) : (
               <button
                 type="button"
                 onClick={handleGoNext}
@@ -2284,17 +2508,6 @@ export default function AddEmployeeModal({
                 <span className="inline-flex items-center gap-1">
                   Next
                   <ChevronRight size={14} />
-                </span>
-              </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={submitLoading || isConfirmOpen || schoolsLoading}
-                className="cursor-pointer rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <span className="inline-flex items-center gap-1">
-                  <UserPlus size={14} />
-                  {submitLoading ? "Saving..." : "Add Employee"}
                 </span>
               </button>
             )}

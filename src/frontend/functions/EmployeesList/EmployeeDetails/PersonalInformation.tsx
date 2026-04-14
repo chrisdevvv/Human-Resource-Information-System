@@ -26,13 +26,19 @@ type PersonalInformationProps = {
   isEditing: boolean;
   fullName: string;
   employeeType: "teaching" | "non-teaching" | "teaching-related";
-  resolvedEmployeeType?: "teaching" | "non-teaching" | "teaching-related" | null;
+  resolvedEmployeeType?:
+    | "teaching"
+    | "non-teaching"
+    | "teaching-related"
+    | null;
   editLastName: string;
   setEditLastName: (value: string) => void;
   editFirstName: string;
   setEditFirstName: (value: string) => void;
   editMiddleName: string;
   setEditMiddleName: (value: string) => void;
+  noMiddleName: boolean;
+  setNoMiddleName: (value: boolean) => void;
   editMiddleInitial: string;
   setEditMiddleInitial: (value: string) => void;
   normalizeMiddleInitialInput: (value: string) => string;
@@ -77,6 +83,8 @@ export default function PersonalInformation({
   setEditFirstName,
   editMiddleName,
   setEditMiddleName,
+  noMiddleName,
+  setNoMiddleName,
   editMiddleInitial,
   setEditMiddleInitial,
   normalizeMiddleInitialInput,
@@ -111,9 +119,12 @@ export default function PersonalInformation({
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-3 sm:p-4">
       <div className="mb-3 sm:mb-4">
-        <h3 className="text-lg font-bold text-gray-800">Personal Information</h3>
+        <h3 className="text-lg font-bold text-gray-800">
+          Personal Information
+        </h3>
         <p className="mt-1 text-sm text-gray-500">
-          {fullName} • {formatEmployeeType(resolvedEmployeeType || employeeType)}
+          {fullName} •{" "}
+          {formatEmployeeType(resolvedEmployeeType || employeeType)}
         </p>
       </div>
 
@@ -157,8 +168,30 @@ export default function PersonalInformation({
               type="text"
               value={editMiddleName}
               onChange={(e) => setEditMiddleName(e.target.value)}
+              disabled={noMiddleName}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
             />
+            {isEditing ? (
+              <label className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                <input
+                  type="checkbox"
+                  checked={noMiddleName}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setNoMiddleName(checked);
+                    if (checked) {
+                      setEditMiddleName("N/A");
+                      setEditMiddleInitial("N/A");
+                    } else {
+                      setEditMiddleName("");
+                      setEditMiddleInitial("");
+                    }
+                  }}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                I don&apos;t have a middle name
+              </label>
+            ) : null}
           </InfoField>
 
           <InfoField
@@ -172,8 +205,11 @@ export default function PersonalInformation({
               type="text"
               value={editMiddleInitial}
               onChange={(e) =>
-                setEditMiddleInitial(normalizeMiddleInitialInput(e.target.value))
+                setEditMiddleInitial(
+                  normalizeMiddleInitialInput(e.target.value),
+                )
               }
+              disabled={noMiddleName}
               maxLength={2}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
             />
@@ -244,8 +280,12 @@ export default function PersonalInformation({
               <select
                 value={editCivilStatusId ? String(editCivilStatusId) : ""}
                 onChange={(e) => {
-                  const nextValue = e.target.value ? Number(e.target.value) : null;
-                  const selected = civilStatuses.find((item) => item.id === nextValue);
+                  const nextValue = e.target.value
+                    ? Number(e.target.value)
+                    : null;
+                  const selected = civilStatuses.find(
+                    (item) => item.id === nextValue,
+                  );
                   setEditCivilStatusId(selected?.id ?? null);
                   setEditCivilStatus(selected?.civil_status_name || "");
                 }}
@@ -276,7 +316,9 @@ export default function PersonalInformation({
               <select
                 value={editSexId ? String(editSexId) : ""}
                 onChange={(e) => {
-                  const nextValue = e.target.value ? Number(e.target.value) : null;
+                  const nextValue = e.target.value
+                    ? Number(e.target.value)
+                    : null;
                   const selected = sexes.find((item) => item.id === nextValue);
                   setEditSexId(selected?.id ?? null);
                   setEditSex(selected?.sex_name || "");
@@ -338,7 +380,9 @@ export default function PersonalInformation({
               type="text"
               value={editMobileNumber}
               onChange={(e) => {
-                const digitsOnly = e.target.value.replace(/\D/g, "").slice(0, 11);
+                const digitsOnly = e.target.value
+                  .replace(/\D/g, "")
+                  .slice(0, 11);
                 setEditMobileNumber(digitsOnly);
               }}
               maxLength={11}
