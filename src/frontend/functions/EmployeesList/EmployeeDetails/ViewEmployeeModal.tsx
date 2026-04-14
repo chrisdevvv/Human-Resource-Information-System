@@ -190,6 +190,7 @@ const formatDate = (value: string | null | undefined): string => {
 
   const raw = String(value).trim();
   if (!raw) return "N/A";
+  if (raw === "0000-00-00") return "N/A";
 
   const dateOnlyMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (dateOnlyMatch) {
@@ -216,6 +217,7 @@ const toDateInputValue = (value: string | null | undefined): string => {
   if (!value) return "";
   const raw = String(value).trim();
   if (!raw) return "";
+  if (raw === "0000-00-00") return "";
 
   if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
     return raw.slice(0, 10);

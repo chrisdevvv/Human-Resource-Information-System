@@ -27,8 +27,26 @@ const normalizeOptionalText = (value) => {
 
 const normalizeOptionalDate = (value) => {
   if (value === undefined || value === null) return null;
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    return value.toISOString().slice(0, 10);
+  }
+
   const normalized = String(value).trim();
-  return normalized.length > 0 ? normalized : null;
+  if (!normalized) return null;
+
+  if (normalized === "0000-00-00") {
+    return null;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return normalized;
+  }
+
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString().slice(0, 10);
 };
 
 const computeServiceMetrics = (dateOfFirstAppointment) => {
