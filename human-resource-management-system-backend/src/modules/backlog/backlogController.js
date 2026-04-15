@@ -9,6 +9,45 @@ const toBoolean = (v) => {
   return ["1", "true", "yes", "y", "on"].includes(normalized);
 };
 
+const toIsoDateOnly = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) {
+      return null;
+    }
+    return value.toISOString().slice(0, 10);
+  }
+
+  const raw = String(value).trim();
+  if (!raw) {
+    return null;
+  }
+
+  const isoMatch = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (isoMatch) {
+    return isoMatch[1];
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed.toISOString().slice(0, 10);
+};
+
+const toDateTimeBoundary = (value, boundary) => {
+  const isoDate = toIsoDateOnly(value);
+  if (!isoDate) {
+    return null;
+  }
+
+  return `${isoDate} ${boundary === "start" ? "00:00:00" : "23:59:59"}`;
+};
+
 const toCsvCell = (value) => {
   if (value === null || value === undefined) return "";
   const text = String(value);
@@ -182,6 +221,8 @@ const getAllBacklogs = async (req, res) => {
       : req.query.include_archived
         ? toBoolean(req.query.include_archived)
         : false;
+    const fromDateTime = toDateTimeBoundary(req.query.from, "start");
+    const toDateTime = toDateTimeBoundary(req.query.to, "end");
     const pagination = page
       ? { page: Number(page), pageSize: Number(pageSize || 25) }
       : undefined;
@@ -192,10 +233,8 @@ const getAllBacklogs = async (req, res) => {
       role: req.query.role || null,
       letter: req.query.letter || null,
       sortMode: req.query.sortMode || null,
-      from: req.query.from
-        ? `${String(req.query.from).slice(0, 10)} 00:00:00`
-        : null,
-      to: req.query.to ? `${String(req.query.to).slice(0, 10)} 23:59:59` : null,
+      from: fromDateTime,
+      to: toDateTime,
     });
 
     if (!pagination) return res.status(200).json({ data: results });
@@ -214,28 +253,11 @@ const getAllBacklogs = async (req, res) => {
 
 const archiveBacklogsByDateRange = async (req, res) => {
   try {
-    const ids = Array.isArray(req.body.ids)
-      ? req.body.ids
-          .map((id) => Number(id))
-          .filter((id) => Number.isInteger(id) && id > 0)
-      : [];
+    const fromDate = toIsoDateOnly(req.body.from);
+    const toDate = toIsoDateOnly(req.body.to);
 
-    if (ids.length > 0) {
-      const archived = await Backlog.archiveByIds({ ids });
-      return res.status(200).json({
-        message: "Logs archived successfully.",
-        data: {
-          archivedCount: archived.affectedRows,
-          mode: "ids",
-        },
-      });
-    }
-
-    const fromDate = String(req.body.from || "").slice(0, 10);
-    const toDate = String(req.body.to || "").slice(0, 10);
-
-    const from = new Date(fromDate);
-    const to = new Date(toDate);
+    const from = fromDate ? new Date(`${fromDate}T00:00:00Z`) : new Date(NaN);
+    const to = toDate ? new Date(`${toDate}T00:00:00Z`) : new Date(NaN);
 
     if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
       return res.status(400).json({ message: "Invalid archive date range." });
@@ -343,13 +365,11 @@ const generateBacklogReport = async (req, res) => {
     const includeArchived = onlyArchived
       ? true
       : toBoolean(req.query.include_archived);
+    const fromDate = toIsoDateOnly(req.query.from);
+    const toDate = toIsoDateOnly(req.query.to);
 
-    const from = req.query.from
-      ? `${String(req.query.from).slice(0, 10)} 00:00:00`
-      : null;
-    const to = req.query.to
-      ? `${String(req.query.to).slice(0, 10)} 23:59:59`
-      : null;
+    const from = fromDate ? `${fromDate} 00:00:00` : null;
+    const to = toDate ? `${toDate} 23:59:59` : null;
 
     const rows = await Backlog.getReport({
       from,
@@ -381,8 +401,8 @@ const generateBacklogReport = async (req, res) => {
     if (format === "pdf") {
       const dateSuffix = new Date().toISOString().slice(0, 10);
       const pdfBuffer = await buildPdfBuffer(rows, {
-        from: req.query.from || null,
-        to: req.query.to || null,
+        from: fromDate,
+        to: toDate,
         action: req.query.action || null,
         role: req.query.role || null,
         letter: req.query.letter || null,
@@ -402,8 +422,8 @@ const generateBacklogReport = async (req, res) => {
       data: rows,
       total: rows.length,
       filters: {
-        from: req.query.from || null,
-        to: req.query.to || null,
+        from: fromDate,
+        to: toDate,
         search: req.query.search || null,
         action: req.query.action || null,
         role: req.query.role || null,

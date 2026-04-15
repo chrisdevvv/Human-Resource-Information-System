@@ -264,8 +264,6 @@ export default function LogsMobile() {
       setArchiveBusy(true);
       setArchiveMessage(null);
 
-      const archiveTargetIds = filteredLogs.map((log) => log.id);
-
       if (archiveShouldGenerateReport) {
         await downloadArchiveRangeReport();
       }
@@ -282,7 +280,9 @@ export default function LogsMobile() {
         body: JSON.stringify({
           from: archiveRange.fromIso,
           to: archiveRange.toIso,
-          ids: archiveTargetIds,
+          search: searchQuery.trim() || null,
+          role: roleFilter !== "ALL" ? roleFilter : null,
+          letter: letterFilter !== "ALL" ? letterFilter : null,
         }),
       });
 
@@ -300,13 +300,6 @@ export default function LogsMobile() {
           : "No logs found for the selected archive range.",
       );
 
-      if (count > 0 && archiveTargetIds.length > 0) {
-        // Immediate UI refresh: remove just-archived rows from active logs list.
-        setLogsData((prev) =>
-          prev.filter((log) => !archiveTargetIds.includes(log.id)),
-        );
-      }
-
       await fetchLogs(false);
     } catch (err) {
       setArchiveMessage(
@@ -321,6 +314,11 @@ export default function LogsMobile() {
     const params = new URLSearchParams();
     if (dateFrom) params.set("from", dateFrom);
     if (dateTo) params.set("to", dateTo);
+    if (searchQuery.trim()) params.set("search", searchQuery.trim());
+    if (roleFilter !== "ALL") params.set("role", roleFilter);
+    if (letterFilter !== "ALL") params.set("letter", letterFilter);
+    if (sortMode) params.set("sortMode", sortMode);
+    params.set("report_scope", "active");
 
     const query = params.toString();
     router.push(
