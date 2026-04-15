@@ -9,6 +9,7 @@ const leaveRoutes = require("./modules/leave/leaveRoutes");
 const employeeRoutes = require("./modules/employee/employeeRoutes");
 const schoolRoutes = require("./modules/school/schoolRoutes");
 const Position = require("./modules/position/positionModel");
+const SalaryInformation = require("./modules/employee/salaryInformationModel");
 const backlogRoutes = require("./modules/backlog/backlogRoutes");
 const registrationRoutes = require("./modules/registration/registrationRoutes");
 const userRoutes = require("./modules/user/userRoutes");
@@ -742,6 +743,15 @@ const ensureEmployeeCivilStatusSexFK = async () => {
 };
 
 const ensureSalaryInformationTable = async () => {
+  const salaryInformationRemarkValues = [
+    "Step Increment",
+    "Promotion",
+    "Step Increment Increase",
+  ];
+  const salaryInformationRemarksSql = salaryInformationRemarkValues
+    .map((value) => `'${String(value).replace(/'/g, "''")}'`)
+    .join(",");
+
   await pool.promise().query(`
     CREATE TABLE IF NOT EXISTS salary_information (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -752,7 +762,7 @@ const ensureSalaryInformationTable = async () => {
       step VARCHAR(20) NULL,
       salary DECIMAL(12,2) NOT NULL DEFAULT 0.00,
       increment_amount DECIMAL(12,2) NULL,
-      remarks VARCHAR(500) NULL,
+      remarks ENUM(${salaryInformationRemarksSql}) NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       CONSTRAINT fk_salary_information_employee_id
@@ -762,6 +772,19 @@ const ensureSalaryInformationTable = async () => {
       INDEX idx_salary_information_employee_id (employee_id),
       INDEX idx_salary_information_employee_date (employee_id, salary_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `);
+
+  await pool.promise().query(`
+    UPDATE salary_information
+    SET remarks = NULL
+    WHERE remarks IS NOT NULL
+      AND TRIM(remarks) <> ''
+      AND remarks NOT IN (${salaryInformationRemarksSql});
+  `);
+
+  await pool.promise().query(`
+    ALTER TABLE salary_information
+    MODIFY COLUMN remarks ENUM(${salaryInformationRemarksSql}) NULL;
   `);
 };
 
@@ -1336,6 +1359,12 @@ app.listen(PORT, async () => {
     await ensureSalaryInformationTable();
     console.log("✔  Salary information table is ready");
 
+    const salaryDateSyncStartupResult =
+      await SalaryInformation.syncThreeYearSalaryDateEntries();
+    console.log(
+      `[Salary Information] 3-year date sync on startup: employees=${salaryDateSyncStartupResult.employeesChecked}, generated=${salaryDateSyncStartupResult.generated}, as_of=${salaryDateSyncStartupResult.asOfDate}`,
+    );
+
     await ensureIndexes();
     console.log("✔  Database indexes ensured (best-effort)");
 
@@ -1370,11 +1399,19 @@ app.listen(PORT, async () => {
       );
     }
 
-    // Run backlog archiving daily at 01:00 AM
+    // Run backlog archiving, service metrics sync, and salary-date sync daily at 01:00 AM.
     cron.schedule("0 1 * * *", async () => {
       try {
         await archiveOldBacklogs();
         await syncEmployeeServiceMetrics();
+
+        const salaryDateSyncResult =
+          await SalaryInformation.syncThreeYearSalaryDateEntries();
+        if (salaryDateSyncResult.generated > 0) {
+          console.log(
+            `[Salary Information] 3-year date sync scheduled run: employees=${salaryDateSyncResult.employeesChecked}, generated=${salaryDateSyncResult.generated}, as_of=${salaryDateSyncResult.asOfDate}`,
+          );
+        }
       } catch (error) {
         console.error("[Backlog Archive] Scheduled run failed:", error.message);
       }

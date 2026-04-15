@@ -208,6 +208,17 @@ const salaryInformationListQuerySchema = Joi.object({
   sortOrder: Joi.string().valid("asc", "desc"),
 });
 
+const salaryInformationRemarks = [
+  "Step Increment",
+  "Promotion",
+  "Step Increment Increase",
+];
+
+const salaryInformationRemarksSchema = Joi.string()
+  .trim()
+  .valid(...salaryInformationRemarks)
+  .allow(null, "");
+
 const salaryInformationCreateBodySchema = Joi.object({
   date: Joi.date().iso().required(),
   plantilla: Joi.string().trim().max(100).allow(null, ""),
@@ -215,7 +226,7 @@ const salaryInformationCreateBodySchema = Joi.object({
   step: Joi.string().trim().max(20).allow(null, ""),
   salary: Joi.number().min(0).precision(2).required(),
   increment: Joi.number().min(0).precision(2).allow(null),
-  remarks: Joi.string().trim().max(500).allow(null, ""),
+  remarks: salaryInformationRemarksSchema,
 });
 
 const salaryInformationUpdateBodySchema = Joi.object({
@@ -225,7 +236,7 @@ const salaryInformationUpdateBodySchema = Joi.object({
   step: Joi.string().trim().max(20).allow(null, ""),
   salary: Joi.number().min(0).precision(2),
   increment: Joi.number().min(0).precision(2).allow(null),
-  remarks: Joi.string().trim().max(500).allow(null, ""),
+  remarks: salaryInformationRemarksSchema,
 }).min(1);
 
 const schoolBodySchema = Joi.object({

@@ -1,10 +1,21 @@
 const pool = require("../../config/db");
 
+const THREE_YEAR_INTERVAL = 3;
+const DEFAULT_AUTO_REMARK = "Step Increment";
+
 const toNumberOrNull = (value) => {
   if (value === undefined || value === null || value === "") return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 };
+
+const toMoney = (value) => {
+  const parsed = toNumberOrNull(value);
+  const safe = parsed === null ? 0 : parsed;
+  return Number(safe.toFixed(2));
+};
+
+const toNonNegativeMoneyDelta = (value) => Number(Math.max(0, value).toFixed(2));
 
 const normalizeOptionalText = (value) => {
   if (value === undefined || value === null) return null;
@@ -19,6 +30,22 @@ const normalizeOptionalDate = (value) => {
   const parsed = new Date(normalized);
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed.toISOString().slice(0, 10);
+};
+
+const addYearsToIsoDate = (isoDate, years) => {
+  const base = normalizeOptionalDate(isoDate);
+  if (!base) return null;
+
+  const [year, month, day] = base.split("-").map(Number);
+  if (!year || !month || !day) return null;
+
+  // Keep month/day stable when possible, clamp for leap-year edge cases.
+  const next = new Date(Date.UTC(year + years, month - 1, day));
+  if (next.getUTCMonth() !== month - 1) {
+    next.setUTCDate(0);
+  }
+
+  return next.toISOString().slice(0, 10);
 };
 
 const SalaryInformation = {
@@ -66,26 +93,36 @@ const SalaryInformation = {
   },
 
   create: async (employeeId, payload) => {
+    const normalizedSalaryDate = normalizeOptionalDate(payload.date);
+    const normalizedSalary = toMoney(payload.salary);
+
     const [result] = await pool.promise().query(
       `INSERT INTO salary_information
        (employee_id, salary_date, plantilla, sg, step, salary, increment_amount, remarks)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         employeeId,
-        normalizeOptionalDate(payload.date),
+        normalizedSalaryDate,
         normalizeOptionalText(payload.plantilla),
         normalizeOptionalText(payload.sg),
         normalizeOptionalText(payload.step),
-        toNumberOrNull(payload.salary) ?? 0,
-        toNumberOrNull(payload.increment),
+        normalizedSalary,
+        0,
         normalizeOptionalText(payload.remarks),
       ],
     );
+
+    await SalaryInformation.recomputeEmployeeIncrements(employeeId);
 
     return SalaryInformation.getById(employeeId, result.insertId);
   },
 
   update: async (employeeId, id, payload) => {
+    const existing = await SalaryInformation.getById(employeeId, id);
+    if (!existing) {
+      return null;
+    }
+
     const fields = [];
     const params = [];
 
@@ -107,11 +144,7 @@ const SalaryInformation = {
     }
     if (Object.prototype.hasOwnProperty.call(payload, "salary")) {
       fields.push("salary = ?");
-      params.push(toNumberOrNull(payload.salary));
-    }
-    if (Object.prototype.hasOwnProperty.call(payload, "increment")) {
-      fields.push("increment_amount = ?");
-      params.push(toNumberOrNull(payload.increment));
+      params.push(toMoney(payload.salary));
     }
     if (Object.prototype.hasOwnProperty.call(payload, "remarks")) {
       fields.push("remarks = ?");
@@ -135,6 +168,8 @@ const SalaryInformation = {
       return null;
     }
 
+    await SalaryInformation.recomputeEmployeeIncrements(employeeId);
+
     return SalaryInformation.getById(employeeId, id);
   },
 
@@ -143,7 +178,136 @@ const SalaryInformation = {
       "DELETE FROM salary_information WHERE id = ? AND employee_id = ?",
       [id, employeeId],
     );
+
+    if (result.affectedRows > 0) {
+      await SalaryInformation.recomputeEmployeeIncrements(employeeId);
+    }
+
     return result;
+  },
+
+  recomputeEmployeeIncrements: async (employeeId) => {
+    const [rows] = await pool.promise().query(
+      `SELECT id, salary, increment_amount
+       FROM salary_information
+       WHERE employee_id = ?
+       ORDER BY salary_date ASC, id ASC`,
+      [employeeId],
+    );
+
+    let previousSalary = null;
+    let updated = 0;
+
+    for (const row of rows) {
+      const currentSalary = toMoney(row.salary);
+      const computedIncrement =
+        previousSalary === null
+          ? 0
+          : toNonNegativeMoneyDelta(currentSalary - previousSalary);
+
+      const storedIncrement = toNumberOrNull(row.increment_amount);
+      const needsUpdate =
+        storedIncrement === null ||
+        Math.abs(Number(storedIncrement) - Number(computedIncrement)) > 0.0001;
+
+      if (needsUpdate) {
+        await pool
+          .promise()
+          .query("UPDATE salary_information SET increment_amount = ? WHERE id = ?", [
+            computedIncrement,
+            row.id,
+          ]);
+        updated += 1;
+      }
+
+      previousSalary = currentSalary;
+    }
+
+    return { employeeId: Number(employeeId), total: rows.length, updated };
+  },
+
+  syncThreeYearSalaryDateEntries: async (options = {}) => {
+    const todayIso =
+      normalizeOptionalDate(options.today) || new Date().toISOString().slice(0, 10);
+
+    const [latestPerEmployeeRows] = await pool.promise().query(
+      `SELECT
+         si.employee_id,
+         si.salary_date,
+         si.plantilla,
+         si.sg,
+         si.step,
+         si.salary,
+         si.increment_amount
+       FROM salary_information si
+       JOIN employees e ON e.id = si.employee_id
+       WHERE COALESCE(e.is_archived, 0) = 0
+         AND si.id = (
+           SELECT si2.id
+           FROM salary_information si2
+           WHERE si2.employee_id = si.employee_id
+           ORDER BY si2.salary_date DESC, si2.id DESC
+           LIMIT 1
+         )`,
+    );
+
+    let generated = 0;
+    const touchedEmployeeIds = new Set();
+
+    for (const row of latestPerEmployeeRows) {
+      let cursorDate = normalizeOptionalDate(row.salary_date);
+      if (!cursorDate) continue;
+
+      while (true) {
+        const nextDate = addYearsToIsoDate(cursorDate, THREE_YEAR_INTERVAL);
+        if (!nextDate || nextDate > todayIso) {
+          break;
+        }
+
+        const [existingRows] = await pool.promise().query(
+          `SELECT id
+           FROM salary_information
+           WHERE employee_id = ? AND salary_date = ?
+           LIMIT 1`,
+          [row.employee_id, nextDate],
+        );
+
+        if (existingRows.length > 0) {
+          cursorDate = nextDate;
+          continue;
+        }
+
+        await pool.promise().query(
+          `INSERT INTO salary_information
+           (employee_id, salary_date, plantilla, sg, step, salary, increment_amount, remarks)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            row.employee_id,
+            nextDate,
+            normalizeOptionalText(row.plantilla),
+            normalizeOptionalText(row.sg),
+            normalizeOptionalText(row.step),
+            toMoney(row.salary),
+            0,
+            DEFAULT_AUTO_REMARK,
+          ],
+        );
+
+        generated += 1;
+        touchedEmployeeIds.add(Number(row.employee_id));
+        cursorDate = nextDate;
+      }
+    }
+
+    for (const employeeId of touchedEmployeeIds) {
+      await SalaryInformation.recomputeEmployeeIncrements(employeeId);
+    }
+
+    return {
+      employeesChecked: latestPerEmployeeRows.length,
+      generated,
+      asOfDate: todayIso,
+    };
   },
 };
 
