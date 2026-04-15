@@ -453,12 +453,25 @@ const backlogReportQuerySchema = Joi.object({
     Joi.string().valid("true", "false", "1", "0"),
     Joi.number().valid(0, 1),
   ),
+  only_archived: Joi.alternatives().try(
+    Joi.boolean(),
+    Joi.string().valid("true", "false", "1", "0"),
+    Joi.number().valid(0, 1),
+  ),
 });
 
 const backlogArchiveBodySchema = Joi.object({
   from: Joi.date().iso().required(),
   to: Joi.date().iso().required(),
   ids: Joi.array().items(Joi.number().integer().positive()).min(1).optional(),
+  search: Joi.string().trim().max(255).allow(null, ""),
+  role: Joi.string().trim().max(50).allow(null, ""),
+  letter: Joi.string()
+    .trim()
+    .length(1)
+    .uppercase()
+    .pattern(/^[A-Z]$/)
+    .allow(null, ""),
 });
 
 module.exports = {

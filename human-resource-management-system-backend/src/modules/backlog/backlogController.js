@@ -173,15 +173,21 @@ const buildPdfBuffer = (rows, filters = {}) => {
 const getAllBacklogs = async (req, res) => {
   try {
     const { page, pageSize } = req.query;
-    // Default to NOT including archived logs for better performance
-    const includeArchived = req.query.include_archived
-      ? toBoolean(req.query.include_archived)
+    const onlyArchived = req.query.only_archived
+      ? toBoolean(req.query.only_archived)
       : false;
+    // Default to NOT including archived logs for better performance.
+    const includeArchived = onlyArchived
+      ? true
+      : req.query.include_archived
+        ? toBoolean(req.query.include_archived)
+        : false;
     const pagination = page
       ? { page: Number(page), pageSize: Number(pageSize || 25) }
       : undefined;
     const results = await Backlog.getAll(pagination, {
       includeArchived,
+      onlyArchived,
       search: req.query.search || null,
       role: req.query.role || null,
       letter: req.query.letter || null,
@@ -244,10 +250,28 @@ const archiveBacklogsByDateRange = async (req, res) => {
     const fromDateTime = `${fromDate} 00:00:00`;
     const toDateTime = `${toDate} 23:59:59`;
 
-    const archived = await Backlog.archiveByDateRange({
-      from: fromDateTime,
-      to: toDateTime,
-    });
+    const search =
+      typeof req.body.search === "string" ? req.body.search.trim() : "";
+    const role = typeof req.body.role === "string" ? req.body.role.trim() : "";
+    const letter =
+      typeof req.body.letter === "string"
+        ? req.body.letter.trim().toUpperCase()
+        : "";
+
+    const shouldUseFilterArchive = Boolean(search || role || letter);
+
+    const archived = shouldUseFilterArchive
+      ? await Backlog.archiveByFilters({
+          from: fromDateTime,
+          to: toDateTime,
+          search: search || null,
+          role: role || null,
+          letter: letter || null,
+        })
+      : await Backlog.archiveByDateRange({
+          from: fromDateTime,
+          to: toDateTime,
+        });
 
     return res.status(200).json({
       message: "Logs archived successfully.",
@@ -255,7 +279,7 @@ const archiveBacklogsByDateRange = async (req, res) => {
         from: fromDate,
         to: toDate,
         archivedCount: archived.affectedRows,
-        mode: "range",
+        mode: shouldUseFilterArchive ? "filters" : "range",
       },
     });
   } catch (err) {
@@ -315,7 +339,10 @@ const createBacklog = async (req, res) => {
 const generateBacklogReport = async (req, res) => {
   try {
     const format = (req.query.format || "json").toLowerCase();
-    const includeArchived = toBoolean(req.query.include_archived);
+    const onlyArchived = toBoolean(req.query.only_archived);
+    const includeArchived = onlyArchived
+      ? true
+      : toBoolean(req.query.include_archived);
 
     const from = req.query.from
       ? `${String(req.query.from).slice(0, 10)} 00:00:00`
@@ -337,6 +364,7 @@ const generateBacklogReport = async (req, res) => {
       employeeId: req.query.employee_id ? Number(req.query.employee_id) : null,
       leaveId: req.query.leave_id ? Number(req.query.leave_id) : null,
       includeArchived,
+      onlyArchived,
     });
 
     if (format === "csv") {
@@ -359,6 +387,7 @@ const generateBacklogReport = async (req, res) => {
         role: req.query.role || null,
         letter: req.query.letter || null,
         include_archived: includeArchived,
+        only_archived: onlyArchived,
       });
 
       res.setHeader("Content-Type", "application/pdf");
@@ -385,6 +414,7 @@ const generateBacklogReport = async (req, res) => {
         employee_id: req.query.employee_id || null,
         leave_id: req.query.leave_id || null,
         include_archived: includeArchived,
+        only_archived: onlyArchived,
       },
     });
   } catch (err) {

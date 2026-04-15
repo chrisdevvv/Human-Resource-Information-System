@@ -20,6 +20,7 @@ type LogsReportGenerationProps = {
   generatedBy?: string;
   dateFrom?: string;
   dateTo?: string;
+  reportTitle?: string;
 };
 
 type FormattedLogsReportRecord = LogsReportRecord & {
@@ -186,11 +187,13 @@ const DocumentHeader = React.memo(function DocumentHeader({
   dateFrom,
   dateTo,
   totalRows,
+  reportTitle,
 }: {
   generatedBy?: string;
   dateFrom?: string;
   dateTo?: string;
   totalRows: number;
+  reportTitle?: string;
 }) {
   const generatedAt = new Date().toLocaleString("en-PH", {
     year: "numeric",
@@ -225,7 +228,7 @@ const DocumentHeader = React.memo(function DocumentHeader({
           className="mt-2 font-bold uppercase tracking-wide"
           style={{ fontSize: "14pt", lineHeight: 1.2 }}
         >
-          Activity Logs Report
+          {reportTitle || "Activity Logs Report"}
         </p>
       </div>
 
@@ -274,7 +277,10 @@ const EmptyStateRow = React.memo(function EmptyStateRow() {
 const LogsReportGeneration = React.forwardRef<
   HTMLDivElement,
   LogsReportGenerationProps
->(function LogsReportGeneration({ rows, generatedBy, dateFrom, dateTo }, ref) {
+>(function LogsReportGeneration(
+  { rows, generatedBy, dateFrom, dateTo, reportTitle },
+  ref,
+) {
   const firstPageStaticRef = React.useRef<HTMLDivElement | null>(null);
   const nextPageStaticRef = React.useRef<HTMLDivElement | null>(null);
   const rowMeasureRefs = React.useRef<(HTMLTableRowElement | null)[]>([]);
@@ -449,6 +455,7 @@ const LogsReportGeneration = React.forwardRef<
             dateFrom={dateFrom}
             dateTo={dateTo}
             totalRows={formattedRows.length}
+            reportTitle={reportTitle}
           />
           <div className="border" style={{ borderColor: CARD_COLORS.black }}>
             <table className="w-full border-collapse">
@@ -534,6 +541,7 @@ const LogsReportGeneration = React.forwardRef<
                   dateFrom={dateFrom}
                   dateTo={dateTo}
                   totalRows={formattedRows.length}
+                  reportTitle={reportTitle}
                 />
               )}
 
@@ -568,12 +576,16 @@ const LogsReportGeneration = React.forwardRef<
 
 export default LogsReportGeneration;
 
-export function createLogsReportFileName(): string {
+export function createLogsReportFileName(
+  scope: "active" | "archived" = "active",
+): string {
   const now = new Date();
   const yyyy = String(now.getFullYear());
   const mm = String(now.getMonth() + 1).padStart(2, "0");
   const dd = String(now.getDate()).padStart(2, "0");
-  return `Activity Logs Report - ${yyyy}-${mm}-${dd}.pdf`;
+  const titlePrefix =
+    scope === "archived" ? "Archived Logs Report" : "Activity Logs Report";
+  return `${titlePrefix} - ${yyyy}-${mm}-${dd}.pdf`;
 }
 
 export async function downloadLogsReportPdf(
