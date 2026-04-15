@@ -546,42 +546,42 @@ export default function LeaveManagementModal({
             </button>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+          <div className="mt-4 grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
             <button
               type="button"
               onClick={() => setActiveTab("history")}
-              className={`w-full cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition sm:w-auto ${
+              className={`inline-flex h-8.5 w-full cursor-pointer items-center justify-center gap-1 rounded-md px-2 text-[12px] font-semibold leading-tight transition sm:h-auto sm:w-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-medium ${
                 activeTab === "history"
                   ? "hover:bg-blue-700 bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
               <span className="inline-flex items-center gap-1">
-                <FileText size={14} />
+                <FileText size={12} />
                 Leave History
               </span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("card")}
-              className={`w-full cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition sm:w-auto ${
+              className={`inline-flex h-8.5 w-full cursor-pointer items-center justify-center gap-1 rounded-md px-2 text-[12px] font-semibold leading-tight transition sm:h-auto sm:w-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-medium ${
                 activeTab === "card"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              <span className="inline-flex items-center gap-1">
-                <IdCard size={14} />
+              <span className="inline-flex items-center gap-1 text-center">
+                <IdCard size={12} />
                 Printable Leave Card
               </span>
             </button>
             <button
               type="button"
               onClick={handleOpenHistoryInNewTab}
-              className="w-full cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition sm:w-auto"
+              className="inline-flex h-8.5 w-full cursor-pointer items-center justify-center gap-1 rounded-md bg-gray-100 px-2 text-[12px] font-semibold leading-tight text-gray-700 transition hover:bg-gray-200 sm:h-auto sm:w-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-medium"
             >
-              <span className="inline-flex items-center gap-1">
-                <ExternalLink size={14} />
+              <span className="inline-flex items-center gap-1 text-center">
+                <ExternalLink size={12} />
                 Open in Another Tab
               </span>
             </button>
@@ -589,9 +589,9 @@ export default function LeaveManagementModal({
               type="button"
               onClick={handleDeleteSelectedEntries}
               disabled={activeTab !== "history" || isDeletingEntries}
-              className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              className="inline-flex h-8.5 w-full cursor-pointer items-center justify-center gap-1 rounded-md bg-red-600 px-2 text-[12px] font-semibold leading-tight text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 sm:h-auto sm:w-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-medium"
             >
-              <Trash2 size={14} />
+              <Trash2 size={12} />
               {isDeleteMode
                 ? `Delete Entry (${selectedHistoryIds.size})`
                 : "Delete Entry"}
@@ -601,41 +601,41 @@ export default function LeaveManagementModal({
                 type="button"
                 onClick={handleCancelDeleteMode}
                 disabled={isDeletingEntries}
-                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                className="inline-flex h-8.5 w-full cursor-pointer items-center justify-center gap-1 rounded-md bg-gray-100 px-2 text-[12px] font-semibold leading-tight text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60 sm:h-auto sm:w-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-medium"
               >
                 <span className="inline-flex items-center gap-1">
-                  <XCircle size={14} />
+                  <XCircle size={12} />
                   Cancel
                 </span>
               </button>
             ) : null}
 
-            <div className="col-span-2 grid w-full grid-cols-2 gap-2 sm:col-span-1 sm:ml-auto sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
+            <div className="col-span-2 grid w-full grid-cols-2 gap-2.5 sm:col-span-1 sm:ml-auto sm:flex sm:w-auto sm:flex-wrap sm:justify-end sm:gap-2">
               <button
                 type="button"
                 onClick={() => setIsAddOpen(true)}
                 disabled={isSaving}
-                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                className="inline-flex h-8.5 w-full cursor-pointer items-center justify-center gap-1 rounded-md bg-blue-600 px-2 text-[12px] font-semibold leading-tight text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:h-auto sm:w-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-medium"
               >
-                <Plus size={14} />
+                <Plus size={12} />
                 Add Leave
               </button>
               <button
                 type="button"
                 onClick={() => fetchHistory(true)}
                 disabled={isSaving}
-                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                className="inline-flex h-8.5 w-full cursor-pointer items-center justify-center gap-1 rounded-md bg-gray-100 px-2 text-[12px] font-semibold leading-tight text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60 sm:h-auto sm:w-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-medium"
               >
-                <RefreshCcw size={14} />
+                <RefreshCcw size={12} />
                 Refresh
               </button>
               <button
                 type="button"
                 onClick={handleDownloadPdf}
                 disabled={isSaving || pdfCooldownRemaining > 0}
-                className="col-span-2 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-red-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1 sm:w-auto"
+                className="col-span-2 inline-flex h-8.5 w-full cursor-pointer items-center justify-center gap-1 rounded-md bg-rose-500 px-2 text-[12px] font-semibold leading-tight text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1 sm:h-auto sm:w-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-medium"
               >
-                <Download size={14} />
+                <Download size={12} />
                 {pdfCooldownRemaining > 0
                   ? `Download PDF (${pdfCooldownRemaining}s)`
                   : "Download PDF"}

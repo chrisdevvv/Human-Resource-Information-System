@@ -15,7 +15,9 @@ import ChangesToast from "../modals/ChangesToast";
 import SaveChanges from "../modals/SaveChanges";
 import PersonalInformation from "./PersonalInformation";
 import WorkInformation from "./WorkInformation";
-import SalaryInformation from "./SalaryInformation";
+import SalaryInformation, {
+  type SalaryHistoryRecord,
+} from "./SalaryInformation";
 import { createClearHandler } from "../../../utils/clearFormUtils";
 
 type School = {
@@ -99,6 +101,11 @@ type EmployeeDetailsApiResponse = {
   data?: Partial<EmployeeDetailsResponse> & {
     id?: number;
   };
+  message?: string;
+};
+
+type SalaryInformationListResponse = {
+  data?: SalaryHistoryRecord[];
   message?: string;
 };
 
@@ -642,6 +649,13 @@ export default function ViewEmployeeModal({
   const [isSaveConfirmOpen, setIsSaveConfirmOpen] = useState(false);
   const [initialEditSnapshot, setInitialEditSnapshot] =
     useState<EditSnapshot | null>(null);
+  const [salaryHistoryRows, setSalaryHistoryRows] = useState<
+    SalaryHistoryRecord[]
+  >([]);
+  const [salaryHistoryLoading, setSalaryHistoryLoading] = useState(false);
+  const [salaryHistoryError, setSalaryHistoryError] = useState<string | null>(
+    null,
+  );
 
   const applyEditSnapshot = (snapshot: EditSnapshot) => {
     setEditFirstName(snapshot.firstName);
@@ -792,6 +806,67 @@ export default function ViewEmployeeModal({
   }, [employee, visible]);
 
   useEffect(() => {
+    if (!visible || !employee) return;
+
+    let disposed = false;
+
+    const loadSalaryHistory = async () => {
+      try {
+        setSalaryHistoryLoading(true);
+        setSalaryHistoryError(null);
+
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          throw new Error(
+            "No authentication token found. Please log in again.",
+          );
+        }
+
+        const response = await fetch(
+          `${API_BASE}/api/employees/${employee.id}/salary-information`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        const body = (await response.json()) as SalaryInformationListResponse;
+
+        if (!response.ok) {
+          throw new Error(body.message || "Failed to load salary information");
+        }
+
+        if (!disposed) {
+          setSalaryHistoryRows(Array.isArray(body.data) ? body.data : []);
+        }
+      } catch (err) {
+        if (!disposed) {
+          setSalaryHistoryError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load salary information",
+          );
+        }
+      } finally {
+        if (!disposed) {
+          setSalaryHistoryLoading(false);
+        }
+      }
+    };
+
+    setSalaryHistoryRows([]);
+    setSalaryHistoryError(null);
+    loadSalaryHistory();
+
+    return () => {
+      disposed = true;
+    };
+  }, [employee, visible]);
+
+  useEffect(() => {
     if (isEditing) {
       setDistrictSearch(editDistrict);
       setPositionSearch(editPosition);
@@ -924,6 +999,18 @@ export default function ViewEmployeeModal({
     resolvedDetails?.middle_name || employee.middleName,
     resolvedDetails?.last_name || employee.lastName,
   );
+  const headerEmployeeName = [
+    resolvedDetails?.first_name || employee.firstName,
+    String(resolvedDetails?.middle_name || employee.middleName || "")
+      .trim()
+      .toUpperCase() === "N/A"
+      ? ""
+      : resolvedDetails?.middle_name || employee.middleName,
+    resolvedDetails?.last_name || employee.lastName,
+  ]
+    .filter((part) => Boolean(String(part || "").trim()))
+    .join(" ")
+    .trim();
 
   const ageValue =
     resolvedDetails?.age ??
@@ -1430,7 +1517,9 @@ export default function ViewEmployeeModal({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-xl font-bold text-gray-800 sm:text-2xl">
-                  {isEditing ? `Edit Employee` : `View Employee`}
+                  {isEditing
+                    ? `Edit Employee`
+                    : `View Employee • ${headerEmployeeName || fullName}`}
                 </h2>
                 <p className="mt-1 text-sm text-gray-500">
                   {isEditing
@@ -1694,6 +1783,9 @@ export default function ViewEmployeeModal({
               formatYearsInService={formatYearsInService}
               formatLoyaltyBonus={formatLoyaltyBonus}
               getValidationError={getValidationError}
+              salaryHistoryRows={salaryHistoryRows}
+              salaryHistoryLoading={salaryHistoryLoading}
+              salaryHistoryError={salaryHistoryError}
             />
           )}
           <div className="mt-4 flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
