@@ -71,16 +71,16 @@ const SalaryInformation = {
     const page = Number(filters.page) || null;
     const pageSize = Math.min(Number(filters.pageSize) || 25, 200);
     const sortOrder =
-      String(filters.sortOrder || "desc").toLowerCase() === "asc"
-        ? "ASC"
-        : "DESC";
+      String(filters.sortOrder || "asc").toLowerCase() === "desc"
+        ? "DESC"
+        : "ASC";
 
     const baseFrom = "FROM salary_information WHERE employee_id = ?";
     const baseParams = [employeeId];
 
     if (!page) {
       const [rows] = await pool.promise().query(
-        `SELECT id, employee_id, salary_date, plantilla, sg, step, salary, increment_amount, increment_mode, remarks, created_at, updated_at ${baseFrom} ORDER BY salary_date ${sortOrder}, id DESC`,
+        `SELECT id, employee_id, salary_date, plantilla, sg, step, salary, increment_amount, increment_mode, remarks, created_at, updated_at ${baseFrom} ORDER BY salary_date ${sortOrder}, id ${sortOrder}`,
         baseParams,
       );
       return rows;
@@ -92,7 +92,7 @@ const SalaryInformation = {
       .query(`SELECT COUNT(1) AS total ${baseFrom}`, baseParams);
 
     const [rows] = await pool.promise().query(
-      `SELECT id, employee_id, salary_date, plantilla, sg, step, salary, increment_amount, increment_mode, remarks, created_at, updated_at ${baseFrom} ORDER BY salary_date ${sortOrder}, id DESC LIMIT ? OFFSET ?`,
+      `SELECT id, employee_id, salary_date, plantilla, sg, step, salary, increment_amount, increment_mode, remarks, created_at, updated_at ${baseFrom} ORDER BY salary_date ${sortOrder}, id ${sortOrder} LIMIT ? OFFSET ?`,
       [...baseParams, pageSize, offset],
     );
 
