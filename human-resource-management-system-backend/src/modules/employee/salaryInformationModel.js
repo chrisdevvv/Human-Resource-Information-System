@@ -6,6 +6,20 @@ const INCREMENT_MODE_AUTO = "AUTO";
 const INCREMENT_MODE_MANUAL = "MANUAL";
 const hasOwn = (obj, key) =>
   Object.prototype.hasOwnProperty.call(obj || {}, key);
+const hasProvidedIncrement = (payload = {}) =>
+  hasOwn(payload, "increment") || hasOwn(payload, "increment_amount");
+const getProvidedIncrementValue = (payload = {}) => {
+  if (hasOwn(payload, "increment") && payload.increment !== undefined) {
+    return payload.increment;
+  }
+  if (hasOwn(payload, "increment_amount")) {
+    return payload.increment_amount;
+  }
+  if (hasOwn(payload, "increment")) {
+    return payload.increment;
+  }
+  return undefined;
+};
 
 const toNumberOrNull = (value) => {
   if (value === undefined || value === null || value === "") return null;
@@ -99,11 +113,12 @@ const SalaryInformation = {
   create: async (employeeId, payload) => {
     const normalizedSalaryDate = normalizeOptionalDate(payload.date);
     const normalizedSalary = toMoney(payload.salary);
+    const providedIncrement = getProvidedIncrementValue(payload);
     const hasManualIncrement =
-      hasOwn(payload, "increment") &&
-      payload.increment !== null &&
-      payload.increment !== "";
-    const normalizedIncrement = hasManualIncrement ? toMoney(payload.increment) : 0;
+      providedIncrement !== undefined &&
+      providedIncrement !== null &&
+      providedIncrement !== "";
+    const normalizedIncrement = hasManualIncrement ? toMoney(providedIncrement) : 0;
     const incrementMode = hasManualIncrement
       ? INCREMENT_MODE_MANUAL
       : INCREMENT_MODE_AUTO;
@@ -159,8 +174,8 @@ const SalaryInformation = {
       fields.push("salary = ?");
       params.push(toMoney(payload.salary));
     }
-    if (hasOwn(payload, "increment")) {
-      const normalizedIncrement = toNumberOrNull(payload.increment);
+    if (hasProvidedIncrement(payload)) {
+      const normalizedIncrement = toNumberOrNull(getProvidedIncrementValue(payload));
 
       if (normalizedIncrement === null) {
         fields.push("increment_amount = ?");
