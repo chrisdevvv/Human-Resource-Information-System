@@ -16,6 +16,7 @@ import {
   incrementFailedAttempt,
   resetLoginAttempts,
 } from "./utils/loginAttempts";
+import { APP_ROUTES, getDashboardRouteByRoleStrict } from "@/frontend/route";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -203,7 +204,7 @@ export default function LoginPageMobile() {
       if (shouldForcePasswordChange) {
         sessionStorage.setItem(PENDING_PASSWORD_KEY, password);
         sessionStorage.setItem(PENDING_EMAIL_KEY, normalizedEmail);
-        router.push("/new-user");
+        router.push(APP_ROUTES.NEW_USER);
         return;
       }
 
@@ -479,10 +480,13 @@ export default function LoginPageMobile() {
         user={loggedInUser}
         onClose={() => {
           setShowLoginSuccess(false);
-          if (loggedInUser?.role === "SUPER_ADMIN") router.push("/super-admin");
-          else if (loggedInUser?.role === "ADMIN") router.push("/admin");
-          else if (loggedInUser?.role === "DATA_ENCODER")
-            router.push("/data-encoder");
+          const dashboardRoute = getDashboardRouteByRoleStrict(
+            loggedInUser?.role,
+            "",
+          );
+          if (dashboardRoute) {
+            router.push(dashboardRoute);
+          }
         }}
       />
 

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Lock, ArrowLeft } from "../../frontend/assets/icons";
 import { clearClientSession } from "../../frontend/auth/session";
+import { APP_ROUTES } from "@/frontend/route";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -140,7 +141,7 @@ export default function ResetPasswordContent() {
       clearClientSession();
       setStep("success");
       setTimeout(() => {
-        router.push("/login");
+        router.push(APP_ROUTES.LOGIN);
       }, 3000);
     } catch (err) {
       setGeneralError(err instanceof Error ? err.message : "An error occurred");
@@ -157,7 +158,7 @@ export default function ResetPasswordContent() {
             <p className="text-red-700">{generalError}</p>
           </div>
           <button
-            onClick={() => router.push("/login")}
+            onClick={() => router.push(APP_ROUTES.LOGIN)}
             className="w-full px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
           >
             Back to Login

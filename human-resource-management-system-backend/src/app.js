@@ -911,6 +911,23 @@ app.delete(
         return res.status(404).json({ message: "District not found" });
       }
 
+      const districtName = String(existingRows[0].district_name || "").trim();
+      const [[usageRow]] = await pool.promise().query(
+        `SELECT COUNT(*) AS total
+         FROM employees
+         WHERE LOWER(TRIM(COALESCE(district, ''))) = LOWER(TRIM(?))
+            OR LOWER(TRIM(COALESCE(work_district, ''))) = LOWER(TRIM(?))`,
+        [districtName, districtName],
+      );
+
+      const assignedEmployees = Number(usageRow?.total || 0);
+      if (assignedEmployees > 0) {
+        return res.status(409).json({
+          message: `Cannot delete district. ${assignedEmployees} employee record(s) are still assigned to it. Reassign employees first.`,
+          data: { assignedEmployees },
+        });
+      }
+
       await pool
         .promise()
         .query("DELETE FROM districts WHERE id = ?", [req.params.id]);

@@ -11,6 +11,7 @@ import {
   Search,
 } from "lucide-react";
 import ViewLogsModal from "../../components/ViewLogsModal";
+import { getLogsReportRoute } from "@/frontend/route";
 
 type Log = {
   id: number;
@@ -91,11 +92,7 @@ export default function ArchivedLogs() {
     params.set("report_scope", "archived");
 
     const query = params.toString();
-    router.push(
-      query
-        ? `/super-admin/logsreportgeneration?${query}`
-        : "/super-admin/logsreportgeneration?report_scope=archived",
-    );
+    router.push(getLogsReportRoute(query || "report_scope=archived"));
   };
 
   const fetchLogs = async (showSpinner = true) => {

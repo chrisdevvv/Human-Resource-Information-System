@@ -36,6 +36,15 @@ const School = {
     return rows[0];
   },
 
+  countAssignedEmployees: async (id) => {
+    const [rows] = await pool
+      .promise()
+      .query("SELECT COUNT(*) AS total FROM employees WHERE school_id = ?", [
+        id,
+      ]);
+    return Number(rows[0]?.total || 0);
+  },
+
   create: async (data) => {
     const { school_name, school_code } = data;
     const [result] = await pool

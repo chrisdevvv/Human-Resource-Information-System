@@ -358,6 +358,33 @@ const updateEmployee = async (req, res) => {
       req.body.school_id = resolvedSchoolId;
     }
 
+    const requestedDistrict = String(
+      req.body?.district ?? req.body?.work_district ?? "",
+    ).trim();
+
+    if (!requestedDistrict) {
+      return res.status(400).json({
+        message: "A valid district is required to update an employee record.",
+      });
+    }
+
+    const [districtRows] = await pool
+      .promise()
+      .query(
+        "SELECT district_name FROM districts WHERE LOWER(TRIM(district_name)) = LOWER(TRIM(?)) LIMIT 1",
+        [requestedDistrict],
+      );
+
+    if (!districtRows.length) {
+      return res.status(400).json({
+        message:
+          "Selected district does not exist. Please choose a district from the configured list.",
+      });
+    }
+
+    req.body.district = districtRows[0].district_name;
+    req.body.work_district = districtRows[0].district_name;
+
     const result = await Employee.update(req.params.id, req.body);
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Employee not found" });

@@ -7,6 +7,7 @@ import LogsReportGeneration, {
   downloadLogsReportPdf,
   type LogsReportRecord,
 } from "../../../frontend/super-admin/functions/Logs/LogsReportGeneration";
+import { APP_ROUTES } from "@/frontend/route";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -101,7 +102,7 @@ export default function LogsReportGenerationPage() {
 
         const token = localStorage.getItem("authToken");
         if (!token) {
-          router.replace("/login");
+          router.replace(APP_ROUTES.LOGIN);
           return;
         }
 
@@ -230,7 +231,7 @@ export default function LogsReportGenerationPage() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => router.push("/super-admin")}
+              onClick={() => router.push(APP_ROUTES.SUPER_ADMIN)}
               className="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               Back to Super Admin

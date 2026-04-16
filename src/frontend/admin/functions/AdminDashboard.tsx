@@ -263,34 +263,6 @@ export default function AdminDashboard({ onTabChange }: AdminDashboardProps) {
             </div>
           ))}
         </div>
-
-        {/* Shortcuts */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Shortcuts</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {shortcuts.map((shortcut, index) => (
-              <button
-                key={index}
-                onClick={() => handleShortcutClick(shortcut.tab)}
-                className="cursor-pointer w-full bg-linear-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 hover:shadow-lg hover:border-blue-400 transition-all text-left group"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="text-blue-700 group-hover:scale-110 transition-transform">
-                    {shortcut.icon}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">
-                      {shortcut.label}
-                    </p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      {shortcut.description}
-                    </p>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

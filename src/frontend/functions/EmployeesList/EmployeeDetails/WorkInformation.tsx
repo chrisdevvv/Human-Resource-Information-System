@@ -275,7 +275,11 @@ export default function WorkInformation({
               <input
                 type="text"
                 value={districtSearch}
-                onChange={(e) => setDistrictSearch(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setDistrictSearch(value);
+                  setEditDistrict(value);
+                }}
                 onFocus={() => setShowDistrictDropdown(true)}
                 onBlur={() => setShowDistrictDropdown(false)}
                 placeholder="District"

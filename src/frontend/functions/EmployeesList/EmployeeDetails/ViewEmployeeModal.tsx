@@ -1079,6 +1079,7 @@ export default function ViewEmployeeModal({
   const handleSaveChanges = async () => {
     setEditError(null);
     const newErrors: ValidationError[] = [];
+    let selectedDistrict: District | null = null;
 
     if (!editFirstName.trim()) {
       newErrors.push({
@@ -1171,6 +1172,28 @@ export default function ViewEmployeeModal({
         field: "School",
         message: "School is required",
       });
+    }
+
+    const normalizedDistrictInput = editDistrict.trim();
+    if (!normalizedDistrictInput) {
+      newErrors.push({
+        field: "District",
+        message: "District is required",
+      });
+    } else {
+      selectedDistrict =
+        districts.find(
+          (item) =>
+            item.district_name.trim().toLowerCase() ===
+            normalizedDistrictInput.toLowerCase(),
+        ) || null;
+
+      if (!selectedDistrict) {
+        newErrors.push({
+          field: "District",
+          message: "Please select a valid district from the list.",
+        });
+      }
     }
 
     if (!isGovernmentIdValid(editTin, GOV_ID_MASKS.tin)) {
@@ -1374,7 +1397,7 @@ export default function ViewEmployeeModal({
         sex_id: editSexId,
         employee_no: editEmployeeNo.trim(),
         work_email: editWorkEmail.trim(),
-        district: editDistrict.trim(),
+        district: selectedDistrict?.district_name || editDistrict.trim(),
         position: editPosition.trim(),
         position_id: editPositionId,
         plantilla_no: editPlantillaNo.trim(),

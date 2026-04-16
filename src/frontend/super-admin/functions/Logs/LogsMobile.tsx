@@ -15,6 +15,7 @@ import LogsReportGeneration, {
   downloadLogsReportPdf,
   type LogsReportRecord,
 } from "./LogsReportGeneration";
+import { getLogsReportRoute } from "@/frontend/route";
 
 type Log = {
   id: number;
@@ -321,11 +322,7 @@ export default function LogsMobile() {
     params.set("report_scope", "active");
 
     const query = params.toString();
-    router.push(
-      query
-        ? `/super-admin/logsreportgeneration?${query}`
-        : "/super-admin/logsreportgeneration",
-    );
+    router.push(getLogsReportRoute(query));
   };
 
   const fetchLogs = async (showSpinner = true) => {

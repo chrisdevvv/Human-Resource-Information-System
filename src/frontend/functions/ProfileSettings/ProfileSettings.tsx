@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Eye, EyeOff, Pencil, Save, XCircle } from "lucide-react";
 import ConfirmationModal from "../../super-admin/components/ConfirmationModal";
 import { logoutNow } from "@/frontend/auth/session";
+import { APP_ROUTES } from "@/frontend/route";
 import { createClearHandler } from "../../utils/clearFormUtils";
 import ToastMessage from "../../components/ToastMessage";
 
@@ -780,7 +781,7 @@ export default function ProfileSettings() {
       setRetypePassword("");
       await logoutNow();
       window.setTimeout(() => {
-        window.location.replace("/login");
+        window.location.replace(APP_ROUTES.LOGIN);
       }, 900);
     } catch {
       setPasswordError("Failed to change password.");

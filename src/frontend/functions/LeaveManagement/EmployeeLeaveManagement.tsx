@@ -19,6 +19,7 @@ import AddLeaveModal, {
 import MonthlyCredit from "@/frontend/functions/LeaveManagement/MonthlyCredit/MonthlyCredit";
 import { createLeave } from "@/frontend/functions/LeaveManagement/leaveApi";
 import type { LeaveModalRecord } from "@/frontend/functions/LeaveManagement/leaveTypes";
+import { getLeaveCardRoute } from "@/frontend/route";
 
 type EmployeeRecordApi = {
   id: number;
@@ -633,7 +634,7 @@ export default function EmployeeLeaveManagement() {
                               type="button"
                               onClick={() =>
                                 window.open(
-                                  `/leave-card/${employee.id}`,
+                                  getLeaveCardRoute(employee.id),
                                   "_blank",
                                 )
                               }
@@ -728,7 +729,7 @@ export default function EmployeeLeaveManagement() {
                                     type="button"
                                     onClick={() =>
                                       window.open(
-                                        `/leave-card/${employee.id}`,
+                                        getLeaveCardRoute(employee.id),
                                         "_blank",
                                       )
                                     }

@@ -27,6 +27,7 @@ import {
   getLeaveHistoryByEmployee,
   type LeaveHistoryRecord,
 } from "../leaveApi";
+import { getLeaveHistoryRoute } from "@/frontend/route";
 
 type LeaveManagementModalProps = {
   isOpen: boolean;
@@ -360,7 +361,7 @@ export default function LeaveManagementModal({
   };
 
   const handleOpenHistoryInNewTab = () => {
-    window.open(`/leave-history/${employeeId}`, "_blank");
+    window.open(getLeaveHistoryRoute(employeeId), "_blank");
   };
 
   const handleToggleHistoryRow = (rowId: number) => {
