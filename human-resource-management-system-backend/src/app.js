@@ -762,6 +762,7 @@ const ensureSalaryInformationTable = async () => {
       step VARCHAR(20) NULL,
       salary DECIMAL(12,2) NOT NULL DEFAULT 0.00,
       increment_amount DECIMAL(12,2) NULL,
+      increment_mode ENUM('AUTO', 'MANUAL') NOT NULL DEFAULT 'AUTO',
       remarks ENUM(${salaryInformationRemarksSql}) NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -772,6 +773,17 @@ const ensureSalaryInformationTable = async () => {
       INDEX idx_salary_information_employee_id (employee_id),
       INDEX idx_salary_information_employee_date (employee_id, salary_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `);
+
+  await pool.promise().query(`
+    ALTER TABLE salary_information
+    ADD COLUMN IF NOT EXISTS increment_mode ENUM('AUTO', 'MANUAL') NOT NULL DEFAULT 'AUTO' AFTER increment_amount;
+  `);
+
+  await pool.promise().query(`
+    UPDATE salary_information
+    SET increment_mode = 'AUTO'
+    WHERE increment_mode IS NULL;
   `);
 
   await pool.promise().query(`

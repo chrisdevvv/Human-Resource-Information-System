@@ -2,6 +2,10 @@ const pool = require("../../config/db");
 
 const THREE_YEAR_INTERVAL = 3;
 const DEFAULT_AUTO_REMARK = "Step Increment";
+const INCREMENT_MODE_AUTO = "AUTO";
+const INCREMENT_MODE_MANUAL = "MANUAL";
+const hasOwn = (obj, key) =>
+  Object.prototype.hasOwnProperty.call(obj || {}, key);
 
 const toNumberOrNull = (value) => {
   if (value === undefined || value === null || value === "") return null;
@@ -62,7 +66,7 @@ const SalaryInformation = {
 
     if (!page) {
       const [rows] = await pool.promise().query(
-        `SELECT id, employee_id, salary_date, plantilla, sg, step, salary, increment_amount, remarks, created_at, updated_at ${baseFrom} ORDER BY salary_date ${sortOrder}, id DESC`,
+        `SELECT id, employee_id, salary_date, plantilla, sg, step, salary, increment_amount, increment_mode, remarks, created_at, updated_at ${baseFrom} ORDER BY salary_date ${sortOrder}, id DESC`,
         baseParams,
       );
       return rows;
@@ -74,7 +78,7 @@ const SalaryInformation = {
       .query(`SELECT COUNT(1) AS total ${baseFrom}`, baseParams);
 
     const [rows] = await pool.promise().query(
-      `SELECT id, employee_id, salary_date, plantilla, sg, step, salary, increment_amount, remarks, created_at, updated_at ${baseFrom} ORDER BY salary_date ${sortOrder}, id DESC LIMIT ? OFFSET ?`,
+      `SELECT id, employee_id, salary_date, plantilla, sg, step, salary, increment_amount, increment_mode, remarks, created_at, updated_at ${baseFrom} ORDER BY salary_date ${sortOrder}, id DESC LIMIT ? OFFSET ?`,
       [...baseParams, pageSize, offset],
     );
 
@@ -83,7 +87,7 @@ const SalaryInformation = {
 
   getById: async (employeeId, id) => {
     const [rows] = await pool.promise().query(
-      `SELECT id, employee_id, salary_date, plantilla, sg, step, salary, increment_amount, remarks, created_at, updated_at
+      `SELECT id, employee_id, salary_date, plantilla, sg, step, salary, increment_amount, increment_mode, remarks, created_at, updated_at
        FROM salary_information
        WHERE id = ? AND employee_id = ?
        LIMIT 1`,
@@ -95,11 +99,19 @@ const SalaryInformation = {
   create: async (employeeId, payload) => {
     const normalizedSalaryDate = normalizeOptionalDate(payload.date);
     const normalizedSalary = toMoney(payload.salary);
+    const hasManualIncrement =
+      hasOwn(payload, "increment") &&
+      payload.increment !== null &&
+      payload.increment !== "";
+    const normalizedIncrement = hasManualIncrement ? toMoney(payload.increment) : 0;
+    const incrementMode = hasManualIncrement
+      ? INCREMENT_MODE_MANUAL
+      : INCREMENT_MODE_AUTO;
 
     const [result] = await pool.promise().query(
       `INSERT INTO salary_information
-       (employee_id, salary_date, plantilla, sg, step, salary, increment_amount, remarks)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       (employee_id, salary_date, plantilla, sg, step, salary, increment_amount, increment_mode, remarks)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         employeeId,
         normalizedSalaryDate,
@@ -107,7 +119,8 @@ const SalaryInformation = {
         normalizeOptionalText(payload.sg),
         normalizeOptionalText(payload.step),
         normalizedSalary,
-        0,
+        normalizedIncrement,
+        incrementMode,
         normalizeOptionalText(payload.remarks),
       ],
     );
@@ -145,6 +158,21 @@ const SalaryInformation = {
     if (Object.prototype.hasOwnProperty.call(payload, "salary")) {
       fields.push("salary = ?");
       params.push(toMoney(payload.salary));
+    }
+    if (hasOwn(payload, "increment")) {
+      const normalizedIncrement = toNumberOrNull(payload.increment);
+
+      if (normalizedIncrement === null) {
+        fields.push("increment_amount = ?");
+        params.push(0);
+        fields.push("increment_mode = ?");
+        params.push(INCREMENT_MODE_AUTO);
+      } else {
+        fields.push("increment_amount = ?");
+        params.push(toMoney(normalizedIncrement));
+        fields.push("increment_mode = ?");
+        params.push(INCREMENT_MODE_MANUAL);
+      }
     }
     if (Object.prototype.hasOwnProperty.call(payload, "remarks")) {
       fields.push("remarks = ?");
@@ -188,7 +216,7 @@ const SalaryInformation = {
 
   recomputeEmployeeIncrements: async (employeeId) => {
     const [rows] = await pool.promise().query(
-      `SELECT id, salary, increment_amount
+      `SELECT id, salary, increment_amount, increment_mode
        FROM salary_information
        WHERE employee_id = ?
        ORDER BY salary_date ASC, id ASC`,
@@ -204,6 +232,14 @@ const SalaryInformation = {
         previousSalary === null
           ? 0
           : toNonNegativeMoneyDelta(currentSalary - previousSalary);
+      const isManualMode =
+        String(row.increment_mode || INCREMENT_MODE_AUTO).toUpperCase() ===
+        INCREMENT_MODE_MANUAL;
+
+      if (isManualMode) {
+        previousSalary = currentSalary;
+        continue;
+      }
 
       const storedIncrement = toNumberOrNull(row.increment_amount);
       const needsUpdate =
@@ -279,8 +315,8 @@ const SalaryInformation = {
 
         await pool.promise().query(
           `INSERT INTO salary_information
-           (employee_id, salary_date, plantilla, sg, step, salary, increment_amount, remarks)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+           (employee_id, salary_date, plantilla, sg, step, salary, increment_amount, increment_mode, remarks)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             row.employee_id,
             nextDate,
@@ -289,6 +325,7 @@ const SalaryInformation = {
             normalizeOptionalText(row.step),
             toMoney(row.salary),
             0,
+            INCREMENT_MODE_AUTO,
             DEFAULT_AUTO_REMARK,
           ],
         );
