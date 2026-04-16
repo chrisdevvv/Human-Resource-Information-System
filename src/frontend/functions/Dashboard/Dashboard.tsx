@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   Users,
   FileText,
@@ -10,80 +10,7 @@ import {
   Building2,
   LayoutDashboard,
 } from "lucide-react";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
-
-type ApiListResponse<T> = {
-  data?: T[];
-  message?: string;
-};
-
-type LeaveRecord = {
-  status?: string;
-  created_at?: string;
-  date_of_action?: string;
-};
-
-type BacklogRecord = {
-  id?: number;
-  action?: string;
-  details?: string;
-  created_at?: string;
-  first_name?: string;
-  last_name?: string;
-};
-
-type EmployeeStatusCountsResponse = {
-  data?: {
-    on_leave?: number;
-    archived?: number;
-  };
-  message?: string;
-};
-
-const normalizeList = <T,>(payload: unknown): T[] => {
-  if (Array.isArray(payload)) {
-    return payload as T[];
-  }
-
-  if (payload && typeof payload === "object") {
-    const withData = payload as ApiListResponse<T>;
-    if (Array.isArray(withData.data)) {
-      return withData.data;
-    }
-  }
-
-  return [];
-};
-
-const fetchApiList = async <T,>(
-  endpoint: string,
-  token: string,
-): Promise<T[]> => {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  const payload = (await response.json().catch(() => ({}))) as
-    | ApiListResponse<T>
-    | T[];
-
-  if (!response.ok) {
-    throw new Error(
-      (payload as ApiListResponse<T>)?.message ||
-        `Failed to fetch ${endpoint}.`,
-    );
-  }
-
-  return normalizeList<T>(payload);
-};
-
-const normalizeRole = (role: unknown) =>
-  String(role || "")
-    .trim()
-    .replace(/[_\s]+/g, "-")
-    .toUpperCase();
+import { type BacklogRecord, useDashboardData } from "./useDashboardData";
 
 type StatCard = {
   title: string;
@@ -110,174 +37,18 @@ export default function Dashboard({
   onTabChange,
   showRecentLogs = true,
 }: DashboardProps) {
-  const [stats, setStats] = useState({
-    totalEmployees: 0,
-    totalUsers: 0,
-    totalSchools: 0,
-    pendingRequests: 0,
-    approvedThisMonth: 0,
-    pendingRegistrations: 0,
-    employeesOnLeave: 0,
-    archivedEmployees: 0,
-  });
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const {
+    stats,
+    isSuperAdmin,
+    loading,
+    error,
+    recentLogs,
+    canAccessDashboard,
+  } = useDashboardData({ showRecentLogs });
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [recentLogs, setRecentLogs] = useState<BacklogRecord[]>([]);
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        const rawUser = localStorage.getItem("user");
-
-        if (!token) {
-          setError("Not authenticated");
-          setLoading(false);
-          return;
-        }
-
-        let currentUserRole = "";
-        let currentUserSchoolId: number | null = null;
-
-        if (rawUser) {
-          try {
-            const parsed = JSON.parse(rawUser) as {
-              role?: string;
-              school_id?: number | string;
-            };
-            currentUserRole = normalizeRole(parsed.role);
-            const parsedSchoolId = Number(parsed.school_id);
-            currentUserSchoolId = Number.isFinite(parsedSchoolId)
-              ? parsedSchoolId
-              : null;
-          } catch {
-            currentUserRole = "";
-            currentUserSchoolId = null;
-          }
-        }
-
-        const isAdmin = currentUserRole === "ADMIN";
-        const isSuperAdminRole = currentUserRole === "SUPER-ADMIN";
-        setIsSuperAdmin(isSuperAdminRole);
-        const scopedEmployeesEndpoint =
-          isAdmin && currentUserSchoolId
-            ? `/api/employees/school/${currentUserSchoolId}`
-            : "/api/employees";
-        const scopedUsersEndpoint =
-          isAdmin && currentUserSchoolId
-            ? `/api/users?school_id=${currentUserSchoolId}`
-            : "/api/users";
-        const statusCountsUrl =
-          `${API_BASE_URL}/api/employees/status-counts?include_archived=true` +
-          (isAdmin && currentUserSchoolId
-            ? `&school_id=${currentUserSchoolId}`
-            : "");
-
-        const [
-          employees,
-          users,
-          leaves,
-          pendingRegistrationsList,
-          schools,
-          backlogs,
-          employeeStatusCountsResponse,
-        ] = await Promise.all([
-          fetchApiList<Record<string, unknown>>(scopedEmployeesEndpoint, token),
-          fetchApiList<Record<string, unknown>>(scopedUsersEndpoint, token),
-          fetchApiList<LeaveRecord>("/api/leave", token),
-          fetchApiList<Record<string, unknown>>(
-            "/api/registrations/pending",
-            token,
-          ),
-          isSuperAdminRole
-            ? fetchApiList<Record<string, unknown>>("/api/schools", token)
-            : Promise.resolve([]),
-          showRecentLogs
-            ? fetchApiList<BacklogRecord>("/api/backlogs", token)
-            : Promise.resolve([]),
-          fetch(statusCountsUrl, {
-            headers: { Authorization: `Bearer ${token}` },
-          }).then(async (response) => {
-            const payload = (await response
-              .json()
-              .catch(() => ({}))) as EmployeeStatusCountsResponse;
-
-            if (!response.ok) {
-              throw new Error(
-                payload?.message || "Failed to fetch employee status counts.",
-              );
-            }
-
-            return payload;
-          }),
-        ]);
-
-        const totalEmployees = employees.length;
-        const totalUsers = users.length;
-        const totalSchools = schools.length;
-        const pendingRegistrations = pendingRegistrationsList.length;
-        const employeesOnLeave =
-          Number(employeeStatusCountsResponse?.data?.on_leave) || 0;
-        const archivedEmployees =
-          Number(employeeStatusCountsResponse?.data?.archived) || 0;
-
-        // Filter pending and approved this month
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-
-        let pendingRequests = 0;
-        let approvedThisMonth = 0;
-
-        leaves.forEach((leave) => {
-          const status = String(leave.status || "").toUpperCase();
-          if (status === "PENDING") {
-            pendingRequests++;
-          }
-
-          if (status === "APPROVED") {
-            const dateSource = leave.created_at || leave.date_of_action;
-            if (!dateSource) {
-              return;
-            }
-
-            const leaveDate = new Date(dateSource);
-            if (Number.isNaN(leaveDate.getTime())) {
-              return;
-            }
-
-            if (
-              leaveDate.getMonth() === currentMonth &&
-              leaveDate.getFullYear() === currentYear
-            ) {
-              approvedThisMonth++;
-            }
-          }
-        });
-
-        setStats({
-          totalEmployees,
-          totalUsers,
-          totalSchools,
-          pendingRequests,
-          approvedThisMonth,
-          pendingRegistrations,
-          employeesOnLeave,
-          archivedEmployees,
-        });
-        setRecentLogs(showRecentLogs ? backlogs.slice(0, 3) : []);
-        setLoading(false);
-      } catch (err) {
-        console.error("Error fetching dashboard data:", err);
-        setError("Failed to load dashboard data");
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, [showRecentLogs]);
+  if (!canAccessDashboard) {
+    return null;
+  }
 
   const statCards: StatCard[] = [
     {
