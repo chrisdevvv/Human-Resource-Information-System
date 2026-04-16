@@ -1679,7 +1679,7 @@ export default function ViewEmployeeModal({
             step: salaryHistoryCreateDraft.step.trim() || null,
             salary: Number(numericSalary.toFixed(2)),
             ...(incrementValueRaw
-              ? { increment: Number(numericIncrement.toFixed(2)) }
+              ? { increment_amount: Number(numericIncrement.toFixed(2)) }
               : {}),
             remarks: remarksValue || null,
           }),
@@ -1837,7 +1837,7 @@ export default function ViewEmployeeModal({
             salary: Number(numericSalary.toFixed(2)),
             ...(salaryHistoryEditIncrementTouched
               ? {
-                  increment: incrementValueRaw
+                  increment_amount: incrementValueRaw
                     ? Number(numericIncrement.toFixed(2))
                     : null,
                 }
