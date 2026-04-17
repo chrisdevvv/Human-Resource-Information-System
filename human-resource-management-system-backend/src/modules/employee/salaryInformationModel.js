@@ -43,6 +43,15 @@ const normalizeOptionalText = (value) => {
 
 const normalizeOptionalDate = (value) => {
   if (value === undefined || value === null || value === "") return null;
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
   const normalized = String(value).trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return normalized;
   const parsed = new Date(normalized);
@@ -80,7 +89,7 @@ const SalaryInformation = {
 
     if (!page) {
       const [rows] = await pool.promise().query(
-        `SELECT id, employee_id, salary_date, plantilla, sg, step, salary, increment_amount, increment_mode, remarks, created_at, updated_at ${baseFrom} ORDER BY salary_date ${sortOrder}, id ${sortOrder}`,
+        `SELECT id, employee_id, DATE_FORMAT(salary_date, '%Y-%m-%d') AS salary_date, plantilla, sg, step, salary, increment_amount, increment_mode, remarks, created_at, updated_at ${baseFrom} ORDER BY salary_date ${sortOrder}, id ${sortOrder}`,
         baseParams,
       );
       return rows;
@@ -92,7 +101,7 @@ const SalaryInformation = {
       .query(`SELECT COUNT(1) AS total ${baseFrom}`, baseParams);
 
     const [rows] = await pool.promise().query(
-      `SELECT id, employee_id, salary_date, plantilla, sg, step, salary, increment_amount, increment_mode, remarks, created_at, updated_at ${baseFrom} ORDER BY salary_date ${sortOrder}, id ${sortOrder} LIMIT ? OFFSET ?`,
+      `SELECT id, employee_id, DATE_FORMAT(salary_date, '%Y-%m-%d') AS salary_date, plantilla, sg, step, salary, increment_amount, increment_mode, remarks, created_at, updated_at ${baseFrom} ORDER BY salary_date ${sortOrder}, id ${sortOrder} LIMIT ? OFFSET ?`,
       [...baseParams, pageSize, offset],
     );
 
@@ -101,7 +110,7 @@ const SalaryInformation = {
 
   getById: async (employeeId, id) => {
     const [rows] = await pool.promise().query(
-      `SELECT id, employee_id, salary_date, plantilla, sg, step, salary, increment_amount, increment_mode, remarks, created_at, updated_at
+      `SELECT id, employee_id, DATE_FORMAT(salary_date, '%Y-%m-%d') AS salary_date, plantilla, sg, step, salary, increment_amount, increment_mode, remarks, created_at, updated_at
        FROM salary_information
        WHERE id = ? AND employee_id = ?
        LIMIT 1`,
@@ -284,7 +293,7 @@ const SalaryInformation = {
     const [latestPerEmployeeRows] = await pool.promise().query(
       `SELECT
          si.employee_id,
-         si.salary_date,
+        DATE_FORMAT(si.salary_date, '%Y-%m-%d') AS salary_date,
          si.plantilla,
          si.sg,
          si.step,
