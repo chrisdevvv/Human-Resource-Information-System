@@ -7,7 +7,15 @@
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
     "seed": "node src/seed.js",
-    "backfill:birthdates": "node src/scripts/backfill-birthdates.js"
+    "backfill:birthdates": "node src/scripts/backfill-birthdates.js",
+    "test:api-smoke": "node src/scripts/api-smoke.js",
+    "test:api-admin-flows": "node src/scripts/api-admin-flows.js",
+    "test:two-account-smoke": "node src/scripts/two-account-smoke.js",
+    "test:approve-pending": "node src/scripts/approve-pending-and-login.js",
+    "test:reset-and-approve": "node src/scripts/reset-and-approve.js",
+    "test:testadmin-create-delete": "node src/scripts/testadmin-create-delete.js",
+    "test:ui-checks": "node src/scripts/ui-checks.js",
+    "test:login-user": "node src/scripts/login-user.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

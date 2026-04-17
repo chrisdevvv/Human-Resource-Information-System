@@ -6,7 +6,7 @@ import ConfirmationModal from "./ConfirmationModal";
 import { createClearHandler } from "../../utils/clearFormUtils";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 const SCHOOLS_DIVISION_OFFICE = "Schools Division Office";
 
@@ -823,3 +823,4 @@ function Field({
     </label>
   );
 }
+

@@ -19,7 +19,7 @@ import AddUserModal from "./AddUserModal";
 import ToastMessage from "../../../components/ToastMessage";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type User = {
   id: number;
@@ -986,3 +986,4 @@ function DetailsRow({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+

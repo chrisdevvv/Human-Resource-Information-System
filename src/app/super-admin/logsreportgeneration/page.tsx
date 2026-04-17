@@ -7,10 +7,10 @@ import LogsReportGeneration, {
   downloadLogsReportPdf,
   type LogsReportRecord,
 } from "../../../frontend/super-admin/functions/Logs/LogsReportGeneration";
+import RoleGuard from "@/frontend/auth/RoleGuard";
 import { APP_ROUTES } from "@/frontend/route";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type ApiLog = {
   id: number;
@@ -25,7 +25,7 @@ type ApiLog = {
   created_at: string;
 };
 
-export default function LogsReportGenerationPage() {
+function LogsReportGenerationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reportRef = React.useRef<HTMLDivElement | null>(null);
@@ -283,5 +283,13 @@ export default function LogsReportGenerationPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LogsReportGenerationPage() {
+  return (
+    <RoleGuard pageId="logs" fallback={null}>
+      <LogsReportGenerationContent />
+    </RoleGuard>
   );
 }

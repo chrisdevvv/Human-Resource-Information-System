@@ -9,7 +9,7 @@ import { createClearHandler } from "../../utils/clearFormUtils";
 import ToastMessage from "../../components/ToastMessage";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 const SCHOOLS_DIVISION_OFFICE = "Schools Division Office";
 
@@ -1423,3 +1423,4 @@ export default function ProfileSettings() {
     </div>
   );
 }
+

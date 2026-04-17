@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Users, FileText, Settings, UserCheck } from "lucide-react";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type ApiListResponse<T> = {
   data?: T[];
@@ -267,3 +267,4 @@ export default function AdminDashboard({ onTabChange }: AdminDashboardProps) {
     </div>
   );
 }
+

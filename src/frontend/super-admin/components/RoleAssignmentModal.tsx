@@ -18,7 +18,7 @@ export default function RoleAssignmentModal({
   onSuccess,
 }: Props) {
   const API_BASE =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+    process.env.NEXT_PUBLIC_API_BASE_URL || "";
   const [selectedRole, setSelectedRole] = useState<"ADMIN" | "DATA_ENCODER">(
     "DATA_ENCODER",
   );
@@ -252,3 +252,4 @@ export default function RoleAssignmentModal({
     </div>
   );
 }
+

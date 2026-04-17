@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 const LOGOUT_URL = `${API_BASE_URL}/api/auth/logout`;
 export const LOGOUT_BROADCAST_KEY = "auth:logout-event";
@@ -50,3 +50,4 @@ export const logoutNow = async () => {
 
   clearClientSession();
 };
+

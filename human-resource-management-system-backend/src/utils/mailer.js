@@ -15,8 +15,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const FROM = process.env.SMTP_FROM || "DepEd CHRIS <noreply@deped.gov.ph>";
-const FRONTEND_URL =
-  process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3001";
+const FRONTEND_URL = process.env.FRONTEND_URL || process.env.APP_URL || "";
 const RESET_LINK_LABEL =
   process.env.RESET_PASSWORD_TOKEN_TTL_LABEL || "2 hours";
 

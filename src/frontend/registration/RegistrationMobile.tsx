@@ -7,7 +7,7 @@ import { Building2, Key, Mail, User } from "../assets/icons";
 import RegistrationSuccessModal from "./RegistrationSuccessModal";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 const SCHOOLS_DIVISION_OFFICE = "Schools Division Office";
 
@@ -576,3 +576,4 @@ export default function RegistrationMobile() {
     </div>
   );
 }
+

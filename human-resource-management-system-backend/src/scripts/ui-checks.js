@@ -1,23 +1,16 @@
 (async () => {
   try {
-    require("../config/loadEnv");
-    const fetch = globalThis.fetch || (await import("node-fetch")).default;
+    const {
+      API_BASE_URL,
+      FRONTEND_BASE_URL,
+      TEST_ADMIN_PASSWORD,
+      getFetch,
+    } = require("./_scriptConfig");
+    const fetch = await getFetch();
 
-    const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL;
-    const API_BASE_URL = process.env.API_BASE_URL;
-    const adminPassword =
-      process.env.TEST_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD;
-
-    if (!FRONTEND_BASE_URL || !API_BASE_URL) {
+    if (!FRONTEND_BASE_URL) {
       console.error(
-        "Missing env: FRONTEND_BASE_URL and/or API_BASE_URL. Please set them in .env",
-      );
-      process.exit(2);
-    }
-
-    if (!adminPassword) {
-      console.error(
-        "Missing env: TEST_ADMIN_PASSWORD or ADMIN_PASSWORD required for UI checks",
+        "Missing env: FRONTEND_BASE_URL is required for UI checks.",
       );
       process.exit(2);
     }
@@ -32,7 +25,7 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: "superadmin@deped.gov.ph",
-        password: adminPassword,
+        password: TEST_ADMIN_PASSWORD,
       }),
     });
     const login = await res.json();

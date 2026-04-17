@@ -14,8 +14,7 @@ import {
 } from "lucide-react";
 import SuccessMessage from "./SuccessMessage";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
 
 type LookupItem = {
@@ -56,7 +55,9 @@ export default function LookupManager({
   const [searchValue, setSearchValue] = useState("");
   const [sortValue, setSortValue] = useState<"a-z" | "z-a">("a-z");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(PAGE_SIZE_OPTIONS[0]);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(
+    PAGE_SIZE_OPTIONS[0],
+  );
   const [pageJumpInput, setPageJumpInput] = useState("1");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -512,7 +513,13 @@ export default function LookupManager({
                   <select
                     value={itemsPerPage}
                     onChange={(event) => {
-                      setItemsPerPage(Number(event.target.value));
+                      const nextValue = Number(event.target.value);
+                      if (
+                        !PAGE_SIZE_OPTIONS.includes(nextValue as 10 | 20 | 50)
+                      ) {
+                        return;
+                      }
+                      setItemsPerPage(nextValue);
                       setCurrentPage(1);
                       setPageJumpInput("1");
                     }}

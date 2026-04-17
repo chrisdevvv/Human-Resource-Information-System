@@ -21,7 +21,7 @@ import {
 import { APP_ROUTES, getDashboardRouteByRoleStrict } from "@/frontend/route";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 const FORCE_PASSWORD_CHANGE_KEY = "forcePasswordChange:addedUsers";
 const PENDING_PASSWORD_KEY = "forcePasswordChange:pendingLoginPassword";
@@ -499,3 +499,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

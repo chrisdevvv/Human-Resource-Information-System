@@ -47,7 +47,7 @@ const toEnumSql = (values) =>
 
 const Leave = {
   // Supports optional filtering by employee_id and pagination. If pagination not provided, returns full rows for compatibility.
-  getAll: async ({ employee_id } = {}, pagination) => {
+  getAll: async ({ employee_id, school_id } = {}, pagination) => {
     let baseQuery = `FROM leaves JOIN employees ON leaves.employee_id = employees.id WHERE 1=1`;
     const params = [];
 
@@ -56,13 +56,18 @@ const Leave = {
       params.push(employee_id);
     }
 
+    if (school_id) {
+      baseQuery += ` AND employees.school_id = ?`;
+      params.push(Number(school_id));
+    }
+
     const orderClause = ` ORDER BY leaves.employee_id ASC, leaves.id ASC`;
 
     if (!pagination || !pagination.page) {
       const [rows] = await pool
         .promise()
         .query(
-          `SELECT leaves.*, CONCAT(employees.first_name, ' ', employees.last_name) AS full_name, employees.employee_type ${baseQuery} ${orderClause}`,
+          `SELECT leaves.*, CONCAT(employees.first_name, ' ', employees.last_name) AS full_name, employees.employee_type, employees.school_id ${baseQuery} ${orderClause}`,
           params,
         );
       return rows;
@@ -79,7 +84,7 @@ const Leave = {
     const [rows] = await pool
       .promise()
       .query(
-        `SELECT leaves.*, CONCAT(employees.first_name, ' ', employees.last_name) AS full_name, employees.employee_type ${baseQuery} ${orderClause} LIMIT ? OFFSET ?`,
+        `SELECT leaves.*, CONCAT(employees.first_name, ' ', employees.last_name) AS full_name, employees.employee_type, employees.school_id ${baseQuery} ${orderClause} LIMIT ? OFFSET ?`,
         [...params, pageSize, offset],
       );
 
@@ -91,7 +96,8 @@ const Leave = {
       `
             SELECT leaves.*,
                    CONCAT(employees.first_name, ' ', employees.last_name) AS full_name,
-                   employees.employee_type
+                   employees.employee_type,
+                   employees.school_id
             FROM leaves
             JOIN employees ON leaves.employee_id = employees.id
             WHERE leaves.id = ?

@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const pool = require("../config/db");
-const JWT_SECRET = process.env.JWT_SECRET || "dev_jwt_secret";
+const { JWT_SECRET } = require("../config/securityEnv");
 
 const authMiddleware = async (req, res, next) => {
   try {

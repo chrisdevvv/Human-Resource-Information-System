@@ -15,6 +15,8 @@ export const PROTECTED_ROUTE_PREFIXES = [
   APP_ROUTES.SUPER_ADMIN,
   APP_ROUTES.DATA_ENCODER,
   APP_ROUTES.LEAVE_CARD_ROOT,
+  APP_ROUTES.LEAVE_HISTORY_ROOT,
+  APP_ROUTES.NEW_USER,
 ] as const;
 
 export function getLeaveCardRoute(employeeId: number | string): string {

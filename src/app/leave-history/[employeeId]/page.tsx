@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { FileText } from "lucide-react";
+import RoleGuard from "@/frontend/auth/RoleGuard";
 import LeaveHistoryTable from "@/frontend/functions/LeaveManagement/LeaveHistoryTable";
 import {
   getLeaveHistoryByEmployee,
@@ -18,10 +19,9 @@ type EmployeeInfo = {
   email?: string | null;
 };
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
-export default function LeaveHistoryPage() {
+function LeaveHistoryContent() {
   const params = useParams<{ employeeId: string }>();
   const employeeId = Number(params?.employeeId);
 
@@ -104,5 +104,13 @@ export default function LeaveHistoryPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LeaveHistoryPage() {
+  return (
+    <RoleGuard pageId="leave-management" fallback={null}>
+      <LeaveHistoryContent />
+    </RoleGuard>
   );
 }

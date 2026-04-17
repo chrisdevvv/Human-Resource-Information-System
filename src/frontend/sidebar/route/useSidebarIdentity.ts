@@ -8,7 +8,7 @@ import {
 } from "./sidebarConfig";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 function safeValue(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -229,3 +229,4 @@ export function useSidebarIdentity(role: string): SidebarIdentity {
     normalizedRole,
   };
 }
+

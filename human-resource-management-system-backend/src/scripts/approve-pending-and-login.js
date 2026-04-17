@@ -1,28 +1,21 @@
 (async () => {
   try {
-    require("../config/loadEnv");
-    const fetch = globalThis.fetch || (await import("node-fetch")).default;
-    const adminPassword =
-      process.env.TEST_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD;
-    const tempPassword = process.env.TEMP_PASSWORD;
-    if (!adminPassword) {
-      console.error(
-        "Missing TEST_ADMIN_PASSWORD or ADMIN_PASSWORD in environment",
-      );
-      process.exit(1);
-    }
-    if (!tempPassword) {
-      console.error("Missing TEMP_PASSWORD in environment");
-      process.exit(1);
-    }
+    const {
+      TEST_ADMIN_PASSWORD,
+      apiUrl,
+      getFetch,
+      requireAnyEnv,
+    } = require("./_scriptConfig");
+    const fetch = await getFetch();
+    const tempPassword = requireAnyEnv(["TEMP_PASSWORD"]);
 
     // Login as Super Admin
-    let res = await fetch("http://localhost:3000/api/auth/login", {
+    let res = await fetch(apiUrl("/api/auth/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: "superadmin@deped.gov.ph",
-        password: adminPassword,
+        password: TEST_ADMIN_PASSWORD,
       }),
     });
     const admin = await res.json();
@@ -31,7 +24,7 @@
     console.log("Admin login OK");
 
     // Get pending registrations
-    res = await fetch("http://localhost:3000/api/registrations/pending", {
+    res = await fetch(apiUrl("/api/registrations/pending"), {
       method: "GET",
       headers: {
         Authorization: `Bearer ${adminToken}`,
@@ -49,20 +42,17 @@
     console.log("Approving registration id", target.id, "email", target.email);
 
     // Approve as admin (admins can only create DATA_ENCODER)
-    res = await fetch(
-      `http://localhost:3000/api/registrations/${target.id}/approve`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${adminToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          approved_role: "DATA_ENCODER",
-          temporary_password: tempPassword,
-        }),
+    res = await fetch(apiUrl(`/api/registrations/${target.id}/approve`), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        approved_role: "DATA_ENCODER",
+        temporary_password: tempPassword,
+      }),
+    });
     const approveJson = await res.json();
     console.log(
       "Approve result",
@@ -71,7 +61,7 @@
     );
 
     // Try login as the newly approved user
-    res = await fetch("http://localhost:3000/api/auth/login", {
+    res = await fetch(apiUrl("/api/auth/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: target.email, password: tempPassword }),

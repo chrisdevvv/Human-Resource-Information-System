@@ -48,7 +48,7 @@ type AdminPendingAccountsProps = {
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 export default function AdminPendingAccounts({
   onRefreshUsers,
@@ -569,3 +569,4 @@ export default function AdminPendingAccounts({
     </div>
   );
 }
+

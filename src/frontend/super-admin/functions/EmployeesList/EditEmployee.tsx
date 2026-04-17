@@ -52,7 +52,7 @@ type EditableState = {
 };
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 const NAME_PATTERN = /^[A-Za-z.\s]+$/;
 
 const toDateInputValue = (raw: string): string => {
@@ -568,3 +568,4 @@ export default function EditEmployee({
     </>
   );
 }
+

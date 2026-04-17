@@ -1,18 +1,20 @@
 (async () => {
   try {
-    const fetch = globalThis.fetch || (await import("node-fetch")).default;
-    const adminPassword =
-      process.env.TEST_ADMIN_PASSWORD ||
-      process.env.ADMIN_PASSWORD ||
-      "Admin@1234";
-    const tmpPassword =
-      process.env.TMP_PASSWORD || process.env.TEMP_PASSWORD || "TmpPass@123";
-    const loginRes = await fetch("http://localhost:3000/api/auth/login", {
+    const {
+      TEST_ADMIN_PASSWORD,
+      apiUrl,
+      getFetch,
+      requireAnyEnv,
+    } = require("./_scriptConfig");
+    const fetch = await getFetch();
+    const tmpPassword = requireAnyEnv(["TMP_PASSWORD", "TEMP_PASSWORD"]);
+
+    const loginRes = await fetch(apiUrl("/api/auth/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: "testadmin@deped.gov.ph",
-        password: adminPassword,
+        password: TEST_ADMIN_PASSWORD,
       }),
     });
     const loginJson = await loginRes.json();
@@ -21,29 +23,26 @@
     const token = loginJson.token;
 
     const tmpEmail = `tmp-created-${Date.now()}@example.test`;
-    const createRes = await fetch(
-      "http://localhost:3000/api/users/admin-create",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          first_name: "Tmp",
-          last_name: "Encoder",
-          email: tmpEmail,
-          password: tmpPassword,
-          school_name: "Tmp School",
-        }),
+    const createRes = await fetch(apiUrl("/api/users/admin-create"), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        first_name: "Tmp",
+        last_name: "Encoder",
+        email: tmpEmail,
+        password: tmpPassword,
+        school_name: "Tmp School",
+      }),
+    });
     const createJson = await createRes.json();
     console.log("CREATE", createRes.status, JSON.stringify(createJson));
 
     if (createJson.data && createJson.data.id) {
       const id = createJson.data.id;
-      const delRes = await fetch(`http://localhost:3000/api/users/${id}`, {
+      const delRes = await fetch(apiUrl(`/api/users/${id}`), {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

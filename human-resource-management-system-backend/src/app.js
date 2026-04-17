@@ -32,13 +32,10 @@ const PORT = process.env.PORT || 3000;
 const AUTO_MONTHLY_CREDIT_ENABLED = process.env.AUTO_MONTHLY_CREDIT !== "false";
 const MAX_JSON_BODY_SIZE = process.env.MAX_JSON_BODY_SIZE || "100kb";
 const MAX_FORM_BODY_SIZE = process.env.MAX_FORM_BODY_SIZE || "100kb";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
-const DEFAULT_CORS_ALLOWLIST = [
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-  "http://localhost:3001",
-  "http://127.0.0.1:3001",
-];
+const LOCALHOST_ORIGIN_PATTERN =
+  /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
 const allowedOrigins = (
   process.env.CORS_ORIGIN_ALLOWLIST ||
@@ -50,7 +47,13 @@ const allowedOrigins = (
   .filter(Boolean);
 
 const corsAllowlist =
-  allowedOrigins.length > 0 ? allowedOrigins : DEFAULT_CORS_ALLOWLIST;
+  allowedOrigins.length > 0 ? allowedOrigins : IS_PRODUCTION ? [] : [];
+
+if (IS_PRODUCTION && corsAllowlist.length === 0) {
+  console.warn(
+    "[CORS] No CORS allowlist configured in production; cross-origin browser requests will be blocked.",
+  );
+}
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -60,6 +63,10 @@ const corsOptions = {
     }
 
     if (corsAllowlist.includes(origin)) {
+      return callback(null, true);
+    }
+
+    if (!IS_PRODUCTION && LOCALHOST_ORIGIN_PATTERN.test(origin)) {
       return callback(null, true);
     }
 

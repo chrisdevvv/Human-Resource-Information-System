@@ -24,7 +24,7 @@ import Sex from "./Sex";
 import SuccessMessage from "./SuccessMessage";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type School = {
   id: number;
@@ -696,3 +696,4 @@ export default function ConfigurationPage() {
     </section>
   );
 }
+
