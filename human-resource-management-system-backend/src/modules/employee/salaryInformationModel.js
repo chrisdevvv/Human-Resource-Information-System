@@ -33,7 +33,7 @@ const toMoney = (value) => {
   return Number(safe.toFixed(2));
 };
 
-const toNonNegativeMoneyDelta = (value) => Number(Math.max(0, value).toFixed(2));
+const toMoneyDelta = (value) => Number(Number(value || 0).toFixed(2));
 
 const normalizeOptionalText = (value) => {
   if (value === undefined || value === null) return null;
@@ -255,7 +255,7 @@ const SalaryInformation = {
       const computedIncrement =
         previousSalary === null
           ? 0
-          : toNonNegativeMoneyDelta(currentSalary - previousSalary);
+          : toMoneyDelta(currentSalary - previousSalary);
       const isManualMode =
         String(row.increment_mode || INCREMENT_MODE_AUTO).toUpperCase() ===
         INCREMENT_MODE_MANUAL;
