@@ -360,6 +360,32 @@ const ensureEmployeeTypeSchema = async () => {
 };
 
 const ensureEmployeeProfileSchema = async () => {
+  await pool.promise().query(`
+    ALTER TABLE employees
+    ADD COLUMN IF NOT EXISTS middle_initial VARCHAR(10) NULL AFTER middle_name,
+    ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(30) NULL AFTER email,
+    ADD COLUMN IF NOT EXISTS home_address VARCHAR(255) NULL AFTER mobile_number,
+    ADD COLUMN IF NOT EXISTS place_of_birth VARCHAR(255) NULL AFTER home_address,
+    ADD COLUMN IF NOT EXISTS civil_status VARCHAR(50) NULL AFTER place_of_birth,
+    ADD COLUMN IF NOT EXISTS sex VARCHAR(20) NULL AFTER civil_status,
+    ADD COLUMN IF NOT EXISTS employee_no VARCHAR(100) NULL AFTER school_id,
+    ADD COLUMN IF NOT EXISTS work_email VARCHAR(255) NULL AFTER employee_no,
+    ADD COLUMN IF NOT EXISTS district VARCHAR(255) NULL AFTER work_email,
+    ADD COLUMN IF NOT EXISTS work_district VARCHAR(255) NULL AFTER work_email,
+    ADD COLUMN IF NOT EXISTS \`position\` VARCHAR(255) NULL AFTER district,
+    ADD COLUMN IF NOT EXISTS plantilla_no VARCHAR(100) NULL AFTER \`position\`,
+    ADD COLUMN IF NOT EXISTS sg VARCHAR(20) NULL AFTER plantilla_no,
+    ADD COLUMN IF NOT EXISTS prc_license_no VARCHAR(100) NULL AFTER sg,
+    ADD COLUMN IF NOT EXISTS tin VARCHAR(50) NULL AFTER prc_license_no,
+    ADD COLUMN IF NOT EXISTS gsis_bp_no VARCHAR(50) NULL AFTER tin,
+    ADD COLUMN IF NOT EXISTS gsis_crn_no VARCHAR(50) NULL AFTER gsis_bp_no,
+    ADD COLUMN IF NOT EXISTS pagibig_no VARCHAR(50) NULL AFTER gsis_crn_no,
+    ADD COLUMN IF NOT EXISTS philhealth_no VARCHAR(50) NULL AFTER pagibig_no,
+    ADD COLUMN IF NOT EXISTS age INT NULL AFTER philhealth_no,
+    ADD COLUMN IF NOT EXISTS date_of_first_appointment DATE NULL AFTER age,
+    ADD COLUMN IF NOT EXISTS years_in_service INT NULL AFTER date_of_first_appointment,
+    ADD COLUMN IF NOT EXISTS loyalty_bonus ENUM('Yes', 'No') NOT NULL DEFAULT 'No' AFTER years_in_service;
+  `);
 
   await pool.promise().query(`
     UPDATE employees
@@ -376,6 +402,7 @@ const ensureEmployeeProfileSchema = async () => {
         employee_no = NULLIF(TRIM(employee_no), ''),
         work_email = NULLIF(TRIM(work_email), ''),
         plantilla_no = NULLIF(TRIM(plantilla_no), ''),
+        sg = NULLIF(TRIM(sg), ''),
         prc_license_no = NULLIF(TRIM(prc_license_no), ''),
         tin = NULLIF(TRIM(tin), ''),
         gsis_bp_no = NULLIF(TRIM(gsis_bp_no), ''),
@@ -746,6 +773,82 @@ const ensureSalaryInformationTable = async () => {
   await pool.promise().query(`
     ALTER TABLE salary_information
     MODIFY COLUMN remarks ENUM(${salaryInformationRemarksSql}) NULL;
+  `);
+};
+
+const syncEmployeeSgFromSalaryInformation = async () => {
+  await pool.promise().query(`
+    UPDATE employees e
+    SET e.sg = (
+      SELECT si.sg
+      FROM salary_information si
+      WHERE si.employee_id = e.id
+        AND si.sg IS NOT NULL
+        AND TRIM(si.sg) <> ''
+      ORDER BY si.salary_date DESC, si.id DESC
+      LIMIT 1
+    )
+    WHERE (e.sg IS NULL OR TRIM(e.sg) = '')
+      AND EXISTS (
+        SELECT 1
+        FROM salary_information sx
+        WHERE sx.employee_id = e.id
+          AND sx.sg IS NOT NULL
+          AND TRIM(sx.sg) <> ''
+      );
+  `);
+};
+
+const ensureSalaryIncrementNoticesTable = async () => {
+  const stepIncrementRemarkValues = ["Step Increment", "Step Increment Increase"];
+  const stepIncrementRemarksSql = stepIncrementRemarkValues
+    .map((value) => `'${String(value).replace(/'/g, "''")}'`)
+    .join(",");
+
+  await pool.promise().query(`
+    CREATE TABLE IF NOT EXISTS salary_increment_notices (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      employee_id INT NOT NULL,
+      salary_information_id INT NOT NULL,
+      notice_reference VARCHAR(80) NOT NULL,
+      effective_date DATE NOT NULL,
+      previous_salary DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+      new_salary DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+      increment_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+      remarks ENUM(${stepIncrementRemarksSql}) NOT NULL DEFAULT 'Step Increment',
+      generated_by_user_id INT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT fk_salary_increment_notices_employee_id
+        FOREIGN KEY (employee_id)
+        REFERENCES employees(id)
+        ON DELETE CASCADE,
+      CONSTRAINT fk_salary_increment_notices_salary_info_id
+        FOREIGN KEY (salary_information_id)
+        REFERENCES salary_information(id)
+        ON DELETE CASCADE,
+      UNIQUE KEY uk_salary_increment_notices_salary_info_id (salary_information_id),
+      INDEX idx_salary_increment_notices_employee_id (employee_id),
+      INDEX idx_salary_increment_notices_effective_date (effective_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `);
+
+  await pool.promise().query(`
+    ALTER TABLE salary_increment_notices
+    ADD COLUMN IF NOT EXISTS generated_by_user_id INT NULL AFTER remarks;
+  `);
+
+  await pool.promise().query(`
+    UPDATE salary_increment_notices
+    SET remarks = 'Step Increment'
+    WHERE remarks IS NULL
+       OR TRIM(remarks) = ''
+       OR remarks NOT IN (${stepIncrementRemarksSql});
+  `);
+
+  await pool.promise().query(`
+    ALTER TABLE salary_increment_notices
+    MODIFY COLUMN remarks ENUM(${stepIncrementRemarksSql}) NOT NULL DEFAULT 'Step Increment';
   `);
 };
 
@@ -1336,6 +1439,12 @@ app.listen(PORT, async () => {
 
     await ensureSalaryInformationTable();
     console.log("✔  Salary information table is ready");
+
+    await syncEmployeeSgFromSalaryInformation();
+    console.log("✔  Employee SG values are synced from salary information");
+
+    await ensureSalaryIncrementNoticesTable();
+    console.log("✔  Salary increment notices table is ready");
 
     const salaryDateSyncStartupResult =
       await SalaryInformation.syncThreeYearSalaryDateEntries();

@@ -40,6 +40,7 @@ const workEmailSchema = Joi.string()
   .allow(null, "");
 const districtSchema = Joi.string().trim().max(255).allow(null, "");
 const positionSchema = Joi.string().trim().max(255).allow(null, "");
+const salaryGradeSchema = Joi.string().trim().max(20).allow(null, "");
 const plantillaNoSchema = Joi.string().trim().max(100).allow(null, "");
 const prcLicenseNoSchema = Joi.string().trim().max(100).allow(null, "");
 const tinSchema = Joi.string().trim().max(50).allow(null, "");
@@ -97,6 +98,7 @@ const employeeCreateBodySchema = Joi.object({
   district: districtSchema,
   work_district: districtSchema,
   position: positionSchema,
+  sg: salaryGradeSchema,
   position_id: Joi.number().integer().positive().allow(null, ""),
   plantilla_no: plantillaNoSchema,
   prc_license_no: prcLicenseNoSchema,
@@ -140,6 +142,7 @@ const employeeUpdateBodySchema = Joi.object({
   district: districtSchema,
   work_district: districtSchema,
   position: positionSchema,
+  sg: salaryGradeSchema,
   position_id: Joi.number().integer().positive().allow(null, ""),
   plantilla_no: plantillaNoSchema,
   prc_license_no: prcLicenseNoSchema,
