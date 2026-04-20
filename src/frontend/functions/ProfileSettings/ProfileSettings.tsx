@@ -8,8 +8,7 @@ import { APP_ROUTES } from "@/frontend/route";
 import { createClearHandler } from "../../utils/clearFormUtils";
 import ToastMessage from "../../components/ToastMessage";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 const SCHOOLS_DIVISION_OFFICE = "Schools Division Office";
 
@@ -998,7 +997,7 @@ export default function ProfileSettings() {
                 }}
                 className="h-4 w-4 cursor-pointer disabled:cursor-not-allowed"
               />
-              I don't have a middle name
+              I don&apos;t have a middle name
             </label>
             {profileFieldErrors.middleName && (
               <p className="mt-1 text-xs text-red-600">
@@ -1423,4 +1422,3 @@ export default function ProfileSettings() {
     </div>
   );
 }
-

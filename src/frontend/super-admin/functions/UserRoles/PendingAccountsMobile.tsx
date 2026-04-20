@@ -9,14 +9,11 @@ import {
   Search,
   UserCheck,
 } from "lucide-react";
-import UserRolesDetailsModal, {
-  type RegistrationDetail,
-} from "../../components/UserRolesDetailsModal";
+import { type RegistrationDetail } from "../../components/UserRolesDetailsModal";
 import RoleAssignmentModal from "../../components/RoleAssignmentModal";
 import RejectModal from "../../components/RejectModal";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type RegistrationRequest = {
   id: number;
@@ -636,4 +633,3 @@ function PRow({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-

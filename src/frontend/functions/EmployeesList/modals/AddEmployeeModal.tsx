@@ -245,14 +245,6 @@ const isValidDepEdEmail = (value: string): boolean => {
   return /^[^\s@]+@deped\.gov\.ph$/.test(trimmed);
 };
 
-const formatEmployeeType = (type: string): string => {
-  const normalized = String(type).toLowerCase().trim();
-  if (normalized === "non-teaching") return "Non-Teaching";
-  if (normalized === "teaching") return "Teaching";
-  if (normalized === "teaching-related") return "Teaching-Related";
-  return type;
-};
-
 const computeAgeFromBirthdate = (birthdate: string): number => {
   if (!birthdate) return 0;
   const dob = new Date(birthdate);
@@ -1074,7 +1066,6 @@ export default function AddEmployeeModal({
   const validateStepTwo = (): { id: number; name: string } | null => {
     const fieldErrors: ValidationError[] = [];
     const eNo = employeeNo.trim();
-    const wEmail = workEmail.trim();
     const pNo = plantillaNo.trim();
 
     if (!employeeType) {

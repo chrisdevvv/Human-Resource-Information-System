@@ -2,6 +2,7 @@
 // Component: LoginPage
 // Filename: LoginPage.tsx
 // Purpose: Landing page with direct login form and sticky header
+/* eslint-disable @next/next/no-img-element */
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff } from "../assets/icons";
@@ -20,8 +21,7 @@ import {
 } from "./utils/loginAttempts";
 import { APP_ROUTES, getDashboardRouteByRoleStrict } from "@/frontend/route";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 const FORCE_PASSWORD_CHANGE_KEY = "forcePasswordChange:addedUsers";
 const PENDING_PASSWORD_KEY = "forcePasswordChange:pendingLoginPassword";
@@ -499,4 +499,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

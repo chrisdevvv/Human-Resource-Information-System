@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { CheckCircle, X } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 
 export type AddLeaveSuccessValues = {
   employeeName: string;

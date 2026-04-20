@@ -13,7 +13,6 @@ import EmployeesListLayout from "../functions/EmployeesList/EmployeesProfile";
 import EServiceRecord from "../functions/eservice/EServiceRecord";
 import Dashboard from "../functions/Dashboard/Dashboard";
 import DashboardMobile from "../functions/Dashboard/DashboardMobile";
-import styles from "./styles.module.css";
 
 type SuperAdminProps = {
   activeTab?: string;

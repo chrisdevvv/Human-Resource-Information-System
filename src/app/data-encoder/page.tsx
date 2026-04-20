@@ -71,7 +71,7 @@ export default function Page() {
         setRole(u.role);
         setActiveTab(nextTab);
         setIsAuthorized(true);
-      } catch (e) {
+      } catch {
         setIsAuthorized(false);
         router.replace(APP_ROUTES.LOGIN);
       }

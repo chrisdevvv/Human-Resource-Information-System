@@ -10,9 +10,7 @@ import {
   UserX,
   Users,
   Plus,
-  CheckCircle2,
   Search,
-  X,
   Eye,
 } from "lucide-react";
 import AddEmployeeModal from "@/frontend/functions/EmployeesList/modals/AddEmployeeModal";
@@ -136,19 +134,6 @@ const getCurrentUserRole = (): string => {
   } catch {
     return "";
   }
-};
-
-const computeAge = (birthdate: string | null | undefined): number | null => {
-  if (!birthdate) return null;
-  const dob = new Date(birthdate);
-  if (Number.isNaN(dob.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const monthDelta = today.getMonth() - dob.getMonth();
-  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < dob.getDate())) {
-    age -= 1;
-  }
-  return Math.max(0, age);
 };
 
 const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {

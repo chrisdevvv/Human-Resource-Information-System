@@ -6,8 +6,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { Building2, Key, Mail, User } from "../assets/icons";
 import RegistrationSuccessModal from "./RegistrationSuccessModal";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 const SCHOOLS_DIVISION_OFFICE = "Schools Division Office";
 
@@ -348,7 +347,7 @@ export default function RegistrationMobile() {
                       }}
                       className="h-4 w-4 cursor-pointer"
                     />
-                    I don't have a middle name
+                    I don&apos;t have a middle name
                   </label>
                   {middleNameError && (
                     <p className="text-sm text-red-600 mt-1">
@@ -576,4 +575,3 @@ export default function RegistrationMobile() {
     </div>
   );
 }
-

@@ -5,10 +5,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Mail, Key, User, X, Building2, Eye, EyeOff } from "../assets/icons";
 import { RegistrationSuccessModal } from ".";
-import { createClearHandler, hasFormData } from "../utils/clearFormUtils";
+import { createClearHandler } from "../utils/clearFormUtils";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 const SCHOOLS_DIVISION_OFFICE = "Schools Division Office";
 
@@ -178,14 +177,6 @@ export default function RegistrationModal({ visible, onClose }: Props) {
         message: "Password must contain a special character",
       };
     return { valid: true, message: "" };
-  }
-
-  function validateUsername(value: string) {
-    if (!value.trim()) return "Username is required";
-    if (value.length < 3) return "Username must be at least 3 characters";
-    if (!/^[a-zA-Z0-9._-]+$/.test(value))
-      return "Username may only contain letters, numbers, dots, underscores, or hyphens";
-    return "";
   }
 
   function handleFirstNameBlur() {
@@ -633,7 +624,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                       }}
                       className="h-4 w-4 cursor-pointer"
                     />
-                    I don't have a middle name
+                    I don&apos;t have a middle name
                   </label>
                   {middleNameError && (
                     <p className="text-sm text-red-600 mt-1">
@@ -1024,4 +1015,3 @@ export default function RegistrationModal({ visible, onClose }: Props) {
     </div>
   );
 }
-

@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Users, FileText, Settings, UserCheck } from "lucide-react";
+import { Users, FileText, UserCheck } from "lucide-react";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type ApiListResponse<T> = {
   data?: T[];
@@ -62,18 +61,7 @@ type StatCard = {
   textColor: string;
 };
 
-type Shortcut = {
-  label: string;
-  icon: React.ReactNode;
-  tab: string;
-  description: string;
-};
-
-type AdminDashboardProps = {
-  onTabChange?: (tab: string) => void;
-};
-
-export default function AdminDashboard({ onTabChange }: AdminDashboardProps) {
+export default function AdminDashboard() {
   const [stats, setStats] = useState({
     totalEmployees: 0,
     totalUsers: 0,
@@ -187,27 +175,6 @@ export default function AdminDashboard({ onTabChange }: AdminDashboardProps) {
     },
   ];
 
-  const shortcuts: Shortcut[] = [
-    {
-      label: "Employee Management",
-      icon: <Users className="w-6 h-6" />,
-      tab: "employee-management",
-      description: "View and manage employees",
-    },
-    {
-      label: "User & Roles",
-      icon: <Settings className="w-6 h-6" />,
-      tab: "user-roles",
-      description: "Manage users and permissions",
-    },
-  ];
-
-  const handleShortcutClick = (tab: string) => {
-    if (onTabChange) {
-      onTabChange(tab);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -267,4 +234,3 @@ export default function AdminDashboard({ onTabChange }: AdminDashboardProps) {
     </div>
   );
 }
-

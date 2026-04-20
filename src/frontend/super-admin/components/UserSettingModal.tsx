@@ -5,8 +5,7 @@ import { X, Eye, EyeOff } from "lucide-react";
 import ConfirmationModal from "./ConfirmationModal";
 import { createClearHandler } from "../../utils/clearFormUtils";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type UserRole = "SUPER_ADMIN" | "ADMIN" | "DATA_ENCODER";
 
@@ -96,7 +95,7 @@ export default function UserSettingModal({
     };
 
     fetchUserDetails();
-  }, [userId]);
+  }, [userId, onError]);
 
   const handleSaveRole = async () => {
     if (selectedRole === currentRole) {
@@ -403,4 +402,3 @@ export default function UserSettingModal({
     </div>
   );
 }
-
