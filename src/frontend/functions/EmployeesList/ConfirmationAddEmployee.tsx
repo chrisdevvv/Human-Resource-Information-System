@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { CheckCircle2, X } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 
 type ConfirmationAddEmployeeProps = {
   isOpen: boolean;
@@ -21,7 +21,6 @@ export default function ConfirmationAddEmployee({
   return (
     <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/45 px-4">
       <div className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
-
         <div className="flex items-start gap-3">
           <CheckCircle2 className="mt-0.5 h-7 w-7 text-green-600" />
           <div>

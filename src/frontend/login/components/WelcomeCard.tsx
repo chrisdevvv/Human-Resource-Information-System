@@ -1,6 +1,7 @@
 // Component: WelcomeCard
 // Filename: WelcomeCard.tsx
 // Purpose: Present landing welcome message and a Login button
+/* eslint-disable @next/next/no-img-element */
 import React from "react";
 
 type Props = { onLogin: () => void; onRegister: () => void };

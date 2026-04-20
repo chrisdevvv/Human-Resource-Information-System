@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ArrowLeft, Check, Eye, EyeOff, X } from "lucide-react";
+import { ArrowLeft, Check, Eye, EyeOff } from "lucide-react";
 import { createClearHandler } from "../../utils/clearFormUtils";
 
 type Props = {
@@ -17,8 +17,7 @@ export default function RoleAssignmentModal({
   onClose,
   onSuccess,
 }: Props) {
-  const API_BASE =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "";
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
   const [selectedRole, setSelectedRole] = useState<"ADMIN" | "DATA_ENCODER">(
     "DATA_ENCODER",
   );
@@ -252,4 +251,3 @@ export default function RoleAssignmentModal({
     </div>
   );
 }
-

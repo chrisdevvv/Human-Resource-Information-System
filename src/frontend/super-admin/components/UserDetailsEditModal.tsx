@@ -5,8 +5,7 @@ import { Loader2, Save, Settings, Shield, XCircle } from "lucide-react";
 import ConfirmationModal from "./ConfirmationModal";
 import { createClearHandler } from "../../utils/clearFormUtils";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 const SCHOOLS_DIVISION_OFFICE = "Schools Division Office";
 
@@ -542,7 +541,7 @@ export default function UserDetailsEditModal({
                       }}
                       className="h-4 w-4 cursor-pointer"
                     />
-                    I don't have a middle name
+                    I don&apos;t have a middle name
                   </label>
                   {fieldErrors.middleName && (
                     <p className="mt-1 text-xs text-red-600">
@@ -823,4 +822,3 @@ function Field({
     </label>
   );
 }
-

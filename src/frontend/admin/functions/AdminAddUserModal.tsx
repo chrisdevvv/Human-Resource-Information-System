@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import {
-  ArrowLeft,
   ArrowRight,
   CheckCircle2,
   Eye,
@@ -13,8 +12,7 @@ import {
 import ConfirmationModal from "../../super-admin/components/ConfirmationModal";
 import { createClearHandler } from "../../utils/clearFormUtils";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 const FORCE_PASSWORD_CHANGE_KEY = "forcePasswordChange:addedUsers";
 
@@ -572,4 +570,3 @@ export default function AdminAddUserModal({
     </>
   );
 }
-

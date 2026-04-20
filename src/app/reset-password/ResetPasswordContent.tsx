@@ -1,12 +1,11 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Lock, ArrowLeft } from "../../frontend/assets/icons";
+import { Lock } from "../../frontend/assets/icons";
 import { clearClientSession } from "../../frontend/auth/session";
 import { APP_ROUTES } from "@/frontend/route";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 export default function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -311,4 +310,3 @@ export default function ResetPasswordContent() {
     </div>
   );
 }
-

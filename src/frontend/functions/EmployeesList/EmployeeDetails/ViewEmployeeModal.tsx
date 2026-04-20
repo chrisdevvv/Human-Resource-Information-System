@@ -426,15 +426,6 @@ const normalizeRetirableValue = (
   return null;
 };
 
-const getRetirableTextClass = (
-  value: "Yes" | "No" | "Mandatory Retirement" | null,
-): string => {
-  if (value === "Yes") return "text-orange-600";
-  if (value === "No") return "text-green-600";
-  if (value === "Mandatory Retirement") return "text-red-600";
-  return "text-gray-600";
-};
-
 const getRetirableFromAge = (
   age: number | null | undefined,
 ): "Yes" | "No" | "Mandatory Retirement" | null => {

@@ -162,7 +162,6 @@ export default function WorkInformation({
   setPhilhealthNotAvailable,
   formatEmployeeType,
   formatValue,
-  formatDate,
   getValidationError,
   formatMaskedId,
   formatGsisBp,

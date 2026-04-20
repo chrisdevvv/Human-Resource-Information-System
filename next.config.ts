@@ -14,7 +14,7 @@ const apiProxyTarget = /^https?:\/\//i.test(rawProxyTarget)
 
 const nextConfig: NextConfig = {
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   async rewrites() {
     if (!apiProxyTarget) {

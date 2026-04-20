@@ -69,8 +69,8 @@ export function handleClearForm(options: ClearFormOptions): void {
  * @returns true if form has unsaved data, false otherwise
  */
 export function hasFormData(
-  currentState: Record<string, any>,
-  initialState: Record<string, any>,
+  currentState: Record<string, unknown>,
+  initialState: Record<string, unknown>,
 ): boolean {
   for (const key in currentState) {
     if (Object.prototype.hasOwnProperty.call(currentState, key)) {

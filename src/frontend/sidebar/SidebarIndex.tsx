@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
 import React, { useMemo, useState } from "react";
 import { CircleUser, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
 import { logoutNow } from "@/frontend/auth/session";

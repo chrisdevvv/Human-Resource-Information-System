@@ -1,5 +1,4 @@
 import React, { useRef } from "react";
-import styles from "./styles.module.css";
 import AdminProfileSettings from "./functions/AdminProfileSettings";
 import AdminUserRoles from "./functions/AdminUserRoles";
 import EmployeeLeaveManagement from "../functions/LeaveManagement/EmployeeLeaveManagement";

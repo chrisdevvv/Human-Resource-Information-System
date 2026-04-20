@@ -5,8 +5,7 @@ import { Eye, EyeOff, UserPlus } from "lucide-react";
 import ConfirmationModal from "../../components/ConfirmationModal";
 import { createClearHandler } from "../../../utils/clearFormUtils";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 const FORCE_PASSWORD_CHANGE_KEY = "forcePasswordChange:addedUsers";
 const SCHOOLS_DIVISION_OFFICE = "Schools Division Office";
@@ -502,7 +501,7 @@ export default function AddUserModal({
                     }}
                     className="h-4 w-4 cursor-pointer"
                   />
-                  I don't have a middle name
+                  I don&apos;t have a middle name
                 </label>
                 {middleNameError && (
                   <p className="text-xs text-red-600 mt-1">{middleNameError}</p>
@@ -757,4 +756,3 @@ export default function AddUserModal({
     </>
   );
 }
-
