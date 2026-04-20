@@ -1,7 +1,7 @@
 const pool = require("../../config/db");
 
 const EMPLOYEE_SELECT_WITH_AGE =
-  "employees.*, schools.school_name, COALESCE(employees.age, TIMESTAMPDIFF(YEAR, employees.birthdate, CURDATE())) AS age";
+  "employees.*, DATE_FORMAT(employees.birthdate, '%Y-%m-%d') AS birthdate, DATE_FORMAT(employees.date_of_first_appointment, '%Y-%m-%d') AS date_of_first_appointment, schools.school_name, COALESCE(employees.age, TIMESTAMPDIFF(YEAR, employees.birthdate, CURDATE())) AS age";
 
 const normalizeEmployeeTypeForStorage = (employeeType) => {
   if (typeof employeeType !== "string") return employeeType;
@@ -304,6 +304,7 @@ const Employee = {
       position,
       position_id,
       plantilla_no,
+      sg,
       prc_license_no,
       tin,
       gsis_bp_no,
@@ -326,6 +327,7 @@ const Employee = {
     const normalizedEmployeeNo = uniqueValues.employeeNo;
     const normalizedWorkEmail = uniqueValues.workEmail;
     const normalizedPlantillaNo = uniqueValues.plantillaNo;
+    const normalizedSg = normalizeOptionalText(sg);
     const normalizedPrcLicenseNo = uniqueValues.prcLicenseNo;
     const normalizedTin = uniqueValues.tin;
     const normalizedGsisBpNo = uniqueValues.gsisBpNo;
@@ -345,7 +347,7 @@ const Employee = {
     const [result] = await pool
       .promise()
       .query(
-        "INSERT INTO employees (first_name, middle_name, last_name, middle_initial, email, mobile_number, home_address, place_of_birth, civil_status, civil_status_id, sex, sex_id, employee_type, school_id, employee_no, work_email, district, `position`, position_id, plantilla_no, prc_license_no, tin, gsis_bp_no, gsis_crn_no, pagibig_no, philhealth_no, age, birthdate, date_of_first_appointment, years_in_service, loyalty_bonus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO employees (first_name, middle_name, last_name, middle_initial, email, mobile_number, home_address, place_of_birth, civil_status, civil_status_id, sex, sex_id, employee_type, school_id, employee_no, work_email, district, `position`, position_id, plantilla_no, sg, prc_license_no, tin, gsis_bp_no, gsis_crn_no, pagibig_no, philhealth_no, age, birthdate, date_of_first_appointment, years_in_service, loyalty_bonus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           first_name,
           middle_name || null,
@@ -367,6 +369,7 @@ const Employee = {
           position || null,
           position_id || null,
           normalizedPlantillaNo,
+          normalizedSg,
           normalizedPrcLicenseNo,
           normalizedTin,
           normalizedGsisBpNo,
@@ -407,6 +410,7 @@ const Employee = {
       position,
       position_id,
       plantilla_no,
+      sg,
       prc_license_no,
       tin,
       gsis_bp_no,
@@ -429,6 +433,7 @@ const Employee = {
     const normalizedEmployeeNo = uniqueValues.employeeNo;
     const normalizedWorkEmail = uniqueValues.workEmail;
     const normalizedPlantillaNo = uniqueValues.plantillaNo;
+    const normalizedSg = normalizeOptionalText(sg);
     const normalizedPrcLicenseNo = uniqueValues.prcLicenseNo;
     const normalizedTin = uniqueValues.tin;
     const normalizedGsisBpNo = uniqueValues.gsisBpNo;
@@ -448,7 +453,7 @@ const Employee = {
     const [result] = await pool
       .promise()
       .query(
-        "UPDATE employees SET first_name = ?, middle_name = ?, last_name = ?, middle_initial = ?, email = ?, mobile_number = ?, home_address = ?, place_of_birth = ?, civil_status = ?, civil_status_id = ?, sex = ?, sex_id = ?, employee_type = ?, school_id = ?, employee_no = ?, work_email = ?, district = ?, `position` = ?, position_id = ?, plantilla_no = ?, prc_license_no = ?, tin = ?, gsis_bp_no = ?, gsis_crn_no = ?, pagibig_no = ?, philhealth_no = ?, age = ?, birthdate = ?, date_of_first_appointment = ?, years_in_service = ?, loyalty_bonus = ? WHERE id = ? AND is_archived = 0",
+        "UPDATE employees SET first_name = ?, middle_name = ?, last_name = ?, middle_initial = ?, email = ?, mobile_number = ?, home_address = ?, place_of_birth = ?, civil_status = ?, civil_status_id = ?, sex = ?, sex_id = ?, employee_type = ?, school_id = ?, employee_no = ?, work_email = ?, district = ?, `position` = ?, position_id = ?, plantilla_no = ?, sg = ?, prc_license_no = ?, tin = ?, gsis_bp_no = ?, gsis_crn_no = ?, pagibig_no = ?, philhealth_no = ?, age = ?, birthdate = ?, date_of_first_appointment = ?, years_in_service = ?, loyalty_bonus = ? WHERE id = ? AND is_archived = 0",
         [
           first_name,
           middle_name || null,
@@ -470,6 +475,7 @@ const Employee = {
           position || null,
           position_id || null,
           normalizedPlantillaNo,
+          normalizedSg,
           normalizedPrcLicenseNo,
           normalizedTin,
           normalizedGsisBpNo,

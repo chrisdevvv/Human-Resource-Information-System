@@ -142,6 +142,7 @@ type EmployeeDetailsResponse = {
   position?: string | null;
   position_id?: number | null;
   plantilla_no?: string | null;
+  sg?: string | null;
   age?: number | null;
   birthdate?: string | null;
   date_of_first_appointment?: string | null;
@@ -176,6 +177,7 @@ type ViewEmployeeModalProps = {
     schoolId: number | null;
     schoolName: string;
     birthdate: string;
+    sg?: string | null;
   } | null;
   canEdit: boolean;
   onEmployeeUpdated: (employee: {
@@ -189,6 +191,7 @@ type ViewEmployeeModalProps = {
     schoolId: number | null;
     schoolName: string;
     birthdate: string;
+    sg?: string | null;
   }) => void;
   onClose: () => void;
 };
@@ -246,7 +249,11 @@ const toDateInputValue = (value: string | null | undefined): string => {
 
   const parsed = new Date(raw);
   if (Number.isNaN(parsed.getTime())) return "";
-  return parsed.toISOString().slice(0, 10);
+
+  const year = String(parsed.getFullYear());
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 const isValidDateValue = (value: string): boolean => {
@@ -636,6 +643,8 @@ export default function ViewEmployeeModal({
   const [editPlantillaNo, setEditPlantillaNo] = useState(PLANTILLA_PREFIX);
   const [editDateOfFirstAppointment, setEditDateOfFirstAppointment] =
     useState("");
+  const [editWorkSg, setEditWorkSg] = useState("");
+  const [initialWorkSg, setInitialWorkSg] = useState("");
   const [editEmployeeType, setEditEmployeeType] = useState<
     "teaching" | "non-teaching" | "teaching-related"
   >("non-teaching");
@@ -753,6 +762,7 @@ export default function ViewEmployeeModal({
       school_id: employee.schoolId,
       school_name: employee.schoolName,
       birthdate: employee.birthdate || null,
+      sg: employee.sg || null,
     };
   }, [employee]);
 
@@ -768,6 +778,28 @@ export default function ViewEmployeeModal({
   const resolvedLoyaltyBonus = isEditing
     ? computedSalaryMetrics.loyaltyBonus
     : (resolvedDetails?.loyalty_bonus ?? computedSalaryMetrics.loyaltyBonus);
+  const latestSalaryHistoryRow = useMemo(() => {
+    if (!salaryHistoryRows.length) return null;
+
+    const normalizeSalaryDate = (value: string | null | undefined) => {
+      const raw = String(value || "").trim();
+      return /^\d{4}-\d{2}-\d{2}/.test(raw) ? raw.slice(0, 10) : "";
+    };
+
+    return salaryHistoryRows.reduce<SalaryHistoryRecord | null>((latest, row) => {
+      if (!latest) return row;
+
+      const latestDate = normalizeSalaryDate(latest.salary_date || null);
+      const rowDate = normalizeSalaryDate(row.salary_date || null);
+      const dateCompare = rowDate.localeCompare(latestDate);
+
+      if (dateCompare > 0) return row;
+      if (dateCompare < 0) return latest;
+
+      return Number(row.id || 0) > Number(latest.id || 0) ? row : latest;
+    }, null);
+  }, [salaryHistoryRows]);
+  const resolvedWorkSg = latestSalaryHistoryRow?.sg ?? resolvedDetails?.sg ?? null;
   const canManageSalaryHistory = isEditing && canEdit;
   const hasPendingSalaryHistoryDraft =
     Boolean(salaryHistoryCreateDraft) || Boolean(salaryHistoryEditDraft);
@@ -916,6 +948,14 @@ export default function ViewEmployeeModal({
     setSalaryHistoryUpdateError(null);
     setSalaryHistoryEditIncrementTouched(false);
   }, [isEditing]);
+
+  useEffect(() => {
+    if (isEditing) return;
+
+    const normalizedSg = String(resolvedWorkSg ?? "").trim();
+    setEditWorkSg(normalizedSg);
+    setInitialWorkSg(normalizedSg);
+  }, [isEditing, resolvedWorkSg]);
 
   useEffect(() => {
     if (isEditing) {
@@ -1082,7 +1122,7 @@ export default function ViewEmployeeModal({
   const hasEditChanges =
     isEditing &&
     initialEditSnapshot !== null &&
-    JSON.stringify({
+    (JSON.stringify({
       firstName: editFirstName,
       middleName: editMiddleName,
       noMiddleName,
@@ -1118,11 +1158,13 @@ export default function ViewEmployeeModal({
       gsisCrnNotAvailable,
       pagibigNotAvailable,
       philhealthNotAvailable,
-    }) !== JSON.stringify(initialEditSnapshot);
+    }) !== JSON.stringify(initialEditSnapshot) ||
+      editWorkSg.trim() !== initialWorkSg.trim());
 
   const handleClearEditChanges = () => {
     if (!initialEditSnapshot) return;
     applyEditSnapshot(initialEditSnapshot);
+    setEditWorkSg(initialWorkSg);
     setErrors([]);
     setEditError(null);
   };
@@ -1162,6 +1204,7 @@ export default function ViewEmployeeModal({
     }
 
     const firstAppointmentDate = editDateOfFirstAppointment.trim();
+    const normalizedWorkSg = editWorkSg.trim();
     if (firstAppointmentDate && !isValidDateValue(firstAppointmentDate)) {
       newErrors.push({
         field: "Date of First Appointment",
@@ -1181,6 +1224,13 @@ export default function ViewEmployeeModal({
           message: "Date of First Appointment cannot be in the future",
         });
       }
+    }
+
+    if (normalizedWorkSg.length > 20) {
+      newErrors.push({
+        field: "SG",
+        message: "SG must be at most 20 characters",
+      });
     }
 
     if (
@@ -1440,6 +1490,7 @@ export default function ViewEmployeeModal({
         firstAppointmentDate || null,
       );
       const normalizedMiddleName = editMiddleName.trim();
+      const hasSgChanged = normalizedWorkSg !== initialWorkSg.trim();
       const updatePayload = {
         first_name: editFirstName.trim(),
         middle_name: noMiddleName ? "N/A" : normalizedMiddleName || null,
@@ -1464,6 +1515,7 @@ export default function ViewEmployeeModal({
         position: editPosition.trim(),
         position_id: editPositionId,
         plantilla_no: editPlantillaNo.trim(),
+        ...(hasSgChanged ? { sg: normalizedWorkSg || null } : {}),
         date_of_first_appointment: firstAppointmentDate || null,
         // Compatibility keys for backend variants while keeping current API contract.
         dateOfFirstAppointment: firstAppointmentDate || null,
@@ -1544,6 +1596,10 @@ export default function ViewEmployeeModal({
         const refreshedSnapshot =
           createEditSnapshotFromDetails(refreshedDetails);
         setInitialEditSnapshot(refreshedSnapshot);
+      }
+
+      if (hasSgChanged) {
+        await loadSalaryHistory(employee.id);
       }
 
       onEmployeeUpdated({
@@ -2106,6 +2162,10 @@ export default function ViewEmployeeModal({
               isEditing={isEditing}
               resolvedSchoolName={resolvedDetails?.school_name}
               employeeSchoolName={employee.schoolName}
+              workDateOfFirstAppointment={resolvedSalaryDate}
+              setEditDateOfFirstAppointment={setEditDateOfFirstAppointment}
+              workSg={isEditing ? editWorkSg : resolvedWorkSg}
+              setEditWorkSg={setEditWorkSg}
               editEmployeeType={editEmployeeType}
               setEditEmployeeType={setEditEmployeeType}
               editPosition={editPosition}
@@ -2210,7 +2270,12 @@ export default function ViewEmployeeModal({
             {!isEditing && canEdit && (
               <button
                 type="button"
-                onClick={() => setIsEditing(true)}
+                onClick={() => {
+                  const baselineSg = String(resolvedWorkSg ?? "").trim();
+                  setEditWorkSg(baselineSg);
+                  setInitialWorkSg(baselineSg);
+                  setIsEditing(true);
+                }}
                 className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
               >
                 <Pencil size={14} />

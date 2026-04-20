@@ -36,6 +36,10 @@ type WorkInformationProps = {
   isEditing: boolean;
   resolvedSchoolName?: string | null;
   employeeSchoolName: string;
+  workDateOfFirstAppointment: string | null | undefined;
+  setEditDateOfFirstAppointment: (value: string) => void;
+  workSg: string | number | null | undefined;
+  setEditWorkSg: (value: string) => void;
   editEmployeeType: "teaching" | "non-teaching" | "teaching-related";
   setEditEmployeeType: (
     value: "teaching" | "non-teaching" | "teaching-related",
@@ -109,6 +113,10 @@ export default function WorkInformation({
   isEditing,
   resolvedSchoolName,
   employeeSchoolName,
+  workDateOfFirstAppointment,
+  setEditDateOfFirstAppointment,
+  workSg,
+  setEditWorkSg,
   editEmployeeType,
   setEditEmployeeType,
   editPosition,
@@ -162,6 +170,7 @@ export default function WorkInformation({
   setPhilhealthNotAvailable,
   formatEmployeeType,
   formatValue,
+  formatDate,
   getValidationError,
   formatMaskedId,
   formatGsisBp,
@@ -179,11 +188,12 @@ export default function WorkInformation({
       </div>
 
       <div className="space-y-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12 sm:gap-4">
           <InfoField
             label="Employee Type"
             value={formatEmployeeType(editEmployeeType)}
             isEditing={isEditing}
+            className="lg:col-span-2"
             errorMessage={getValidationError("Employee Type")}
           >
             <select
@@ -208,6 +218,7 @@ export default function WorkInformation({
             label="Position"
             value={formatValue(editPosition)}
             isEditing={isEditing}
+            className="lg:col-span-3"
             errorMessage={getValidationError("Position")}
           >
             <div className="relative">
@@ -252,12 +263,43 @@ export default function WorkInformation({
             label="Plantilla Number"
             value={formatValue(editPlantillaNo)}
             isEditing={isEditing}
+            className="lg:col-span-3"
             errorMessage={getValidationError("Plantilla Number")}
           >
             <input
               type="text"
               value={editPlantillaNo}
               onChange={(e) => setEditPlantillaNo(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+            />
+          </InfoField>
+
+          <InfoField
+            label="First Appointment Date"
+            value={formatDate(workDateOfFirstAppointment)}
+            isEditing={isEditing}
+            className="lg:col-span-3"
+            errorMessage={getValidationError("Date of First Appointment")}
+          >
+            <input
+              type="date"
+              value={workDateOfFirstAppointment || ""}
+              onChange={(e) => setEditDateOfFirstAppointment(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+            />
+          </InfoField>
+
+          <InfoField
+            label="SG"
+            value={formatValue(workSg)}
+            isEditing={isEditing}
+            className="lg:col-span-1"
+            errorMessage={getValidationError("SG")}
+          >
+            <input
+              type="text"
+              value={String(workSg ?? "")}
+              onChange={(e) => setEditWorkSg(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
             />
           </InfoField>
