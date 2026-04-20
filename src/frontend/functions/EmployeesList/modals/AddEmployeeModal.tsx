@@ -245,6 +245,26 @@ const isValidDepEdEmail = (value: string): boolean => {
   return /^[^\s@]+@deped\.gov\.ph$/.test(trimmed);
 };
 
+const PLANTILLA_PREFIX = "OSEC-DECSB-";
+const PLANTILLA_SUFFIX_PATTERN = /^[A-Z0-9]+(?:-[A-Z0-9]+)*$/;
+
+const normalizePlantillaNo = (value: string): string => {
+  const upper = String(value || "")
+    .toUpperCase()
+    .trim();
+  const suffixSource = upper.startsWith(PLANTILLA_PREFIX)
+    ? upper.slice(PLANTILLA_PREFIX.length)
+    : upper.replace(/^OSEC-DECSB-?/, "");
+  const suffix = suffixSource.replace(/[^A-Z0-9-]/g, "");
+  return `${PLANTILLA_PREFIX}${suffix}`;
+};
+
+const isValidPlantillaNo = (value: string): boolean => {
+  const normalized = normalizePlantillaNo(value);
+  const suffix = normalized.slice(PLANTILLA_PREFIX.length);
+  return Boolean(suffix) && PLANTILLA_SUFFIX_PATTERN.test(suffix);
+};
+
 const computeAgeFromBirthdate = (birthdate: string): number => {
   if (!birthdate) return 0;
   const dob = new Date(birthdate);
@@ -347,7 +367,7 @@ export default function AddEmployeeModal({
 
   const [employeeNo, setEmployeeNo] = useState("");
   const [workEmail, setWorkEmail] = useState("");
-  const [plantillaNo, setPlantillaNo] = useState("");
+  const [plantillaNo, setPlantillaNo] = useState(PLANTILLA_PREFIX);
   const [employeeType, setEmployeeType] = useState<
     "teaching" | "non-teaching" | "teaching-related"
   >("non-teaching");
@@ -513,7 +533,7 @@ export default function AddEmployeeModal({
     setSelectedSexId(null);
     setEmployeeNo("");
     setWorkEmail("");
-    setPlantillaNo("");
+    setPlantillaNo(PLANTILLA_PREFIX);
     setEmployeeType("non-teaching");
     setSelectedPositionId(null);
     setPositionSearch("");
@@ -1096,10 +1116,11 @@ export default function AddEmployeeModal({
       });
     }
 
-    if (!pNo) {
+    if (!isValidPlantillaNo(pNo)) {
       fieldErrors.push({
         field: "Plantilla Number",
-        message: "Plantilla number is required.",
+        message:
+          "Plantilla number must follow OSEC-DECSB- format using uppercase letters, numbers, and hyphens only.",
       });
     }
 
@@ -1535,7 +1556,7 @@ export default function AddEmployeeModal({
     // Reset work information fields
     setEmployeeNo("");
     setWorkEmail("");
-    setPlantillaNo("");
+    setPlantillaNo(PLANTILLA_PREFIX);
     setEmployeeType("non-teaching");
     setSelectedPositionId(null);
     setPositionSearch("");
@@ -2045,9 +2066,11 @@ export default function AddEmployeeModal({
                 <input
                   type="text"
                   value={plantillaNo}
-                  onChange={(e) => setPlantillaNo(e.target.value)}
+                  onChange={(e) =>
+                    setPlantillaNo(normalizePlantillaNo(e.target.value))
+                  }
                   className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
-                  placeholder="PL-0001"
+                  placeholder="OSEC-DECSB-TCH1-153260-1998"
                 />
                 {renderFieldError("Plantilla Number")}
               </div>
