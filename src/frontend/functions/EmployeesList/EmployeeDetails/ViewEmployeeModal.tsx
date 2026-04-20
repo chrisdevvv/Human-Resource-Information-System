@@ -347,7 +347,7 @@ const createEditSnapshotFromDetails = (
     workEmail: data.work_email || "",
     district: data.district || data.work_district || "",
     position: data.position || "",
-    plantillaNo: data.plantilla_no || "",
+    plantillaNo: normalizePlantillaNo(data.plantilla_no || ""),
     dateOfFirstAppointment: toDateInputValue(data.date_of_first_appointment),
     employeeType: data.employee_type || "non-teaching",
     schoolId: data.school_id || null,
@@ -438,6 +438,26 @@ const getRetirableFromAge = (
 const isValidDepEdEmail = (value: string): boolean => {
   const trimmed = value.trim().toLowerCase();
   return /^[^\s@]+@deped\.gov\.ph$/.test(trimmed);
+};
+
+const PLANTILLA_PREFIX = "OSEC-DECSB-";
+const PLANTILLA_SUFFIX_PATTERN = /^[A-Z0-9]+(?:-[A-Z0-9]+)*$/;
+
+const normalizePlantillaNo = (value: string): string => {
+  const upper = String(value || "")
+    .toUpperCase()
+    .trim();
+  const suffixSource = upper.startsWith(PLANTILLA_PREFIX)
+    ? upper.slice(PLANTILLA_PREFIX.length)
+    : upper.replace(/^OSEC-DECSB-?/, "");
+  const suffix = suffixSource.replace(/[^A-Z0-9-]/g, "");
+  return `${PLANTILLA_PREFIX}${suffix}`;
+};
+
+const isValidPlantillaNo = (value: string): boolean => {
+  const normalized = normalizePlantillaNo(value);
+  const suffix = normalized.slice(PLANTILLA_PREFIX.length);
+  return Boolean(suffix) && PLANTILLA_SUFFIX_PATTERN.test(suffix);
 };
 
 const normalizeMiddleInitialInput = (value: string): string =>
@@ -613,7 +633,7 @@ export default function ViewEmployeeModal({
   const [editWorkEmail, setEditWorkEmail] = useState("");
   const [editDistrict, setEditDistrict] = useState("");
   const [editPosition, setEditPosition] = useState("");
-  const [editPlantillaNo, setEditPlantillaNo] = useState("");
+  const [editPlantillaNo, setEditPlantillaNo] = useState(PLANTILLA_PREFIX);
   const [editDateOfFirstAppointment, setEditDateOfFirstAppointment] =
     useState("");
   const [editEmployeeType, setEditEmployeeType] = useState<
@@ -696,7 +716,7 @@ export default function ViewEmployeeModal({
     setEditWorkEmail(snapshot.workEmail);
     setEditDistrict(snapshot.district);
     setEditPosition(snapshot.position);
-    setEditPlantillaNo(snapshot.plantillaNo);
+    setEditPlantillaNo(normalizePlantillaNo(snapshot.plantillaNo));
     setEditDateOfFirstAppointment(snapshot.dateOfFirstAppointment);
     setEditEmployeeType(snapshot.employeeType);
     setEditSchoolId(snapshot.schoolId);
@@ -1107,6 +1127,10 @@ export default function ViewEmployeeModal({
     setEditError(null);
   };
 
+  const handleEditPlantillaNoChange = (value: string) => {
+    setEditPlantillaNo(normalizePlantillaNo(value));
+  };
+
   const handleSaveChanges = async () => {
     setEditError(null);
     const newErrors: ValidationError[] = [];
@@ -1195,6 +1219,14 @@ export default function ViewEmployeeModal({
       newErrors.push({
         field: "DepEd Email",
         message: "DepEd email must end with @deped.gov.ph",
+      });
+    }
+
+    if (!isValidPlantillaNo(editPlantillaNo)) {
+      newErrors.push({
+        field: "Plantilla Number",
+        message:
+          "Plantilla number must follow OSEC-DECSB- format using uppercase letters, numbers, and hyphens only",
       });
     }
 
@@ -2081,7 +2113,7 @@ export default function ViewEmployeeModal({
               editPositionId={editPositionId}
               setEditPositionId={setEditPositionId}
               editPlantillaNo={editPlantillaNo}
-              setEditPlantillaNo={setEditPlantillaNo}
+              setEditPlantillaNo={handleEditPlantillaNoChange}
               positionSearch={positionSearch}
               setPositionSearch={setPositionSearch}
               showPositionDropdown={showPositionDropdown}
