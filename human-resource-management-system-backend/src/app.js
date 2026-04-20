@@ -9,6 +9,7 @@ const leaveRoutes = require("./modules/leave/leaveRoutes");
 const employeeRoutes = require("./modules/employee/employeeRoutes");
 const schoolRoutes = require("./modules/school/schoolRoutes");
 const Position = require("./modules/position/positionModel");
+const SalaryInformation = require("./modules/employee/salaryInformationModel");
 const backlogRoutes = require("./modules/backlog/backlogRoutes");
 const registrationRoutes = require("./modules/registration/registrationRoutes");
 const userRoutes = require("./modules/user/userRoutes");
@@ -31,13 +32,10 @@ const PORT = process.env.PORT || 3000;
 const AUTO_MONTHLY_CREDIT_ENABLED = process.env.AUTO_MONTHLY_CREDIT !== "false";
 const MAX_JSON_BODY_SIZE = process.env.MAX_JSON_BODY_SIZE || "100kb";
 const MAX_FORM_BODY_SIZE = process.env.MAX_FORM_BODY_SIZE || "100kb";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
-const DEFAULT_CORS_ALLOWLIST = [
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-  "http://localhost:3001",
-  "http://127.0.0.1:3001",
-];
+const LOCALHOST_ORIGIN_PATTERN =
+  /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
 const allowedOrigins = (
   process.env.CORS_ORIGIN_ALLOWLIST ||
@@ -49,7 +47,13 @@ const allowedOrigins = (
   .filter(Boolean);
 
 const corsAllowlist =
-  allowedOrigins.length > 0 ? allowedOrigins : DEFAULT_CORS_ALLOWLIST;
+  allowedOrigins.length > 0 ? allowedOrigins : IS_PRODUCTION ? [] : [];
+
+if (IS_PRODUCTION && corsAllowlist.length === 0) {
+  console.warn(
+    "[CORS] No CORS allowlist configured in production; cross-origin browser requests will be blocked.",
+  );
+}
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -59,6 +63,10 @@ const corsOptions = {
     }
 
     if (corsAllowlist.includes(origin)) {
+      return callback(null, true);
+    }
+
+    if (!IS_PRODUCTION && LOCALHOST_ORIGIN_PATTERN.test(origin)) {
       return callback(null, true);
     }
 
@@ -742,6 +750,15 @@ const ensureEmployeeCivilStatusSexFK = async () => {
 };
 
 const ensureSalaryInformationTable = async () => {
+  const salaryInformationRemarkValues = [
+    "Step Increment",
+    "Promotion",
+    "Step Increment Increase",
+  ];
+  const salaryInformationRemarksSql = salaryInformationRemarkValues
+    .map((value) => `'${String(value).replace(/'/g, "''")}'`)
+    .join(",");
+
   await pool.promise().query(`
     CREATE TABLE IF NOT EXISTS salary_information (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -752,7 +769,8 @@ const ensureSalaryInformationTable = async () => {
       step VARCHAR(20) NULL,
       salary DECIMAL(12,2) NOT NULL DEFAULT 0.00,
       increment_amount DECIMAL(12,2) NULL,
-      remarks VARCHAR(500) NULL,
+      increment_mode ENUM('AUTO', 'MANUAL') NOT NULL DEFAULT 'AUTO',
+      remarks ENUM(${salaryInformationRemarksSql}) NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       CONSTRAINT fk_salary_information_employee_id
@@ -762,6 +780,30 @@ const ensureSalaryInformationTable = async () => {
       INDEX idx_salary_information_employee_id (employee_id),
       INDEX idx_salary_information_employee_date (employee_id, salary_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `);
+
+  await pool.promise().query(`
+    ALTER TABLE salary_information
+    ADD COLUMN IF NOT EXISTS increment_mode ENUM('AUTO', 'MANUAL') NOT NULL DEFAULT 'AUTO' AFTER increment_amount;
+  `);
+
+  await pool.promise().query(`
+    UPDATE salary_information
+    SET increment_mode = 'AUTO'
+    WHERE increment_mode IS NULL;
+  `);
+
+  await pool.promise().query(`
+    UPDATE salary_information
+    SET remarks = NULL
+    WHERE remarks IS NOT NULL
+      AND TRIM(remarks) <> ''
+      AND remarks NOT IN (${salaryInformationRemarksSql});
+  `);
+
+  await pool.promise().query(`
+    ALTER TABLE salary_information
+    MODIFY COLUMN remarks ENUM(${salaryInformationRemarksSql}) NULL;
   `);
 };
 
@@ -886,6 +928,23 @@ app.delete(
 
       if (existingRows.length === 0) {
         return res.status(404).json({ message: "District not found" });
+      }
+
+      const districtName = String(existingRows[0].district_name || "").trim();
+      const [[usageRow]] = await pool.promise().query(
+        `SELECT COUNT(*) AS total
+         FROM employees
+         WHERE LOWER(TRIM(COALESCE(district, ''))) = LOWER(TRIM(?))
+            OR LOWER(TRIM(COALESCE(work_district, ''))) = LOWER(TRIM(?))`,
+        [districtName, districtName],
+      );
+
+      const assignedEmployees = Number(usageRow?.total || 0);
+      if (assignedEmployees > 0) {
+        return res.status(409).json({
+          message: `Cannot delete district. ${assignedEmployees} employee record(s) are still assigned to it. Reassign employees first.`,
+          data: { assignedEmployees },
+        });
       }
 
       await pool
@@ -1336,6 +1395,12 @@ app.listen(PORT, async () => {
     await ensureSalaryInformationTable();
     console.log("✔  Salary information table is ready");
 
+    const salaryDateSyncStartupResult =
+      await SalaryInformation.syncThreeYearSalaryDateEntries();
+    console.log(
+      `[Salary Information] 3-year date sync on startup: employees=${salaryDateSyncStartupResult.employeesChecked}, generated=${salaryDateSyncStartupResult.generated}, as_of=${salaryDateSyncStartupResult.asOfDate}`,
+    );
+
     await ensureIndexes();
     console.log("✔  Database indexes ensured (best-effort)");
 
@@ -1370,11 +1435,19 @@ app.listen(PORT, async () => {
       );
     }
 
-    // Run backlog archiving daily at 01:00 AM
+    // Run backlog archiving, service metrics sync, and salary-date sync daily at 01:00 AM.
     cron.schedule("0 1 * * *", async () => {
       try {
         await archiveOldBacklogs();
         await syncEmployeeServiceMetrics();
+
+        const salaryDateSyncResult =
+          await SalaryInformation.syncThreeYearSalaryDateEntries();
+        if (salaryDateSyncResult.generated > 0) {
+          console.log(
+            `[Salary Information] 3-year date sync scheduled run: employees=${salaryDateSyncResult.employeesChecked}, generated=${salaryDateSyncResult.generated}, as_of=${salaryDateSyncResult.asOfDate}`,
+          );
+        }
       } catch (error) {
         console.error("[Backlog Archive] Scheduled run failed:", error.message);
       }

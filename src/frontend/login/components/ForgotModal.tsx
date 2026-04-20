@@ -7,7 +7,7 @@ import { Send, XCircle } from "lucide-react";
 import { Mail } from "../../assets/icons";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type Props = { visible: boolean; onClose: () => void };
 
@@ -179,3 +179,4 @@ export default function ForgotModal({ visible, onClose }: Props) {
     </div>
   );
 }
+

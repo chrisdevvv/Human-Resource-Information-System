@@ -81,6 +81,16 @@ const deleteSchool = async (req, res) => {
       return res.status(404).json({ message: "School not found" });
     }
 
+    const assignedEmployees = await School.countAssignedEmployees(
+      req.params.id,
+    );
+    if (assignedEmployees > 0) {
+      return res.status(409).json({
+        message: `Cannot delete school. ${assignedEmployees} employee record(s) are still assigned to it. Reassign employees first.`,
+        data: { assignedEmployees },
+      });
+    }
+
     // Write audit trail before deletion so school_id still exists for FK checks.
     // If logging fails, do not fail the delete request itself.
     try {
@@ -101,6 +111,13 @@ const deleteSchool = async (req, res) => {
       .status(200)
       .json({ message: "School deleted successfully", data: result });
   } catch (err) {
+    if (err?.code === "ER_ROW_IS_REFERENCED_2" || err?.errno === 1451) {
+      return res.status(409).json({
+        message:
+          "Cannot delete school because related records still reference it.",
+      });
+    }
+
     res
       .status(500)
       .json({ message: "Error deleting school", error: err.message });

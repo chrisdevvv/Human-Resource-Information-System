@@ -2,6 +2,9 @@ const express = require("express");
 const {
   getAllUsers,
   getUserById,
+  getMyProfile,
+  updateMyProfile,
+  updateUserDetails,
   updateUserRole,
   updateUserStatus,
   deleteUser,
@@ -18,6 +21,7 @@ const {
   userStatusBodySchema,
   userPasswordResetBodySchema,
   userAdminCreateBodySchema,
+  userDetailsUpdateBodySchema,
   usersQuerySchema,
 } = require("../../validation/schemas");
 
@@ -38,12 +42,26 @@ router.get(
   validateRequest({ query: usersQuerySchema }),
   getAllUsers,
 );
+router.get("/me/profile", authMiddleware, getMyProfile);
+router.patch(
+  "/me/profile",
+  authMiddleware,
+  validateRequest({ body: userDetailsUpdateBodySchema }),
+  updateMyProfile,
+);
 router.get(
   "/:id",
   authMiddleware,
   roleAuthMiddleware(["admin", "super-admin"]),
   validateRequest({ params: idParamSchema }),
   getUserById,
+);
+router.patch(
+  "/:id/details",
+  authMiddleware,
+  roleAuthMiddleware(["super-admin"]),
+  validateRequest({ params: idParamSchema, body: userDetailsUpdateBodySchema }),
+  updateUserDetails,
 );
 router.patch(
   "/:id/role",

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Loader2,
   Pencil,
@@ -15,7 +15,11 @@ import ChangesToast from "../modals/ChangesToast";
 import SaveChanges from "../modals/SaveChanges";
 import PersonalInformation from "./PersonalInformation";
 import WorkInformation from "./WorkInformation";
-import SalaryInformation from "./SalaryInformation";
+import SalaryInformation, {
+  type SalaryHistoryDraft,
+  type SalaryHistoryEditDraft,
+  type SalaryHistoryRecord,
+} from "./SalaryInformation";
 import { createClearHandler } from "../../../utils/clearFormUtils";
 
 type School = {
@@ -102,6 +106,17 @@ type EmployeeDetailsApiResponse = {
   message?: string;
 };
 
+type SalaryInformationListResponse = {
+  data?: SalaryHistoryRecord[];
+  message?: string;
+};
+
+type SalaryInformationMutationResponse = {
+  data?: SalaryHistoryRecord;
+  message?: string;
+  error?: string;
+};
+
 type EmployeeDetailsResponse = {
   id: number;
   first_name: string;
@@ -178,8 +193,12 @@ type ViewEmployeeModalProps = {
   onClose: () => void;
 };
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const SALARY_HISTORY_REMARK_OPTIONS = [
+  "Step Increment",
+  "Promotion",
+  "Step Increment Increase",
+] as const;
 
 const formatValue = (value: string | number | null | undefined): string => {
   if (value === null || value === undefined) return "N/A";
@@ -643,6 +662,29 @@ export default function ViewEmployeeModal({
   const [isSaveConfirmOpen, setIsSaveConfirmOpen] = useState(false);
   const [initialEditSnapshot, setInitialEditSnapshot] =
     useState<EditSnapshot | null>(null);
+  const [salaryHistoryRows, setSalaryHistoryRows] = useState<
+    SalaryHistoryRecord[]
+  >([]);
+  const [salaryHistoryLoading, setSalaryHistoryLoading] = useState(false);
+  const [salaryHistoryError, setSalaryHistoryError] = useState<string | null>(
+    null,
+  );
+  const [salaryHistoryCreateDraft, setSalaryHistoryCreateDraft] =
+    useState<SalaryHistoryDraft | null>(null);
+  const [salaryHistoryCreateError, setSalaryHistoryCreateError] = useState<
+    string | null
+  >(null);
+  const [salaryHistoryCreating, setSalaryHistoryCreating] = useState(false);
+  const [salaryHistoryEditDraft, setSalaryHistoryEditDraft] =
+    useState<SalaryHistoryEditDraft | null>(null);
+  const [salaryHistoryUpdateError, setSalaryHistoryUpdateError] = useState<
+    string | null
+  >(null);
+  const [salaryHistoryUpdating, setSalaryHistoryUpdating] = useState(false);
+  const [
+    salaryHistoryEditIncrementTouched,
+    setSalaryHistoryEditIncrementTouched,
+  ] = useState(false);
 
   const applyEditSnapshot = (snapshot: EditSnapshot) => {
     setEditFirstName(snapshot.firstName);
@@ -715,6 +757,48 @@ export default function ViewEmployeeModal({
   const resolvedLoyaltyBonus = isEditing
     ? computedSalaryMetrics.loyaltyBonus
     : (resolvedDetails?.loyalty_bonus ?? computedSalaryMetrics.loyaltyBonus);
+  const canManageSalaryHistory = isEditing && canEdit;
+  const hasPendingSalaryHistoryDraft =
+    Boolean(salaryHistoryCreateDraft) || Boolean(salaryHistoryEditDraft);
+
+  const loadSalaryHistory = useCallback(async (employeeId: number) => {
+    try {
+      setSalaryHistoryLoading(true);
+      setSalaryHistoryError(null);
+
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("No authentication token found. Please log in again.");
+      }
+
+      const response = await fetch(
+        `${API_BASE}/api/employees/${employeeId}/salary-information`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const body = (await response.json()) as SalaryInformationListResponse;
+
+      if (!response.ok) {
+        throw new Error(body.message || "Failed to load salary information");
+      }
+
+      setSalaryHistoryRows(Array.isArray(body.data) ? body.data : []);
+    } catch (err) {
+      setSalaryHistoryError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load salary information",
+      );
+    } finally {
+      setSalaryHistoryLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!visible || !employee) return;
@@ -785,12 +869,42 @@ export default function ViewEmployeeModal({
     setEditError(null);
     setErrors([]);
     setActiveSection("personal");
+    setSalaryHistoryCreateDraft(null);
+    setSalaryHistoryCreateError(null);
+    setSalaryHistoryEditDraft(null);
+    setSalaryHistoryUpdateError(null);
+    setSalaryHistoryCreating(false);
+    setSalaryHistoryUpdating(false);
+    setSalaryHistoryEditIncrementTouched(false);
     loadDetails();
 
     return () => {
       disposed = true;
     };
   }, [employee, visible]);
+
+  useEffect(() => {
+    if (!visible || !employee) return;
+
+    setSalaryHistoryRows([]);
+    setSalaryHistoryError(null);
+    setSalaryHistoryCreateDraft(null);
+    setSalaryHistoryCreateError(null);
+    setSalaryHistoryEditDraft(null);
+    setSalaryHistoryUpdateError(null);
+    setSalaryHistoryEditIncrementTouched(false);
+    void loadSalaryHistory(employee.id);
+  }, [employee, loadSalaryHistory, visible]);
+
+  useEffect(() => {
+    if (isEditing) return;
+
+    setSalaryHistoryCreateDraft(null);
+    setSalaryHistoryCreateError(null);
+    setSalaryHistoryEditDraft(null);
+    setSalaryHistoryUpdateError(null);
+    setSalaryHistoryEditIncrementTouched(false);
+  }, [isEditing]);
 
   useEffect(() => {
     if (isEditing) {
@@ -925,6 +1039,18 @@ export default function ViewEmployeeModal({
     resolvedDetails?.middle_name || employee.middleName,
     resolvedDetails?.last_name || employee.lastName,
   );
+  const headerEmployeeName = [
+    resolvedDetails?.first_name || employee.firstName,
+    String(resolvedDetails?.middle_name || employee.middleName || "")
+      .trim()
+      .toUpperCase() === "N/A"
+      ? ""
+      : resolvedDetails?.middle_name || employee.middleName,
+    resolvedDetails?.last_name || employee.lastName,
+  ]
+    .filter((part) => Boolean(String(part || "").trim()))
+    .join(" ")
+    .trim();
 
   const ageValue =
     resolvedDetails?.age ??
@@ -993,6 +1119,7 @@ export default function ViewEmployeeModal({
   const handleSaveChanges = async () => {
     setEditError(null);
     const newErrors: ValidationError[] = [];
+    let selectedDistrict: District | null = null;
 
     if (!editFirstName.trim()) {
       newErrors.push({
@@ -1085,6 +1212,28 @@ export default function ViewEmployeeModal({
         field: "School",
         message: "School is required",
       });
+    }
+
+    const normalizedDistrictInput = editDistrict.trim();
+    if (!normalizedDistrictInput) {
+      newErrors.push({
+        field: "District",
+        message: "District is required",
+      });
+    } else {
+      selectedDistrict =
+        districts.find(
+          (item) =>
+            item.district_name.trim().toLowerCase() ===
+            normalizedDistrictInput.toLowerCase(),
+        ) || null;
+
+      if (!selectedDistrict) {
+        newErrors.push({
+          field: "District",
+          message: "Please select a valid district from the list.",
+        });
+      }
     }
 
     if (!isGovernmentIdValid(editTin, GOV_ID_MASKS.tin)) {
@@ -1288,7 +1437,7 @@ export default function ViewEmployeeModal({
         sex_id: editSexId,
         employee_no: editEmployeeNo.trim(),
         work_email: editWorkEmail.trim(),
-        district: editDistrict.trim(),
+        district: selectedDistrict?.district_name || editDistrict.trim(),
         position: editPosition.trim(),
         position_id: editPositionId,
         plantilla_no: editPlantillaNo.trim(),
@@ -1400,6 +1549,14 @@ export default function ViewEmployeeModal({
   };
 
   const handleOpenSaveConfirmation = () => {
+    if (hasPendingSalaryHistoryDraft) {
+      showToast(
+        "Finish Salary History row action first (save or cancel row edit).",
+        "error",
+      );
+      return;
+    }
+
     setIsSaveConfirmOpen(true);
   };
 
@@ -1411,6 +1568,311 @@ export default function ViewEmployeeModal({
   const handleCancelSave = () => {
     if (isSaving) return;
     setIsSaveConfirmOpen(false);
+  };
+
+  const handleStartAddSalaryHistory = () => {
+    if (!canManageSalaryHistory) return;
+
+    setSalaryHistoryEditDraft(null);
+    setSalaryHistoryUpdateError(null);
+    setSalaryHistoryCreateError(null);
+    setSalaryHistoryCreateDraft({
+      date: "",
+      plantilla: "",
+      sg: "",
+      step: "",
+      salary: "",
+      increment: "",
+      remarks: "",
+    });
+  };
+
+  const handleCancelAddSalaryHistory = () => {
+    if (salaryHistoryCreating || salaryHistoryUpdating) return;
+    setSalaryHistoryCreateDraft(null);
+    setSalaryHistoryCreateError(null);
+  };
+
+  const handleChangeSalaryHistoryDraft = (
+    field: keyof SalaryHistoryDraft,
+    value: string,
+  ) => {
+    setSalaryHistoryCreateDraft((current) => {
+      if (!current) return current;
+      return { ...current, [field]: value };
+    });
+  };
+
+  const handleSubmitSalaryHistory = async () => {
+    if (!employee || !salaryHistoryCreateDraft) return;
+
+    const dateValue = salaryHistoryCreateDraft.date.trim();
+    const salaryValueRaw = salaryHistoryCreateDraft.salary.trim();
+    const incrementValueRaw = salaryHistoryCreateDraft.increment.trim();
+    const numericSalary = Number(salaryValueRaw);
+    const numericIncrement = Number(incrementValueRaw);
+    const remarksValue = salaryHistoryCreateDraft.remarks.trim();
+
+    if (!dateValue) {
+      setSalaryHistoryCreateError("Date is required.");
+      return;
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+      setSalaryHistoryCreateError("Date must be in YYYY-MM-DD format.");
+      return;
+    }
+
+    if (
+      !salaryValueRaw ||
+      !Number.isFinite(numericSalary) ||
+      numericSalary < 0
+    ) {
+      setSalaryHistoryCreateError(
+        "Salary is required and must be a non-negative number.",
+      );
+      return;
+    }
+
+    if (
+      incrementValueRaw &&
+      (!Number.isFinite(numericIncrement) || numericIncrement < 0)
+    ) {
+      setSalaryHistoryCreateError(
+        "Increment must be a non-negative number when provided.",
+      );
+      return;
+    }
+
+    if (
+      remarksValue &&
+      !(SALARY_HISTORY_REMARK_OPTIONS as readonly string[]).includes(
+        remarksValue,
+      )
+    ) {
+      setSalaryHistoryCreateError("Please select a valid remarks value.");
+      return;
+    }
+
+    try {
+      setSalaryHistoryCreating(true);
+      setSalaryHistoryCreateError(null);
+      setSalaryHistoryUpdateError(null);
+
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("No authentication token found. Please log in again.");
+      }
+
+      const response = await fetch(
+        `${API_BASE}/api/employees/${employee.id}/salary-information`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            date: dateValue,
+            plantilla: salaryHistoryCreateDraft.plantilla.trim() || null,
+            sg: salaryHistoryCreateDraft.sg.trim() || null,
+            step: salaryHistoryCreateDraft.step.trim() || null,
+            salary: Number(numericSalary.toFixed(2)),
+            ...(incrementValueRaw
+              ? { increment_amount: Number(numericIncrement.toFixed(2)) }
+              : {}),
+            remarks: remarksValue || null,
+          }),
+        },
+      );
+
+      const body = (await response
+        .json()
+        .catch(() => ({}))) as SalaryInformationMutationResponse;
+
+      if (!response.ok) {
+        const detail = [body.message, body.error]
+          .filter((part) => Boolean(String(part || "").trim()))
+          .join(": ");
+        throw new Error(detail || "Failed to add salary history row");
+      }
+
+      await loadSalaryHistory(employee.id);
+      setSalaryHistoryCreateDraft(null);
+      setSalaryHistoryCreateError(null);
+      showToast("Salary history row added successfully.", "success");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to add salary history row";
+      setSalaryHistoryCreateError(message);
+      showToast("Unable to add salary history row.", "error");
+    } finally {
+      setSalaryHistoryCreating(false);
+    }
+  };
+
+  const handleStartEditSalaryHistory = (row: SalaryHistoryRecord) => {
+    if (!canManageSalaryHistory) return;
+
+    const normalizedSalary = Number(row.salary);
+
+    setSalaryHistoryCreateDraft(null);
+    setSalaryHistoryCreateError(null);
+    setSalaryHistoryUpdateError(null);
+    setSalaryHistoryEditIncrementTouched(false);
+    setSalaryHistoryEditDraft({
+      id: row.id,
+      date: toDateInputValue(row.salary_date || null),
+      plantilla: String(row.plantilla || "").trim(),
+      sg: String(row.sg || "").trim(),
+      step: String(row.step || "").trim(),
+      salary:
+        Number.isFinite(normalizedSalary) && row.salary !== null
+          ? String(Number(normalizedSalary.toFixed(2)))
+          : "",
+      increment:
+        row.increment_amount !== null && row.increment_amount !== undefined
+          ? String(row.increment_amount)
+          : "",
+      remarks: String(row.remarks || "").trim(),
+    });
+  };
+
+  const handleCancelEditSalaryHistory = () => {
+    if (salaryHistoryUpdating) return;
+
+    setSalaryHistoryEditDraft(null);
+    setSalaryHistoryUpdateError(null);
+    setSalaryHistoryEditIncrementTouched(false);
+  };
+
+  const handleChangeSalaryHistoryEditDraft = (
+    field: keyof SalaryHistoryDraft,
+    value: string,
+  ) => {
+    if (field === "increment") {
+      setSalaryHistoryEditIncrementTouched(true);
+    }
+
+    setSalaryHistoryEditDraft((current) => {
+      if (!current) return current;
+      return { ...current, [field]: value };
+    });
+  };
+
+  const handleSubmitSalaryHistoryUpdate = async () => {
+    if (!employee || !salaryHistoryEditDraft) return;
+
+    const dateValue = salaryHistoryEditDraft.date.trim();
+    const salaryValueRaw = salaryHistoryEditDraft.salary.trim();
+    const incrementValueRaw = salaryHistoryEditDraft.increment.trim();
+    const numericSalary = Number(salaryValueRaw);
+    const numericIncrement = Number(incrementValueRaw);
+    const remarksValue = salaryHistoryEditDraft.remarks.trim();
+
+    if (!dateValue) {
+      setSalaryHistoryUpdateError("Date is required.");
+      return;
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+      setSalaryHistoryUpdateError("Date must be in YYYY-MM-DD format.");
+      return;
+    }
+
+    if (
+      !salaryValueRaw ||
+      !Number.isFinite(numericSalary) ||
+      numericSalary < 0
+    ) {
+      setSalaryHistoryUpdateError(
+        "Salary is required and must be a non-negative number.",
+      );
+      return;
+    }
+
+    if (
+      incrementValueRaw &&
+      (!Number.isFinite(numericIncrement) || numericIncrement < 0)
+    ) {
+      setSalaryHistoryUpdateError(
+        "Increment must be a non-negative number when provided.",
+      );
+      return;
+    }
+
+    if (
+      remarksValue &&
+      !(SALARY_HISTORY_REMARK_OPTIONS as readonly string[]).includes(
+        remarksValue,
+      )
+    ) {
+      setSalaryHistoryUpdateError("Please select a valid remarks value.");
+      return;
+    }
+
+    try {
+      setSalaryHistoryUpdating(true);
+      setSalaryHistoryUpdateError(null);
+      setSalaryHistoryCreateError(null);
+
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("No authentication token found. Please log in again.");
+      }
+
+      const response = await fetch(
+        `${API_BASE}/api/employees/${employee.id}/salary-information/${salaryHistoryEditDraft.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            date: dateValue,
+            plantilla: salaryHistoryEditDraft.plantilla.trim() || null,
+            sg: salaryHistoryEditDraft.sg.trim() || null,
+            step: salaryHistoryEditDraft.step.trim() || null,
+            salary: Number(numericSalary.toFixed(2)),
+            ...(salaryHistoryEditIncrementTouched
+              ? {
+                  increment_amount: incrementValueRaw
+                    ? Number(numericIncrement.toFixed(2))
+                    : null,
+                }
+              : {}),
+            remarks: remarksValue || null,
+          }),
+        },
+      );
+
+      const body = (await response
+        .json()
+        .catch(() => ({}))) as SalaryInformationMutationResponse;
+
+      if (!response.ok) {
+        const detail = [body.message, body.error]
+          .filter((part) => Boolean(String(part || "").trim()))
+          .join(": ");
+        throw new Error(detail || "Failed to update salary history row");
+      }
+
+      await loadSalaryHistory(employee.id);
+      setSalaryHistoryEditDraft(null);
+      setSalaryHistoryUpdateError(null);
+      setSalaryHistoryEditIncrementTouched(false);
+      showToast("Salary history row updated successfully.", "success");
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to update salary history row";
+      setSalaryHistoryUpdateError(message);
+      showToast("Unable to update salary history row.", "error");
+    } finally {
+      setSalaryHistoryUpdating(false);
+    }
   };
 
   const tabClass = (tab: "personal" | "work" | "salary") =>
@@ -1431,7 +1893,9 @@ export default function ViewEmployeeModal({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-xl font-bold text-gray-800 sm:text-2xl">
-                  {isEditing ? `Edit Employee` : `View Employee`}
+                  {isEditing
+                    ? `Edit Employee`
+                    : `View Employee • ${headerEmployeeName || fullName}`}
                 </h2>
                 <p className="mt-1 text-sm text-gray-500">
                   {isEditing
@@ -1687,6 +2151,8 @@ export default function ViewEmployeeModal({
             <SalaryInformation
               InfoField={InfoField}
               isEditing={isEditing}
+              canAddSalaryHistory={canManageSalaryHistory}
+              canEditSalaryHistory={canManageSalaryHistory}
               salaryDateOfFirstAppointment={resolvedSalaryDate}
               setEditDateOfFirstAppointment={setEditDateOfFirstAppointment}
               salaryYearsInService={resolvedYearsInService}
@@ -1695,6 +2161,26 @@ export default function ViewEmployeeModal({
               formatYearsInService={formatYearsInService}
               formatLoyaltyBonus={formatLoyaltyBonus}
               getValidationError={getValidationError}
+              salaryHistoryRows={salaryHistoryRows}
+              salaryHistoryLoading={salaryHistoryLoading}
+              salaryHistoryError={salaryHistoryError}
+              salaryHistoryCreateDraft={salaryHistoryCreateDraft}
+              salaryHistoryCreating={salaryHistoryCreating}
+              salaryHistoryCreateError={salaryHistoryCreateError}
+              salaryHistoryEditDraft={salaryHistoryEditDraft}
+              salaryHistoryUpdating={salaryHistoryUpdating}
+              salaryHistoryUpdateError={salaryHistoryUpdateError}
+              salaryHistoryRemarkOptions={[...SALARY_HISTORY_REMARK_OPTIONS]}
+              onStartAddSalaryHistory={handleStartAddSalaryHistory}
+              onCancelAddSalaryHistory={handleCancelAddSalaryHistory}
+              onChangeSalaryHistoryDraft={handleChangeSalaryHistoryDraft}
+              onSubmitSalaryHistory={handleSubmitSalaryHistory}
+              onStartEditSalaryHistory={handleStartEditSalaryHistory}
+              onCancelEditSalaryHistory={handleCancelEditSalaryHistory}
+              onChangeSalaryHistoryEditDraft={
+                handleChangeSalaryHistoryEditDraft
+              }
+              onSubmitSalaryHistoryUpdate={handleSubmitSalaryHistoryUpdate}
             />
           )}
           <div className="mt-4 flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
@@ -1718,7 +2204,9 @@ export default function ViewEmployeeModal({
                       handleClearEditChanges,
                       hasEditChanges,
                     )}
-                    disabled={isSaving}
+                    disabled={
+                      isSaving || salaryHistoryCreating || salaryHistoryUpdating
+                    }
                     className="mr-auto cursor-pointer items-center gap-1.5 rounded-xl text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Clear All
@@ -1727,8 +2215,19 @@ export default function ViewEmployeeModal({
 
                 <button
                   type="button"
-                  onClick={() => setIsEditing(false)}
-                  disabled={isSaving}
+                  onClick={() => {
+                    if (hasPendingSalaryHistoryDraft) {
+                      showToast(
+                        "Finish Salary History row action first (save or cancel row edit).",
+                        "error",
+                      );
+                      return;
+                    }
+                    setIsEditing(false);
+                  }}
+                  disabled={
+                    isSaving || salaryHistoryCreating || salaryHistoryUpdating
+                  }
                   className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <XCircle size={14} />
@@ -1738,7 +2237,9 @@ export default function ViewEmployeeModal({
                 <button
                   type="button"
                   onClick={handleOpenSaveConfirmation}
-                  disabled={isSaving}
+                  disabled={
+                    isSaving || salaryHistoryCreating || salaryHistoryUpdating
+                  }
                   className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Save size={14} />

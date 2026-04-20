@@ -3,14 +3,9 @@
 import { useLayoutEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { LOGOUT_BROADCAST_KEY } from "./session";
+import { APP_ROUTES, PROTECTED_ROUTE_PREFIXES } from "@/frontend/route";
 
 const SESSION_FLAG_KEY = "authSessionActive";
-const PROTECTED_ROUTE_PREFIXES = [
-  "/admin",
-  "/super-admin",
-  "/data-encoder",
-  "/leave-card",
-];
 
 function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_ROUTE_PREFIXES.some(
@@ -39,7 +34,7 @@ export default function SessionGuard() {
         sessionStorage.clear();
 
         if (isProtectedRoute(pathname)) {
-          router.replace("/login");
+          router.replace(APP_ROUTES.LOGIN);
         }
       }
     };

@@ -2,6 +2,7 @@ const Leave = require("./leaveModel");
 const Backlog = require("../backlog/backlogModel");
 const Employee = require("../employee/employeeModel");
 const PDFDocument = require("pdfkit");
+const { normalizeRole } = require("../../middleware/roleAuthMiddleware");
 
 const MONTHLY_CREDIT = 1.25;
 const ENTRY_KIND_MANUAL = "MANUAL";
@@ -40,6 +41,16 @@ const isSchoolScopedWriteRole = (role) => {
 
 const isSameSchool = (userSchoolId, targetSchoolId) =>
   Number(userSchoolId) > 0 && Number(userSchoolId) === Number(targetSchoolId);
+
+const getScopedSchoolId = (req) => {
+  const schoolId = Number(req.user?.school_id);
+  return Number.isFinite(schoolId) && schoolId > 0 ? schoolId : null;
+};
+
+const canManageMonthlyCredit = (role) => {
+  const normalized = normalizeRole(role);
+  return normalized === "admin" || normalized === "super-admin";
+};
 
 const toFixed3 = (value) => parseNum(value).toFixed(3);
 
@@ -863,20 +874,38 @@ const createLeaveRequest = async (req, res) => {
       });
     }
 
-    const employeeType = await Leave.getEmployeeTypeById(employee_id);
-    if (!employeeType) {
+    const employeeId = Number(employee_id);
+    if (!Number.isInteger(employeeId) || employeeId <= 0) {
+      return res.status(400).json({ message: "employee_id must be valid" });
+    }
+
+    const employee = await Employee.getById(employeeId, {
+      includeArchived: true,
+    });
+    if (!employee) {
       return res.status(404).json({ message: "Employee not found" });
     }
 
+    if (isSchoolScopedWriteRole(req.user?.role)) {
+      if (!isSameSchool(req.user?.school_id, employee.school_id)) {
+        return res.status(403).json({
+          message:
+            "You can only create leave records under your assigned school",
+        });
+      }
+    }
+
     // Heal any prior inconsistencies before using latest running balances.
-    await recomputeEmployeeLeaveLedger(employee_id);
+    await recomputeEmployeeLeaveLedger(employeeId);
 
     // Carry forward the running balance from the latest entry
-    const latest = await Leave.getLatestByEmployee(employee_id);
+    const latest = await Leave.getLatestByEmployee(employeeId);
     const prev_bal_vl = latest ? parseNum(latest.bal_vl) : 0;
     const prev_bal_sl = latest ? parseNum(latest.bal_sl) : 0;
 
-    const effect = computeEntryEffect(req.body, { employeeType });
+    const effect = computeEntryEffect(req.body, {
+      employeeType: employee.employee_type,
+    });
 
     const paidLeaveBalanceErrors = validatePaidAbsenceAgainstBalance({
       prev_bal_vl,
@@ -906,7 +935,7 @@ const createLeaveRequest = async (req, res) => {
     const resolvedEntryKind = effect.context.entryKind || ENTRY_KIND_MANUAL;
 
     const result = await Leave.create({
-      employee_id,
+      employee_id: employeeId,
       period_of_leave,
       entry_kind: resolvedEntryKind,
       particulars: resolvedParticulars,
@@ -922,12 +951,12 @@ const createLeaveRequest = async (req, res) => {
     });
 
     // Keep the full chain consistent after adding a new entry.
-    await recomputeEmployeeLeaveLedger(employee_id);
+    await recomputeEmployeeLeaveLedger(employeeId);
 
     await Backlog.record({
       user_id: req.user.id,
       school_id: null,
-      employee_id: employee_id || null,
+      employee_id: employeeId,
       leave_id: result.insertId,
       action: "LEAVE_CREATED",
       details: `${period_of_leave}${particulars ? ` — ${particulars}` : ""}`,
@@ -1199,6 +1228,18 @@ const getAllLeaveRequests = async (req, res) => {
     const filters = {};
     if (employee_id) filters.employee_id = employee_id;
 
+    const scopedSchoolId = isSchoolScopedWriteRole(req.user?.role)
+      ? getScopedSchoolId(req)
+      : null;
+    if (isSchoolScopedWriteRole(req.user?.role) && !scopedSchoolId) {
+      return res.status(403).json({
+        message: "Your account is not assigned to a valid school",
+      });
+    }
+    if (scopedSchoolId) {
+      filters.school_id = scopedSchoolId;
+    }
+
     const pagination = page
       ? { page: Number(page), pageSize: Number(pageSize || 50) }
       : undefined;
@@ -1224,6 +1265,15 @@ const getLeaveRequestById = async (req, res) => {
     const result = await Leave.getById(req.params.id);
     if (!result)
       return res.status(404).json({ message: "Leave record not found" });
+
+    if (isSchoolScopedWriteRole(req.user?.role)) {
+      if (!isSameSchool(req.user?.school_id, result.school_id)) {
+        return res.status(403).json({
+          message: "You can only view leave records under your assigned school",
+        });
+      }
+    }
+
     res.status(200).json({ data: result });
   } catch (err) {
     res
@@ -1234,19 +1284,44 @@ const getLeaveRequestById = async (req, res) => {
 
 const getLeavesByEmployee = async (req, res) => {
   try {
-    await recomputeEmployeeLeaveLedger(req.params.employee_id);
+    const employeeId = Number(req.params.employee_id);
+    if (!Number.isInteger(employeeId) || employeeId <= 0) {
+      return res.status(400).json({ message: "Invalid employee id" });
+    }
+
+    const employee = await Employee.getById(employeeId, {
+      includeArchived: true,
+    });
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    if (isSchoolScopedWriteRole(req.user?.role)) {
+      if (!isSameSchool(req.user?.school_id, employee.school_id)) {
+        return res.status(403).json({
+          message: "You can only view leave records under your assigned school",
+        });
+      }
+    }
+
+    await recomputeEmployeeLeaveLedger(employeeId);
     const { page, pageSize } = req.query;
     const pagination = page
       ? { page: Number(page), pageSize: Number(pageSize || 50) }
       : undefined;
 
     if (!pagination) {
-      const results = await Leave.getByEmployeeId(req.params.employee_id);
+      const results = await Leave.getByEmployeeId(employeeId);
       return res.status(200).json({ data: results });
     }
 
     const results = await Leave.getAll(
-      { employee_id: req.params.employee_id },
+      {
+        employee_id: employeeId,
+        school_id: isSchoolScopedWriteRole(req.user?.role)
+          ? getScopedSchoolId(req)
+          : null,
+      },
       pagination,
     );
     return res.status(200).json({
@@ -1320,6 +1395,15 @@ const updateLeaveRequest = async (req, res) => {
     const leave = await Leave.getById(req.params.id);
     if (!leave)
       return res.status(404).json({ message: "Leave record not found" });
+
+    if (isSchoolScopedWriteRole(req.user?.role)) {
+      if (!isSameSchool(req.user?.school_id, leave.school_id)) {
+        return res.status(403).json({
+          message:
+            "You can only update leave records under your assigned school",
+        });
+      }
+    }
 
     const validationError = validateLeaveFields(req.body);
     if (validationError)
@@ -1436,6 +1520,16 @@ const deleteLeaveRequest = async (req, res) => {
     const leave = await Leave.getById(req.params.id);
     if (!leave)
       return res.status(404).json({ message: "Leave record not found" });
+
+    if (isSchoolScopedWriteRole(req.user?.role)) {
+      if (!isSameSchool(req.user?.school_id, leave.school_id)) {
+        return res.status(403).json({
+          message:
+            "You can only delete leave records under your assigned school",
+        });
+      }
+    }
+
     const result = await Leave.delete(req.params.id);
 
     // Keep downstream rows consistent when deleting historical entries
@@ -1465,7 +1559,7 @@ const deleteLeaveRequest = async (req, res) => {
 // Body: { year?: number, month?: number }  — defaults to current month.
 const creditMonthly = async (req, res) => {
   try {
-    if (!["SUPER_ADMIN", "ADMIN"].includes(req.user.role)) {
+    if (!canManageMonthlyCredit(req.user?.role)) {
       return res.status(403).json({
         message: "Only Admin or Super Admin can apply monthly leave credit",
       });
@@ -1488,7 +1582,7 @@ const creditMonthly = async (req, res) => {
 
 const deleteMonthlyCredit = async (req, res) => {
   try {
-    if (!["SUPER_ADMIN", "ADMIN"].includes(req.user.role)) {
+    if (!canManageMonthlyCredit(req.user?.role)) {
       return res.status(403).json({
         message: "Only Admin or Super Admin can delete monthly leave credit",
       });
@@ -1544,7 +1638,7 @@ const deleteMonthlyCredit = async (req, res) => {
 
 const simulateMonthlyCredit = async (req, res) => {
   try {
-    if (!["SUPER_ADMIN", "ADMIN"].includes(req.user.role)) {
+    if (!canManageMonthlyCredit(req.user?.role)) {
       return res.status(403).json({
         message: "Only Admin or Super Admin can simulate monthly leave credit",
       });

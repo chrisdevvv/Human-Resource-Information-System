@@ -1,27 +1,27 @@
 (async () => {
   try {
-    const fetch = globalThis.fetch || (await import("node-fetch")).default;
-
-    const adminPassword =
-      process.env.TEST_ADMIN_PASSWORD ||
-      process.env.ADMIN_PASSWORD ||
-      "Admin@1234";
+    const {
+      TEST_ADMIN_PASSWORD,
+      apiUrl,
+      getFetch,
+    } = require("./_scriptConfig");
+    const fetch = await getFetch();
     const accounts = [
       {
         email: "superadmin@deped.gov.ph",
-        password: adminPassword,
+        password: TEST_ADMIN_PASSWORD,
         name: "Super Admin",
       },
       {
         email: "testadmin@deped.gov.ph",
-        password: adminPassword,
+        password: TEST_ADMIN_PASSWORD,
         name: "Test Admin",
       },
     ];
 
     for (const acc of accounts) {
       console.log("\n=== Account:", acc.name, acc.email, "===");
-      const loginRes = await fetch("http://localhost:3000/api/auth/login", {
+      const loginRes = await fetch(apiUrl("/api/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: acc.email, password: acc.password }),
@@ -36,7 +36,7 @@
       const token = loginJson.token;
 
       // GET /api/users (admin-protected)
-      const usersRes = await fetch("http://localhost:3000/api/users", {
+      const usersRes = await fetch(apiUrl("/api/users"), {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -54,17 +54,14 @@
       );
 
       // POST /api/auth/verify-password
-      const verifyRes = await fetch(
-        "http://localhost:3000/api/auth/verify-password",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ password: acc.password }),
+      const verifyRes = await fetch(apiUrl("/api/auth/verify-password"), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({ password: acc.password }),
+      });
       const verifyJson = await verifyRes.json();
       console.log(
         "POST /api/auth/verify-password",

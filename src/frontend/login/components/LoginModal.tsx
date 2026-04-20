@@ -7,7 +7,7 @@ import { LogIn, XCircle } from "lucide-react";
 import { Mail, Lock, Eye, EyeOff } from "../../assets/icons";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type Props = {
   visible: boolean;
@@ -221,3 +221,4 @@ export default function LoginModal({
     </div>
   );
 }
+

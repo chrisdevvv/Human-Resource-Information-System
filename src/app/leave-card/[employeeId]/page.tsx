@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Download, Printer } from "lucide-react";
+import RoleGuard from "@/frontend/auth/RoleGuard";
 import PrintableLeaveCard, {
   createLeaveCardFileName,
   downloadLeaveCardPdf,
@@ -20,10 +21,9 @@ type EmployeeInfo = {
   employee_type: "teaching" | "non-teaching";
 };
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
-export default function LeaveCardPreviewPage() {
+function LeaveCardPreviewContent() {
   const params = useParams<{ employeeId: string }>();
   const employeeId = Number(params?.employeeId);
 
@@ -174,5 +174,13 @@ export default function LeaveCardPreviewPage() {
         />
       </div>
     </div>
+  );
+}
+
+export default function LeaveCardPreviewPage() {
+  return (
+    <RoleGuard pageId="leave-management" fallback={null}>
+      <LeaveCardPreviewContent />
+    </RoleGuard>
   );
 }

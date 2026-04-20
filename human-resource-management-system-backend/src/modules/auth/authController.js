@@ -7,10 +7,13 @@ const {
   sendPasswordChanged,
   sendPasswordResetLink,
 } = require("../../utils/mailer");
+const { JWT_SECRET } = require("../../config/securityEnv");
 
-const FRONTEND_URL =
-  process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3001";
-const JWT_SECRET = process.env.JWT_SECRET || "dev_jwt_secret";
+const configuredFrontendBase = String(
+  process.env.FRONTEND_URL || process.env.APP_URL || "",
+)
+  .trim()
+  .replace(/\/+$/, "");
 const RESET_TOKEN_TTL = process.env.RESET_PASSWORD_TOKEN_TTL || "2h";
 const LOGIN_MAX_ATTEMPTS = Math.max(
   1,
@@ -42,6 +45,25 @@ const getSourceIp = (req) => {
       ? forwarded.split(",")[0].trim()
       : req.ip || req.connection?.remoteAddress || "unknown";
   return String(rawIp).replace(/^::ffff:/, "");
+};
+
+const getFrontendBaseUrl = (req) => {
+  if (configuredFrontendBase) {
+    return configuredFrontendBase;
+  }
+
+  const originHeader = String(req.get("origin") || "").trim();
+  if (/^https?:\/\//i.test(originHeader)) {
+    return originHeader.replace(/\/+$/, "");
+  }
+
+  const host = String(req.get("host") || "").trim();
+  if (!host) {
+    return "";
+  }
+
+  const protocol = req.protocol || "http";
+  return `${protocol}://${host}`.replace(/\/+$/, "");
 };
 
 const getLoginAttemptIdentifier = (email, ip) =>
@@ -471,7 +493,15 @@ const forgotPassword = async (req, res) => {
       { expiresIn: RESET_TOKEN_TTL },
     );
 
-    const resetLink = `${FRONTEND_URL}/reset-password?token=${resetToken}`;
+    const frontendBaseUrl = getFrontendBaseUrl(req);
+    if (!frontendBaseUrl) {
+      return res.status(500).json({
+        message:
+          "Unable to generate reset link because frontend URL is not configured",
+      });
+    }
+
+    const resetLink = `${frontendBaseUrl}/reset-password?token=${resetToken}`;
 
     // Fire-and-forget
     sendPasswordResetLink(user.email, user.first_name, resetLink);

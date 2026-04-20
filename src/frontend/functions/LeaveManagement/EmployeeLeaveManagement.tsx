@@ -19,6 +19,7 @@ import AddLeaveModal, {
 import MonthlyCredit from "@/frontend/functions/LeaveManagement/MonthlyCredit/MonthlyCredit";
 import { createLeave } from "@/frontend/functions/LeaveManagement/leaveApi";
 import type { LeaveModalRecord } from "@/frontend/functions/LeaveManagement/leaveTypes";
+import { getLeaveCardRoute } from "@/frontend/route";
 
 type EmployeeRecordApi = {
   id: number;
@@ -43,8 +44,7 @@ type EmployeeRecord = LeaveModalRecord & {
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type SessionUser = {
   role?: string;
@@ -104,7 +104,8 @@ const toBoolean = (value: unknown) => {
 
 const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
   const firstName = item.first_name?.trim() || "Unknown";
-  const middleName = item.middle_name?.trim() || "";
+  const rawMiddleName = item.middle_name?.trim() || "";
+  const middleName = rawMiddleName.toUpperCase() === "N/A" ? "" : rawMiddleName;
   const lastName = item.last_name?.trim() || "Employee";
   const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
 
@@ -132,6 +133,21 @@ type EmployeeApiResponse = {
   page?: number;
   pageSize?: number;
   message?: string;
+};
+
+const parseApiBody = async <T extends { message?: string }>(
+  response: Response,
+): Promise<T> => {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.toLowerCase().includes("application/json")) {
+    return (await response.json().catch(() => ({}))) as T;
+  }
+
+  const text = await response.text().catch(() => "");
+  return {
+    message: text || undefined,
+  } as T;
 };
 
 export default function EmployeeLeaveManagement() {
@@ -216,9 +232,12 @@ export default function EmployeeLeaveManagement() {
         },
       );
 
-      const body = (await response.json()) as EmployeeApiResponse;
+      const body = await parseApiBody<EmployeeApiResponse>(response);
       if (!response.ok) {
-        throw new Error(body.message || "Failed to fetch employees");
+        throw new Error(
+          body.message ||
+            `Failed to fetch employees (HTTP ${response.status}).`,
+        );
       }
 
       const mapped = (body.data || []).map(toEmployeeRecord);
@@ -616,7 +635,7 @@ export default function EmployeeLeaveManagement() {
                               type="button"
                               onClick={() =>
                                 window.open(
-                                  `/leave-card/${employee.id}`,
+                                  getLeaveCardRoute(employee.id),
                                   "_blank",
                                 )
                               }
@@ -711,7 +730,7 @@ export default function EmployeeLeaveManagement() {
                                     type="button"
                                     onClick={() =>
                                       window.open(
-                                        `/leave-card/${employee.id}`,
+                                        getLeaveCardRoute(employee.id),
                                         "_blank",
                                       )
                                     }

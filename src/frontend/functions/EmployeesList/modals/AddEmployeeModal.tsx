@@ -133,8 +133,7 @@ type ValidationError = {
   message: string;
 };
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 const NAME_PATTERN = /^[A-Za-z.\s]+$/;
 const MIDDLE_INITIAL_PATTERN = /^[A-Z.]{1,2}$/;
@@ -2527,8 +2526,15 @@ export default function AddEmployeeModal({
             <div className="space-y-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
               <p>
                 <span className="font-semibold text-gray-800">Name:</span>{" "}
-                {pendingPayload.first_name} {pendingPayload.middle_name}{" "}
-                {pendingPayload.last_name}
+                {[
+                  pendingPayload.first_name,
+                  pendingPayload.middle_name?.toUpperCase() === "N/A"
+                    ? ""
+                    : pendingPayload.middle_name,
+                  pendingPayload.last_name,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
               </p>
               <p>
                 <span className="font-semibold text-gray-800">

@@ -3,9 +3,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { APP_ROUTES, getDashboardRouteByRoleStrict } from "@/frontend/route";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 const FORCE_PASSWORD_CHANGE_KEY = "forcePasswordChange:addedUsers";
 const PENDING_PASSWORD_KEY = "forcePasswordChange:pendingLoginPassword";
@@ -71,13 +72,6 @@ function validatePassword(value: string) {
   return { valid: true, message: "" };
 }
 
-function getDashboardPath(role?: string) {
-  if (role === "SUPER_ADMIN") return "/super-admin";
-  if (role === "ADMIN") return "/admin";
-  if (role === "DATA_ENCODER") return "/data-encoder";
-  return "/login";
-}
-
 export default function NewUser() {
   const router = useRouter();
 
@@ -110,7 +104,7 @@ export default function NewUser() {
     const userRaw = localStorage.getItem("user");
 
     if (!token || !userRaw) {
-      router.replace("/login");
+      router.replace(APP_ROUTES.LOGIN);
       return;
     }
 
@@ -122,7 +116,7 @@ export default function NewUser() {
     }
 
     if (!parsedUser?.email) {
-      router.replace("/login");
+      router.replace(APP_ROUTES.LOGIN);
       return;
     }
 
@@ -131,7 +125,9 @@ export default function NewUser() {
     const isForced = forcedList.includes(email);
 
     if (!isForced) {
-      router.replace(getDashboardPath(parsedUser.role));
+      router.replace(
+        getDashboardRouteByRoleStrict(parsedUser.role, APP_ROUTES.LOGIN),
+      );
       return;
     }
 
@@ -225,7 +221,7 @@ export default function NewUser() {
       setSuccess(true);
 
       window.setTimeout(() => {
-        router.replace("/login");
+        router.replace(APP_ROUTES.LOGIN);
       }, 1800);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred.");
@@ -346,3 +342,4 @@ export default function NewUser() {
     </div>
   );
 }
+

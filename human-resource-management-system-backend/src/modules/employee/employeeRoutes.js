@@ -84,7 +84,7 @@ router.get(
 router.post(
   "/:employee_id/salary-information",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   validateRequest({
     params: employeeIdParamSchema,
     body: salaryInformationCreateBodySchema,
@@ -94,7 +94,7 @@ router.post(
 router.patch(
   "/:employee_id/salary-information/:id",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   validateRequest({
     params: salaryInformationIdParamSchema,
     body: salaryInformationUpdateBodySchema,
@@ -104,7 +104,7 @@ router.patch(
 router.delete(
   "/:employee_id/salary-information/:id",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   validateRequest({ params: salaryInformationIdParamSchema }),
   deleteSalaryInformation,
 );

@@ -5,6 +5,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { APP_ROUTES, getDashboardRouteByRoleLoose } from "@/frontend/route";
 
 type Props = {
   visible: boolean;
@@ -16,15 +17,6 @@ type Props = {
   } | null;
   onClose: () => void;
 };
-
-function roleToPath(role?: string) {
-  if (!role) return "/";
-  const v = role.toLowerCase();
-  if (v.includes("super")) return "/super-admin";
-  if (v.includes("admin")) return "/admin";
-  if (v.includes("data") || v.includes("encoder")) return "/data-encoder";
-  return "/";
-}
 
 export default function LoginSuccessModal({ visible, user, onClose }: Props) {
   const router = useRouter();
@@ -61,7 +53,7 @@ export default function LoginSuccessModal({ visible, user, onClose }: Props) {
     if (!visible || countdown !== 0 || hasRedirected.current) return;
     hasRedirected.current = true;
     onClose();
-    router.push(roleToPath(user?.role));
+    router.push(getDashboardRouteByRoleLoose(user?.role, APP_ROUTES.ROOT));
   }, [countdown, visible, onClose, router, user?.role]);
 
   if (!visible) return null;
@@ -69,7 +61,7 @@ export default function LoginSuccessModal({ visible, user, onClose }: Props) {
   const handleContinue = () => {
     hasRedirected.current = true;
     onClose();
-    router.push(roleToPath(user?.role));
+    router.push(getDashboardRouteByRoleLoose(user?.role, APP_ROUTES.ROOT));
   };
 
   return (

@@ -208,6 +208,17 @@ const salaryInformationListQuerySchema = Joi.object({
   sortOrder: Joi.string().valid("asc", "desc"),
 });
 
+const salaryInformationRemarks = [
+  "Step Increment",
+  "Promotion",
+  "Step Increment Increase",
+];
+
+const salaryInformationRemarksSchema = Joi.string()
+  .trim()
+  .valid(...salaryInformationRemarks)
+  .allow(null, "");
+
 const salaryInformationCreateBodySchema = Joi.object({
   date: Joi.date().iso().required(),
   plantilla: Joi.string().trim().max(100).allow(null, ""),
@@ -215,7 +226,8 @@ const salaryInformationCreateBodySchema = Joi.object({
   step: Joi.string().trim().max(20).allow(null, ""),
   salary: Joi.number().min(0).precision(2).required(),
   increment: Joi.number().min(0).precision(2).allow(null),
-  remarks: Joi.string().trim().max(500).allow(null, ""),
+  increment_amount: Joi.number().min(0).precision(2).allow(null),
+  remarks: salaryInformationRemarksSchema,
 });
 
 const salaryInformationUpdateBodySchema = Joi.object({
@@ -225,7 +237,8 @@ const salaryInformationUpdateBodySchema = Joi.object({
   step: Joi.string().trim().max(20).allow(null, ""),
   salary: Joi.number().min(0).precision(2),
   increment: Joi.number().min(0).precision(2).allow(null),
-  remarks: Joi.string().trim().max(500).allow(null, ""),
+  increment_amount: Joi.number().min(0).precision(2).allow(null),
+  remarks: salaryInformationRemarksSchema,
 }).min(1);
 
 const schoolBodySchema = Joi.object({
@@ -283,6 +296,30 @@ const userAdminCreateBodySchema = Joi.object({
   password: Joi.string().min(8).max(128).required(),
   school_name: Joi.string().trim().min(1).max(255),
 });
+
+const userDetailsUpdateBodySchema = Joi.object({
+  first_name: Joi.string().trim().min(1).max(100),
+  middle_name: Joi.alternatives().try(
+    Joi.string().trim().max(100).allow(""),
+    Joi.valid(null),
+  ),
+  last_name: Joi.string().trim().min(1).max(100),
+  email: Joi.string()
+    .trim()
+    .email({ tlds: { allow: false } }),
+  birthdate: birthdateSchema,
+  school_id: Joi.alternatives().try(
+    Joi.number().integer().positive(),
+    Joi.string().trim().pattern(/^\d+$/),
+    Joi.valid(null),
+    Joi.string().valid(""),
+  ),
+  use_schools_division_office: Joi.alternatives().try(
+    Joi.boolean(),
+    Joi.number().valid(0, 1),
+    Joi.string().valid("0", "1", "true", "false"),
+  ),
+}).min(1);
 
 const usersQuerySchema = Joi.object({
   search: Joi.string().trim().max(255),
@@ -418,12 +455,25 @@ const backlogReportQuerySchema = Joi.object({
     Joi.string().valid("true", "false", "1", "0"),
     Joi.number().valid(0, 1),
   ),
+  only_archived: Joi.alternatives().try(
+    Joi.boolean(),
+    Joi.string().valid("true", "false", "1", "0"),
+    Joi.number().valid(0, 1),
+  ),
 });
 
 const backlogArchiveBodySchema = Joi.object({
   from: Joi.date().iso().required(),
   to: Joi.date().iso().required(),
   ids: Joi.array().items(Joi.number().integer().positive()).min(1).optional(),
+  search: Joi.string().trim().max(255).allow(null, ""),
+  role: Joi.string().trim().max(50).allow(null, ""),
+  letter: Joi.string()
+    .trim()
+    .length(1)
+    .uppercase()
+    .pattern(/^[A-Z]$/)
+    .allow(null, ""),
 });
 
 module.exports = {
@@ -452,6 +502,7 @@ module.exports = {
   userStatusBodySchema,
   userPasswordResetBodySchema,
   userAdminCreateBodySchema,
+  userDetailsUpdateBodySchema,
   usersQuerySchema,
   authRegisterBodySchema,
   registrationStatusQuerySchema,

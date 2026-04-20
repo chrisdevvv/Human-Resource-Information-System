@@ -6,7 +6,7 @@ import ConfirmationModal from "../../components/ConfirmationModal";
 import { createClearHandler } from "../../../utils/clearFormUtils";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 const FORCE_PASSWORD_CHANGE_KEY = "forcePasswordChange:addedUsers";
 const SCHOOLS_DIVISION_OFFICE = "Schools Division Office";
@@ -757,3 +757,4 @@ export default function AddUserModal({
     </>
   );
 }
+

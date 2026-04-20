@@ -4,8 +4,7 @@ import React, { useMemo, useState } from "react";
 import ConfirmationCredit from "./ConfirmationCredit";
 import SuccessCredit from "./SuccessCredit";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type SimEmployeeCredit = {
   employee_id: number;
@@ -90,6 +89,12 @@ const isOnLeaveReason = (reason: string) => {
     normalized === "on_leave_during_period" || normalized.includes("on leave")
   );
 };
+
+const sanitizeDisplayName = (name: string) =>
+  String(name || "")
+    .replace(/\bN\/A\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
 const MONTH_OPTIONS = [
   { value: 1, label: "January" },
@@ -300,9 +305,10 @@ export default function MonthlyCredit() {
         creditTypeFilter === "all" ||
         creditTypeFilter === rowType ||
         (creditTypeFilter === "not-on-leave" && !row.on_leave);
+      const displayName = sanitizeDisplayName(row.employee_name);
       const matchesSearch =
         !query ||
-        row.employee_name.toLowerCase().includes(query) ||
+        displayName.toLowerCase().includes(query) ||
         String(row.projected_balance?.bal_vl ?? "")
           .toLowerCase()
           .includes(query) ||
@@ -314,9 +320,13 @@ export default function MonthlyCredit() {
     });
 
     return [...filteredRows].sort((a, b) => {
-      const comparison = a.employee_name.localeCompare(b.employee_name, "en", {
-        sensitivity: "base",
-      });
+      const comparison = sanitizeDisplayName(a.employee_name).localeCompare(
+        sanitizeDisplayName(b.employee_name),
+        "en",
+        {
+          sensitivity: "base",
+        },
+      );
       return creditSortOrder === "az" ? comparison : -comparison;
     });
   }, [creditSearch, creditSortOrder, creditTypeFilter, simulationResult]);
@@ -332,9 +342,10 @@ export default function MonthlyCredit() {
         (skipTypeFilter === "non-teaching" && !isTeachingRelated) ||
         (skipTypeFilter === "teaching-related" && isTeachingRelated) ||
         (skipTypeFilter === "on-leave" && isOnLeaveReason(row.reason));
+      const displayName = sanitizeDisplayName(row.employee_name);
       const matchesSearch =
         !query ||
-        row.employee_name.toLowerCase().includes(query) ||
+        displayName.toLowerCase().includes(query) ||
         reasonLabel(row.reason).toLowerCase().includes(query) ||
         row.reason.toLowerCase().includes(query);
 
@@ -342,9 +353,13 @@ export default function MonthlyCredit() {
     });
 
     return [...filteredRows].sort((a, b) => {
-      const comparison = a.employee_name.localeCompare(b.employee_name, "en", {
-        sensitivity: "base",
-      });
+      const comparison = sanitizeDisplayName(a.employee_name).localeCompare(
+        sanitizeDisplayName(b.employee_name),
+        "en",
+        {
+          sensitivity: "base",
+        },
+      );
       return skipSortOrder === "az" ? comparison : -comparison;
     });
   }, [skipSearch, skipSortOrder, skipTypeFilter, simulationResult]);
@@ -501,7 +516,7 @@ export default function MonthlyCredit() {
                         className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
                       >
                         <p className="text-sm font-semibold text-gray-900 truncate">
-                          {row.employee_name}
+                          {sanitizeDisplayName(row.employee_name)}
                         </p>
                         <div className="mt-1 grid grid-cols-2 gap-2 text-xs">
                           <p className="text-gray-600">
@@ -551,8 +566,8 @@ export default function MonthlyCredit() {
                             key={row.employee_id}
                             className={`border-t border-gray-100 ${rowBackgroundClass}`}
                           >
-                            <td className="px-3 py-2 text-sm font-medium text-gray-800">
-                              {row.employee_name}
+                            <td className="px-3 py-2 text-sm font-medium text-gray-900">
+                              {sanitizeDisplayName(row.employee_name)}
                             </td>
                             <td className="px-3 py-2 text-sm text-gray-700">
                               {row.projected_balance?.bal_vl ?? "-"}
@@ -634,7 +649,7 @@ export default function MonthlyCredit() {
                         className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
                       >
                         <p className="text-sm font-semibold text-gray-900 truncate">
-                          {row.employee_name}
+                          {sanitizeDisplayName(row.employee_name)}
                         </p>
                         <p className="mt-1 text-xs text-gray-600 line-clamp-2">
                           {reasonLabel(row.reason)}
@@ -670,8 +685,8 @@ export default function MonthlyCredit() {
                             key={`${row.employee_id}-${row.reason}`}
                             className={`border-t border-gray-100 ${rowBackgroundClass}`}
                           >
-                            <td className="px-3 py-2 text-sm font-medium text-gray-800">
-                              {row.employee_name}
+                            <td className="px-3 py-2 text-sm font-medium text-gray-900">
+                              {sanitizeDisplayName(row.employee_name)}
                             </td>
                             <td className="px-3 py-2 text-sm text-gray-700">
                               {reasonLabel(row.reason)}

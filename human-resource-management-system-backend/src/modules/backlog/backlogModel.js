@@ -19,9 +19,10 @@ const Backlog = {
   // Also applies filtering by is_archived by default for better performance
   getAll: async (pagination, options = {}) => {
     const includeArchived = options.includeArchived || false; // Default to NOT including archived (optimization)
+    const onlyArchived = options.onlyArchived || false;
 
     // Build cache key for read operations
-    const cacheKey = `getAll_${JSON.stringify({ pagination: pagination || null, options: { ...options, includeArchived } })}`;
+    const cacheKey = `getAll_${JSON.stringify({ pagination: pagination || null, options: { ...options, includeArchived, onlyArchived } })}`;
     if (isCacheFresh(cacheKey)) {
       const cached = getCacheKey(cacheKey);
       return cached?.data;
@@ -52,7 +53,9 @@ const Backlog = {
     const whereParts = [];
     const params = [];
 
-    if (!includeArchived) {
+    if (onlyArchived) {
+      whereParts.push("backlogs.is_archived = 1");
+    } else if (!includeArchived) {
       whereParts.push("backlogs.is_archived = 0");
     }
 
@@ -230,8 +233,11 @@ const Backlog = {
   getReport: async (filters = {}) => {
     const whereParts = [];
     const params = [];
+    const onlyArchived = Boolean(filters.onlyArchived);
 
-    if (!filters.includeArchived) {
+    if (onlyArchived) {
+      whereParts.push("backlogs.is_archived = 1");
+    } else if (!filters.includeArchived) {
       whereParts.push("backlogs.is_archived = 0");
     }
 
@@ -351,6 +357,54 @@ const Backlog = {
       [from, to],
     );
 
+    queryCache.clear();
+
+    return {
+      affectedRows: Number(result.affectedRows || 0),
+    };
+  },
+
+  archiveByFilters: async ({ from, to, search, role, letter }) => {
+    const whereParts = [
+      "backlogs.is_archived = 0",
+      "backlogs.created_at >= ?",
+      "backlogs.created_at <= ?",
+    ];
+    const params = [from, to];
+
+    const normalizedSearch = typeof search === "string" ? search.trim() : "";
+    if (normalizedSearch) {
+      whereParts.push(
+        "(backlogs.action LIKE ? OR backlogs.details LIKE ? OR users.first_name LIKE ? OR users.last_name LIKE ? OR users.email LIKE ? OR schools.school_name LIKE ?)",
+      );
+      const like = `%${normalizedSearch}%`;
+      params.push(like, like, like, like, like, like);
+    }
+
+    const normalizedRole = typeof role === "string" ? role.trim() : "";
+    if (normalizedRole) {
+      whereParts.push("users.role = ?");
+      params.push(normalizedRole);
+    }
+
+    const normalizedLetter =
+      typeof letter === "string" ? letter.trim().toUpperCase() : "";
+    if (normalizedLetter) {
+      whereParts.push("UPPER(LEFT(COALESCE(users.first_name, ''), 1)) = ?");
+      params.push(normalizedLetter);
+    }
+
+    const [result] = await pool.promise().query(
+      `UPDATE backlogs
+       LEFT JOIN users ON backlogs.user_id = users.id
+       LEFT JOIN schools ON users.school_id = schools.id
+       SET backlogs.is_archived = 1
+       WHERE ${whereParts.join(" AND ")}`,
+      params,
+    );
+
+    queryCache.clear();
+
     return {
       affectedRows: Number(result.affectedRows || 0),
     };
@@ -368,6 +422,8 @@ const Backlog = {
            AND id IN (?)`,
       [ids],
     );
+
+    queryCache.clear();
 
     return {
       affectedRows: Number(result.affectedRows || 0),

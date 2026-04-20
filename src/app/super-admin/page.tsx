@@ -8,6 +8,7 @@ import StickyHeader from "../../frontend/components/StickyHeader";
 import AppFooter from "../../frontend/footer/page";
 import { hasAccessToFeature } from "../../frontend/auth/roleAccess";
 import { setPageTitle } from "../../frontend/utils/pageTitle";
+import { APP_ROUTES } from "@/frontend/route";
 
 const ACTIVE_TAB_STORAGE_KEY = "activeTab:super-admin";
 const ALLOWED_TABS = new Set([
@@ -37,7 +38,7 @@ export default function Page() {
 
         if (!token || !raw) {
           setIsAuthorized(false);
-          router.replace("/login");
+          router.replace(APP_ROUTES.LOGIN);
           return;
         }
 
@@ -50,15 +51,15 @@ export default function Page() {
             normalizedRole.includes("admin") &&
             !normalizedRole.includes("super")
           ) {
-            router.replace("/admin");
+            router.replace(APP_ROUTES.ADMIN);
           } else if (normalizedRole.includes("data")) {
-            router.replace("/data-encoder");
+            router.replace(APP_ROUTES.DATA_ENCODER);
           } else {
             setIsAuthorized(false);
-            router.replace("/login");
+            router.replace(APP_ROUTES.LOGIN);
           }
           setIsAuthorized(false);
-          router.replace("/login");
+          router.replace(APP_ROUTES.LOGIN);
           return;
         }
 
@@ -73,7 +74,7 @@ export default function Page() {
         // Verify default tab is accessible
         if (!hasAccessToFeature(u.role, nextTab)) {
           setIsAuthorized(false);
-          router.replace("/login");
+          router.replace(APP_ROUTES.LOGIN);
           return;
         }
 
@@ -82,7 +83,7 @@ export default function Page() {
         setIsAuthorized(true);
       } catch (e) {
         setIsAuthorized(false);
-        router.replace("/login");
+        router.replace(APP_ROUTES.LOGIN);
       }
     };
 

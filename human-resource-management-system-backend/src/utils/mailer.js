@@ -15,8 +15,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const FROM = process.env.SMTP_FROM || "DepEd CHRIS <noreply@deped.gov.ph>";
-const FRONTEND_URL =
-  process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3001";
+const FRONTEND_URL = process.env.FRONTEND_URL || process.env.APP_URL || "";
 const RESET_LINK_LABEL =
   process.env.RESET_PASSWORD_TOKEN_TTL_LABEL || "2 hours";
 
@@ -417,6 +416,55 @@ async function sendAccountStatusChanged(to, firstName, isActive) {
 }
 
 // ---------------------------------------------------------------------------
+// Email: User details changed (sent to user when super admin updates profile details)
+// ---------------------------------------------------------------------------
+async function sendUserDetailsUpdated(to, firstName, changes = [], updatedBy) {
+  if (!Array.isArray(changes) || changes.length === 0) {
+    return;
+  }
+
+  const rowsHtml = changes
+    .map(
+      (change) => `
+        <tr>
+          <td style="padding:10px 12px;border:1px solid #e5e7eb;font-size:13px;color:#374151;font-weight:600;">${change.label}</td>
+          <td style="padding:10px 12px;border:1px solid #e5e7eb;font-size:13px;color:#6b7280;">${change.from ?? "N/A"}</td>
+          <td style="padding:10px 12px;border:1px solid #e5e7eb;font-size:13px;color:#1d4ed8;font-weight:600;">${change.to ?? "N/A"}</td>
+        </tr>`,
+    )
+    .join("");
+
+  const html = baseTemplate(`
+        <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Hi ${firstName},</h2>
+        <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;">
+            Your account details in the <strong>DepEd Human Resource Information System</strong>
+            were updated by ${updatedBy || "a Super Admin"}.
+        </p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 20px;">
+          <thead>
+            <tr>
+              <th align="left" style="padding:10px 12px;border:1px solid #e5e7eb;background:#f9fafb;font-size:12px;text-transform:uppercase;letter-spacing:0.4px;color:#6b7280;">Field</th>
+              <th align="left" style="padding:10px 12px;border:1px solid #e5e7eb;background:#f9fafb;font-size:12px;text-transform:uppercase;letter-spacing:0.4px;color:#6b7280;">Previous</th>
+              <th align="left" style="padding:10px 12px;border:1px solid #e5e7eb;background:#eff6ff;font-size:12px;text-transform:uppercase;letter-spacing:0.4px;color:#1d4ed8;">Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+        <p style="margin:0;font-size:13px;color:#6b7280;">
+            If you did not expect this update, please contact your system administrator immediately.
+        </p>
+    `);
+
+  await sendMail({
+    to,
+    subject: "Your Account Details Were Updated — DepEd CHRIS",
+    html,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Email: Account created by admin/super admin (with initial credentials)
 // ---------------------------------------------------------------------------
 async function sendAccountCreatedCredentials(
@@ -476,5 +524,6 @@ module.exports = {
   sendPasswordChanged,
   sendRoleChanged,
   sendAccountStatusChanged,
+  sendUserDetailsUpdated,
   sendAccountCreatedCredentials,
 };

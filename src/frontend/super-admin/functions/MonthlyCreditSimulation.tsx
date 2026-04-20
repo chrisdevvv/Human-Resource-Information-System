@@ -2,8 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type SimEmployeeCredit = {
   employee_id: number;
@@ -57,6 +56,12 @@ const reasonLabel = (reason: string) => {
       return reason;
   }
 };
+
+const sanitizeDisplayName = (name: string) =>
+  String(name || "")
+    .replace(/\bN\/A\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
 const MONTH_OPTIONS = [
   { value: 1, label: "January" },
@@ -161,7 +166,9 @@ export default function MonthlyCreditSimulation() {
 
       setApplyResult(data as ApplyResponse);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Monthly credit apply failed");
+      setError(
+        err instanceof Error ? err.message : "Monthly credit apply failed",
+      );
     } finally {
       setLoading(false);
     }
@@ -209,7 +216,9 @@ export default function MonthlyCreditSimulation() {
       setApplyResult(null);
       await simulate();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete monthly credit failed");
+      setError(
+        err instanceof Error ? err.message : "Delete monthly credit failed",
+      );
     } finally {
       setLoading(false);
     }
@@ -225,7 +234,8 @@ export default function MonthlyCreditSimulation() {
           Simulate and apply 1.25 leave credit for non-teaching employees.
         </p>
         <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-          Teaching employees are excluded from monthly credit and will be skipped.
+          Teaching employees are excluded from monthly credit and will be
+          skipped.
         </p>
       </div>
 
@@ -331,18 +341,26 @@ export default function MonthlyCreditSimulation() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(simulationResult.would_credit_employees || []).map((row) => (
-                      <tr key={row.employee_id} className="border-t border-gray-100">
-                        <td className="px-3 py-2 text-gray-800">{row.employee_name}</td>
-                        <td className="px-3 py-2 text-gray-700">
-                          {row.projected_balance?.bal_vl ?? "-"}
-                        </td>
-                        <td className="px-3 py-2 text-gray-700">
-                          {row.projected_balance?.bal_sl ?? "-"}
-                        </td>
-                      </tr>
-                    ))}
-                    {(simulationResult.would_credit_employees || []).length === 0 ? (
+                    {(simulationResult.would_credit_employees || []).map(
+                      (row) => (
+                        <tr
+                          key={row.employee_id}
+                          className="border-t border-gray-100"
+                        >
+                          <td className="px-3 py-2 text-gray-900 font-medium">
+                            {sanitizeDisplayName(row.employee_name)}
+                          </td>
+                          <td className="px-3 py-2 text-gray-700">
+                            {row.projected_balance?.bal_vl ?? "-"}
+                          </td>
+                          <td className="px-3 py-2 text-gray-700">
+                            {row.projected_balance?.bal_sl ?? "-"}
+                          </td>
+                        </tr>
+                      ),
+                    )}
+                    {(simulationResult.would_credit_employees || []).length ===
+                    0 ? (
                       <tr>
                         <td className="px-3 py-3 text-gray-500" colSpan={3}>
                           No employees will be credited.
@@ -367,13 +385,23 @@ export default function MonthlyCreditSimulation() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(simulationResult.would_skip_employees || []).map((row) => (
-                      <tr key={`${row.employee_id}-${row.reason}`} className="border-t border-gray-100">
-                        <td className="px-3 py-2 text-gray-800">{row.employee_name}</td>
-                        <td className="px-3 py-2 text-gray-700">{reasonLabel(row.reason)}</td>
-                      </tr>
-                    ))}
-                    {(simulationResult.would_skip_employees || []).length === 0 ? (
+                    {(simulationResult.would_skip_employees || []).map(
+                      (row) => (
+                        <tr
+                          key={`${row.employee_id}-${row.reason}`}
+                          className="border-t border-gray-100"
+                        >
+                          <td className="px-3 py-2 text-gray-900 font-medium">
+                            {sanitizeDisplayName(row.employee_name)}
+                          </td>
+                          <td className="px-3 py-2 text-gray-700">
+                            {reasonLabel(row.reason)}
+                          </td>
+                        </tr>
+                      ),
+                    )}
+                    {(simulationResult.would_skip_employees || []).length ===
+                    0 ? (
                       <tr>
                         <td className="px-3 py-3 text-gray-500" colSpan={2}>
                           No employees will be skipped.
@@ -390,13 +418,15 @@ export default function MonthlyCreditSimulation() {
 
       {applyResult ? (
         <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-          {applyResult.message} Credited: {applyResult.credited}, Skipped: {applyResult.skipped}.
+          {applyResult.message} Credited: {applyResult.credited}, Skipped:{" "}
+          {applyResult.skipped}.
         </div>
       ) : null}
 
       {deleteResult ? (
         <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
-          {deleteResult.message} Deleted entries: {deleteResult.deleted_entries}, Affected employees: {deleteResult.affected_employees}.
+          {deleteResult.message} Deleted entries: {deleteResult.deleted_entries}
+          , Affected employees: {deleteResult.affected_employees}.
         </div>
       ) : null}
     </div>

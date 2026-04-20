@@ -13,10 +13,12 @@ import {
 } from "lucide-react";
 import PendingAccountsMobile from "./PendingAccountsMobile";
 import UserSettingModal from "../../components/UserSettingModal";
+import UserDetailsEditModal from "../../components/UserDetailsEditModal";
 import AddUserModal from "./AddUserModal";
+import ToastMessage from "../../../components/ToastMessage";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type User = {
   id: number;
@@ -98,6 +100,7 @@ export default function UserRolesMobile() {
   const [userLoading, setUserLoading] = useState(true);
   const [userError, setUserError] = useState<string | null>(null);
   const [viewTarget, setViewTarget] = useState<User | null>(null);
+  const [detailsEditTarget, setDetailsEditTarget] = useState<User | null>(null);
   const [settingsTarget, setSettingsTarget] = useState<User | null>(null);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState<string>("");
@@ -107,7 +110,31 @@ export default function UserRolesMobile() {
   const [schoolFilter, setSchoolFilter] = useState<string>("ALL");
   const [schools, setSchools] = useState<SchoolOption[]>([]);
   const [schoolsLoading, setSchoolsLoading] = useState(false);
+  const [toastState, setToastState] = useState<{
+    isVisible: boolean;
+    variant: "success" | "error";
+    title: string;
+    message: string;
+  }>({
+    isVisible: false,
+    variant: "success",
+    title: "",
+    message: "",
+  });
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+  const showToast = (
+    variant: "success" | "error",
+    title: string,
+    message: string,
+  ) => {
+    setToastState({
+      isVisible: true,
+      variant,
+      title,
+      message,
+    });
+  };
 
   useEffect(() => {
     try {
@@ -317,6 +344,21 @@ export default function UserRolesMobile() {
 
   return (
     <div className="w-full px-3 py-4">
+      <ToastMessage
+        isVisible={toastState.isVisible}
+        variant={toastState.variant}
+        title={toastState.title}
+        message={toastState.message}
+        position="top-right"
+        autoCloseDuration={2600}
+        onClose={() =>
+          setToastState((prev) => ({
+            ...prev,
+            isVisible: false,
+          }))
+        }
+      />
+
       {/* Tabs */}
       <div className="flex gap-2 mb-4">
         <button
@@ -653,6 +695,38 @@ export default function UserRolesMobile() {
           onOpenSettings={() => {
             const target = viewTarget;
             setViewTarget(null);
+            if (!target) return;
+
+            if (currentUserRole === "SUPER_ADMIN") {
+              setDetailsEditTarget(target);
+              return;
+            }
+
+            setSettingsTarget(target);
+          }}
+        />
+      )}
+
+      {detailsEditTarget && (
+        <UserDetailsEditModal
+          userId={detailsEditTarget.id}
+          onClose={() => setDetailsEditTarget(null)}
+          onSuccess={(message) => {
+            setDetailsEditTarget(null);
+            fetchUsers(false);
+            showToast(
+              "success",
+              "User Updated",
+              message || "User details updated successfully.",
+            );
+          }}
+          onError={(message) => {
+            showToast("error", "Update Failed", message);
+          }}
+          onOpenAccountSettings={() => {
+            const target = detailsEditTarget;
+            if (!target) return;
+            setDetailsEditTarget(null);
             setSettingsTarget(target);
           }}
         />
@@ -666,9 +740,17 @@ export default function UserRolesMobile() {
           initialRole={settingsTarget.role}
           initialIsActive={settingsTarget.isActive}
           onClose={() => setSettingsTarget(null)}
-          onSuccess={() => {
+          onSuccess={(message) => {
             setSettingsTarget(null);
             fetchUsers(false);
+            showToast(
+              "success",
+              "Settings Updated",
+              message || "User settings updated successfully.",
+            );
+          }}
+          onError={(message) => {
+            showToast("error", "Update Failed", message);
           }}
         />
       )}
@@ -832,3 +914,4 @@ function MRow({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+

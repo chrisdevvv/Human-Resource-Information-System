@@ -49,7 +49,7 @@ const User = {
     if (!pagination || !pagination.page) {
       const [rows] = await pool.promise().query(
         `SELECT u.id, u.first_name, u.middle_name, u.last_name, u.email, u.role,
-                       u.birthdate,
+                       DATE_FORMAT(u.birthdate, '%Y-%m-%d') AS birthdate,
                        u.school_id,
                        u.is_active, u.created_at, u.updated_at,
                        s.school_name, s.school_code
@@ -70,7 +70,7 @@ const User = {
 
     const [rows] = await pool.promise().query(
       `SELECT u.id, u.first_name, u.middle_name, u.last_name, u.email, u.role,
-                       u.birthdate,
+                       DATE_FORMAT(u.birthdate, '%Y-%m-%d') AS birthdate,
                        u.school_id,
                        u.is_active, u.created_at, u.updated_at,
                        s.school_name, s.school_code
@@ -84,7 +84,7 @@ const User = {
   getById: async (id) => {
     const [rows] = await pool.promise().query(
       `SELECT u.id, u.first_name, u.middle_name, u.last_name, u.email, u.role,
-                    u.birthdate,
+                    DATE_FORMAT(u.birthdate, '%Y-%m-%d') AS birthdate,
                     u.is_active, u.created_at, u.updated_at,
                     u.school_id, s.school_name, s.school_code
              FROM users u
@@ -108,6 +108,63 @@ const User = {
     const [result] = await pool
       .promise()
       .query(`UPDATE users SET is_active = ? WHERE id = ?`, [value, id]);
+    return result;
+  },
+
+  getByEmail: async (email) => {
+    const [rows] = await pool
+      .promise()
+      .query(`SELECT id, email FROM users WHERE email = ? LIMIT 1`, [email]);
+    return rows[0];
+  },
+
+  updateDetails: async (id, details = {}) => {
+    const assignments = [];
+    const params = [];
+
+    if (Object.prototype.hasOwnProperty.call(details, "first_name")) {
+      assignments.push("first_name = ?");
+      params.push(details.first_name);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(details, "middle_name")) {
+      assignments.push("middle_name = ?");
+      params.push(details.middle_name);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(details, "last_name")) {
+      assignments.push("last_name = ?");
+      params.push(details.last_name);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(details, "email")) {
+      assignments.push("email = ?");
+      params.push(details.email);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(details, "birthdate")) {
+      assignments.push("birthdate = ?");
+      params.push(details.birthdate);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(details, "school_id")) {
+      assignments.push("school_id = ?");
+      params.push(details.school_id);
+    }
+
+    if (assignments.length === 0) {
+      return { affectedRows: 0, changedRows: 0 };
+    }
+
+    assignments.push("updated_at = NOW()");
+
+    const [result] = await pool
+      .promise()
+      .query(`UPDATE users SET ${assignments.join(", ")} WHERE id = ?`, [
+        ...params,
+        id,
+      ]);
+
     return result;
   },
 

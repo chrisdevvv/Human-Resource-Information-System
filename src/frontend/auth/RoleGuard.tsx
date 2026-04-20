@@ -6,6 +6,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { canAccessPage } from "./roleAccess";
+import { APP_ROUTES, getDashboardRouteByRoleLoose } from "@/frontend/route";
 
 interface RoleGuardProps {
   requiredRoles?: string[];
@@ -33,7 +34,7 @@ export function RoleGuard({
       const userStr = localStorage.getItem("user");
       if (!userStr) {
         // No user logged in, redirect to login
-        router.push("/login");
+        router.push(APP_ROUTES.LOGIN);
         return;
       }
 
@@ -48,20 +49,16 @@ export function RoleGuard({
         );
 
         // Redirect to appropriate dashboard based on role
-        if (userRole.toLowerCase().includes("super")) {
-          router.push("/super-admin");
-        } else if (userRole.toLowerCase().includes("admin")) {
-          router.push("/admin");
-        } else {
-          router.push("/data-encoder");
-        }
+        router.push(
+          getDashboardRouteByRoleLoose(userRole, APP_ROUTES.DATA_ENCODER),
+        );
         return;
       }
 
       setIsAuthorized(true);
     } catch (error) {
       console.error("Error in RoleGuard:", error);
-      router.push("/login");
+      router.push(APP_ROUTES.LOGIN);
     } finally {
       setIsChecking(false);
     }
