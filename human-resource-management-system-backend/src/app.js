@@ -361,33 +361,6 @@ const ensureEmployeeTypeSchema = async () => {
 
 const ensureEmployeeProfileSchema = async () => {
   await pool.promise().query(`
-    ALTER TABLE employees
-    ADD COLUMN IF NOT EXISTS middle_initial VARCHAR(10) NULL AFTER middle_name,
-    ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(30) NULL AFTER email,
-    ADD COLUMN IF NOT EXISTS home_address VARCHAR(255) NULL AFTER mobile_number,
-    ADD COLUMN IF NOT EXISTS place_of_birth VARCHAR(255) NULL AFTER home_address,
-    ADD COLUMN IF NOT EXISTS civil_status VARCHAR(50) NULL AFTER place_of_birth,
-    ADD COLUMN IF NOT EXISTS sex VARCHAR(20) NULL AFTER civil_status,
-    ADD COLUMN IF NOT EXISTS employee_no VARCHAR(100) NULL AFTER school_id,
-    ADD COLUMN IF NOT EXISTS work_email VARCHAR(255) NULL AFTER employee_no,
-    ADD COLUMN IF NOT EXISTS district VARCHAR(255) NULL AFTER work_email,
-    ADD COLUMN IF NOT EXISTS work_district VARCHAR(255) NULL AFTER work_email,
-    ADD COLUMN IF NOT EXISTS \`position\` VARCHAR(255) NULL AFTER district,
-    ADD COLUMN IF NOT EXISTS plantilla_no VARCHAR(100) NULL AFTER \`position\`,
-    ADD COLUMN IF NOT EXISTS sg VARCHAR(20) NULL AFTER plantilla_no,
-    ADD COLUMN IF NOT EXISTS prc_license_no VARCHAR(100) NULL AFTER sg,
-    ADD COLUMN IF NOT EXISTS tin VARCHAR(50) NULL AFTER prc_license_no,
-    ADD COLUMN IF NOT EXISTS gsis_bp_no VARCHAR(50) NULL AFTER tin,
-    ADD COLUMN IF NOT EXISTS gsis_crn_no VARCHAR(50) NULL AFTER gsis_bp_no,
-    ADD COLUMN IF NOT EXISTS pagibig_no VARCHAR(50) NULL AFTER gsis_crn_no,
-    ADD COLUMN IF NOT EXISTS philhealth_no VARCHAR(50) NULL AFTER pagibig_no,
-    ADD COLUMN IF NOT EXISTS age INT NULL AFTER philhealth_no,
-    ADD COLUMN IF NOT EXISTS date_of_first_appointment DATE NULL AFTER age,
-    ADD COLUMN IF NOT EXISTS years_in_service INT NULL AFTER date_of_first_appointment,
-    ADD COLUMN IF NOT EXISTS loyalty_bonus ENUM('Yes', 'No') NOT NULL DEFAULT 'No' AFTER years_in_service;
-  `);
-
-  await pool.promise().query(`
     UPDATE employees
     SET district = work_district
     WHERE district IS NULL
@@ -402,7 +375,6 @@ const ensureEmployeeProfileSchema = async () => {
         employee_no = NULLIF(TRIM(employee_no), ''),
         work_email = NULLIF(TRIM(work_email), ''),
         plantilla_no = NULLIF(TRIM(plantilla_no), ''),
-        sg = NULLIF(TRIM(sg), ''),
         prc_license_no = NULLIF(TRIM(prc_license_no), ''),
         tin = NULLIF(TRIM(tin), ''),
         gsis_bp_no = NULLIF(TRIM(gsis_bp_no), ''),
@@ -833,10 +805,6 @@ const ensureSalaryIncrementNoticesTable = async () => {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
   `);
 
-  await pool.promise().query(`
-    ALTER TABLE salary_increment_notices
-    ADD COLUMN IF NOT EXISTS generated_by_user_id INT NULL AFTER remarks;
-  `);
 
   await pool.promise().query(`
     UPDATE salary_increment_notices
@@ -1439,9 +1407,6 @@ app.listen(PORT, async () => {
 
     await ensureSalaryInformationTable();
     console.log("✔  Salary information table is ready");
-
-    await syncEmployeeSgFromSalaryInformation();
-    console.log("✔  Employee SG values are synced from salary information");
 
     await ensureSalaryIncrementNoticesTable();
     console.log("✔  Salary increment notices table is ready");
