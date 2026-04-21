@@ -14,9 +14,9 @@ import UserRolesDetailsModal, {
 } from "../../components/UserRolesDetailsModal";
 import RoleAssignmentModal from "../../components/RoleAssignmentModal";
 import RejectModal from "../../components/RejectModal";
+import ToastMessage from "../../../components/ToastMessage";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type RegistrationRequest = {
   id: number;
@@ -80,8 +80,32 @@ export default function PendingAccounts({
     id: number;
     name: string;
   } | null>(null);
+  const [toastState, setToastState] = useState<{
+    isVisible: boolean;
+    variant: "success" | "error";
+    title: string;
+    message: string;
+  }>({
+    isVisible: false,
+    variant: "success",
+    title: "",
+    message: "",
+  });
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+  const showToast = (
+    variant: "success" | "error",
+    title: string,
+    message: string,
+  ) => {
+    setToastState({
+      isVisible: true,
+      variant,
+      title,
+      message,
+    });
+  };
 
   // Fetch registrations from backend and optionally skip the full-page spinner for polling refreshes.
   const fetchData = async (
@@ -224,6 +248,21 @@ export default function PendingAccounts({
 
   return (
     <div className="w-full bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col">
+      <ToastMessage
+        isVisible={toastState.isVisible}
+        variant={toastState.variant}
+        title={toastState.title}
+        message={toastState.message}
+        position="top-right"
+        autoCloseDuration={2600}
+        onClose={() =>
+          setToastState((prev) => ({
+            ...prev,
+            isVisible: false,
+          }))
+        }
+      />
+
       <h1
         style={{ fontSize: "20px" }}
         className="font-bold text-gray-900 mb-4 inline-flex items-center gap-2"
@@ -545,6 +584,11 @@ export default function PendingAccounts({
           onClose={() => setAssignTarget(null)}
           onSuccess={() => {
             setAssignTarget(null);
+            showToast(
+              "success",
+              "Role Assigned",
+              `${assignTarget.name} has been assigned a role.`,
+            );
             fetchData(statusFilter);
             onRefreshUsers?.();
           }}
@@ -558,6 +602,11 @@ export default function PendingAccounts({
           onClose={() => setRejectTarget(null)}
           onSuccess={() => {
             setRejectTarget(null);
+            showToast(
+              "success",
+              "Registration Rejected",
+              `${rejectTarget.name}'s registration has been rejected.`,
+            );
             fetchData(statusFilter);
             onRefreshUsers?.();
           }}
@@ -566,4 +615,3 @@ export default function PendingAccounts({
     </div>
   );
 }
-

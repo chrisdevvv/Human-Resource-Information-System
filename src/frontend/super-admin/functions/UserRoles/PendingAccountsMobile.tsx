@@ -12,6 +12,7 @@ import {
 import { type RegistrationDetail } from "../../components/UserRolesDetailsModal";
 import RoleAssignmentModal from "../../components/RoleAssignmentModal";
 import RejectModal from "../../components/RejectModal";
+import ToastMessage from "../../../components/ToastMessage";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
@@ -60,8 +61,32 @@ export default function PendingAccountsMobile({
     id: number;
     name: string;
   } | null>(null);
+  const [toastState, setToastState] = useState<{
+    isVisible: boolean;
+    variant: "success" | "error";
+    title: string;
+    message: string;
+  }>({
+    isVisible: false,
+    variant: "success",
+    title: "",
+    message: "",
+  });
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+  const showToast = (
+    variant: "success" | "error",
+    title: string,
+    message: string,
+  ) => {
+    setToastState({
+      isVisible: true,
+      variant,
+      title,
+      message,
+    });
+  };
 
   const fetchData = async (
     status: string,
@@ -190,6 +215,21 @@ export default function PendingAccountsMobile({
 
   return (
     <div className="w-full px-3 py-4">
+      <ToastMessage
+        isVisible={toastState.isVisible}
+        variant={toastState.variant}
+        title={toastState.title}
+        message={toastState.message}
+        position="top-right"
+        autoCloseDuration={2600}
+        onClose={() =>
+          setToastState((prev) => ({
+            ...prev,
+            isVisible: false,
+          }))
+        }
+      />
+
       <h1 className="text-lg font-bold text-gray-900 mb-4 inline-flex items-center gap-2">
         <UserCheck size={16} className="text-blue-600" />
         Pending Accounts
@@ -471,6 +511,11 @@ export default function PendingAccountsMobile({
           onClose={() => setAssignTarget(null)}
           onSuccess={() => {
             setAssignTarget(null);
+            showToast(
+              "success",
+              "Role Assigned",
+              `${assignTarget.name} has been assigned a role.`,
+            );
             fetchData(statusFilter);
             onRefreshUsers?.();
           }}
@@ -485,6 +530,11 @@ export default function PendingAccountsMobile({
           onClose={() => setRejectTarget(null)}
           onSuccess={() => {
             setRejectTarget(null);
+            showToast(
+              "success",
+              "Registration Rejected",
+              `${rejectTarget.name}'s registration has been rejected.`,
+            );
             fetchData(statusFilter);
             onRefreshUsers?.();
           }}
