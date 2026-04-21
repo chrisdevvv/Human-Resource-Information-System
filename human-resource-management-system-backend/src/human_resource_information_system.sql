@@ -661,6 +661,7 @@ CREATE TABLE `employees` (
   `position` varchar(255) DEFAULT NULL,
   `position_id` int(11) DEFAULT NULL,
   `plantilla_no` varchar(100) DEFAULT NULL,
+  `sg` varchar(20) DEFAULT NULL,
   `prc_license_no` varchar(100) DEFAULT NULL,
   `tin` varchar(50) DEFAULT NULL,
   `gsis_bp_no` varchar(50) DEFAULT NULL,

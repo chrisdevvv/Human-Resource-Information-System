@@ -360,7 +360,6 @@ const ensureEmployeeTypeSchema = async () => {
 };
 
 const ensureEmployeeProfileSchema = async () => {
-
   await pool.promise().query(`
     UPDATE employees
     SET district = work_district
@@ -746,6 +745,78 @@ const ensureSalaryInformationTable = async () => {
   await pool.promise().query(`
     ALTER TABLE salary_information
     MODIFY COLUMN remarks ENUM(${salaryInformationRemarksSql}) NULL;
+  `);
+};
+
+const syncEmployeeSgFromSalaryInformation = async () => {
+  await pool.promise().query(`
+    UPDATE employees e
+    SET e.sg = (
+      SELECT si.sg
+      FROM salary_information si
+      WHERE si.employee_id = e.id
+        AND si.sg IS NOT NULL
+        AND TRIM(si.sg) <> ''
+      ORDER BY si.salary_date DESC, si.id DESC
+      LIMIT 1
+    )
+    WHERE (e.sg IS NULL OR TRIM(e.sg) = '')
+      AND EXISTS (
+        SELECT 1
+        FROM salary_information sx
+        WHERE sx.employee_id = e.id
+          AND sx.sg IS NOT NULL
+          AND TRIM(sx.sg) <> ''
+      );
+  `);
+};
+
+const ensureSalaryIncrementNoticesTable = async () => {
+  const stepIncrementRemarkValues = ["Step Increment", "Step Increment Increase"];
+  const stepIncrementRemarksSql = stepIncrementRemarkValues
+    .map((value) => `'${String(value).replace(/'/g, "''")}'`)
+    .join(",");
+
+  await pool.promise().query(`
+    CREATE TABLE IF NOT EXISTS salary_increment_notices (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      employee_id INT NOT NULL,
+      salary_information_id INT NOT NULL,
+      notice_reference VARCHAR(80) NOT NULL,
+      effective_date DATE NOT NULL,
+      previous_salary DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+      new_salary DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+      increment_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+      remarks ENUM(${stepIncrementRemarksSql}) NOT NULL DEFAULT 'Step Increment',
+      generated_by_user_id INT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT fk_salary_increment_notices_employee_id
+        FOREIGN KEY (employee_id)
+        REFERENCES employees(id)
+        ON DELETE CASCADE,
+      CONSTRAINT fk_salary_increment_notices_salary_info_id
+        FOREIGN KEY (salary_information_id)
+        REFERENCES salary_information(id)
+        ON DELETE CASCADE,
+      UNIQUE KEY uk_salary_increment_notices_salary_info_id (salary_information_id),
+      INDEX idx_salary_increment_notices_employee_id (employee_id),
+      INDEX idx_salary_increment_notices_effective_date (effective_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `);
+
+
+  await pool.promise().query(`
+    UPDATE salary_increment_notices
+    SET remarks = 'Step Increment'
+    WHERE remarks IS NULL
+       OR TRIM(remarks) = ''
+       OR remarks NOT IN (${stepIncrementRemarksSql});
+  `);
+
+  await pool.promise().query(`
+    ALTER TABLE salary_increment_notices
+    MODIFY COLUMN remarks ENUM(${stepIncrementRemarksSql}) NOT NULL DEFAULT 'Step Increment';
   `);
 };
 
@@ -1336,6 +1407,9 @@ app.listen(PORT, async () => {
 
     await ensureSalaryInformationTable();
     console.log("✔  Salary information table is ready");
+
+    await ensureSalaryIncrementNoticesTable();
+    console.log("✔  Salary increment notices table is ready");
 
     const salaryDateSyncStartupResult =
       await SalaryInformation.syncThreeYearSalaryDateEntries();

@@ -15,6 +15,7 @@ const {
 const {
   getSalaryInformationByEmployee,
   getSalaryInformationById,
+  getStepIncrementNoticePdf,
   createSalaryInformation,
   updateSalaryInformation,
   deleteSalaryInformation,
@@ -80,6 +81,13 @@ router.get(
   roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
   validateRequest({ params: salaryInformationIdParamSchema }),
   getSalaryInformationById,
+);
+router.get(
+  "/:employee_id/salary-information/:id/step-increment-notice-pdf",
+  authMiddleware,
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  validateRequest({ params: salaryInformationIdParamSchema }),
+  getStepIncrementNoticePdf,
 );
 router.post(
   "/:employee_id/salary-information",
