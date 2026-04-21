@@ -587,6 +587,273 @@ UNLOCK TABLES;
 --
 -- Dumping routines for database 'deped_chris'
 --
+
+-- --------------------------------------------------------
+-- Post-import schema hardening (MySQL Workbench compatible)
+-- Normalize data first, then add missing keys/FKs/auto-increment.
+-- --------------------------------------------------------
+
+-- Keep only canonical sex rows so PK/UNIQUE can be applied safely.
+DELETE FROM `sexes` WHERE `id` = 0;
+
+INSERT INTO `sexes` (`id`, `sex_name`, `created_at`)
+SELECT 1, 'M', CURRENT_TIMESTAMP
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sexes` WHERE `sex_name` = 'M');
+
+INSERT INTO `sexes` (`id`, `sex_name`, `created_at`)
+SELECT 2, 'F', CURRENT_TIMESTAMP
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sexes` WHERE `sex_name` = 'F');
+
+UPDATE `employees` e
+JOIN `sexes` sx ON sx.`id` = e.`sex_id`
+JOIN (
+  SELECT `sex_name`, MIN(`id`) AS keep_id
+  FROM `sexes`
+  GROUP BY `sex_name`
+) sx_map ON sx_map.`sex_name` = sx.`sex_name`
+SET e.`sex_id` = sx_map.keep_id
+WHERE e.`sex_id` IS NOT NULL
+  AND e.`sex_id` <> sx_map.keep_id;
+
+DELETE s1
+FROM `sexes` s1
+JOIN `sexes` s2
+  ON s1.`sex_name` = s2.`sex_name`
+ AND s1.`id` > s2.`id`;
+
+-- Deduplicate positions by name and repoint employees before enforcing UNIQUE.
+UPDATE `employees` e
+JOIN `positions` p_dup ON p_dup.`id` = e.`position_id`
+JOIN (
+  SELECT `position_name`, MIN(`id`) AS keep_id
+  FROM `positions`
+  GROUP BY `position_name`
+) p_map ON p_map.`position_name` = p_dup.`position_name`
+SET e.`position_id` = p_map.keep_id
+WHERE e.`position_id` IS NOT NULL
+  AND e.`position_id` <> p_map.keep_id;
+
+DELETE p1
+FROM `positions` p1
+JOIN `positions` p2
+  ON p1.`position_name` = p2.`position_name`
+ AND p1.`id` > p2.`id`;
+
+-- Deduplicate schools by name and repoint dependents before enforcing UNIQUE.
+UPDATE `employees` e
+JOIN `schools` s_dup ON s_dup.`id` = e.`school_id`
+JOIN (
+  SELECT `school_name`, MIN(`id`) AS keep_id
+  FROM `schools`
+  GROUP BY `school_name`
+) s_map ON s_map.`school_name` = s_dup.`school_name`
+SET e.`school_id` = s_map.keep_id
+WHERE e.`school_id` <> s_map.keep_id;
+
+UPDATE `users` u
+JOIN `schools` s_dup ON s_dup.`id` = u.`school_id`
+JOIN (
+  SELECT `school_name`, MIN(`id`) AS keep_id
+  FROM `schools`
+  GROUP BY `school_name`
+) s_map ON s_map.`school_name` = s_dup.`school_name`
+SET u.`school_id` = s_map.keep_id
+WHERE u.`school_id` IS NOT NULL
+  AND u.`school_id` <> s_map.keep_id;
+
+UPDATE `backlogs` b
+JOIN `schools` s_dup ON s_dup.`id` = b.`school_id`
+JOIN (
+  SELECT `school_name`, MIN(`id`) AS keep_id
+  FROM `schools`
+  GROUP BY `school_name`
+) s_map ON s_map.`school_name` = s_dup.`school_name`
+SET b.`school_id` = s_map.keep_id
+WHERE b.`school_id` IS NOT NULL
+  AND b.`school_id` <> s_map.keep_id;
+
+UPDATE `super_admin_schools` sas
+JOIN `schools` s_dup ON s_dup.`id` = sas.`school_id`
+JOIN (
+  SELECT `school_name`, MIN(`id`) AS keep_id
+  FROM `schools`
+  GROUP BY `school_name`
+) s_map ON s_map.`school_name` = s_dup.`school_name`
+SET sas.`school_id` = s_map.keep_id
+WHERE sas.`school_id` <> s_map.keep_id;
+
+DELETE s1
+FROM `schools` s1
+JOIN `schools` s2
+  ON s1.`school_name` = s2.`school_name`
+ AND s1.`id` > s2.`id`;
+
+-- Ensure all non-null employee school IDs exist before adding FK.
+INSERT INTO `schools` (`id`, `school_name`, `school_code`, `created_at`)
+SELECT missing.`school_id`, CONCAT('Unknown School ', missing.`school_id`), NULL, CURRENT_TIMESTAMP
+FROM (
+  SELECT DISTINCT e.`school_id`
+  FROM `employees` e
+  LEFT JOIN `schools` s ON s.`id` = e.`school_id`
+  WHERE s.`id` IS NULL
+) AS missing;
+
+-- Make duplicate user emails unique before adding UNIQUE index.
+UPDATE `users` u
+JOIN (
+  SELECT `email`, MIN(`id`) AS keep_id
+  FROM `users`
+  GROUP BY `email`
+  HAVING COUNT(*) > 1
+) d ON d.`email` = u.`email` AND u.`id` <> d.keep_id
+SET u.`email` = CASE
+  WHEN INSTR(u.`email`, '@') > 0 THEN CONCAT(SUBSTRING_INDEX(u.`email`, '@', 1), '+dup', u.`id`, '@', SUBSTRING_INDEX(u.`email`, '@', -1))
+  ELSE CONCAT(u.`email`, '+dup', u.`id`)
+END;
+
+-- Null out orphan optional references.
+UPDATE `employees` e
+LEFT JOIN `positions` p ON p.`id` = e.`position_id`
+SET e.`position_id` = NULL
+WHERE e.`position_id` IS NOT NULL
+  AND p.`id` IS NULL;
+
+UPDATE `employees` e
+LEFT JOIN `civil_statuses` cs ON cs.`id` = e.`civil_status_id`
+SET e.`civil_status_id` = NULL
+WHERE e.`civil_status_id` IS NOT NULL
+  AND cs.`id` IS NULL;
+
+UPDATE `employees` e
+LEFT JOIN `sexes` sx ON sx.`id` = e.`sex_id`
+SET e.`sex_id` = NULL
+WHERE e.`sex_id` IS NOT NULL
+  AND sx.`id` IS NULL;
+
+UPDATE `users` u
+LEFT JOIN `schools` s ON s.`id` = u.`school_id`
+SET u.`school_id` = NULL
+WHERE u.`school_id` IS NOT NULL
+  AND s.`id` IS NULL;
+
+UPDATE `backlogs` b
+LEFT JOIN `users` u ON u.`id` = b.`user_id`
+SET b.`user_id` = NULL
+WHERE b.`user_id` IS NOT NULL
+  AND u.`id` IS NULL;
+
+UPDATE `backlogs` b
+LEFT JOIN `schools` s ON s.`id` = b.`school_id`
+SET b.`school_id` = NULL
+WHERE b.`school_id` IS NOT NULL
+  AND s.`id` IS NULL;
+
+UPDATE `backlogs` b
+LEFT JOIN `employees` e ON e.`id` = b.`employee_id`
+SET b.`employee_id` = NULL
+WHERE b.`employee_id` IS NOT NULL
+  AND e.`id` IS NULL;
+
+UPDATE `backlogs` b
+LEFT JOIN `leaves` l ON l.`id` = b.`leave_id`
+SET b.`leave_id` = NULL
+WHERE b.`leave_id` IS NOT NULL
+  AND l.`id` IS NULL;
+
+UPDATE `registration_requests` rr
+LEFT JOIN `users` u ON u.`id` = rr.`reviewed_by`
+SET rr.`reviewed_by` = NULL
+WHERE rr.`reviewed_by` IS NOT NULL
+  AND u.`id` IS NULL;
+
+DELETE sas
+FROM `super_admin_schools` sas
+LEFT JOIN `users` u ON u.`id` = sas.`super_admin_id`
+LEFT JOIN `schools` s ON s.`id` = sas.`school_id`
+WHERE u.`id` IS NULL
+   OR s.`id` IS NULL;
+
+DELETE l
+FROM `leaves` l
+LEFT JOIN `employees` e ON e.`id` = l.`employee_id`
+WHERE e.`id` IS NULL;
+
+-- Add missing keys/indexes.
+ALTER TABLE `positions`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `position_name` (`position_name`);
+
+ALTER TABLE `registration_requests`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_regreq_status` (`status`),
+  ADD KEY `fk_regreq_reviewed_by` (`reviewed_by`);
+
+ALTER TABLE `revoked_tokens`
+  ADD PRIMARY KEY (`jti`),
+  ADD KEY `idx_revoked_tokens_expires_at` (`expires_at`);
+
+ALTER TABLE `schools`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_school_name` (`school_name`);
+
+ALTER TABLE `sexes`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `sex_name` (`sex_name`);
+
+ALTER TABLE `super_admin_schools`
+  ADD PRIMARY KEY (`super_admin_id`, `school_id`),
+  ADD KEY `fk_sas_school` (`school_id`);
+
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_email` (`email`),
+  ADD KEY `idx_users_school_id` (`school_id`);
+
+ALTER TABLE `user_token_invalidations`
+  ADD PRIMARY KEY (`user_id`),
+  ADD KEY `idx_user_token_invalidations_invalid_after` (`invalid_after`);
+
+-- Add AUTO_INCREMENT to ID columns used as row identifiers.
+ALTER TABLE `archiving_reasons` MODIFY `id` int NOT NULL AUTO_INCREMENT;
+ALTER TABLE `backlogs` MODIFY `id` int NOT NULL AUTO_INCREMENT;
+ALTER TABLE `civil_statuses` MODIFY `id` int NOT NULL AUTO_INCREMENT;
+ALTER TABLE `districts` MODIFY `id` int NOT NULL AUTO_INCREMENT;
+ALTER TABLE `employees` MODIFY `id` int NOT NULL AUTO_INCREMENT;
+ALTER TABLE `leaves` MODIFY `id` int NOT NULL AUTO_INCREMENT;
+ALTER TABLE `positions` MODIFY `id` int NOT NULL AUTO_INCREMENT;
+ALTER TABLE `registration_requests` MODIFY `id` int NOT NULL AUTO_INCREMENT;
+ALTER TABLE `schools` MODIFY `id` int NOT NULL AUTO_INCREMENT;
+ALTER TABLE `sexes` MODIFY `id` int NOT NULL AUTO_INCREMENT;
+ALTER TABLE `users` MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+-- Add missing foreign keys after indexes/PKs are in place.
+ALTER TABLE `backlogs`
+  ADD CONSTRAINT `fk_backlogs_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_backlogs_leave` FOREIGN KEY (`leave_id`) REFERENCES `leaves` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_backlogs_school` FOREIGN KEY (`school_id`) REFERENCES `schools` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_backlogs_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE `employees`
+  ADD CONSTRAINT `fk_employees_civil_status_id` FOREIGN KEY (`civil_status_id`) REFERENCES `civil_statuses` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_employees_position_id` FOREIGN KEY (`position_id`) REFERENCES `positions` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_employees_school` FOREIGN KEY (`school_id`) REFERENCES `schools` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_employees_sex_id` FOREIGN KEY (`sex_id`) REFERENCES `sexes` (`id`) ON DELETE SET NULL;
+
+ALTER TABLE `leaves`
+  ADD CONSTRAINT `fk_leaves_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `registration_requests`
+  ADD CONSTRAINT `fk_regreq_reviewed_by` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE `super_admin_schools`
+  ADD CONSTRAINT `fk_sas_school` FOREIGN KEY (`school_id`) REFERENCES `schools` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_sas_user` FOREIGN KEY (`super_admin_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `users`
+  ADD CONSTRAINT `fk_users_school` FOREIGN KEY (`school_id`) REFERENCES `schools` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
