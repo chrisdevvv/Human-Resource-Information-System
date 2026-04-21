@@ -5,12 +5,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff } from "../assets/icons";
 import { CircleHelp, Clock3, Mail as MailContact } from "lucide-react";
-import {
-  LoginSuccessModal,
-  ForgotModal,
-  ErrorModal,
-  RegistrationModal,
-} from "./components";
+import { ForgotModal, ErrorModal, RegistrationModal } from "./components";
+import ToastMessage from "@/components/ToastMessage";
 import {
   isAccountLocked,
   getRemainingLockTime,
@@ -64,16 +60,20 @@ export default function LoginPageMobile() {
   const [showForgot, setShowForgot] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
-  const [showLoginSuccess, setShowLoginSuccess] = useState(false);
-  const [loggedInUser, setLoggedInUser] = useState<{
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    role?: string;
-  } | null>(null);
   const [error, setError] = useState<{ title?: string; desc?: string } | null>(
     null,
   );
+  const [toastState, setToastState] = useState<{
+    isVisible: boolean;
+    variant: "success" | "error";
+    title: string;
+    message: string;
+  }>({
+    isVisible: false,
+    variant: "success",
+    title: "",
+    message: "",
+  });
   const [remainingLockTime, setRemainingLockTime] = useState<number>(0);
 
   // Update lock time countdown
@@ -208,8 +208,22 @@ export default function LoginPageMobile() {
         return;
       }
 
-      setLoggedInUser(data.user);
-      setShowLoginSuccess(true);
+      setToastState({
+        isVisible: true,
+        variant: "success",
+        title: "Login Successful",
+        message: "Redirecting to dashboard...",
+      });
+
+      setTimeout(() => {
+        const dashboardRoute = getDashboardRouteByRoleStrict(
+          data.user?.role,
+          "",
+        );
+        if (dashboardRoute) {
+          router.push(dashboardRoute);
+        }
+      }, 1500);
     } catch (err) {
       setError({
         title: "Login Error",
@@ -222,6 +236,21 @@ export default function LoginPageMobile() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
+      <ToastMessage
+        isVisible={toastState.isVisible}
+        variant={toastState.variant}
+        title={toastState.title}
+        message={toastState.message}
+        position="bottom-right"
+        autoCloseDuration={5000}
+        onClose={() =>
+          setToastState((prev) => ({
+            ...prev,
+            isVisible: false,
+          }))
+        }
+      />
+
       <header className="sticky top-0 z-50 bg-blue-700 text-white py-3 px-4 shadow-md">
         <div className="w-full flex items-center justify-start gap-2 text-left">
           <img
@@ -481,21 +510,6 @@ export default function LoginPageMobile() {
           </div>
         </div>
       )}
-
-      <LoginSuccessModal
-        visible={showLoginSuccess}
-        user={loggedInUser}
-        onClose={() => {
-          setShowLoginSuccess(false);
-          const dashboardRoute = getDashboardRouteByRoleStrict(
-            loggedInUser?.role,
-            "",
-          );
-          if (dashboardRoute) {
-            router.push(dashboardRoute);
-          }
-        }}
-      />
 
       <ForgotModal visible={showForgot} onClose={() => setShowForgot(false)} />
       <RegistrationModal
