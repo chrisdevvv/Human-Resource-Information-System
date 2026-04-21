@@ -360,6 +360,21 @@ const ensureEmployeeTypeSchema = async () => {
 };
 
 const ensureEmployeeProfileSchema = async () => {
+  const [sgColumns] = await pool.promise().query(`
+    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'employees'
+      AND COLUMN_NAME = 'sg'
+    LIMIT 1
+  `);
+
+  if (sgColumns.length === 0) {
+    await pool.promise().query(`
+      ALTER TABLE employees
+      ADD COLUMN sg VARCHAR(20) NULL AFTER plantilla_no;
+    `);
+  }
+
   await pool.promise().query(`
     UPDATE employees
     SET district = work_district
@@ -375,6 +390,7 @@ const ensureEmployeeProfileSchema = async () => {
         employee_no = NULLIF(TRIM(employee_no), ''),
         work_email = NULLIF(TRIM(work_email), ''),
         plantilla_no = NULLIF(TRIM(plantilla_no), ''),
+      sg = NULLIF(TRIM(sg), ''),
         prc_license_no = NULLIF(TRIM(prc_license_no), ''),
         tin = NULLIF(TRIM(tin), ''),
         gsis_bp_no = NULLIF(TRIM(gsis_bp_no), ''),
@@ -1407,6 +1423,9 @@ app.listen(PORT, async () => {
 
     await ensureSalaryInformationTable();
     console.log("✔  Salary information table is ready");
+
+    await syncEmployeeSgFromSalaryInformation();
+    console.log("✔  Employee SG values are synced from salary information");
 
     await ensureSalaryIncrementNoticesTable();
     console.log("✔  Salary increment notices table is ready");
