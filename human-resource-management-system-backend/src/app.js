@@ -214,7 +214,6 @@ const ensureLeaveLedgerSchema = async () => {
 };
 
 const ensureEmployeeArchiveSchema = async () => {
-
   await pool.promise().query(`
     UPDATE employees
     SET is_archived = 0
@@ -238,7 +237,6 @@ const ensureEmployeeArchiveSchema = async () => {
 };
 
 const ensureEmployeeLeaveStatusSchema = async () => {
-
   await pool.promise().query(`
     UPDATE employees
     SET on_leave = 0
@@ -465,7 +463,6 @@ const syncEmployeeServiceMetrics = async () => {
 };
 
 const ensureBacklogArchiveSchema = async () => {
-
   await pool.promise().query(`
     UPDATE backlogs
     SET is_archived = 0
@@ -710,6 +707,102 @@ const ensureEmployeeCivilStatusSexFK = async () => {
   }
 };
 
+const getColumnTypeSql = async (
+  tableName,
+  columnName,
+  fallbackType = "INT",
+) => {
+  const [rows] = await pool.promise().query(
+    `SELECT COLUMN_TYPE AS column_type
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = ?
+     LIMIT 1`,
+    [tableName, columnName],
+  );
+
+  return rows?.[0]?.column_type || fallbackType;
+};
+
+const ensureTableEngineInnoDb = async (tableName) => {
+  const [rows] = await pool.promise().query(
+    `SELECT ENGINE AS engine
+     FROM INFORMATION_SCHEMA.TABLES
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+     LIMIT 1`,
+    [tableName],
+  );
+
+  const currentEngine = String(rows?.[0]?.engine || "").toUpperCase();
+  if (currentEngine && currentEngine !== "INNODB") {
+    await pool.promise().query(`ALTER TABLE \`${tableName}\` ENGINE=InnoDB`);
+  }
+};
+
+const ensureIndexedColumn = async (tableName, columnName, indexName) => {
+  const [rows] = await pool.promise().query(
+    `SELECT 1
+     FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = ?
+     LIMIT 1`,
+    [tableName, columnName],
+  );
+
+  if (rows.length > 0) {
+    return;
+  }
+
+  try {
+    await pool
+      .promise()
+      .query(
+        `CREATE INDEX \`${indexName}\` ON \`${tableName}\` (\`${columnName}\`)`,
+      );
+  } catch (err) {
+    if (!/Duplicate|exists/i.test(err.message)) {
+      throw err;
+    }
+  }
+};
+
+const ensureForeignKeyConstraint = async ({
+  tableName,
+  constraintName,
+  columnName,
+  referencedTable,
+  referencedColumn,
+  onDelete,
+  onUpdate,
+}) => {
+  const [rows] = await pool.promise().query(
+    `SELECT 1
+     FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS
+     WHERE CONSTRAINT_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND CONSTRAINT_NAME = ?
+     LIMIT 1`,
+    [tableName, constraintName],
+  );
+
+  if (rows.length > 0) {
+    return;
+  }
+
+  const deleteClause = onDelete ? ` ON DELETE ${onDelete}` : "";
+  const updateClause = onUpdate ? ` ON UPDATE ${onUpdate}` : "";
+
+  await pool.promise().query(`
+    ALTER TABLE \`${tableName}\`
+    ADD CONSTRAINT \`${constraintName}\`
+      FOREIGN KEY (\`${columnName}\`)
+      REFERENCES \`${referencedTable}\`(\`${referencedColumn}\`)${deleteClause}${updateClause};
+  `);
+};
+
 const ensureSalaryInformationTable = async () => {
   const salaryInformationRemarkValues = [
     "Step Increment",
@@ -720,10 +813,15 @@ const ensureSalaryInformationTable = async () => {
     .map((value) => `'${String(value).replace(/'/g, "''")}'`)
     .join(",");
 
+  const employeeIdColumnType = await getColumnTypeSql("employees", "id", "INT");
+
+  await ensureTableEngineInnoDb("employees");
+  await ensureIndexedColumn("employees", "id", "idx_employees_id_fk");
+
   await pool.promise().query(`
     CREATE TABLE IF NOT EXISTS salary_information (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      employee_id INT NOT NULL,
+      employee_id ${employeeIdColumnType} NOT NULL,
       salary_date DATE NOT NULL,
       plantilla VARCHAR(100) NULL,
       sg VARCHAR(20) NULL,
@@ -734,15 +832,25 @@ const ensureSalaryInformationTable = async () => {
       remarks ENUM(${salaryInformationRemarksSql}) NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      CONSTRAINT fk_salary_information_employee_id
-        FOREIGN KEY (employee_id)
-        REFERENCES employees(id)
-        ON DELETE CASCADE,
       INDEX idx_salary_information_employee_id (employee_id),
       INDEX idx_salary_information_employee_date (employee_id, salary_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
   `);
 
+  await pool.promise().query(`
+    ALTER TABLE salary_information
+    MODIFY COLUMN employee_id ${employeeIdColumnType} NOT NULL;
+  `);
+
+  await ensureForeignKeyConstraint({
+    tableName: "salary_information",
+    constraintName: "fk_salary_information_employee_id",
+    columnName: "employee_id",
+    referencedTable: "employees",
+    referencedColumn: "id",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
 
   await pool.promise().query(`
     UPDATE salary_information
@@ -788,16 +896,35 @@ const syncEmployeeSgFromSalaryInformation = async () => {
 };
 
 const ensureSalaryIncrementNoticesTable = async () => {
-  const stepIncrementRemarkValues = ["Step Increment", "Step Increment Increase"];
+  const stepIncrementRemarkValues = [
+    "Step Increment",
+    "Step Increment Increase",
+  ];
   const stepIncrementRemarksSql = stepIncrementRemarkValues
     .map((value) => `'${String(value).replace(/'/g, "''")}'`)
     .join(",");
 
+  const employeeIdColumnType = await getColumnTypeSql("employees", "id", "INT");
+  const salaryInformationIdColumnType = await getColumnTypeSql(
+    "salary_information",
+    "id",
+    "INT",
+  );
+
+  await ensureTableEngineInnoDb("employees");
+  await ensureTableEngineInnoDb("salary_information");
+  await ensureIndexedColumn("employees", "id", "idx_employees_id_fk");
+  await ensureIndexedColumn(
+    "salary_information",
+    "id",
+    "idx_salary_information_id_fk",
+  );
+
   await pool.promise().query(`
     CREATE TABLE IF NOT EXISTS salary_increment_notices (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      employee_id INT NOT NULL,
-      salary_information_id INT NOT NULL,
+      employee_id ${employeeIdColumnType} NOT NULL,
+      salary_information_id ${salaryInformationIdColumnType} NOT NULL,
       notice_reference VARCHAR(80) NOT NULL,
       effective_date DATE NOT NULL,
       previous_salary DECIMAL(12,2) NOT NULL DEFAULT 0.00,
@@ -807,20 +934,37 @@ const ensureSalaryIncrementNoticesTable = async () => {
       generated_by_user_id INT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      CONSTRAINT fk_salary_increment_notices_employee_id
-        FOREIGN KEY (employee_id)
-        REFERENCES employees(id)
-        ON DELETE CASCADE,
-      CONSTRAINT fk_salary_increment_notices_salary_info_id
-        FOREIGN KEY (salary_information_id)
-        REFERENCES salary_information(id)
-        ON DELETE CASCADE,
       UNIQUE KEY uk_salary_increment_notices_salary_info_id (salary_information_id),
       INDEX idx_salary_increment_notices_employee_id (employee_id),
       INDEX idx_salary_increment_notices_effective_date (effective_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
   `);
 
+  await pool.promise().query(`
+    ALTER TABLE salary_increment_notices
+    MODIFY COLUMN employee_id ${employeeIdColumnType} NOT NULL,
+    MODIFY COLUMN salary_information_id ${salaryInformationIdColumnType} NOT NULL;
+  `);
+
+  await ensureForeignKeyConstraint({
+    tableName: "salary_increment_notices",
+    constraintName: "fk_salary_increment_notices_employee_id",
+    columnName: "employee_id",
+    referencedTable: "employees",
+    referencedColumn: "id",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
+
+  await ensureForeignKeyConstraint({
+    tableName: "salary_increment_notices",
+    constraintName: "fk_salary_increment_notices_salary_info_id",
+    columnName: "salary_information_id",
+    referencedTable: "salary_information",
+    referencedColumn: "id",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
 
   await pool.promise().query(`
     UPDATE salary_increment_notices

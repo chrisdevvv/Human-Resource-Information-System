@@ -83,11 +83,6 @@ type EditSnapshot = {
   gsisCrnNo: string;
   pagibigNo: string;
   philhealthNo: string;
-  tinNotAvailable: boolean;
-  gsisBpNotAvailable: boolean;
-  gsisCrnNotAvailable: boolean;
-  pagibigNotAvailable: boolean;
-  philhealthNotAvailable: boolean;
 };
 
 type EmployeeListResponse = {
@@ -361,29 +356,11 @@ const createEditSnapshotFromDetails = (
     schoolName: data.school_name || "",
     positionId: data.position_id || null,
     licenseNoPrc: data.prc_license_no || data.license_no_prc || "",
-    tin:
-      nextTin.toUpperCase() === "N/A"
-        ? "N/A"
-        : formatMaskedId(nextTin, GOV_ID_MASKS.tin),
-    gsisBpNo:
-      nextGsisBpNo.toUpperCase() === "N/A" ? "N/A" : formatGsisBp(nextGsisBpNo),
-    gsisCrnNo:
-      nextGsisCrnNo.toUpperCase() === "N/A"
-        ? "N/A"
-        : normalize12Digits(nextGsisCrnNo),
-    pagibigNo:
-      nextPagibigNo.toUpperCase() === "N/A"
-        ? "N/A"
-        : normalize12Digits(nextPagibigNo),
-    philhealthNo:
-      nextPhilhealthNo.toUpperCase() === "N/A"
-        ? "N/A"
-        : normalizePhilhealth(nextPhilhealthNo),
-    tinNotAvailable: nextTin.toUpperCase() === "N/A",
-    gsisBpNotAvailable: nextGsisBpNo.toUpperCase() === "N/A",
-    gsisCrnNotAvailable: nextGsisCrnNo.toUpperCase() === "N/A",
-    pagibigNotAvailable: nextPagibigNo.toUpperCase() === "N/A",
-    philhealthNotAvailable: nextPhilhealthNo.toUpperCase() === "N/A",
+    tin: formatMaskedId(nextTin, GOV_ID_MASKS.tin),
+    gsisBpNo: formatGsisBp(nextGsisBpNo),
+    gsisCrnNo: normalize12Digits(nextGsisCrnNo),
+    pagibigNo: normalize12Digits(nextPagibigNo),
+    philhealthNo: normalizePhilhealth(nextPhilhealthNo),
   };
 };
 
@@ -516,9 +493,6 @@ const formatGsisBp = (value: string): string => {
 
 const isGsisBpValid = (value: string): boolean => {
   const normalized = value.trim();
-  if (!normalized || normalized.toUpperCase() === "N/A") {
-    return true;
-  }
   return /^[A-Z0-9]{5}-[A-Z0-9]{6}$/.test(normalized);
 };
 
@@ -538,9 +512,6 @@ const hasComparableUniqueValue = (value: string): boolean => {
 
 const isPhilhealthValid = (value: string): boolean => {
   const normalized = value.trim();
-  if (!normalized || normalized.toUpperCase() === "N/A") {
-    return true;
-  }
   return /^\d{12}$/.test(normalized);
 };
 
@@ -657,11 +628,6 @@ export default function ViewEmployeeModal({
   const [editGsisCrnNo, setEditGsisCrnNo] = useState("");
   const [editPagibigNo, setEditPagibigNo] = useState("");
   const [editPhilhealthNo, setEditPhilhealthNo] = useState("");
-  const [tinNotAvailable, setTinNotAvailable] = useState(false);
-  const [gsisBpNotAvailable, setGsisBpNotAvailable] = useState(false);
-  const [gsisCrnNotAvailable, setGsisCrnNotAvailable] = useState(false);
-  const [pagibigNotAvailable, setPagibigNotAvailable] = useState(false);
-  const [philhealthNotAvailable, setPhilhealthNotAvailable] = useState(false);
 
   const [schools, setSchools] = useState<School[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -737,11 +703,6 @@ export default function ViewEmployeeModal({
     setEditGsisCrnNo(snapshot.gsisCrnNo);
     setEditPagibigNo(snapshot.pagibigNo);
     setEditPhilhealthNo(snapshot.philhealthNo);
-    setTinNotAvailable(snapshot.tinNotAvailable);
-    setGsisBpNotAvailable(snapshot.gsisBpNotAvailable);
-    setGsisCrnNotAvailable(snapshot.gsisCrnNotAvailable);
-    setPagibigNotAvailable(snapshot.pagibigNotAvailable);
-    setPhilhealthNotAvailable(snapshot.philhealthNotAvailable);
   };
 
   const showToast = (message: string, type: "success" | "error") => {
@@ -786,20 +747,24 @@ export default function ViewEmployeeModal({
       return /^\d{4}-\d{2}-\d{2}/.test(raw) ? raw.slice(0, 10) : "";
     };
 
-    return salaryHistoryRows.reduce<SalaryHistoryRecord | null>((latest, row) => {
-      if (!latest) return row;
+    return salaryHistoryRows.reduce<SalaryHistoryRecord | null>(
+      (latest, row) => {
+        if (!latest) return row;
 
-      const latestDate = normalizeSalaryDate(latest.salary_date || null);
-      const rowDate = normalizeSalaryDate(row.salary_date || null);
-      const dateCompare = rowDate.localeCompare(latestDate);
+        const latestDate = normalizeSalaryDate(latest.salary_date || null);
+        const rowDate = normalizeSalaryDate(row.salary_date || null);
+        const dateCompare = rowDate.localeCompare(latestDate);
 
-      if (dateCompare > 0) return row;
-      if (dateCompare < 0) return latest;
+        if (dateCompare > 0) return row;
+        if (dateCompare < 0) return latest;
 
-      return Number(row.id || 0) > Number(latest.id || 0) ? row : latest;
-    }, null);
+        return Number(row.id || 0) > Number(latest.id || 0) ? row : latest;
+      },
+      null,
+    );
   }, [salaryHistoryRows]);
-  const resolvedWorkSg = latestSalaryHistoryRow?.sg ?? resolvedDetails?.sg ?? null;
+  const resolvedWorkSg =
+    latestSalaryHistoryRow?.sg ?? resolvedDetails?.sg ?? null;
   const canManageSalaryHistory = isEditing && canEdit;
   const hasPendingSalaryHistoryDraft =
     Boolean(salaryHistoryCreateDraft) || Boolean(salaryHistoryEditDraft);
@@ -1153,11 +1118,6 @@ export default function ViewEmployeeModal({
       gsisCrnNo: editGsisCrnNo,
       pagibigNo: editPagibigNo,
       philhealthNo: editPhilhealthNo,
-      tinNotAvailable,
-      gsisBpNotAvailable,
-      gsisCrnNotAvailable,
-      pagibigNotAvailable,
-      philhealthNotAvailable,
     }) !== JSON.stringify(initialEditSnapshot) ||
       editWorkSg.trim() !== initialWorkSg.trim());
 
@@ -1309,21 +1269,35 @@ export default function ViewEmployeeModal({
       }
     }
 
-    if (!isGovernmentIdValid(editTin, GOV_ID_MASKS.tin)) {
+    if (!editTin.trim() || !isGovernmentIdValid(editTin, GOV_ID_MASKS.tin)) {
       newErrors.push({
         field: "TIN",
         message: "TIN must follow 000-000-000 format",
       });
     }
 
-    if (!isGsisBpValid(editGsisBpNo)) {
+    if (!editGsisBpNo.trim() || !isGsisBpValid(editGsisBpNo)) {
       newErrors.push({
         field: "GSIS BP Number",
         message: "GSIS BP Number must follow 00000-000000 format",
       });
     }
 
-    if (!isPhilhealthValid(editPhilhealthNo)) {
+    if (!editGsisCrnNo.trim() || !/^\d{12}$/.test(editGsisCrnNo.trim())) {
+      newErrors.push({
+        field: "GSIS CRN Number",
+        message: "GSIS CRN Number must be exactly 12 digits",
+      });
+    }
+
+    if (!editPagibigNo.trim() || !/^\d{12}$/.test(editPagibigNo.trim())) {
+      newErrors.push({
+        field: "PAG-IBIG Number",
+        message: "PAG-IBIG Number must be exactly 12 digits",
+      });
+    }
+
+    if (!editPhilhealthNo.trim() || !isPhilhealthValid(editPhilhealthNo)) {
       newErrors.push({
         field: "PhilHealth Number",
         message: "PhilHealth Number must be exactly 12 digits",
@@ -2201,24 +2175,14 @@ export default function ViewEmployeeModal({
               setEditLicenseNoPrc={setEditLicenseNoPrc}
               editTin={editTin}
               setEditTin={setEditTin}
-              tinNotAvailable={tinNotAvailable}
-              setTinNotAvailable={setTinNotAvailable}
               editGsisBpNo={editGsisBpNo}
               setEditGsisBpNo={setEditGsisBpNo}
-              gsisBpNotAvailable={gsisBpNotAvailable}
-              setGsisBpNotAvailable={setGsisBpNotAvailable}
               editGsisCrnNo={editGsisCrnNo}
               setEditGsisCrnNo={setEditGsisCrnNo}
-              gsisCrnNotAvailable={gsisCrnNotAvailable}
-              setGsisCrnNotAvailable={setGsisCrnNotAvailable}
               editPagibigNo={editPagibigNo}
               setEditPagibigNo={setEditPagibigNo}
-              pagibigNotAvailable={pagibigNotAvailable}
-              setPagibigNotAvailable={setPagibigNotAvailable}
               editPhilhealthNo={editPhilhealthNo}
               setEditPhilhealthNo={setEditPhilhealthNo}
-              philhealthNotAvailable={philhealthNotAvailable}
-              setPhilhealthNotAvailable={setPhilhealthNotAvailable}
               formatEmployeeType={formatEmployeeType}
               formatValue={formatValue}
               formatDate={formatDate}
