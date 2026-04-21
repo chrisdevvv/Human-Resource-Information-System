@@ -9,8 +9,13 @@
     "dev": "concurrently \"npm --prefix human-resource-management-system-backend run dev\" \"node --disable-warning=DEP0060 ./node_modules/next/dist/bin/next dev -p 3001\"",
     "dev:backend": "npm --prefix human-resource-management-system-backend run dev",
     "dev:frontend": "node --disable-warning=DEP0060 ./node_modules/next/dist/bin/next dev -p 3001",
+
     "build": "npm run lint && next build",
-    "start": "next start",
+
+    "start": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
+    "start:frontend": "next start -p 3001",
+    "start:backend": "npm --prefix human-resource-management-system-backend run dev",
+
     "lint": "next lint"
   },
   "keywords": [],
