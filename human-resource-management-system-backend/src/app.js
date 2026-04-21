@@ -360,7 +360,6 @@ const ensureEmployeeTypeSchema = async () => {
 };
 
 const ensureEmployeeProfileSchema = async () => {
-
   await pool.promise().query(`
     UPDATE employees
     SET district = work_district
@@ -376,7 +375,6 @@ const ensureEmployeeProfileSchema = async () => {
         employee_no = NULLIF(TRIM(employee_no), ''),
         work_email = NULLIF(TRIM(work_email), ''),
         plantilla_no = NULLIF(TRIM(plantilla_no), ''),
-        sg = NULLIF(TRIM(sg), ''),
         prc_license_no = NULLIF(TRIM(prc_license_no), ''),
         tin = NULLIF(TRIM(tin), ''),
         gsis_bp_no = NULLIF(TRIM(gsis_bp_no), ''),
@@ -807,10 +805,6 @@ const ensureSalaryIncrementNoticesTable = async () => {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
   `);
 
-  await pool.promise().query(`
-    ALTER TABLE salary_increment_notices
-    ADD COLUMN IF NOT EXISTS generated_by_user_id INT NULL AFTER remarks;
-  `);
 
   await pool.promise().query(`
     UPDATE salary_increment_notices
@@ -1413,9 +1407,6 @@ app.listen(PORT, async () => {
 
     await ensureSalaryInformationTable();
     console.log("✔  Salary information table is ready");
-
-    await syncEmployeeSgFromSalaryInformation();
-    console.log("✔  Employee SG values are synced from salary information");
 
     await ensureSalaryIncrementNoticesTable();
     console.log("✔  Salary increment notices table is ready");
