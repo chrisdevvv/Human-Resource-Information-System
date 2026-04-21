@@ -14,7 +14,7 @@
 
     "start": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
     "start:frontend": "next start -p 3001",
-    "start:backend": "npm --prefix human-resource-management-system-backend run dev",
+    "start:backend": "npm --prefix human-resource-management-system-backend run start",
 
     "lint": "next lint"
   },
