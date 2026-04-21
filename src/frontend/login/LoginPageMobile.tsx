@@ -263,93 +263,100 @@ export default function LoginPageMobile() {
             Use your email and password to continue
           </p>
 
-          <div className="mb-4">
-            <label className="mb-2 flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-700">
-              <Mail className="text-blue-600" size={16} />
-              Email
-            </label>
-            <input
-              id="loginEmail"
-              type="email"
-              placeholder="you@deped.gov.ph"
-              value={email}
-              onChange={(e) => {
-                const v = e.target.value;
-                setEmail(v);
-                if (emailError && validateEmail(v)) setEmailError(null);
-              }}
-              onBlur={() => {
-                if (!email) setEmailError("Email is required");
-                else if (!validateEmail(email))
-                  setEmailError("Please enter a valid email address");
-                else setEmailError(null);
-              }}
-              className={`w-full rounded-lg border px-3 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 ${emailError ? "border-red-500" : "border-gray-300"}`}
-            />
-            {emailError && (
-              <p className="text-xs sm:text-sm text-red-600 mt-1">
-                {emailError}
-              </p>
-            )}
-          </div>
-
-          <div className="mb-5">
-            <label className="mb-2 flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-700">
-              <Lock className="text-blue-600" size={16} />
-              Password
-            </label>
-            <div className="relative">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleLogin();
+            }}
+          >
+            <div className="mb-4">
+              <label className="mb-2 flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-700">
+                <Mail className="text-blue-600" size={16} />
+                Email
+              </label>
               <input
-                id="loginPassword"
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={password}
+                id="loginEmail"
+                type="email"
+                placeholder="you@deped.gov.ph"
+                value={email}
                 onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (passwordError) setPasswordError(null);
+                  const v = e.target.value;
+                  setEmail(v);
+                  if (emailError && validateEmail(v)) setEmailError(null);
                 }}
                 onBlur={() => {
-                  if (!password) setPasswordError("Password is required");
-                  else setPasswordError(null);
+                  if (!email) setEmailError("Email is required");
+                  else if (!validateEmail(email))
+                    setEmailError("Please enter a valid email address");
+                  else setEmailError(null);
                 }}
-                className={`w-full rounded-lg border px-3 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 ${passwordError ? "border-red-500" : "border-gray-300"}`}
+                className={`w-full rounded-lg border px-3 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 ${emailError ? "border-red-500" : "border-gray-300"}`}
               />
-              <button
-                type="button"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+              {emailError && (
+                <p className="text-xs sm:text-sm text-red-600 mt-1">
+                  {emailError}
+                </p>
+              )}
             </div>
-            {passwordError && (
-              <p className="text-xs sm:text-sm text-red-600 mt-1">
-                {passwordError}
-              </p>
+
+            <div className="mb-5">
+              <label className="mb-2 flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-700">
+                <Lock className="text-blue-600" size={16} />
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="loginPassword"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (passwordError) setPasswordError(null);
+                  }}
+                  onBlur={() => {
+                    if (!password) setPasswordError("Password is required");
+                    else setPasswordError(null);
+                  }}
+                  className={`w-full rounded-lg border px-3 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 ${passwordError ? "border-red-500" : "border-gray-300"}`}
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {passwordError && (
+                <p className="text-xs sm:text-sm text-red-600 mt-1">
+                  {passwordError}
+                </p>
+              )}
+            </div>
+
+            {remainingLockTime > 0 && (
+              <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-3 py-3">
+                <p className="text-xs sm:text-sm font-medium text-red-800">
+                  Too many failed login attempts
+                </p>
+                <p className="text-xs sm:text-sm text-red-700 mt-1">
+                  Account locked. Try again in {remainingLockTime} second
+                  {remainingLockTime !== 1 ? "s" : ""}.
+                </p>
+              </div>
             )}
-          </div>
 
-          {remainingLockTime > 0 && (
-            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-3 py-3">
-              <p className="text-xs sm:text-sm font-medium text-red-800">
-                Too many failed login attempts
-              </p>
-              <p className="text-xs sm:text-sm text-red-700 mt-1">
-                Account locked. Try again in {remainingLockTime} second
-                {remainingLockTime !== 1 ? "s" : ""}.
-              </p>
-            </div>
-          )}
-
-          <button
-            id="submitLogin"
-            className="cursor-pointer w-full rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-            onClick={handleLogin}
-            disabled={isLoading || remainingLockTime > 0}
-          >
-            {isLoading ? "Signing in..." : "Login"}
-          </button>
+            <button
+              id="submitLogin"
+              type="submit"
+              className="cursor-pointer w-full rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isLoading || remainingLockTime > 0}
+            >
+              {isLoading ? "Signing in..." : "Login"}
+            </button>
+          </form>
 
           <div className="mt-4 flex flex-col gap-2 text-xs sm:text-sm sm:flex-row sm:justify-between">
             <a
@@ -378,13 +385,13 @@ export default function LoginPageMobile() {
         </div>
       </div>
 
-      <footer className="bg-blue-700 text-white px-4 py-4 shadow-inner">
-        <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs sm:text-sm">
+      <footer className="bg-white text-gray-600 px-4 py-4 shadow-inner">
+        <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 text-[11px] sm:text-xs">
           <div className="text-left sm:mr-auto">
             <button
               type="button"
               onClick={() => setShowContactModal(true)}
-              className="cursor-pointer font-semibold hover:underline underline-offset-4 hover:text-blue-100 transition"
+              className="cursor-pointer font-semibold hover:underline underline-offset-4 hover:text-gray-900 transition text-[11px] sm:text-xs"
             >
               Contact Us
             </button>

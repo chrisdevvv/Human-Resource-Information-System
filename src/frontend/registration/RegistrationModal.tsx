@@ -410,6 +410,12 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       setPendingFormData(null);
       setHasUnsavedChanges(false);
       submitInProgressRef.current = false;
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch {
+        // Ignore storage clear errors
+      }
       setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
