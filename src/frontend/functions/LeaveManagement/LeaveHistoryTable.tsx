@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { SkeletonSection } from "../../components/Skeleton/SkeletonUtils";
 import type { LeaveHistoryRecord } from "./leaveApi";
 
 type LeaveHistoryTableProps = {
@@ -54,11 +55,7 @@ export default function LeaveHistoryTable({
     rows.every((row) => selectedIds?.has(row.id));
 
   if (loading) {
-    return (
-      <div className="rounded-lg border border-gray-200 p-8 text-center text-sm text-gray-500">
-        Loading leave history...
-      </div>
-    );
+    return <SkeletonSection rows={8} columns={12} title={false} />;
   }
 
   if (error) {

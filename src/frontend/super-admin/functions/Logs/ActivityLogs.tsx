@@ -17,6 +17,7 @@ import LogsReportGeneration, {
   type LogsReportRecord,
 } from "./LogsReportGeneration";
 import { getLogsReportRoute } from "@/frontend/route";
+import { ActivityLogsSkeleton } from "../../../components/Skeleton/SkeletonLoaders";
 
 type Log = {
   id: number;
@@ -721,9 +722,7 @@ export default function ActivityLogs() {
 
       <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
         {logsLoading ? (
-          <div className="flex items-center justify-center py-10">
-            <p className="text-gray-500">Loading logs...</p>
-          </div>
+          <ActivityLogsSkeleton />
         ) : logsError ? (
           <div className="flex items-center justify-center py-10">
             <p className="text-red-500">Error: {logsError}</p>

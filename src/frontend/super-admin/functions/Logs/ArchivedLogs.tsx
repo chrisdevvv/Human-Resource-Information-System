@@ -11,6 +11,7 @@ import {
   Search,
 } from "lucide-react";
 import ViewLogsModal from "../../components/ViewLogsModal";
+import { ArchivedLogsSkeleton } from "../../../components/Skeleton/SkeletonLoaders";
 import { getLogsReportRoute } from "@/frontend/route";
 
 type Log = {
@@ -40,8 +41,7 @@ type LogApiRow = {
 };
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 export default function ArchivedLogs() {
   const router = useRouter();
@@ -457,9 +457,7 @@ export default function ArchivedLogs() {
 
       <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
         {logsLoading ? (
-          <div className="flex items-center justify-center py-10">
-            <p className="text-gray-500">Loading logs...</p>
-          </div>
+          <ArchivedLogsSkeleton />
         ) : logsError ? (
           <div className="flex items-center justify-center py-10">
             <p className="text-red-500">Error: {logsError}</p>
@@ -650,4 +648,3 @@ export default function ArchivedLogs() {
     </div>
   );
 }
-

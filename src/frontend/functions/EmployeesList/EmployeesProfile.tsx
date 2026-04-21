@@ -20,6 +20,7 @@ import ArchiveSuccessMessage from "../LeaveManagement/ArchiveSuccessMessage";
 import ViewEmployeeModal from "./EmployeeDetails/ViewEmployeeModal";
 import ToastMessage from "../../components/ToastMessage";
 import { archiveEmployee } from "../LeaveManagement/leaveApi";
+import { EmployeesProfileSkeleton } from "../../components/Skeleton/SkeletonLoaders";
 
 type EmployeeRecordApi = {
   id: number;
@@ -601,9 +602,7 @@ export default function EmployeesListLayout() {
 
           <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
             {employeeLoading ? (
-              <div className="flex items-center justify-center py-10">
-                <p className="text-gray-500">Loading employees...</p>
-              </div>
+              <EmployeesProfileSkeleton />
             ) : employeeError ? (
               <div className="flex items-center justify-center py-10">
                 <p className="text-red-500">Error: {employeeError}</p>

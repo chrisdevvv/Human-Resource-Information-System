@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
 import ConfirmationModal from "../../components/ConfirmationModal";
 import { createClearHandler } from "../../../utils/clearFormUtils";
+import { SkeletonBlock } from "../../../components/Skeleton/SkeletonUtils";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
@@ -557,6 +558,13 @@ export default function AddUserModal({
                     disabled
                     className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-gray-100 cursor-not-allowed"
                   />
+                ) : schoolsLoading ? (
+                  <SkeletonBlock
+                    width="w-full"
+                    height="h-10"
+                    rounded="rounded-lg"
+                    className="mt-1"
+                  />
                 ) : (
                   <select
                     value={schoolId}
@@ -567,11 +575,7 @@ export default function AddUserModal({
                     disabled={schoolsLoading}
                     className="mt-1 w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white cursor-pointer disabled:cursor-not-allowed"
                   >
-                    <option value="">
-                      {schoolsLoading
-                        ? "Loading schools..."
-                        : "Select a school"}
-                    </option>
+                    <option value="">Select a school</option>
                     {schoolOptions.map((option) => (
                       <option key={option.id} value={String(option.id)}>
                         {option.school_name}
