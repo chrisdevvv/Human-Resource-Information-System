@@ -174,10 +174,6 @@ const ensureLeaveLedgerSchema = async () => {
   };
 
   // Keep leave entry categorization structured and backend-driven.
-  await pool.promise().query(`
-    ALTER TABLE leaves
-    ADD COLUMN IF NOT EXISTS entry_kind ENUM('MANUAL','MONTHLY_CREDIT') NOT NULL DEFAULT 'MANUAL' AFTER period_of_leave;
-  `);
 
   await pool.promise().query(`
     UPDATE leaves
@@ -218,13 +214,6 @@ const ensureLeaveLedgerSchema = async () => {
 };
 
 const ensureEmployeeArchiveSchema = async () => {
-  await pool.promise().query(`
-    ALTER TABLE employees
-    ADD COLUMN IF NOT EXISTS is_archived TINYINT(1) NOT NULL DEFAULT 0 AFTER school_id,
-    ADD COLUMN IF NOT EXISTS archived_at DATETIME NULL AFTER is_archived,
-    ADD COLUMN IF NOT EXISTS archived_by INT NULL AFTER archived_at,
-    ADD COLUMN IF NOT EXISTS archived_reason VARCHAR(500) NULL AFTER archived_by;
-  `);
 
   await pool.promise().query(`
     UPDATE employees
@@ -249,14 +238,6 @@ const ensureEmployeeArchiveSchema = async () => {
 };
 
 const ensureEmployeeLeaveStatusSchema = async () => {
-  await pool.promise().query(`
-    ALTER TABLE employees
-    ADD COLUMN IF NOT EXISTS on_leave TINYINT(1) NOT NULL DEFAULT 0 AFTER archived_reason,
-    ADD COLUMN IF NOT EXISTS on_leave_from DATE NULL AFTER on_leave,
-    ADD COLUMN IF NOT EXISTS on_leave_until DATE NULL AFTER on_leave_from,
-    ADD COLUMN IF NOT EXISTS on_leave_reason VARCHAR(500) NULL AFTER on_leave_until,
-    ADD COLUMN IF NOT EXISTS leave_status_updated_at DATETIME NULL AFTER on_leave_reason;
-  `);
 
   await pool.promise().query(`
     UPDATE employees
@@ -304,34 +285,28 @@ const ensureUniqueIndex = async (tableName, indexName, columns) => {
 const ensureBirthdateSchema = async () => {
   await pool.promise().query(`
     ALTER TABLE employees
-    ADD COLUMN IF NOT EXISTS birthdate DATE NULL AFTER email;
   `);
 
   await pool.promise().query(`
     ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS birthdate DATE NULL AFTER email;
   `);
 
   await pool.promise().query(`
     ALTER TABLE registration_requests
-    ADD COLUMN IF NOT EXISTS birthdate DATE NULL AFTER email;
   `);
 };
 
 const ensureMiddleNameSchema = async () => {
   await pool.promise().query(`
     ALTER TABLE employees
-    ADD COLUMN IF NOT EXISTS middle_name VARCHAR(75) NULL AFTER first_name;
   `);
 
   await pool.promise().query(`
     ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS middle_name VARCHAR(75) NULL AFTER first_name;
   `);
 
   await pool.promise().query(`
     ALTER TABLE registration_requests
-    ADD COLUMN IF NOT EXISTS middle_name VARCHAR(75) NULL AFTER first_name;
   `);
 };
 
@@ -385,32 +360,6 @@ const ensureEmployeeTypeSchema = async () => {
 };
 
 const ensureEmployeeProfileSchema = async () => {
-  await pool.promise().query(`
-    ALTER TABLE employees
-    ADD COLUMN IF NOT EXISTS middle_initial VARCHAR(10) NULL AFTER middle_name,
-    ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(30) NULL AFTER email,
-    ADD COLUMN IF NOT EXISTS home_address VARCHAR(255) NULL AFTER mobile_number,
-    ADD COLUMN IF NOT EXISTS place_of_birth VARCHAR(255) NULL AFTER home_address,
-    ADD COLUMN IF NOT EXISTS civil_status VARCHAR(50) NULL AFTER place_of_birth,
-    ADD COLUMN IF NOT EXISTS sex VARCHAR(20) NULL AFTER civil_status,
-    ADD COLUMN IF NOT EXISTS employee_no VARCHAR(100) NULL AFTER school_id,
-    ADD COLUMN IF NOT EXISTS work_email VARCHAR(255) NULL AFTER employee_no,
-    ADD COLUMN IF NOT EXISTS district VARCHAR(255) NULL AFTER work_email,
-    ADD COLUMN IF NOT EXISTS work_district VARCHAR(255) NULL AFTER work_email,
-    ADD COLUMN IF NOT EXISTS \`position\` VARCHAR(255) NULL AFTER district,
-    ADD COLUMN IF NOT EXISTS plantilla_no VARCHAR(100) NULL AFTER \`position\`,
-    ADD COLUMN IF NOT EXISTS sg VARCHAR(20) NULL AFTER plantilla_no,
-    ADD COLUMN IF NOT EXISTS prc_license_no VARCHAR(100) NULL AFTER sg,
-    ADD COLUMN IF NOT EXISTS tin VARCHAR(50) NULL AFTER prc_license_no,
-    ADD COLUMN IF NOT EXISTS gsis_bp_no VARCHAR(50) NULL AFTER tin,
-    ADD COLUMN IF NOT EXISTS gsis_crn_no VARCHAR(50) NULL AFTER gsis_bp_no,
-    ADD COLUMN IF NOT EXISTS pagibig_no VARCHAR(50) NULL AFTER gsis_crn_no,
-    ADD COLUMN IF NOT EXISTS philhealth_no VARCHAR(50) NULL AFTER pagibig_no,
-    ADD COLUMN IF NOT EXISTS age INT NULL AFTER philhealth_no,
-    ADD COLUMN IF NOT EXISTS date_of_first_appointment DATE NULL AFTER age,
-    ADD COLUMN IF NOT EXISTS years_in_service INT NULL AFTER date_of_first_appointment,
-    ADD COLUMN IF NOT EXISTS loyalty_bonus ENUM('Yes', 'No') NOT NULL DEFAULT 'No' AFTER years_in_service;
-  `);
 
   await pool.promise().query(`
     UPDATE employees
@@ -480,7 +429,7 @@ const syncEmployeeServiceMetrics = async () => {
   await pool.promise().query(`
     UPDATE employees
     SET date_of_first_appointment = NULL
-    WHERE date_of_first_appointment = '0000-00-00';
+    WHERE date_of_first_appointment IS NULL;
   `);
 
   await pool.promise().query(`
@@ -502,10 +451,6 @@ const syncEmployeeServiceMetrics = async () => {
 };
 
 const ensureBacklogArchiveSchema = async () => {
-  await pool.promise().query(`
-    ALTER TABLE backlogs
-    ADD COLUMN IF NOT EXISTS is_archived TINYINT(1) NOT NULL DEFAULT 0 AFTER details;
-  `);
 
   await pool.promise().query(`
     UPDATE backlogs
@@ -784,10 +729,6 @@ const ensureSalaryInformationTable = async () => {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
   `);
 
-  await pool.promise().query(`
-    ALTER TABLE salary_information
-    ADD COLUMN IF NOT EXISTS increment_mode ENUM('AUTO', 'MANUAL') NOT NULL DEFAULT 'AUTO' AFTER increment_amount;
-  `);
 
   await pool.promise().query(`
     UPDATE salary_information
