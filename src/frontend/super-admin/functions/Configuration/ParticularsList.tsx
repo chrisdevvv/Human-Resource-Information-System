@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import ListLayout from "./ListLayout";
 import { ListChecks } from "lucide-react";
 
@@ -26,6 +27,27 @@ export default function ParticularsList({
   sortValue,
   onSortChange,
 }: ParticularsListProps) {
+  const [localSearchValue, setLocalSearchValue] = useState(searchValue);
+
+  useEffect(() => {
+    setLocalSearchValue(searchValue);
+  }, [searchValue]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (localSearchValue !== searchValue) {
+        onSearchChange(localSearchValue);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [localSearchValue, searchValue, onSearchChange]);
+
+  const handleClearFilters = () => {
+    setLocalSearchValue("");
+    onClearFilters();
+  };
+
   return (
     <ListLayout
       title="Particulars"
@@ -34,10 +56,10 @@ export default function ParticularsList({
       addLabel="Add Particular"
       icon={ListChecks}
       items={items}
-      searchValue={searchValue}
-      onSearchChange={onSearchChange}
+      searchValue={localSearchValue}
+      onSearchChange={setLocalSearchValue}
       hasActiveFilters={hasActiveFilters}
-      onClearFilters={onClearFilters}
+      onClearFilters={handleClearFilters}
       onAdd={onAdd}
       onDelete={onDelete}
       sortValue={sortValue}
