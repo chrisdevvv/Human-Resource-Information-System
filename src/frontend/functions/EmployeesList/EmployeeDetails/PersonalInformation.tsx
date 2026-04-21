@@ -330,7 +330,7 @@ export default function PersonalInformation({
                   .slice()
                   .sort((a, b) => a.sex_name.localeCompare(b.sex_name))
                   .map((item) => (
-                    <option key={item.id} value={item.id}>
+                    <option key={item.id} value={item.sex_name}>
                       {item.sex_name}
                     </option>
                   ))}
