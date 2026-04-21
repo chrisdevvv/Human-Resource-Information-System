@@ -7,6 +7,7 @@ import { Mail, Lock, Eye, EyeOff } from "../assets/icons";
 import { CircleHelp, Clock3, Mail as MailContact } from "lucide-react";
 import { ForgotModal, ErrorModal, RegistrationModal } from "./components";
 import ToastMessage from "@/frontend/components/ToastMessage";
+import { LoginSkeleton } from "@/frontend/components/Skeleton/SkeletonLoaders";
 import {
   isAccountLocked,
   getRemainingLockTime,
@@ -101,6 +102,10 @@ export default function LoginPageMobile() {
 
     return () => clearInterval(interval);
   }, [email]);
+
+  if (isLoading) {
+    return <LoginSkeleton />;
+  }
 
   function validateEmail(value: string) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -248,7 +253,7 @@ export default function LoginPageMobile() {
         title={toastState.title}
         message={toastState.message}
         position="bottom-right"
-        autoCloseDuration={1800}
+        autoCloseDuration={5000}
         onClose={() =>
           setToastState((prev) => ({
             ...prev,
@@ -260,8 +265,8 @@ export default function LoginPageMobile() {
       <header className="sticky top-0 z-50 bg-blue-700 text-white py-3 px-4 shadow-md">
         <div className="w-full flex items-center justify-start gap-2 text-left">
           <img
-            src="/images/[DEPED] ELMS Logo.svg"
-            alt="DepEd ELMS Logo"
+            src="/images/DepEd-CHRIS.svg"
+            alt="DepEd CHRIS"
             className="h-10 sm:h-11 w-auto"
           />
           <div>

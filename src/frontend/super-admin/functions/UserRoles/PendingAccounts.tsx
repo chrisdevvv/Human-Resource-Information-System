@@ -9,6 +9,7 @@ import {
   Search,
   UserCheck,
 } from "lucide-react";
+import { UserTableSkeleton } from "../../../components/Skeleton/SkeletonLoaders";
 import UserRolesDetailsModal, {
   type RegistrationDetail,
 } from "../../components/UserRolesDetailsModal";
@@ -274,19 +275,19 @@ export default function PendingAccounts({
       {/* Header with search and controls */}
       <div className="flex flex-col gap-4 mb-6">
         {/* Search and Status Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex-1 relative">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <div className="relative min-w-0 flex-1">
             <input
               type="text"
               placeholder="Search name, email, or school"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="text-gray-500 w-full px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="text-gray-500 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
           </div>
           <button
             onClick={handleSearch}
-            className="inline-flex items-center gap-1 px-5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+            className="inline-flex w-full sm:w-auto items-center justify-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer whitespace-nowrap"
           >
             <Search size={14} />
             Search
@@ -365,9 +366,7 @@ export default function PendingAccounts({
       {/* Table */}
       <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
         {loading ? (
-          <div className="flex items-center justify-center py-10">
-            <p className="text-gray-500">Loading pending accounts...</p>
-          </div>
+          <UserTableSkeleton rows={5} />
         ) : error ? (
           <div className="flex items-center justify-center py-10">
             <p className="text-red-500">Error: {error}</p>

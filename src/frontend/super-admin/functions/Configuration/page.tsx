@@ -22,9 +22,9 @@ import CivilStatus from "./CivilStatus";
 import Positions from "./Positions";
 import Sex from "./Sex";
 import SuccessMessage from "./SuccessMessage";
+import { ConfigurationSkeleton } from "../../../components/Skeleton/SkeletonLoaders";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type School = {
   id: number;
@@ -466,14 +466,7 @@ export default function ConfigurationPage() {
 
       <div className="min-h-[62vh]">
         {isLoading ? (
-          <div className="h-full rounded-2xl border border-blue-200 bg-white p-8 text-center shadow-sm">
-            <div className="inline-flex animate-spin">
-              <div className="h-6 w-6 rounded-full border-4 border-gray-200 border-t-blue-600" />
-            </div>
-            <p className="mt-4 text-sm text-gray-600">
-              Loading configuration...
-            </p>
-          </div>
+          <ConfigurationSkeleton />
         ) : activeTab === "schools" ? (
           <SchoolsList
             items={filteredSchools}
@@ -696,4 +689,3 @@ export default function ConfigurationPage() {
     </section>
   );
 }
-

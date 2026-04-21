@@ -1,5 +1,5 @@
-import LoadingAnimation from "@/frontend/components/LoadingAnimation/loadinganimation";
+import { ShellSkeleton } from "@/frontend/components/Skeleton/ShellSkeleton";
 
 export default function Loading() {
-  return <LoadingAnimation label="Loading page" fullScreen />;
+  return <ShellSkeleton />;
 }

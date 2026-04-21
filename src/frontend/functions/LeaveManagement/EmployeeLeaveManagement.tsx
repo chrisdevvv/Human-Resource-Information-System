@@ -20,6 +20,7 @@ import MonthlyCredit from "@/frontend/functions/LeaveManagement/MonthlyCredit/Mo
 import { createLeave } from "@/frontend/functions/LeaveManagement/leaveApi";
 import type { LeaveModalRecord } from "@/frontend/functions/LeaveManagement/leaveTypes";
 import { getLeaveCardRoute } from "@/frontend/route";
+import { LeaveManagementSkeleton } from "../../components/Skeleton/SkeletonLoaders";
 
 type EmployeeRecordApi = {
   id: number;
@@ -571,9 +572,7 @@ export default function EmployeeLeaveManagement() {
 
           <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
             {employeeLoading ? (
-              <div className="flex items-center justify-center py-10">
-                <p className="text-gray-500">Loading employees...</p>
-              </div>
+              <LeaveManagementSkeleton />
             ) : employeeError ? (
               <div className="flex items-center justify-center py-10">
                 <p className="text-red-500">Error: {employeeError}</p>
