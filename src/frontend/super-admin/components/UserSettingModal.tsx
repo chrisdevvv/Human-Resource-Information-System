@@ -95,7 +95,14 @@ export default function UserSettingModal({
     };
 
     fetchUserDetails();
-  }, [userId, onError]);
+  }, [userId]);
+
+  useEffect(() => {
+    if (selectedRole !== "SUPER_ADMIN") {
+      setSuperAdminPassword("");
+      setShowPassword(false);
+    }
+  }, [selectedRole]);
 
   const handleSaveRole = async () => {
     if (selectedRole === currentRole) {
@@ -240,12 +247,39 @@ export default function UserSettingModal({
                 <option value="ADMIN">Admin</option>
                 <option value="DATA_ENCODER">Data Encoder</option>
               </select>
+              {selectedRole === "SUPER_ADMIN" && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Confirm With Super Admin Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={superAdminPassword}
+                      onChange={(e) => setSuperAdminPassword(e.target.value)}
+                      disabled={savingRole || savingStatus}
+                      placeholder="Enter your password"
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      disabled={savingRole || savingStatus}
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 cursor-pointer disabled:opacity-50"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="mt-3 flex w-full items-center gap-2">
                 {(selectedRole !== initialRole || !!superAdminPassword) && (
                   <button
                     onClick={createClearHandler(
                       () => {
-                        setSelectedRole(initialRole);
+                        setSelectedRole(currentRole);
                         setSuperAdminPassword("");
                         setError(null);
                         setShowPassword(false);
@@ -261,6 +295,21 @@ export default function UserSettingModal({
 
                 <button
                   onClick={() => {
+                    if (selectedRole === currentRole) {
+                      setError("No role changes detected.");
+                      return;
+                    }
+
+                    if (
+                      selectedRole === "SUPER_ADMIN" &&
+                      !superAdminPassword.trim()
+                    ) {
+                      setError(
+                        "Please enter your password before promoting to Super Admin.",
+                      );
+                      return;
+                    }
+
                     setError(null);
                     setConfirmAction("role");
                   }}
@@ -344,34 +393,7 @@ export default function UserSettingModal({
           if (savingRole) return;
           setConfirmAction(null);
         }}
-      >
-        {selectedRole === "SUPER_ADMIN" && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Confirm With Super Admin Password
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={superAdminPassword}
-                onChange={(e) => setSuperAdminPassword(e.target.value)}
-                disabled={savingRole}
-                placeholder="Enter your password"
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                disabled={savingRole}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 cursor-pointer disabled:opacity-50"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-        )}
-      </ConfirmationModal>
+      />
 
       <ConfirmationModal
         visible={confirmAction === "status"}
