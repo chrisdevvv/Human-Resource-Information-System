@@ -77,24 +77,14 @@ type WorkInformationProps = {
   setEditLicenseNoPrc: (value: string) => void;
   editTin: string;
   setEditTin: (value: string) => void;
-  tinNotAvailable: boolean;
-  setTinNotAvailable: (value: boolean) => void;
   editGsisBpNo: string;
   setEditGsisBpNo: (value: string) => void;
-  gsisBpNotAvailable: boolean;
-  setGsisBpNotAvailable: (value: boolean) => void;
   editGsisCrnNo: string;
   setEditGsisCrnNo: (value: string) => void;
-  gsisCrnNotAvailable: boolean;
-  setGsisCrnNotAvailable: (value: boolean) => void;
   editPagibigNo: string;
   setEditPagibigNo: (value: string) => void;
-  pagibigNotAvailable: boolean;
-  setPagibigNotAvailable: (value: boolean) => void;
   editPhilhealthNo: string;
   setEditPhilhealthNo: (value: string) => void;
-  philhealthNotAvailable: boolean;
-  setPhilhealthNotAvailable: (value: boolean) => void;
   formatEmployeeType: (type: string) => string;
   formatValue: (value: string | number | null | undefined) => string;
   formatDate: (value: string | null | undefined) => string;
@@ -150,24 +140,14 @@ export default function WorkInformation({
   setEditLicenseNoPrc,
   editTin,
   setEditTin,
-  tinNotAvailable,
-  setTinNotAvailable,
   editGsisBpNo,
   setEditGsisBpNo,
-  gsisBpNotAvailable,
-  setGsisBpNotAvailable,
   editGsisCrnNo,
   setEditGsisCrnNo,
-  gsisCrnNotAvailable,
-  setGsisCrnNotAvailable,
   editPagibigNo,
   setEditPagibigNo,
-  pagibigNotAvailable,
-  setPagibigNotAvailable,
   editPhilhealthNo,
   setEditPhilhealthNo,
-  philhealthNotAvailable,
-  setPhilhealthNotAvailable,
   formatEmployeeType,
   formatValue,
   formatDate,
@@ -440,33 +420,17 @@ export default function WorkInformation({
             isEditing={isEditing}
             errorMessage={getValidationError("TIN")}
           >
-            <div>
-              <input
-                type="text"
-                value={editTin}
-                onChange={(e) =>
-                  setEditTin(formatMaskedId(e.target.value, GOV_ID_MASKS.tin))
-                }
-                disabled={tinNotAvailable}
-                inputMode="numeric"
-                maxLength={11}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
-                placeholder="000-000-000"
-              />
-              <label className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-gray-600">
-                <input
-                  type="checkbox"
-                  checked={tinNotAvailable}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setTinNotAvailable(checked);
-                    setEditTin(checked ? "N/A" : "");
-                  }}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                Not Available
-              </label>
-            </div>
+            <input
+              type="text"
+              value={editTin}
+              onChange={(e) =>
+                setEditTin(formatMaskedId(e.target.value, GOV_ID_MASKS.tin))
+              }
+              inputMode="numeric"
+              maxLength={11}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+              placeholder="000-000-000"
+            />
           </InfoField>
 
           <InfoField
@@ -475,31 +439,15 @@ export default function WorkInformation({
             isEditing={isEditing}
             errorMessage={getValidationError("GSIS BP Number")}
           >
-            <div>
-              <input
-                type="text"
-                value={editGsisBpNo}
-                onChange={(e) => setEditGsisBpNo(formatGsisBp(e.target.value))}
-                disabled={gsisBpNotAvailable}
-                inputMode="text"
-                maxLength={12}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
-                placeholder="00000-000000"
-              />
-              <label className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-gray-600">
-                <input
-                  type="checkbox"
-                  checked={gsisBpNotAvailable}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setGsisBpNotAvailable(checked);
-                    setEditGsisBpNo(checked ? "N/A" : "");
-                  }}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                Not Available
-              </label>
-            </div>
+            <input
+              type="text"
+              value={editGsisBpNo}
+              onChange={(e) => setEditGsisBpNo(formatGsisBp(e.target.value))}
+              inputMode="text"
+              maxLength={12}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+              placeholder="00000-000000"
+            />
           </InfoField>
 
           <InfoField
@@ -508,33 +456,17 @@ export default function WorkInformation({
             isEditing={isEditing}
             errorMessage={getValidationError("GSIS CRN Number")}
           >
-            <div>
-              <input
-                type="text"
-                value={editGsisCrnNo}
-                onChange={(e) =>
-                  setEditGsisCrnNo(normalize12Digits(e.target.value))
-                }
-                disabled={gsisCrnNotAvailable}
-                inputMode="numeric"
-                maxLength={12}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
-                placeholder="000000000000"
-              />
-              <label className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-gray-600">
-                <input
-                  type="checkbox"
-                  checked={gsisCrnNotAvailable}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setGsisCrnNotAvailable(checked);
-                    setEditGsisCrnNo(checked ? "N/A" : "");
-                  }}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                Not Available
-              </label>
-            </div>
+            <input
+              type="text"
+              value={editGsisCrnNo}
+              onChange={(e) =>
+                setEditGsisCrnNo(normalize12Digits(e.target.value))
+              }
+              inputMode="numeric"
+              maxLength={12}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+              placeholder="000000000000"
+            />
           </InfoField>
 
           <InfoField
@@ -543,33 +475,17 @@ export default function WorkInformation({
             isEditing={isEditing}
             errorMessage={getValidationError("PAG-IBIG Number")}
           >
-            <div>
-              <input
-                type="text"
-                value={editPagibigNo}
-                onChange={(e) =>
-                  setEditPagibigNo(normalize12Digits(e.target.value))
-                }
-                disabled={pagibigNotAvailable}
-                inputMode="numeric"
-                maxLength={12}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
-                placeholder="000000000000"
-              />
-              <label className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-gray-600">
-                <input
-                  type="checkbox"
-                  checked={pagibigNotAvailable}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setPagibigNotAvailable(checked);
-                    setEditPagibigNo(checked ? "N/A" : "");
-                  }}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                Not Available
-              </label>
-            </div>
+            <input
+              type="text"
+              value={editPagibigNo}
+              onChange={(e) =>
+                setEditPagibigNo(normalize12Digits(e.target.value))
+              }
+              inputMode="numeric"
+              maxLength={12}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+              placeholder="000000000000"
+            />
           </InfoField>
 
           <InfoField
@@ -578,33 +494,17 @@ export default function WorkInformation({
             isEditing={isEditing}
             errorMessage={getValidationError("PhilHealth Number")}
           >
-            <div>
-              <input
-                type="text"
-                value={editPhilhealthNo}
-                onChange={(e) =>
-                  setEditPhilhealthNo(normalizePhilhealth(e.target.value))
-                }
-                disabled={philhealthNotAvailable}
-                inputMode="numeric"
-                maxLength={12}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
-                placeholder="000000000000"
-              />
-              <label className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-gray-600">
-                <input
-                  type="checkbox"
-                  checked={philhealthNotAvailable}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setPhilhealthNotAvailable(checked);
-                    setEditPhilhealthNo(checked ? "N/A" : "");
-                  }}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                Not Available
-              </label>
-            </div>
+            <input
+              type="text"
+              value={editPhilhealthNo}
+              onChange={(e) =>
+                setEditPhilhealthNo(normalizePhilhealth(e.target.value))
+              }
+              inputMode="numeric"
+              maxLength={12}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+              placeholder="000000000000"
+            />
           </InfoField>
         </div>
       </div>
