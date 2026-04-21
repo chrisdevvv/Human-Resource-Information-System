@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff } from "../assets/icons";
 import { CircleHelp, Clock3, Mail as MailContact } from "lucide-react";
 import { ForgotModal, ErrorModal, RegistrationModal } from "./components";
-import ToastMessage from "@/components/ToastMessage";
+import ToastMessage from "@/frontend/components/ToastMessage";
 import {
   isAccountLocked,
   getRemainingLockTime,
@@ -208,22 +208,28 @@ export default function LoginPageMobile() {
         return;
       }
 
+      const dashboardRoute = getDashboardRouteByRoleStrict(
+        data.user?.role,
+        APP_ROUTES.LOGIN,
+      );
+
+      if (dashboardRoute === APP_ROUTES.LOGIN) {
+        setError({
+          title: "Login Error",
+          desc: "Your account role does not have an assigned dashboard.",
+        });
+        return;
+      }
+
       setToastState({
         isVisible: true,
         variant: "success",
         title: "Login Successful",
-        message: "Redirecting to dashboard...",
+        message: "Redirecting to your dashboard...",
       });
 
-      setTimeout(() => {
-        const dashboardRoute = getDashboardRouteByRoleStrict(
-          data.user?.role,
-          "",
-        );
-        if (dashboardRoute) {
-          router.push(dashboardRoute);
-        }
-      }, 1500);
+      router.replace(dashboardRoute);
+      return;
     } catch (err) {
       setError({
         title: "Login Error",
@@ -242,7 +248,7 @@ export default function LoginPageMobile() {
         title={toastState.title}
         message={toastState.message}
         position="bottom-right"
-        autoCloseDuration={5000}
+        autoCloseDuration={1800}
         onClose={() =>
           setToastState((prev) => ({
             ...prev,
