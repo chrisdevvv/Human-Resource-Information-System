@@ -1506,6 +1506,54 @@ app.delete(
   },
 );
 
+const ensureAutoIncrementPrimaryKeyId = async (tableName) => {
+  const [columnRows] = await pool.promise().query(
+    `SELECT COLUMN_NAME, COLUMN_TYPE, COLUMN_KEY, EXTRA
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = 'id'
+     LIMIT 1`,
+    [tableName],
+  );
+
+  if (columnRows.length === 0) {
+    console.warn(`[Schema] Table ${tableName} has no id column; skipping.`);
+    return;
+  }
+
+  const idColumn = columnRows[0];
+  const hasPrimaryKey = String(idColumn.COLUMN_KEY || "").toUpperCase() === "PRI";
+  const isAutoIncrement = String(idColumn.EXTRA || "")
+    .toLowerCase()
+    .includes("auto_increment");
+
+  if (!hasPrimaryKey) {
+    try {
+      await pool
+        .promise()
+        .query(`ALTER TABLE \`${tableName}\` ADD PRIMARY KEY (\`id\`)`);
+      console.log(`✔  Added PRIMARY KEY(id) on ${tableName}`);
+    } catch (err) {
+      if (!/multiple primary key defined/i.test(err.message)) {
+        throw err;
+      }
+    }
+  }
+
+  if (!isAutoIncrement) {
+    await pool.promise().query(
+      `ALTER TABLE \`${tableName}\` MODIFY COLUMN \`id\` INT NOT NULL AUTO_INCREMENT`,
+    );
+    console.log(`✔  Enabled AUTO_INCREMENT on ${tableName}.id`);
+  }
+};
+
+const ensureRegistrationAndSchoolSchema = async () => {
+  await ensureAutoIncrementPrimaryKeyId("schools");
+  await ensureAutoIncrementPrimaryKeyId("registration_requests");
+};
+
 // Start the server
 app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);
@@ -1513,6 +1561,9 @@ app.listen(PORT, async () => {
     const conn = await pool.promise().getConnection();
     console.log("✔  MySQL database connected successfully");
     conn.release();
+
+    await ensureRegistrationAndSchoolSchema();
+    console.log("✔  Registration and school schema are ready");
 
     await ensureSecurityTables();
     console.log("✔  Security tables are ready");
