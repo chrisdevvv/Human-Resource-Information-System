@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { X, Eye, EyeOff } from "lucide-react";
 import ConfirmationModal from "./ConfirmationModal";
 import { createClearHandler } from "../../utils/clearFormUtils";
@@ -52,7 +52,13 @@ export default function UserSettingModal({
     null,
   );
 
+  // Important fix:
+  // Prevent delayed API response from overwriting the role the user already selected.
+  const roleTouchedRef = useRef(false);
+
   useEffect(() => {
+    let cancelled = false;
+
     const fetchUserDetails = async () => {
       try {
         setLoadingUser(true);
@@ -67,34 +73,50 @@ export default function UserSettingModal({
           },
         });
 
+        const result = (await response.json().catch(() => ({}))) as UserDetailsResponse & {
+          message?: string;
+        };
+
         if (!response.ok) {
-          const body = await response.json();
-          throw new Error(body.message || "Failed to fetch user details.");
+          throw new Error(result.message || "Failed to fetch user details.");
         }
 
-        const result = (await response.json()) as UserDetailsResponse;
+        if (cancelled) return;
+
         const roleFromApi = result.data?.role;
         const activeFromApi = result.data?.is_active;
 
         if (roleFromApi) {
           setCurrentRole(roleFromApi);
-          setSelectedRole(roleFromApi);
+
+          // Only sync dropdown from API if the user has NOT interacted yet.
+          if (!roleTouchedRef.current) {
+            setSelectedRole(roleFromApi);
+          }
         }
 
         if (activeFromApi !== undefined) {
           setIsActive(normalizeIsActive(activeFromApi));
         }
       } catch (err) {
+        if (cancelled) return;
+
         const errorMessage =
           err instanceof Error ? err.message : "An error occurred.";
         setError(errorMessage);
         onError?.(errorMessage);
       } finally {
-        setLoadingUser(false);
+        if (!cancelled) {
+          setLoadingUser(false);
+        }
       }
     };
 
     fetchUserDetails();
+
+    return () => {
+      cancelled = true;
+    };
   }, [userId, onError]);
 
   useEffect(() => {
@@ -118,6 +140,7 @@ export default function UserSettingModal({
     try {
       setSavingRole(true);
       setError(null);
+
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
 
@@ -131,9 +154,12 @@ export default function UserSettingModal({
           body: JSON.stringify({ password: superAdminPassword }),
         });
 
+        const verifyBody = (await verifyRes.json().catch(() => ({}))) as {
+          message?: string;
+        };
+
         if (!verifyRes.ok) {
-          const body = await verifyRes.json();
-          throw new Error(body.message || "Incorrect password.");
+          throw new Error(verifyBody.message || "Incorrect password.");
         }
       }
 
@@ -146,14 +172,20 @@ export default function UserSettingModal({
         body: JSON.stringify({ role: selectedRole }),
       });
 
+      const body = (await response.json().catch(() => ({}))) as {
+        message?: string;
+      };
+
       if (!response.ok) {
-        const body = await response.json();
         throw new Error(body.message || "Failed to update role.");
       }
 
       setCurrentRole(selectedRole);
+      setSelectedRole(selectedRole);
       setSuperAdminPassword("");
+      setShowPassword(false);
       setConfirmAction(null);
+      roleTouchedRef.current = false;
 
       onSuccess("User role updated successfully.");
     } catch (err) {
@@ -177,6 +209,7 @@ export default function UserSettingModal({
     try {
       setSavingStatus(true);
       setError(null);
+
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("No authentication token found.");
 
@@ -189,8 +222,11 @@ export default function UserSettingModal({
         body: JSON.stringify({ is_active: nextStatus ? 1 : 0 }),
       });
 
+      const body = (await response.json().catch(() => ({}))) as {
+        message?: string;
+      };
+
       if (!response.ok) {
-        const body = await response.json();
         throw new Error(body.message || "Failed to update account status.");
       }
 
@@ -207,24 +243,27 @@ export default function UserSettingModal({
     }
   };
 
+  const hasRoleChanges =
+    selectedRole !== currentRole || !!superAdminPassword.trim();
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl border border-blue-200 shadow-2xl w-full max-w-md mx-4 p-6 relative">
+      <div className="relative mx-4 w-full max-w-md rounded-xl border border-blue-200 bg-white p-6 shadow-2xl">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 cursor-pointer"
+          className="absolute top-4 right-4 cursor-pointer text-gray-400 hover:text-gray-600"
           aria-label="Close settings modal"
         >
           <X size={18} />
         </button>
 
-        <h2 className="text-xl font-bold text-gray-800 mb-1">User Settings</h2>
-        <p className="text-sm text-gray-500 mb-5">
+        <h2 className="mb-1 text-xl font-bold text-gray-800">User Settings</h2>
+        <p className="mb-5 text-sm text-gray-500">
           Manage account for {userName}
         </p>
 
         {error && (
-          <p className="text-sm text-red-600 mb-4 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
             {error}
           </p>
         )}
@@ -234,22 +273,26 @@ export default function UserSettingModal({
         ) : (
           <>
             <div className="mb-5">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
                 Role
               </label>
               <select
                 value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value as UserRole)}
+                onChange={(e) => {
+                  roleTouchedRef.current = true;
+                  setSelectedRole(e.target.value as UserRole);
+                }}
                 disabled={savingRole || savingStatus}
-                className="text-gray-600 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="SUPER_ADMIN">Super Admin</option>
                 <option value="ADMIN">Admin</option>
                 <option value="DATA_ENCODER">Data Encoder</option>
               </select>
+
               {selectedRole === "SUPER_ADMIN" && (
                 <div className="mt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
                     Confirm With Super Admin Password
                   </label>
                   <div className="relative">
@@ -259,13 +302,13 @@ export default function UserSettingModal({
                       onChange={(e) => setSuperAdminPassword(e.target.value)}
                       disabled={savingRole || savingStatus}
                       placeholder="Enter your password"
-                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       disabled={savingRole || savingStatus}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 cursor-pointer disabled:opacity-50"
+                      className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 text-gray-400 hover:text-gray-600 disabled:opacity-50"
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -275,7 +318,7 @@ export default function UserSettingModal({
               )}
 
               <div className="mt-3 flex w-full items-center gap-2">
-                {(selectedRole !== initialRole || !!superAdminPassword) && (
+                {hasRoleChanges && (
                   <button
                     onClick={createClearHandler(
                       () => {
@@ -283,8 +326,9 @@ export default function UserSettingModal({
                         setSuperAdminPassword("");
                         setError(null);
                         setShowPassword(false);
+                        roleTouchedRef.current = false;
                       },
-                      selectedRole !== initialRole || !!superAdminPassword,
+                      hasRoleChanges,
                     )}
                     disabled={savingRole || savingStatus}
                     className="mr-auto cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline disabled:opacity-60 disabled:no-underline"
@@ -314,26 +358,27 @@ export default function UserSettingModal({
                     setConfirmAction("role");
                   }}
                   disabled={savingRole || savingStatus}
-                  className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer disabled:opacity-60"
+                  className="cursor-pointer rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
                 >
                   Save Role
                 </button>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-gray-200">
-              <p className="text-sm text-gray-700 mb-3">
+            <div className="border-t border-gray-200 pt-4">
+              <p className="mb-3 text-sm text-gray-700">
                 Account is currently{" "}
                 <span
                   className={
                     isActive
-                      ? "text-green-700 font-semibold"
-                      : "text-red-700 font-semibold"
+                      ? "font-semibold text-green-700"
+                      : "font-semibold text-red-700"
                   }
                 >
                   {isActive ? "Active" : "Inactive"}
                 </span>
               </p>
+
               <button
                 onClick={() => {
                   setError(null);
@@ -344,9 +389,9 @@ export default function UserSettingModal({
                   savingRole ||
                   (isActive && currentRole === "SUPER_ADMIN")
                 }
-                className={`w-full px-3 py-1.5 rounded-lg transition font-medium text-sm cursor-pointer disabled:opacity-60 ${
+                className={`w-full cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition disabled:opacity-60 ${
                   isActive && currentRole === "SUPER_ADMIN"
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    ? "cursor-not-allowed bg-gray-300 text-gray-500"
                     : isActive
                       ? "bg-red-500 text-white hover:bg-red-800"
                       : "bg-green-600 text-white hover:bg-green-700"
@@ -358,6 +403,7 @@ export default function UserSettingModal({
                     ? "Deactivate Account"
                     : "Reactivate Account"}
               </button>
+
               {isActive && currentRole === "SUPER_ADMIN" && (
                 <p className="mt-2 text-xs text-gray-500">
                   Deactivation is disabled for Super Admin accounts.
