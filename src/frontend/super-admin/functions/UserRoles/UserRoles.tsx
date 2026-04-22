@@ -264,7 +264,17 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
   };
 
   useEffect(() => {
+    const hasOpenModal =
+      Boolean(settingsTarget) ||
+      Boolean(detailsTargetId) ||
+      Boolean(detailsEditTarget) ||
+      showAddUserModal;
+
     fetchUsers();
+
+    if (hasOpenModal) {
+      return;
+    }
 
     const intervalId = window.setInterval(() => {
       fetchUsers(false);
@@ -283,6 +293,10 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
     accountStatusFilter,
     letterFilter,
     sortOrder,
+    settingsTarget,
+    detailsTargetId,
+    detailsEditTarget,
+    showAddUserModal,
   ]);
 
   useEffect(() => {

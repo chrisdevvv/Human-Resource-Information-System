@@ -48,7 +48,12 @@ const toEnumSql = (values) =>
 const Leave = {
   // Supports optional filtering by employee_id and pagination. If pagination not provided, returns full rows for compatibility.
   getAll: async ({ employee_id, school_id } = {}, pagination) => {
-    let baseQuery = `FROM leaves JOIN employees ON leaves.employee_id = employees.id WHERE 1=1`;
+    let baseQuery = `
+      FROM leaves
+      JOIN employees ON leaves.employee_id = employees.id
+      LEFT JOIN work_information wi ON wi.employee_id = employees.id
+      WHERE 1=1
+    `;
     const params = [];
 
     if (employee_id) {
@@ -64,12 +69,10 @@ const Leave = {
     const orderClause = ` ORDER BY leaves.employee_id ASC, leaves.id ASC`;
 
     if (!pagination || !pagination.page) {
-      const [rows] = await pool
-        .promise()
-        .query(
-          `SELECT leaves.*, CONCAT(employees.first_name, ' ', employees.last_name) AS full_name, employees.employee_type, employees.school_id ${baseQuery} ${orderClause}`,
-          params,
-        );
+      const [rows] = await pool.promise().query(
+        `SELECT leaves.*, CONCAT(employees.first_name, ' ', employees.last_name) AS full_name, wi.employee_type AS employee_type, employees.school_id ${baseQuery} ${orderClause}`,
+        params,
+      );
       return rows;
     }
 
@@ -81,12 +84,10 @@ const Leave = {
       .promise()
       .query(`SELECT COUNT(1) as total ${baseQuery}`, params);
 
-    const [rows] = await pool
-      .promise()
-      .query(
-        `SELECT leaves.*, CONCAT(employees.first_name, ' ', employees.last_name) AS full_name, employees.employee_type, employees.school_id ${baseQuery} ${orderClause} LIMIT ? OFFSET ?`,
-        [...params, pageSize, offset],
-      );
+    const [rows] = await pool.promise().query(
+      `SELECT leaves.*, CONCAT(employees.first_name, ' ', employees.last_name) AS full_name, wi.employee_type AS employee_type, employees.school_id ${baseQuery} ${orderClause} LIMIT ? OFFSET ?`,
+      [...params, pageSize, offset],
+    );
 
     return { data: rows, total: Number(total), page, pageSize };
   },
@@ -94,14 +95,15 @@ const Leave = {
   getById: async (id) => {
     const [rows] = await pool.promise().query(
       `
-            SELECT leaves.*,
-                   CONCAT(employees.first_name, ' ', employees.last_name) AS full_name,
-                   employees.employee_type,
-                   employees.school_id
-            FROM leaves
-            JOIN employees ON leaves.employee_id = employees.id
-            WHERE leaves.id = ?
-        `,
+        SELECT leaves.*,
+               CONCAT(employees.first_name, ' ', employees.last_name) AS full_name,
+               wi.employee_type AS employee_type,
+               employees.school_id
+        FROM leaves
+        JOIN employees ON leaves.employee_id = employees.id
+        LEFT JOIN work_information wi ON wi.employee_id = employees.id
+        WHERE leaves.id = ?
+      `,
       [id],
     );
     return rows[0];
@@ -360,10 +362,11 @@ const Leave = {
   // Returns all non-teaching employees for batch monthly crediting
   getAllNonTeachingEmployees: async () => {
     const [rows] = await pool.promise().query(
-      `SELECT id, first_name, last_name, employee_type, on_leave, on_leave_from, on_leave_until
-             FROM employees
-             WHERE is_archived = 0
-               AND LOWER(REPLACE(employee_type, '_', '-')) = 'non-teaching'`,
+      `SELECT employees.id, employees.first_name, employees.last_name, wi.employee_type, employees.on_leave, employees.on_leave_from, employees.on_leave_until
+       FROM employees
+       LEFT JOIN work_information wi ON wi.employee_id = employees.id
+       WHERE employees.is_archived = 0
+         AND LOWER(REPLACE(REPLACE(wi.employee_type, '_', '-'), ' ', '-')) = 'non-teaching'`,
     );
     return rows;
   },
@@ -371,20 +374,24 @@ const Leave = {
   // Returns teaching and teaching-related employees (excluded from monthly crediting)
   getAllTeachingEmployees: async () => {
     const [rows] = await pool.promise().query(
-      `SELECT id, first_name, last_name, employee_type, on_leave, on_leave_from, on_leave_until
-             FROM employees
-             WHERE is_archived = 0
-               AND LOWER(REPLACE(REPLACE(employee_type, '_', '-'), ' ', '-')) IN ('teaching', 'teaching-related')`,
+      `SELECT employees.id, employees.first_name, employees.last_name, wi.employee_type, employees.on_leave, employees.on_leave_from, employees.on_leave_until
+       FROM employees
+       LEFT JOIN work_information wi ON wi.employee_id = employees.id
+       WHERE employees.is_archived = 0
+         AND LOWER(REPLACE(REPLACE(wi.employee_type, '_', '-'), ' ', '-')) IN ('teaching', 'teaching-related')`,
     );
     return rows;
   },
 
   getEmployeeTypeById: async (employee_id) => {
-    const [rows] = await pool
-      .promise()
-      .query("SELECT employee_type FROM employees WHERE id = ? LIMIT 1", [
-        employee_id,
-      ]);
+    const [rows] = await pool.promise().query(
+      `SELECT wi.employee_type
+       FROM employees
+       LEFT JOIN work_information wi ON wi.employee_id = employees.id
+       WHERE employees.id = ?
+       LIMIT 1`,
+      [employee_id],
+    );
     return rows[0]?.employee_type || null;
   },
 

@@ -57,7 +57,6 @@ if (IS_PRODUCTION && corsAllowlist.length === 0) {
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow server-to-server calls and local scripts without browser origin.
     if (!origin) {
       return callback(null, true);
     }
@@ -115,7 +114,6 @@ const ensureSecurityTables = async () => {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
 
-  // Keep the table compact.
   await pool
     .promise()
     .query("DELETE FROM revoked_tokens WHERE expires_at <= NOW()");
@@ -160,6 +158,7 @@ const ensureLeaveLedgerSchema = async () => {
     "Vacation Leave",
     "Wellness Leave",
   ];
+
   const toEnumSql = (values) =>
     values.map((v) => `'${String(v).replace(/'/g, "''")}'`).join(",");
 
@@ -172,8 +171,6 @@ const ensureLeaveLedgerSchema = async () => {
     const matches = inner.match(/'((?:[^'\\]|\\.)*)'/g) || [];
     return matches.map((token) => token.slice(1, -1).replace(/\\'/g, "'"));
   };
-
-  // Keep leave entry categorization structured and backend-driven.
 
   await pool.promise().query(`
     UPDATE leaves
@@ -198,7 +195,6 @@ const ensureLeaveLedgerSchema = async () => {
     mergedEnumValues.length > 0 ? mergedEnumValues : leaveParticularsDefaults,
   );
 
-  // Normalize legacy free-text particulars before converting to ENUM.
   await pool.promise().query(`
     UPDATE leaves
     SET particulars = 'Others'
@@ -275,242 +271,67 @@ const ensureUniqueIndex = async (tableName, indexName, columns) => {
   const quotedColumns = columns.map((column) => `\`${column}\``).join(", ");
   await pool
     .promise()
-    .query(
-      `CREATE UNIQUE INDEX ${indexName} ON ${tableName} (${quotedColumns})`,
-    );
+    .query(`CREATE UNIQUE INDEX ${indexName} ON ${tableName} (${quotedColumns})`);
 };
 
 const ensureBirthdateSchema = async () => {
-  await pool.promise().query(`
-    ALTER TABLE employees
-  `);
+  const targets = [
+    { table: "employees", column: "birthdate", definition: "DATE NULL" },
+    { table: "users", column: "birthdate", definition: "DATE NULL" },
+    {
+      table: "registration_requests",
+      column: "birthdate",
+      definition: "DATE NULL",
+    },
+  ];
 
-  await pool.promise().query(`
-    ALTER TABLE users
-  `);
+  for (const target of targets) {
+    const [rows] = await pool.promise().query(
+      `SELECT COLUMN_NAME
+       FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = ?
+         AND COLUMN_NAME = ?
+       LIMIT 1`,
+      [target.table, target.column],
+    );
 
-  await pool.promise().query(`
-    ALTER TABLE registration_requests
-  `);
+    if (rows.length === 0) {
+      await pool.promise().query(`
+        ALTER TABLE ${target.table}
+        ADD COLUMN ${target.column} ${target.definition};
+      `);
+    }
+  }
 };
 
 const ensureMiddleNameSchema = async () => {
-  await pool.promise().query(`
-    ALTER TABLE employees
-  `);
+  const targets = [
+    { table: "employees", column: "middle_name", definition: "VARCHAR(255) NULL" },
+    { table: "users", column: "middle_name", definition: "VARCHAR(255) NULL" },
+    {
+      table: "registration_requests",
+      column: "middle_name",
+      definition: "VARCHAR(255) NULL",
+    },
+  ];
 
-  await pool.promise().query(`
-    ALTER TABLE users
-  `);
-
-  await pool.promise().query(`
-    ALTER TABLE registration_requests
-  `);
-};
-
-const ensureEmployeeTypeSchema = async () => {
-  const parseEnumValues = (columnType) => {
-    if (!columnType || !/^enum\(/i.test(columnType)) return [];
-    const inner = columnType.slice(
-      columnType.indexOf("(") + 1,
-      columnType.lastIndexOf(")"),
+  for (const target of targets) {
+    const [rows] = await pool.promise().query(
+      `SELECT COLUMN_NAME
+       FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = ?
+         AND COLUMN_NAME = ?
+       LIMIT 1`,
+      [target.table, target.column],
     );
-    const matches = inner.match(/'((?:[^'\\]|\\.)*)'/g) || [];
-    return matches.map((token) => token.slice(1, -1).replace(/\\'/g, "'"));
-  };
 
-  const toEnumSql = (values) =>
-    values.map((v) => `'${String(v).replace(/'/g, "''")}'`).join(",");
-
-  const [typeRows] = await pool.promise().query(
-    `SELECT COLUMN_TYPE AS column_type
-     FROM INFORMATION_SCHEMA.COLUMNS
-     WHERE TABLE_SCHEMA = DATABASE()
-       AND TABLE_NAME = 'employees'
-       AND COLUMN_NAME = 'employee_type'
-     LIMIT 1`,
-  );
-
-  const currentEnumValues = parseEnumValues(typeRows?.[0]?.column_type || "");
-  if (currentEnumValues.length === 0) {
-    return;
-  }
-
-  const mergedValues = Array.from(
-    new Set([...currentEnumValues, "teaching-related"]),
-  );
-
-  if (mergedValues.length !== currentEnumValues.length) {
-    const enumSql = toEnumSql(mergedValues);
-    await pool.promise().query(`
-      ALTER TABLE employees
-      MODIFY COLUMN employee_type ENUM(${enumSql}) NOT NULL;
-    `);
-  }
-
-  // Canonicalize legacy values so all variants store as teaching-related.
-  await pool.promise().query(`
-    UPDATE employees
-    SET employee_type = 'teaching-related'
-    WHERE LOWER(REPLACE(REPLACE(employee_type, '_', '-'), ' ', '-')) = 'teaching-related'
-      AND employee_type <> 'teaching-related';
-  `);
-};
-
-const ensureEmployeeProfileSchema = async () => {
-  const [currentEmployeeTypeColumns] = await pool.promise().query(`
-    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_SCHEMA = DATABASE()
-      AND TABLE_NAME = 'employees'
-      AND COLUMN_NAME = 'current_employee_type'
-    LIMIT 1
-  `);
-
-  if (currentEmployeeTypeColumns.length === 0) {
-    await pool.promise().query(`
-      ALTER TABLE employees
-      ADD COLUMN current_employee_type ENUM('teaching','non-teaching','teaching-related') NULL AFTER employee_type;
-    `);
-  }
-
-  const [currentPositionColumns] = await pool.promise().query(`
-    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_SCHEMA = DATABASE()
-      AND TABLE_NAME = 'employees'
-      AND COLUMN_NAME = 'current_position'
-    LIMIT 1
-  `);
-
-  if (currentPositionColumns.length === 0) {
-    await pool.promise().query(`
-      ALTER TABLE employees
-      ADD COLUMN current_position VARCHAR(255) NULL AFTER position;
-    `);
-  }
-
-  const [currentPlantillaColumns] = await pool.promise().query(`
-    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_SCHEMA = DATABASE()
-      AND TABLE_NAME = 'employees'
-      AND COLUMN_NAME = 'current_plantilla_no'
-    LIMIT 1
-  `);
-
-  if (currentPlantillaColumns.length === 0) {
-    await pool.promise().query(`
-      ALTER TABLE employees
-      ADD COLUMN current_plantilla_no VARCHAR(100) NULL AFTER plantilla_no;
-    `);
-  }
-
-  const [currentAppointmentColumns] = await pool.promise().query(`
-    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_SCHEMA = DATABASE()
-      AND TABLE_NAME = 'employees'
-      AND COLUMN_NAME = 'current_appointment_date'
-    LIMIT 1
-  `);
-
-  if (currentAppointmentColumns.length === 0) {
-    await pool.promise().query(`
-      ALTER TABLE employees
-      ADD COLUMN current_appointment_date DATE NULL AFTER date_of_first_appointment;
-    `);
-  }
-
-  const [sgColumns] = await pool.promise().query(`
-    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_SCHEMA = DATABASE()
-      AND TABLE_NAME = 'employees'
-      AND COLUMN_NAME = 'sg'
-    LIMIT 1
-  `);
-
-  if (sgColumns.length === 0) {
-    await pool.promise().query(`
-      ALTER TABLE employees
-      ADD COLUMN sg VARCHAR(20) NULL AFTER plantilla_no;
-    `);
-  }
-
-  const [currentSgColumns] = await pool.promise().query(`
-    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_SCHEMA = DATABASE()
-      AND TABLE_NAME = 'employees'
-      AND COLUMN_NAME = 'current_sg'
-    LIMIT 1
-  `);
-
-  if (currentSgColumns.length === 0) {
-    await pool.promise().query(`
-      ALTER TABLE employees
-      ADD COLUMN current_sg VARCHAR(20) NULL AFTER sg;
-    `);
-  }
-
-  await pool.promise().query(`
-    UPDATE employees
-    SET district = work_district
-    WHERE district IS NULL
-      AND work_district IS NOT NULL
-      AND work_district <> '';
-  `);
-
-  await pool.promise().query(`
-    UPDATE employees
-    SET email = NULLIF(TRIM(email), ''),
-        mobile_number = NULLIF(TRIM(mobile_number), ''),
-        employee_no = NULLIF(TRIM(employee_no), ''),
-        work_email = NULLIF(TRIM(work_email), ''),
-        plantilla_no = NULLIF(TRIM(plantilla_no), ''),
-        current_position = NULLIF(TRIM(current_position), ''),
-        current_plantilla_no = NULLIF(TRIM(current_plantilla_no), ''),
-      sg = NULLIF(TRIM(sg), ''),
-        current_sg = NULLIF(TRIM(current_sg), ''),
-        prc_license_no = NULLIF(TRIM(prc_license_no), ''),
-        tin = NULLIF(TRIM(tin), ''),
-        gsis_bp_no = NULLIF(TRIM(gsis_bp_no), ''),
-        gsis_crn_no = NULLIF(TRIM(gsis_crn_no), ''),
-        pagibig_no = NULLIF(TRIM(pagibig_no), ''),
-        philhealth_no = NULLIF(TRIM(philhealth_no), '');
-  `);
-
-  const indexStatements = [
-    `CREATE INDEX idx_employees_district ON employees (district)`,
-    `CREATE INDEX idx_employees_work_district ON employees (work_district)`,
-  ];
-
-  for (const sql of indexStatements) {
-    try {
-      await pool.promise().query(sql);
-    } catch (err) {
-      if (!/Duplicate|exists/i.test(err.message)) {
-        console.warn("Employee profile index warning:", err.message);
-      }
-    }
-  }
-
-  const uniqueIndexStatements = [
-    ["uk_employees_email", ["email"]],
-    ["uk_employees_mobile_number", ["mobile_number"]],
-    ["uk_employees_employee_no", ["employee_no"]],
-    ["uk_employees_work_email", ["work_email"]],
-    ["uk_employees_plantilla_no", ["plantilla_no"]],
-    ["uk_employees_prc_license_no", ["prc_license_no"]],
-    ["uk_employees_tin", ["tin"]],
-    ["uk_employees_gsis_bp_no", ["gsis_bp_no"]],
-    ["uk_employees_gsis_crn_no", ["gsis_crn_no"]],
-    ["uk_employees_pagibig_no", ["pagibig_no"]],
-    ["uk_employees_philhealth_no", ["philhealth_no"]],
-  ];
-
-  for (const [indexName, columns] of uniqueIndexStatements) {
-    try {
-      await ensureUniqueIndex("employees", indexName, columns);
-    } catch (err) {
-      if (!/Duplicate|exists/i.test(err.message)) {
-        console.warn("Employee profile unique index warning:", err.message);
-      }
+    if (rows.length === 0) {
+      await pool.promise().query(`
+        ALTER TABLE ${target.table}
+        ADD COLUMN ${target.column} ${target.definition};
+      `);
     }
   }
 };
@@ -561,83 +382,6 @@ const ensureWorkInformationTable = async () => {
   `);
 
   await pool.promise().query(`
-    INSERT INTO work_information (
-      employee_id,
-      employee_type,
-      employee_no,
-      work_email,
-      district,
-      position,
-      position_id,
-      plantilla_no,
-      sg,
-      date_of_first_appointment,
-      years_in_service,
-      loyalty_bonus,
-      current_employee_type,
-      current_position,
-      current_plantilla_no,
-      current_appointment_date,
-      current_sg,
-      prc_license_no,
-      tin,
-      gsis_bp_no,
-      gsis_crn_no,
-      pagibig_no,
-      philhealth_no
-    )
-    SELECT
-      e.id,
-      e.employee_type,
-      e.employee_no,
-      e.work_email,
-      e.district,
-      e.position,
-      e.position_id,
-      e.plantilla_no,
-      e.sg,
-      e.date_of_first_appointment,
-      e.years_in_service,
-      e.loyalty_bonus,
-      e.current_employee_type,
-      e.current_position,
-      e.current_plantilla_no,
-      e.current_appointment_date,
-      e.current_sg,
-      e.prc_license_no,
-      e.tin,
-      e.gsis_bp_no,
-      e.gsis_crn_no,
-      e.pagibig_no,
-      e.philhealth_no
-    FROM employees e
-    ON DUPLICATE KEY UPDATE
-      employee_type = VALUES(employee_type),
-      employee_no = VALUES(employee_no),
-      work_email = VALUES(work_email),
-      district = VALUES(district),
-      position = VALUES(position),
-      position_id = VALUES(position_id),
-      plantilla_no = VALUES(plantilla_no),
-      sg = VALUES(sg),
-      date_of_first_appointment = VALUES(date_of_first_appointment),
-      years_in_service = VALUES(years_in_service),
-      loyalty_bonus = VALUES(loyalty_bonus),
-      current_employee_type = VALUES(current_employee_type),
-      current_position = VALUES(current_position),
-      current_plantilla_no = VALUES(current_plantilla_no),
-      current_appointment_date = VALUES(current_appointment_date),
-      current_sg = VALUES(current_sg),
-      prc_license_no = VALUES(prc_license_no),
-      tin = VALUES(tin),
-      gsis_bp_no = VALUES(gsis_bp_no),
-      gsis_crn_no = VALUES(gsis_crn_no),
-      pagibig_no = VALUES(pagibig_no),
-      philhealth_no = VALUES(philhealth_no),
-      updated_at = CURRENT_TIMESTAMP;
-  `);
-
-  await pool.promise().query(`
     UPDATE work_information
     SET employee_no = NULLIF(TRIM(employee_no), ''),
         work_email = NULLIF(TRIM(work_email), ''),
@@ -658,73 +402,217 @@ const ensureWorkInformationTable = async () => {
   `);
 };
 
-const syncEmployeeServiceMetrics = async () => {
+const ensureEmployeeTypeSchema = async () => {
+  const parseEnumValues = (columnType) => {
+    if (!columnType || !/^enum\(/i.test(columnType)) return [];
+    const inner = columnType.slice(
+      columnType.indexOf("(") + 1,
+      columnType.lastIndexOf(")"),
+    );
+    const matches = inner.match(/'((?:[^'\\]|\\.)*)'/g) || [];
+    return matches.map((token) => token.slice(1, -1).replace(/\\'/g, "'"));
+  };
+
+  const toEnumSql = (values) =>
+    values.map((v) => `'${String(v).replace(/'/g, "''")}'`).join(",");
+
+  const [typeRows] = await pool.promise().query(
+    `SELECT COLUMN_TYPE AS column_type
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'work_information'
+       AND COLUMN_NAME = 'employee_type'
+     LIMIT 1`,
+  );
+
+  const currentType = typeRows?.[0]?.column_type || "";
+  if (!/^enum\(/i.test(currentType)) {
+    await pool.promise().query(`
+      ALTER TABLE work_information
+      MODIFY COLUMN employee_type ENUM('teaching','non-teaching','teaching-related') NULL;
+    `);
+    return;
+  }
+
+  const currentEnumValues = parseEnumValues(currentType);
+  const mergedValues = Array.from(
+    new Set([...currentEnumValues, "teaching-related"]),
+  );
+
+  if (mergedValues.length !== currentEnumValues.length) {
+    const enumSql = toEnumSql(mergedValues);
+    await pool.promise().query(`
+      ALTER TABLE work_information
+      MODIFY COLUMN employee_type ENUM(${enumSql}) NULL;
+    `);
+  }
+
   await pool.promise().query(`
-    UPDATE employees
-    SET date_of_first_appointment = NULL
-    WHERE date_of_first_appointment IS NULL;
+    UPDATE work_information
+    SET employee_type = 'teaching-related'
+    WHERE LOWER(REPLACE(REPLACE(employee_type, '_', '-'), ' ', '-')) = 'teaching-related'
+      AND employee_type <> 'teaching-related';
   `);
 
   await pool.promise().query(`
-    UPDATE employees
-    SET years_in_service = CASE
-          WHEN date_of_first_appointment IS NULL THEN NULL
-          WHEN date_of_first_appointment > CURDATE() THEN 0
-          ELSE TIMESTAMPDIFF(YEAR, date_of_first_appointment, CURDATE())
-        END,
-        loyalty_bonus = CASE
-          WHEN date_of_first_appointment IS NULL THEN 'No'
-          WHEN date_of_first_appointment > CURDATE() THEN 'No'
-          WHEN TIMESTAMPDIFF(YEAR, date_of_first_appointment, CURDATE()) > 0
-               AND MOD(TIMESTAMPDIFF(YEAR, date_of_first_appointment, CURDATE()), 5) = 0
-            THEN 'Yes'
-          ELSE 'No'
-        END;
+    UPDATE work_information
+    SET current_employee_type = 'teaching-related'
+    WHERE LOWER(REPLACE(REPLACE(current_employee_type, '_', '-'), ' ', '-')) = 'teaching-related'
+      AND current_employee_type <> 'teaching-related';
   `);
 };
 
-const ensureBacklogArchiveSchema = async () => {
+const ensureEmployeeProfileSchema = async () => {
+  const addColumnIfMissing = async (columnName, definition) => {
+    const [rows] = await pool.promise().query(
+      `SELECT COLUMN_NAME
+       FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = 'work_information'
+         AND COLUMN_NAME = ?
+       LIMIT 1`,
+      [columnName],
+    );
+
+    if (rows.length === 0) {
+      await pool.promise().query(`ALTER TABLE work_information ADD COLUMN ${definition};`);
+    }
+  };
+
+  await addColumnIfMissing(
+    "current_employee_type",
+    "current_employee_type VARCHAR(32) NULL AFTER loyalty_bonus",
+  );
+  await addColumnIfMissing(
+    "current_position",
+    "current_position VARCHAR(255) NULL AFTER current_employee_type",
+  );
+  await addColumnIfMissing(
+    "current_plantilla_no",
+    "current_plantilla_no VARCHAR(100) NULL AFTER current_position",
+  );
+  await addColumnIfMissing(
+    "current_appointment_date",
+    "current_appointment_date DATE NULL AFTER current_plantilla_no",
+  );
+  await addColumnIfMissing(
+    "current_sg",
+    "current_sg VARCHAR(20) NULL AFTER current_appointment_date",
+  );
+  await addColumnIfMissing("sg", "sg VARCHAR(20) NULL AFTER plantilla_no");
+  await addColumnIfMissing(
+    "district",
+    "district VARCHAR(255) NULL AFTER work_email",
+  );
+  await addColumnIfMissing(
+    "position",
+    "position VARCHAR(255) NULL AFTER district",
+  );
+  await addColumnIfMissing(
+    "position_id",
+    "position_id INT NULL AFTER position",
+  );
+  await addColumnIfMissing(
+    "employee_no",
+    "employee_no VARCHAR(100) NULL AFTER employee_type",
+  );
+  await addColumnIfMissing(
+    "work_email",
+    "work_email VARCHAR(255) NULL AFTER employee_no",
+  );
+  await addColumnIfMissing(
+    "plantilla_no",
+    "plantilla_no VARCHAR(100) NULL AFTER position_id",
+  );
+  await addColumnIfMissing(
+    "date_of_first_appointment",
+    "date_of_first_appointment DATE NULL AFTER sg",
+  );
+  await addColumnIfMissing(
+    "years_in_service",
+    "years_in_service INT NULL AFTER date_of_first_appointment",
+  );
+  await addColumnIfMissing(
+    "loyalty_bonus",
+    "loyalty_bonus ENUM('Yes', 'No') NOT NULL DEFAULT 'No' AFTER years_in_service",
+  );
+  await addColumnIfMissing(
+    "prc_license_no",
+    "prc_license_no VARCHAR(100) NULL AFTER current_sg",
+  );
+  await addColumnIfMissing("tin", "tin VARCHAR(50) NULL AFTER prc_license_no");
+  await addColumnIfMissing(
+    "gsis_bp_no",
+    "gsis_bp_no VARCHAR(50) NULL AFTER tin",
+  );
+  await addColumnIfMissing(
+    "gsis_crn_no",
+    "gsis_crn_no VARCHAR(50) NULL AFTER gsis_bp_no",
+  );
+  await addColumnIfMissing(
+    "pagibig_no",
+    "pagibig_no VARCHAR(50) NULL AFTER gsis_crn_no",
+  );
+  await addColumnIfMissing(
+    "philhealth_no",
+    "philhealth_no VARCHAR(50) NULL AFTER pagibig_no",
+  );
+
   await pool.promise().query(`
-    UPDATE backlogs
-    SET is_archived = 0
-    WHERE is_archived IS NULL;
+    UPDATE work_information
+    SET employee_no = NULLIF(TRIM(employee_no), ''),
+        work_email = NULLIF(TRIM(work_email), ''),
+        district = NULLIF(TRIM(district), ''),
+        position = NULLIF(TRIM(position), ''),
+        plantilla_no = NULLIF(TRIM(plantilla_no), ''),
+        sg = NULLIF(TRIM(sg), ''),
+        current_employee_type = NULLIF(TRIM(current_employee_type), ''),
+        current_position = NULLIF(TRIM(current_position), ''),
+        current_plantilla_no = NULLIF(TRIM(current_plantilla_no), ''),
+        current_sg = NULLIF(TRIM(current_sg), ''),
+        prc_license_no = NULLIF(TRIM(prc_license_no), ''),
+        tin = NULLIF(TRIM(tin), ''),
+        gsis_bp_no = NULLIF(TRIM(gsis_bp_no), ''),
+        gsis_crn_no = NULLIF(TRIM(gsis_crn_no), ''),
+        pagibig_no = NULLIF(TRIM(pagibig_no), ''),
+        philhealth_no = NULLIF(TRIM(philhealth_no), '');
   `);
 
-  try {
-    await pool
-      .promise()
-      .query(`CREATE INDEX idx_backlogs_is_archived ON backlogs (is_archived)`);
-  } catch (err) {
-    if (!/Duplicate|exists/i.test(err.message)) {
-      console.warn("Backlog archive index warning:", err.message);
+  const indexStatements = [
+    `CREATE INDEX idx_work_information_district ON work_information (district)`,
+    `CREATE INDEX idx_work_information_position_id ON work_information (position_id)`,
+  ];
+
+  for (const sql of indexStatements) {
+    try {
+      await pool.promise().query(sql);
+    } catch (err) {
+      if (!/Duplicate|exists/i.test(err.message)) {
+        console.warn("Work information index warning:", err.message);
+      }
     }
   }
-};
 
-const archiveOldBacklogs = async () => {
-  // Archive logs older than 1 month
-  const oneMonthAgo = new Date();
-  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-  const cutoffDate = oneMonthAgo.toISOString().slice(0, 19).replace("T", " ");
+  const uniqueIndexStatements = [
+    ["uk_work_information_employee_no", ["employee_no"]],
+    ["uk_work_information_work_email", ["work_email"]],
+    ["uk_work_information_plantilla_no", ["plantilla_no"]],
+    ["uk_work_information_prc_license_no", ["prc_license_no"]],
+    ["uk_work_information_tin", ["tin"]],
+    ["uk_work_information_gsis_bp_no", ["gsis_bp_no"]],
+    ["uk_work_information_gsis_crn_no", ["gsis_crn_no"]],
+    ["uk_work_information_pagibig_no", ["pagibig_no"]],
+    ["uk_work_information_philhealth_no", ["philhealth_no"]],
+  ];
 
-  try {
-    const [result] = await pool.promise().query(
-      `UPDATE backlogs
-       SET is_archived = 1
-       WHERE is_archived = 0 AND created_at < ?`,
-      [cutoffDate],
-    );
-
-    if (result.changedRows > 0) {
-      console.log(
-        `[Backlog Archive] Archived ${result.changedRows} backlogs older than ${cutoffDate}`,
-      );
+  for (const [indexName, columns] of uniqueIndexStatements) {
+    try {
+      await ensureUniqueIndex("work_information", indexName, columns);
+    } catch (err) {
+      if (!/Duplicate|exists/i.test(err.message)) {
+        console.warn("Work information unique index warning:", err.message);
+      }
     }
-  } catch (err) {
-    console.error(
-      "[Backlog Archive] Error archiving old backlogs:",
-      err.message,
-    );
   }
 };
 
@@ -883,21 +771,38 @@ const ensureArchivingReasonsTable = async () => {
     }
   }
 };
+
 const ensureEmployeePositionFK = async () => {
-  // Check if position_id column exists
   const [columns] = await pool.promise().query(`
-    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-    WHERE TABLE_NAME = 'employees' AND COLUMN_NAME = 'position_id'
+    SELECT COLUMN_NAME
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'work_information'
+      AND COLUMN_NAME = 'position_id'
+    LIMIT 1
   `);
 
   if (columns.length === 0) {
-    // Add position_id column
     await pool.promise().query(`
-      ALTER TABLE employees
-      ADD COLUMN position_id INT NULL AFTER \`position\`,
-      ADD CONSTRAINT fk_employees_position_id FOREIGN KEY (position_id) REFERENCES positions(id) ON DELETE SET NULL;
+      ALTER TABLE work_information
+      ADD COLUMN position_id INT NULL AFTER position;
     `);
   }
+
+  await ensureIndexedColumn(
+    "work_information",
+    "position_id",
+    "idx_work_information_position_id",
+  );
+
+  await ensureForeignKeyConstraint({
+    tableName: "work_information",
+    constraintName: "fk_work_information_position_id",
+    columnName: "position_id",
+    referencedTable: "positions",
+    referencedColumn: "id",
+    onDelete: "SET NULL",
+  });
 };
 
 const ensureEmployeeCivilStatusSexFK = async () => {
@@ -1095,24 +1000,49 @@ const ensureSalaryInformationTable = async () => {
 
 const syncEmployeeSgFromSalaryInformation = async () => {
   await pool.promise().query(`
-    UPDATE employees e
-    SET e.sg = (
+    UPDATE work_information wi
+    SET wi.sg = (
       SELECT si.sg
       FROM salary_information si
-      WHERE si.employee_id = e.id
+      WHERE si.employee_id = wi.employee_id
         AND si.sg IS NOT NULL
         AND TRIM(si.sg) <> ''
       ORDER BY si.salary_date DESC, si.id DESC
       LIMIT 1
     )
-    WHERE (e.sg IS NULL OR TRIM(e.sg) = '')
+    WHERE (wi.sg IS NULL OR TRIM(wi.sg) = '')
       AND EXISTS (
         SELECT 1
         FROM salary_information sx
-        WHERE sx.employee_id = e.id
+        WHERE sx.employee_id = wi.employee_id
           AND sx.sg IS NOT NULL
           AND TRIM(sx.sg) <> ''
       );
+  `);
+};
+
+const syncEmployeeServiceMetrics = async () => {
+  await pool.promise().query(`
+    UPDATE work_information
+    SET date_of_first_appointment = NULL
+    WHERE date_of_first_appointment IS NULL;
+  `);
+
+  await pool.promise().query(`
+    UPDATE work_information
+    SET years_in_service = CASE
+          WHEN date_of_first_appointment IS NULL THEN NULL
+          WHEN date_of_first_appointment > CURDATE() THEN 0
+          ELSE TIMESTAMPDIFF(YEAR, date_of_first_appointment, CURDATE())
+        END,
+        loyalty_bonus = CASE
+          WHEN date_of_first_appointment IS NULL THEN 'No'
+          WHEN date_of_first_appointment > CURDATE() THEN 'No'
+          WHEN TIMESTAMPDIFF(YEAR, date_of_first_appointment, CURDATE()) > 0
+               AND MOD(TIMESTAMPDIFF(YEAR, date_of_first_appointment, CURDATE()), 5) = 0
+            THEN 'Yes'
+          ELSE 'No'
+        END;
   `);
 };
 
@@ -1201,18 +1131,59 @@ const ensureSalaryIncrementNoticesTable = async () => {
   `);
 };
 
+const ensureBacklogArchiveSchema = async () => {
+  await pool.promise().query(`
+    UPDATE backlogs
+    SET is_archived = 0
+    WHERE is_archived IS NULL;
+  `);
+
+  try {
+    await pool
+      .promise()
+      .query(`CREATE INDEX idx_backlogs_is_archived ON backlogs (is_archived)`);
+  } catch (err) {
+    if (!/Duplicate|exists/i.test(err.message)) {
+      console.warn("Backlog archive index warning:", err.message);
+    }
+  }
+};
+
+const archiveOldBacklogs = async () => {
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+  const cutoffDate = oneMonthAgo.toISOString().slice(0, 19).replace("T", " ");
+
+  try {
+    const [result] = await pool.promise().query(
+      `UPDATE backlogs
+       SET is_archived = 1
+       WHERE is_archived = 0 AND created_at < ?`,
+      [cutoffDate],
+    );
+
+    if (result.changedRows > 0) {
+      console.log(
+        `[Backlog Archive] Archived ${result.changedRows} backlogs older than ${cutoffDate}`,
+      );
+    }
+  } catch (err) {
+    console.error(
+      "[Backlog Archive] Error archiving old backlogs:",
+      err.message,
+    );
+  }
+};
+
 const ensureIndexes = async () => {
-  // Create helpful indexes for common filters/sorts. Errors ignored if index already exists.
   const stmts = [
     `CREATE INDEX idx_leaves_employee_id ON leaves (employee_id)`,
     `CREATE INDEX idx_leaves_date_of_action ON leaves (date_of_action)`,
     `CREATE INDEX idx_users_first_last_email ON users (first_name, last_name, email)`,
     `CREATE INDEX idx_users_email ON users (email)`,
     `CREATE INDEX idx_employees_school_id ON employees (school_id)`,
-    `CREATE INDEX idx_employees_position_id ON employees (position_id)`,
     `CREATE INDEX idx_employees_civil_status_id ON employees (civil_status_id)`,
     `CREATE INDEX idx_employees_sex_id ON employees (sex_id)`,
-    // Optimized backlogs indexes for performance
     `CREATE INDEX idx_backlogs_is_archived_created_at ON backlogs (is_archived, created_at DESC)`,
     `CREATE INDEX idx_backlogs_user_id ON backlogs (user_id)`,
     `CREATE INDEX idx_backlogs_school_id ON backlogs (school_id)`,
@@ -1223,7 +1194,6 @@ const ensureIndexes = async () => {
     try {
       await pool.promise().query(sql);
     } catch (err) {
-      // Ignore duplicate index errors and log others
       if (!/Duplicate|exists/i.test(err.message)) {
         console.warn("Index creation warning:", err.message);
       }
@@ -1240,14 +1210,12 @@ const securityHeader = (req, res, next) => {
   next();
 };
 
-// Middleware
 app.use(securityHeader);
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(bodyParser.json({ limit: MAX_JSON_BODY_SIZE }));
 app.use(bodyParser.urlencoded({ extended: true, limit: MAX_FORM_BODY_SIZE }));
 
-// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/leave", leaveRoutes);
 app.use("/api/employees", employeeRoutes);
@@ -1332,10 +1300,9 @@ app.delete(
       const districtName = String(existingRows[0].district_name || "").trim();
       const [[usageRow]] = await pool.promise().query(
         `SELECT COUNT(*) AS total
-         FROM employees
-         WHERE LOWER(TRIM(COALESCE(district, ''))) = LOWER(TRIM(?))
-            OR LOWER(TRIM(COALESCE(work_district, ''))) = LOWER(TRIM(?))`,
-        [districtName, districtName],
+         FROM work_information
+         WHERE LOWER(TRIM(COALESCE(district, ''))) = LOWER(TRIM(?))`,
+        [districtName],
       );
 
       const assignedEmployees = Number(usageRow?.total || 0);
@@ -1780,7 +1747,6 @@ const ensureRegistrationAndSchoolSchema = async () => {
   await ensureAutoIncrementPrimaryKeyId("registration_requests");
 };
 
-// Start the server
 app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);
   try {
@@ -1809,18 +1775,6 @@ app.listen(PORT, async () => {
     await ensureMiddleNameSchema();
     console.log("✔  Middle name schema is ready");
 
-    await ensureEmployeeTypeSchema();
-    console.log("✔  Employee type schema is ready");
-
-    await ensureEmployeeProfileSchema();
-    console.log("✔  Employee profile schema is ready");
-
-    await syncEmployeeServiceMetrics();
-    console.log("✔  Employee service metrics are synced");
-
-    await ensureBacklogArchiveSchema();
-    console.log("✔  Backlog archive schema is ready");
-
     await ensurePositionsTable();
     console.log("✔  Positions table is ready");
 
@@ -1836,20 +1790,32 @@ app.listen(PORT, async () => {
     await ensureArchivingReasonsTable();
     console.log("✔  Archiving reasons table is ready");
 
-    await ensureEmployeePositionFK();
-    console.log("✔  Employee position foreign key is ready");
-
     await ensureEmployeeCivilStatusSexFK();
     console.log("✔  Employee civil status and sex foreign keys are ready");
 
     await ensureWorkInformationTable();
     console.log("✔  Work information table is ready and backfilled");
 
+    await ensureEmployeeTypeSchema();
+    console.log("✔  Work information employee type schema is ready");
+
+    await ensureEmployeeProfileSchema();
+    console.log("✔  Work information profile schema is ready");
+
+    await ensureEmployeePositionFK();
+    console.log("✔  Work information position foreign key is ready");
+
+    await syncEmployeeServiceMetrics();
+    console.log("✔  Work information service metrics are synced");
+
+    await ensureBacklogArchiveSchema();
+    console.log("✔  Backlog archive schema is ready");
+
     await ensureSalaryInformationTable();
     console.log("✔  Salary information table is ready");
 
     await syncEmployeeSgFromSalaryInformation();
-    console.log("✔  Employee SG values are synced from salary information");
+    console.log("✔  Work information SG values are synced from salary information");
 
     await ensureSalaryIncrementNoticesTable();
     console.log("✔  Salary increment notices table is ready");
@@ -1863,17 +1829,14 @@ app.listen(PORT, async () => {
     await ensureIndexes();
     console.log("✔  Database indexes ensured (best-effort)");
 
-    // Archive old backlogs on startup
     await archiveOldBacklogs();
 
     if (AUTO_MONTHLY_CREDIT_ENABLED) {
-      // Catch up on startup (safe because duplicate monthly entries are skipped).
       const startupResult = await autoCreditCurrentMonth();
       console.log(
         `[Auto Credit] Startup run complete for ${startupResult.period}: credited=${startupResult.credited}, skipped=${startupResult.skipped}`,
       );
 
-      // Run every month at 00:00 on day 1 (server local time).
       cron.schedule("0 0 1 * *", async () => {
         try {
           const result = await autoCreditCurrentMonth();
@@ -1894,7 +1857,6 @@ app.listen(PORT, async () => {
       );
     }
 
-    // Run backlog archiving, service metrics sync, and salary-date sync daily at 01:00 AM.
     cron.schedule("0 1 * * *", async () => {
       try {
         await archiveOldBacklogs();
