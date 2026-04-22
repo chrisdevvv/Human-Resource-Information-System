@@ -1,7 +1,7 @@
 const pool = require("../../config/db");
 
 const EMPLOYEE_SELECT_WITH_AGE =
-  "employees.*, DATE_FORMAT(employees.birthdate, '%Y-%m-%d') AS birthdate, DATE_FORMAT(employees.date_of_first_appointment, '%Y-%m-%d') AS date_of_first_appointment, schools.school_name, COALESCE(employees.age, TIMESTAMPDIFF(YEAR, employees.birthdate, CURDATE())) AS age";
+  "employees.*, COALESCE(wi.employee_type, employees.employee_type) AS employee_type, COALESCE(wi.employee_no, employees.employee_no) AS employee_no, COALESCE(wi.work_email, employees.work_email) AS work_email, COALESCE(wi.district, employees.district) AS district, COALESCE(wi.position, employees.position) AS position, COALESCE(wi.position_id, employees.position_id) AS position_id, COALESCE(wi.plantilla_no, employees.plantilla_no) AS plantilla_no, COALESCE(wi.sg, employees.sg) AS sg, DATE_FORMAT(COALESCE(wi.date_of_first_appointment, employees.date_of_first_appointment), '%Y-%m-%d') AS date_of_first_appointment, COALESCE(wi.years_in_service, employees.years_in_service) AS years_in_service, COALESCE(wi.loyalty_bonus, employees.loyalty_bonus) AS loyalty_bonus, COALESCE(wi.current_employee_type, employees.current_employee_type) AS current_employee_type, COALESCE(wi.current_position, employees.current_position) AS current_position, COALESCE(wi.current_plantilla_no, employees.current_plantilla_no) AS current_plantilla_no, DATE_FORMAT(COALESCE(wi.current_appointment_date, employees.current_appointment_date), '%Y-%m-%d') AS current_appointment_date, COALESCE(wi.current_sg, employees.current_sg) AS current_sg, COALESCE(wi.prc_license_no, employees.prc_license_no) AS prc_license_no, COALESCE(wi.tin, employees.tin) AS tin, COALESCE(wi.gsis_bp_no, employees.gsis_bp_no) AS gsis_bp_no, COALESCE(wi.gsis_crn_no, employees.gsis_crn_no) AS gsis_crn_no, COALESCE(wi.pagibig_no, employees.pagibig_no) AS pagibig_no, COALESCE(wi.philhealth_no, employees.philhealth_no) AS philhealth_no, DATE_FORMAT(employees.birthdate, '%Y-%m-%d') AS birthdate, schools.school_name, COALESCE(employees.age, TIMESTAMPDIFF(YEAR, employees.birthdate, CURDATE())) AS age";
 
 const normalizeEmployeeTypeForStorage = (employeeType) => {
   if (typeof employeeType !== "string") return employeeType;
@@ -144,6 +144,112 @@ const computeServiceMetrics = (dateOfFirstAppointment) => {
   return { yearsInService, loyaltyBonus };
 };
 
+const upsertWorkInformation = async (employeeId, payload) => {
+  const {
+    employee_type,
+    employee_no,
+    work_email,
+    district,
+    position,
+    position_id,
+    plantilla_no,
+    sg,
+    date_of_first_appointment,
+    years_in_service,
+    loyalty_bonus,
+    current_employee_type,
+    current_position,
+    current_plantilla_no,
+    current_appointment_date,
+    current_sg,
+    prc_license_no,
+    tin,
+    gsis_bp_no,
+    gsis_crn_no,
+    pagibig_no,
+    philhealth_no,
+  } = payload;
+
+  await pool.promise().query(
+    `
+      INSERT INTO work_information (
+        employee_id,
+        employee_type,
+        employee_no,
+        work_email,
+        district,
+        position,
+        position_id,
+        plantilla_no,
+        sg,
+        date_of_first_appointment,
+        years_in_service,
+        loyalty_bonus,
+        current_employee_type,
+        current_position,
+        current_plantilla_no,
+        current_appointment_date,
+        current_sg,
+        prc_license_no,
+        tin,
+        gsis_bp_no,
+        gsis_crn_no,
+        pagibig_no,
+        philhealth_no
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        employee_type = VALUES(employee_type),
+        employee_no = VALUES(employee_no),
+        work_email = VALUES(work_email),
+        district = VALUES(district),
+        position = VALUES(position),
+        position_id = VALUES(position_id),
+        plantilla_no = VALUES(plantilla_no),
+        sg = VALUES(sg),
+        date_of_first_appointment = VALUES(date_of_first_appointment),
+        years_in_service = VALUES(years_in_service),
+        loyalty_bonus = VALUES(loyalty_bonus),
+        current_employee_type = VALUES(current_employee_type),
+        current_position = VALUES(current_position),
+        current_plantilla_no = VALUES(current_plantilla_no),
+        current_appointment_date = VALUES(current_appointment_date),
+        current_sg = VALUES(current_sg),
+        prc_license_no = VALUES(prc_license_no),
+        tin = VALUES(tin),
+        gsis_bp_no = VALUES(gsis_bp_no),
+        gsis_crn_no = VALUES(gsis_crn_no),
+        pagibig_no = VALUES(pagibig_no),
+        philhealth_no = VALUES(philhealth_no),
+        updated_at = CURRENT_TIMESTAMP
+    `,
+    [
+      employeeId,
+      employee_type,
+      employee_no,
+      work_email,
+      district,
+      position,
+      position_id,
+      plantilla_no,
+      sg,
+      date_of_first_appointment,
+      years_in_service,
+      loyalty_bonus,
+      current_employee_type,
+      current_position,
+      current_plantilla_no,
+      current_appointment_date,
+      current_sg,
+      prc_license_no,
+      tin,
+      gsis_bp_no,
+      gsis_crn_no,
+      pagibig_no,
+      philhealth_no,
+    ],
+  );
+};
+
 const Employee = {
   // Supports optional pagination: if `pagination` omitted, returns full rows for compatibility.
   getAll: async (filters = {}) => {
@@ -206,7 +312,7 @@ const Employee = {
 
     if (search) {
       whereParts.push(
-        "(employees.first_name LIKE ? OR employees.middle_name LIKE ? OR employees.last_name LIKE ? OR employees.email LIKE ? OR employees.employee_no LIKE ? OR employees.work_email LIKE ? OR employees.position LIKE ? OR schools.school_name LIKE ?)",
+        "(employees.first_name LIKE ? OR employees.middle_name LIKE ? OR employees.last_name LIKE ? OR employees.email LIKE ? OR COALESCE(wi.employee_no, employees.employee_no) LIKE ? OR COALESCE(wi.work_email, employees.work_email) LIKE ? OR COALESCE(wi.position, employees.position) LIKE ? OR schools.school_name LIKE ?)",
       );
       const like = `%${search}%`;
       params.push(like, like, like, like, like, like, like, like);
@@ -229,7 +335,7 @@ const Employee = {
 
     const whereClause =
       whereParts.length > 0 ? `WHERE ${whereParts.join(" AND ")}` : "";
-    const baseQuery = `FROM employees JOIN schools ON employees.school_id = schools.id ${whereClause}`;
+    const baseQuery = `FROM employees JOIN schools ON employees.school_id = schools.id LEFT JOIN work_information wi ON wi.employee_id = employees.id ${whereClause}`;
     const orderClause = ` ORDER BY employees.first_name ${sortOrder}, employees.last_name ${sortOrder}, employees.id ASC`;
 
     if (!page) {
@@ -268,6 +374,7 @@ const Employee = {
             SELECT ${EMPLOYEE_SELECT_WITH_AGE}
             FROM employees
             JOIN schools ON employees.school_id = schools.id
+            LEFT JOIN work_information wi ON wi.employee_id = employees.id
             WHERE employees.id = ?
             ${archivedFilter}
         `,
@@ -305,6 +412,11 @@ const Employee = {
       position_id,
       plantilla_no,
       sg,
+      current_employee_type,
+      current_position,
+      current_plantilla_no,
+      current_appointment_date,
+      current_sg,
       prc_license_no,
       tin,
       gsis_bp_no,
@@ -328,6 +440,18 @@ const Employee = {
     const normalizedWorkEmail = uniqueValues.workEmail;
     const normalizedPlantillaNo = uniqueValues.plantillaNo;
     const normalizedSg = normalizeOptionalText(sg);
+    const normalizedCurrentEmployeeType =
+      current_employee_type === undefined || current_employee_type === null
+        ? null
+        : normalizeEmployeeTypeForStorage(current_employee_type);
+    const normalizedCurrentPosition = normalizeOptionalText(current_position);
+    const normalizedCurrentPlantillaNo = normalizeOptionalText(
+      current_plantilla_no,
+    );
+    const normalizedCurrentAppointmentDate = normalizeOptionalDate(
+      current_appointment_date,
+    );
+    const normalizedCurrentSg = normalizeOptionalText(current_sg);
     const normalizedPrcLicenseNo = uniqueValues.prcLicenseNo;
     const normalizedTin = uniqueValues.tin;
     const normalizedGsisBpNo = uniqueValues.gsisBpNo;
@@ -347,7 +471,7 @@ const Employee = {
     const [result] = await pool
       .promise()
       .query(
-        "INSERT INTO employees (first_name, middle_name, last_name, middle_initial, email, mobile_number, home_address, place_of_birth, civil_status, civil_status_id, sex, sex_id, employee_type, school_id, employee_no, work_email, district, `position`, position_id, plantilla_no, sg, prc_license_no, tin, gsis_bp_no, gsis_crn_no, pagibig_no, philhealth_no, age, birthdate, date_of_first_appointment, years_in_service, loyalty_bonus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO employees (first_name, middle_name, last_name, middle_initial, email, mobile_number, home_address, place_of_birth, civil_status, civil_status_id, sex, sex_id, employee_type, school_id, employee_no, work_email, district, `position`, position_id, plantilla_no, sg, current_employee_type, current_position, current_plantilla_no, current_appointment_date, current_sg, prc_license_no, tin, gsis_bp_no, gsis_crn_no, pagibig_no, philhealth_no, age, birthdate, date_of_first_appointment, years_in_service, loyalty_bonus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           first_name,
           middle_name || null,
@@ -370,6 +494,11 @@ const Employee = {
           position_id || null,
           normalizedPlantillaNo,
           normalizedSg,
+          normalizedCurrentEmployeeType,
+          normalizedCurrentPosition,
+          normalizedCurrentPlantillaNo,
+          normalizedCurrentAppointmentDate,
+          normalizedCurrentSg,
           normalizedPrcLicenseNo,
           normalizedTin,
           normalizedGsisBpNo,
@@ -383,6 +512,32 @@ const Employee = {
           loyaltyBonus,
         ],
       );
+
+    await upsertWorkInformation(result.insertId, {
+      employee_type: normalizedEmployeeType,
+      employee_no: normalizedEmployeeNo,
+      work_email: normalizedWorkEmail,
+      district: resolvedDistrict,
+      position: position || null,
+      position_id: position_id || null,
+      plantilla_no: normalizedPlantillaNo,
+      sg: normalizedSg,
+      date_of_first_appointment: normalizedFirstAppointmentDate,
+      years_in_service: yearsInService,
+      loyalty_bonus: loyaltyBonus,
+      current_employee_type: normalizedCurrentEmployeeType,
+      current_position: normalizedCurrentPosition,
+      current_plantilla_no: normalizedCurrentPlantillaNo,
+      current_appointment_date: normalizedCurrentAppointmentDate,
+      current_sg: normalizedCurrentSg,
+      prc_license_no: normalizedPrcLicenseNo,
+      tin: normalizedTin,
+      gsis_bp_no: normalizedGsisBpNo,
+      gsis_crn_no: normalizedGsisCrnNo,
+      pagibig_no: normalizedPagibigNo,
+      philhealth_no: normalizedPhilhealthNo,
+    });
+
     return result;
   },
 
@@ -411,6 +566,11 @@ const Employee = {
       position_id,
       plantilla_no,
       sg,
+      current_employee_type,
+      current_position,
+      current_plantilla_no,
+      current_appointment_date,
+      current_sg,
       prc_license_no,
       tin,
       gsis_bp_no,
@@ -434,6 +594,18 @@ const Employee = {
     const normalizedWorkEmail = uniqueValues.workEmail;
     const normalizedPlantillaNo = uniqueValues.plantillaNo;
     const normalizedSg = normalizeOptionalText(sg);
+    const normalizedCurrentEmployeeType =
+      current_employee_type === undefined || current_employee_type === null
+        ? null
+        : normalizeEmployeeTypeForStorage(current_employee_type);
+    const normalizedCurrentPosition = normalizeOptionalText(current_position);
+    const normalizedCurrentPlantillaNo = normalizeOptionalText(
+      current_plantilla_no,
+    );
+    const normalizedCurrentAppointmentDate = normalizeOptionalDate(
+      current_appointment_date,
+    );
+    const normalizedCurrentSg = normalizeOptionalText(current_sg);
     const normalizedPrcLicenseNo = uniqueValues.prcLicenseNo;
     const normalizedTin = uniqueValues.tin;
     const normalizedGsisBpNo = uniqueValues.gsisBpNo;
@@ -453,7 +625,7 @@ const Employee = {
     const [result] = await pool
       .promise()
       .query(
-        "UPDATE employees SET first_name = ?, middle_name = ?, last_name = ?, middle_initial = ?, email = ?, mobile_number = ?, home_address = ?, place_of_birth = ?, civil_status = ?, civil_status_id = ?, sex = ?, sex_id = ?, employee_type = ?, school_id = ?, employee_no = ?, work_email = ?, district = ?, `position` = ?, position_id = ?, plantilla_no = ?, sg = ?, prc_license_no = ?, tin = ?, gsis_bp_no = ?, gsis_crn_no = ?, pagibig_no = ?, philhealth_no = ?, age = ?, birthdate = ?, date_of_first_appointment = ?, years_in_service = ?, loyalty_bonus = ? WHERE id = ? AND is_archived = 0",
+        "UPDATE employees SET first_name = ?, middle_name = ?, last_name = ?, middle_initial = ?, email = ?, mobile_number = ?, home_address = ?, place_of_birth = ?, civil_status = ?, civil_status_id = ?, sex = ?, sex_id = ?, employee_type = ?, school_id = ?, employee_no = ?, work_email = ?, district = ?, `position` = ?, position_id = ?, plantilla_no = ?, sg = ?, current_employee_type = ?, current_position = ?, current_plantilla_no = ?, current_appointment_date = ?, current_sg = ?, prc_license_no = ?, tin = ?, gsis_bp_no = ?, gsis_crn_no = ?, pagibig_no = ?, philhealth_no = ?, age = ?, birthdate = ?, date_of_first_appointment = ?, years_in_service = ?, loyalty_bonus = ? WHERE id = ? AND is_archived = 0",
         [
           first_name,
           middle_name || null,
@@ -476,6 +648,11 @@ const Employee = {
           position_id || null,
           normalizedPlantillaNo,
           normalizedSg,
+          normalizedCurrentEmployeeType,
+          normalizedCurrentPosition,
+          normalizedCurrentPlantillaNo,
+          normalizedCurrentAppointmentDate,
+          normalizedCurrentSg,
           normalizedPrcLicenseNo,
           normalizedTin,
           normalizedGsisBpNo,
@@ -490,6 +667,34 @@ const Employee = {
           id,
         ],
       );
+
+    if (result.affectedRows > 0) {
+      await upsertWorkInformation(id, {
+        employee_type: normalizedEmployeeType,
+        employee_no: normalizedEmployeeNo,
+        work_email: normalizedWorkEmail,
+        district: resolvedDistrict,
+        position: position || null,
+        position_id: position_id || null,
+        plantilla_no: normalizedPlantillaNo,
+        sg: normalizedSg,
+        date_of_first_appointment: normalizedFirstAppointmentDate,
+        years_in_service: yearsInService,
+        loyalty_bonus: loyaltyBonus,
+        current_employee_type: normalizedCurrentEmployeeType,
+        current_position: normalizedCurrentPosition,
+        current_plantilla_no: normalizedCurrentPlantillaNo,
+        current_appointment_date: normalizedCurrentAppointmentDate,
+        current_sg: normalizedCurrentSg,
+        prc_license_no: normalizedPrcLicenseNo,
+        tin: normalizedTin,
+        gsis_bp_no: normalizedGsisBpNo,
+        gsis_crn_no: normalizedGsisCrnNo,
+        pagibig_no: normalizedPagibigNo,
+        philhealth_no: normalizedPhilhealthNo,
+      });
+    }
+
     return result;
   },
 
