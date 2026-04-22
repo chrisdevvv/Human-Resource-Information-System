@@ -7,7 +7,7 @@ import { Mail, Lock, Eye, EyeOff } from "../assets/icons";
 import { CircleHelp, Clock3, Mail as MailContact } from "lucide-react";
 import { ForgotModal, ErrorModal, RegistrationModal } from "./components";
 import ToastMessage from "@/frontend/components/ToastMessage";
-import { LoginSkeleton } from "@/frontend/components/Skeleton/SkeletonLoaders";
+import DotLoader from "@/frontend/components/DotLoader";
 import {
   isAccountLocked,
   getRemainingLockTime,
@@ -77,7 +77,6 @@ export default function LoginPageMobile() {
   });
   const [remainingLockTime, setRemainingLockTime] = useState<number>(0);
 
-  // Update lock time countdown
   useEffect(() => {
     if (!email) return;
 
@@ -102,10 +101,6 @@ export default function LoginPageMobile() {
 
     return () => clearInterval(interval);
   }, [email]);
-
-  if (isLoading) {
-    return <LoginSkeleton />;
-  }
 
   function validateEmail(value: string) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -136,7 +131,6 @@ export default function LoginPageMobile() {
       return;
     }
 
-    // Check if account is locked
     if (isAccountLocked(email)) {
       const remaining = getRemainingLockTime(email);
       setError({
@@ -162,12 +156,10 @@ export default function LoginPageMobile() {
         const backendMessage =
           typeof data?.message === "string" ? data.message : "";
 
-        // Only increment failed attempts for invalid credentials
         if (backendMessage.toLowerCase() === "invalid credentials") {
           incrementFailedAttempt(email);
           const remaining = getRemainingLockTime(email);
 
-          // Check if account just got locked
           if (remaining > 0) {
             setError({
               title: "Login Error",
@@ -191,7 +183,6 @@ export default function LoginPageMobile() {
         return;
       }
 
-      // Successful login - reset failed attempts
       resetLoginAttempts(email);
       setRemainingLockTime(0);
 
@@ -246,7 +237,7 @@ export default function LoginPageMobile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="flex min-h-screen flex-col bg-gray-100">
       <ToastMessage
         isVisible={toastState.isVisible}
         variant={toastState.variant}
@@ -262,44 +253,44 @@ export default function LoginPageMobile() {
         }
       />
 
-      <header className="sticky top-0 z-50 bg-blue-700 text-white py-3 px-4 shadow-md">
-        <div className="w-full flex items-center justify-start gap-2 text-left">
+      <header className="sticky top-0 z-50 bg-blue-700 px-4 py-3 text-white shadow-md">
+        <div className="flex w-full items-center justify-start gap-2 text-left">
           <img
             src="/images/DepEd-CHRIS.svg"
             alt="DepEd CHRIS"
-            className="h-10 sm:h-11 w-auto"
+            className="h-10 w-auto sm:h-11"
           />
           <div>
-            <p className="text-[10px] sm:text-xs font-medium tracking-wider">
+            <p className="text-[10px] font-medium tracking-wider sm:text-xs">
               DEPARTMENT OF EDUCATION
             </p>
-            <h1 className="text-sm sm:text-base font-bold leading-tight">
+            <h1 className="text-sm font-bold leading-tight sm:text-base">
               CITY OF SAN JOSE DEL MONTE
             </h1>
-            <p className="text-[10px] sm:text-xs font-normal tracking-wider leading-tight">
+            <p className="text-[10px] font-normal leading-tight tracking-wider sm:text-xs">
               CSJDM DepEd Human Resource Information System - CHRIS
             </p>
           </div>
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
-        <div className="flex items-center justify-center gap-4 mb-6">
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-6">
+        <div className="mb-6 flex items-center justify-center gap-4">
           <img
             src="/sdologo-new.svg"
             alt="SD Logo"
-            className="h-32 sm:h-36 w-auto"
+            className="h-32 w-auto sm:h-36"
           />
         </div>
 
         <div className="w-full max-w-md rounded-xl border border-blue-200 bg-white p-5 shadow-2xl sm:p-6">
           <div className="mb-1 flex items-center gap-2">
             <Lock className="text-blue-600" size={18} />
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800">
+            <h2 className="text-lg font-bold text-gray-800 sm:text-xl">
               Sign in
             </h2>
           </div>
-          <p className="mb-5 text-xs sm:text-sm text-gray-500">
+          <p className="mb-5 text-xs text-gray-500 sm:text-sm">
             Use your email and password to continue
           </p>
 
@@ -310,7 +301,7 @@ export default function LoginPageMobile() {
             }}
           >
             <div className="mb-4">
-              <label className="mb-2 flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-700">
+              <label className="mb-2 flex items-center gap-2 text-xs font-medium text-gray-700 sm:text-sm">
                 <Mail className="text-blue-600" size={16} />
                 Email
               </label>
@@ -331,16 +322,17 @@ export default function LoginPageMobile() {
                   else setEmailError(null);
                 }}
                 className={`w-full rounded-lg border px-3 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 ${emailError ? "border-red-500" : "border-gray-300"}`}
+                disabled={isLoading}
               />
               {emailError && (
-                <p className="text-xs sm:text-sm text-red-600 mt-1">
+                <p className="mt-1 text-xs text-red-600 sm:text-sm">
                   {emailError}
                 </p>
               )}
             </div>
 
             <div className="mb-5">
-              <label className="mb-2 flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-700">
+              <label className="mb-2 flex items-center gap-2 text-xs font-medium text-gray-700 sm:text-sm">
                 <Lock className="text-blue-600" size={16} />
                 Password
               </label>
@@ -359,18 +351,20 @@ export default function LoginPageMobile() {
                     else setPasswordError(null);
                   }}
                   className={`w-full rounded-lg border px-3 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 ${passwordError ? "border-red-500" : "border-gray-300"}`}
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   onClick={() => setShowPassword((s) => !s)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  disabled={isLoading}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {passwordError && (
-                <p className="text-xs sm:text-sm text-red-600 mt-1">
+                <p className="mt-1 text-xs text-red-600 sm:text-sm">
                   {passwordError}
                 </p>
               )}
@@ -378,10 +372,10 @@ export default function LoginPageMobile() {
 
             {remainingLockTime > 0 && (
               <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-3 py-3">
-                <p className="text-xs sm:text-sm font-medium text-red-800">
+                <p className="text-xs font-medium text-red-800 sm:text-sm">
                   Too many failed login attempts
                 </p>
-                <p className="text-xs sm:text-sm text-red-700 mt-1">
+                <p className="mt-1 text-xs text-red-700 sm:text-sm">
                   Account locked. Try again in {remainingLockTime} second
                   {remainingLockTime !== 1 ? "s" : ""}.
                 </p>
@@ -391,19 +385,35 @@ export default function LoginPageMobile() {
             <button
               id="submitLogin"
               type="submit"
-              className="cursor-pointer w-full rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full cursor-pointer items-center justify-center rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isLoading || remainingLockTime > 0}
             >
-              {isLoading ? "Signing in..." : "Login"}
+              {isLoading ? (
+                <div className="flex min-h-5 items-center justify-center">
+                  <DotLoader size={6} color="bg-white" />
+                </div>
+              ) : (
+                "Login"
+              )}
             </button>
           </form>
 
-          <div className="mt-4 flex flex-col gap-2 text-xs sm:text-sm sm:flex-row sm:justify-between">
+          {isLoading && (
+            <div className="mt-5 flex flex-col items-center justify-center gap-3 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-5">
+              <DotLoader size={9} color="bg-blue-600" />
+              <p className="text-xs font-medium text-blue-700 sm:text-sm">
+                Signing in, please wait...
+              </p>
+            </div>
+          )}
+
+          <div className="mt-4 flex flex-col gap-2 text-xs sm:flex-row sm:justify-between sm:text-sm">
             <a
               href="#"
               id="registerLink"
               onClick={(e) => {
                 e.preventDefault();
+                if (isLoading) return;
                 setShowRegister(true);
               }}
               className="text-blue-600 hover:underline"
@@ -415,6 +425,7 @@ export default function LoginPageMobile() {
               id="forgotLink"
               onClick={(e) => {
                 e.preventDefault();
+                if (isLoading) return;
                 setShowForgot(true);
               }}
               className="text-gray-600 hover:underline"
@@ -425,13 +436,13 @@ export default function LoginPageMobile() {
         </div>
       </div>
 
-      <footer className="bg-white text-gray-600 px-4 py-4 shadow-inner">
-        <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 text-[11px] sm:text-xs">
+      <footer className="bg-white px-4 py-4 text-gray-600 shadow-inner">
+        <div className="flex w-full flex-col gap-1.5 text-[11px] sm:flex-row sm:items-center sm:justify-between sm:text-xs">
           <div className="text-left sm:mr-auto">
             <button
               type="button"
               onClick={() => setShowContactModal(true)}
-              className="cursor-pointer font-semibold hover:underline underline-offset-4 hover:text-gray-900 transition text-[11px] sm:text-xs"
+              className="cursor-pointer text-[11px] font-semibold transition hover:text-gray-900 hover:underline underline-offset-4 sm:text-xs"
             >
               Contact Us
             </button>
@@ -449,20 +460,20 @@ export default function LoginPageMobile() {
 
       {showContactModal && (
         <div
-          className="fixed inset-0 z-60 bg-black/50 backdrop-blur-[1px] flex items-center justify-center p-4"
+          className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 p-4 backdrop-blur-[1px]"
           onClick={() => setShowContactModal(false)}
           role="dialog"
           aria-modal="true"
           aria-label="Contact details"
         >
           <div
-            className="w-full max-w-md rounded-xl bg-white p-4 sm:p-6 shadow-2xl"
+            className="w-full max-w-md rounded-xl bg-white p-4 shadow-2xl sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2">
                 <CircleHelp size={18} className="text-blue-700" />
-                <h3 className="text-base sm:text-lg font-bold text-gray-900">
+                <h3 className="text-base font-bold text-gray-900 sm:text-lg">
                   Contact Us
                 </h3>
               </div>
@@ -470,13 +481,13 @@ export default function LoginPageMobile() {
                 type="button"
                 onClick={() => setShowContactModal(false)}
                 aria-label="Close contact modal"
-                className="cursor-pointer rounded-md border border-gray-200 w-7 h-7 flex items-center justify-center text-sm font-bold text-gray-600 hover:bg-red-500 hover:text-white hover:border-red-500 transition"
+                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-gray-200 text-sm font-bold text-gray-600 transition hover:border-red-500 hover:bg-red-500 hover:text-white"
               >
                 X
               </button>
             </div>
 
-            <p className="mt-2 text-xs sm:text-sm text-gray-600 leading-relaxed">
+            <p className="mt-2 text-xs leading-relaxed text-gray-600 sm:text-sm">
               Have a question or need assistance with the Human Resource
               Information System? Reach out to us through any of the channels
               below.
@@ -490,10 +501,10 @@ export default function LoginPageMobile() {
                 <div className="mt-1 flex items-start gap-2">
                   <MailContact size={15} className="mt-0.5 text-blue-700" />
                   <div>
-                    <p className="text-xs sm:text-sm font-semibold text-gray-900 break-all">
+                    <p className="break-all text-xs font-semibold text-gray-900 sm:text-sm">
                       arthur.francisco@deped.gov.ph
                     </p>
-                    <p className="text-[11px] sm:text-xs text-gray-600">
+                    <p className="text-[11px] text-gray-600 sm:text-xs">
                       For inquiries regarding employee records, system access,
                       and HR-related concerns
                     </p>
@@ -508,10 +519,10 @@ export default function LoginPageMobile() {
                 <div className="mt-1 flex items-start gap-2">
                   <Clock3 size={15} className="mt-0.5 text-amber-700" />
                   <div>
-                    <p className="text-xs sm:text-sm font-semibold text-gray-900">
+                    <p className="text-xs font-semibold text-gray-900 sm:text-sm">
                       Monday - Friday, 8:00 AM - 4:00 PM
                     </p>
-                    <p className="text-[11px] sm:text-xs text-gray-600">
+                    <p className="text-[11px] text-gray-600 sm:text-xs">
                       Closed on weekends and national holidays
                     </p>
                   </div>
