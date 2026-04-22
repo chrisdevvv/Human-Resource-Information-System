@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const Employee = require("./employeeModel");
+const SalaryInformation = require("./salaryInformationModel");
 const Backlog = require("../backlog/backlogModel");
 const pool = require("../../config/db");
 
@@ -385,10 +386,41 @@ const updateEmployee = async (req, res) => {
     req.body.district = districtRows[0].district_name;
     req.body.work_district = districtRows[0].district_name;
 
+    const hasRequestedSgUpdate = Object.prototype.hasOwnProperty.call(
+      req.body,
+      "sg",
+    );
+
+    if (!hasRequestedSgUpdate) {
+      req.body.sg = existing.sg ?? null;
+    }
+
     const result = await Employee.update(req.params.id, req.body);
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Employee not found" });
     }
+
+    if (hasRequestedSgUpdate) {
+      const employeeId = Number(req.params.id);
+      const latestSalaryInfo = await SalaryInformation.getLatestByEmployeeId(
+        employeeId,
+      );
+
+      if (latestSalaryInfo?.id) {
+        const normalizedSg =
+          req.body.sg === undefined || req.body.sg === null
+            ? null
+            : String(req.body.sg).trim();
+
+        await SalaryInformation.update(
+          employeeId,
+          Number(latestSalaryInfo.id),
+          { sg: normalizedSg || null },
+          { actorUserId: req.user?.id },
+        );
+      }
+    }
+
     const { first_name, middle_name, last_name, employee_type, school_id } =
       req.body;
     await Backlog.record({

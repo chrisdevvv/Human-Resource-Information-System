@@ -20,6 +20,7 @@ import ArchiveSuccessMessage from "../LeaveManagement/ArchiveSuccessMessage";
 import ViewEmployeeModal from "./EmployeeDetails/ViewEmployeeModal";
 import ToastMessage from "../../components/ToastMessage";
 import { archiveEmployee } from "../LeaveManagement/leaveApi";
+import { EmployeesProfileSkeleton } from "../../components/Skeleton/SkeletonLoaders";
 
 type EmployeeRecordApi = {
   id: number;
@@ -426,7 +427,7 @@ export default function EmployeesListLayout() {
 
   return (
     <div className="w-full min-w-0">
-      <div className="grid grid-cols-2 gap-2 mb-4 sm:flex sm:flex-wrap sm:justify-start">
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-start">
         <button
           onClick={() => setActiveTab("list")}
           className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
@@ -456,7 +457,7 @@ export default function EmployeesListLayout() {
       </div>
 
       {activeTab === "list" ? (
-        <div className="w-full min-w-0 bg-white rounded-lg shadow-lg p-2 sm:p-3 flex flex-col">
+        <div className="w-full min-w-0 rounded-lg bg-white p-2 shadow-lg sm:p-3 flex flex-col border border-gray-100">
           <div className="mb-3 sm:mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <h1
               style={{ fontSize: "20px" }}
@@ -476,9 +477,9 @@ export default function EmployeesListLayout() {
             </button>
           </div>
 
-          <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="flex-1 relative">
+          <div className="mb-3 sm:mb-6 flex flex-col gap-3 sm:gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="relative flex-1">
                 <input
                   type="text"
                   placeholder="Search employee"
@@ -599,11 +600,9 @@ export default function EmployeesListLayout() {
             </div>
           </div>
 
-          <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
+          <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh] rounded-lg">
             {employeeLoading ? (
-              <div className="flex items-center justify-center py-10">
-                <p className="text-gray-500">Loading employees...</p>
-              </div>
+              <EmployeesProfileSkeleton />
             ) : employeeError ? (
               <div className="flex items-center justify-center py-10">
                 <p className="text-red-500">Error: {employeeError}</p>
@@ -615,7 +614,7 @@ export default function EmployeesListLayout() {
                     paginatedEmployees.map((employee) => (
                       <div
                         key={employee.id}
-                        className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
+                        className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 shadow-sm"
                       >
                         <p className="text-sm font-semibold text-gray-900 truncate">
                           {employee.fullName}
@@ -753,7 +752,7 @@ export default function EmployeesListLayout() {
           </div>
 
           {filteredEmployees.length > 0 && (
-            <div className="mt-6 space-y-3">
+            <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-3">
               <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
                 <label className="flex items-center gap-2 text-sm text-gray-600">
                   Show
@@ -764,7 +763,7 @@ export default function EmployeesListLayout() {
                       setCurrentPage(1);
                       setPageJumpInput("1");
                     }}
-                    className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+                    className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700 bg-white"
                   >
                     {PAGE_SIZE_OPTIONS.map((option) => (
                       <option key={option} value={option}>
@@ -779,7 +778,7 @@ export default function EmployeesListLayout() {
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    className="p-2 text-gray-500 hover:bg-white rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
                     aria-label="Previous page"
                   >
                     <ChevronLeft size={18} />
@@ -804,7 +803,7 @@ export default function EmployeesListLayout() {
                         className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
                           currentPage === item
                             ? "bg-blue-600 text-white"
-                            : "text-gray-500 hover:bg-gray-100"
+                            : "text-gray-500 hover:bg-white"
                         }`}
                       >
                         {item}
@@ -817,7 +816,7 @@ export default function EmployeesListLayout() {
                       setCurrentPage(Math.min(totalPages, currentPage + 1))
                     }
                     disabled={currentPage === totalPages}
-                    className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    className="p-2 text-gray-500 hover:bg-white rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
                     aria-label="Next page"
                   >
                     <ChevronRight size={18} />
@@ -838,11 +837,11 @@ export default function EmployeesListLayout() {
                         handleJumpToPage();
                       }
                     }}
-                    className="w-16 rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+                    className="w-16 rounded border border-gray-300 px-2 py-1 text-sm text-gray-700 bg-white"
                   />
                   <button
                     onClick={handleJumpToPage}
-                    className="rounded bg-gray-100 px-2 py-1 text-sm text-gray-700 hover:bg-gray-200"
+                    className="rounded bg-white px-2 py-1 text-sm text-gray-700 hover:bg-gray-100"
                   >
                     Go
                   </button>

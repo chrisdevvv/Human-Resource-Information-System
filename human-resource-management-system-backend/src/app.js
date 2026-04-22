@@ -1,8 +1,8 @@
 require("./config/loadEnv");
+
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const helmet = require("helmet");
 const cron = require("node-cron");
 const authRoutes = require("./modules/auth/authRoutes");
 const leaveRoutes = require("./modules/leave/leaveRoutes");
@@ -214,7 +214,6 @@ const ensureLeaveLedgerSchema = async () => {
 };
 
 const ensureEmployeeArchiveSchema = async () => {
-
   await pool.promise().query(`
     UPDATE employees
     SET is_archived = 0
@@ -238,7 +237,6 @@ const ensureEmployeeArchiveSchema = async () => {
 };
 
 const ensureEmployeeLeaveStatusSchema = async () => {
-
   await pool.promise().query(`
     UPDATE employees
     SET on_leave = 0
@@ -360,6 +358,95 @@ const ensureEmployeeTypeSchema = async () => {
 };
 
 const ensureEmployeeProfileSchema = async () => {
+  const [currentEmployeeTypeColumns] = await pool.promise().query(`
+    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'employees'
+      AND COLUMN_NAME = 'current_employee_type'
+    LIMIT 1
+  `);
+
+  if (currentEmployeeTypeColumns.length === 0) {
+    await pool.promise().query(`
+      ALTER TABLE employees
+      ADD COLUMN current_employee_type ENUM('teaching','non-teaching','teaching-related') NULL AFTER employee_type;
+    `);
+  }
+
+  const [currentPositionColumns] = await pool.promise().query(`
+    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'employees'
+      AND COLUMN_NAME = 'current_position'
+    LIMIT 1
+  `);
+
+  if (currentPositionColumns.length === 0) {
+    await pool.promise().query(`
+      ALTER TABLE employees
+      ADD COLUMN current_position VARCHAR(255) NULL AFTER position;
+    `);
+  }
+
+  const [currentPlantillaColumns] = await pool.promise().query(`
+    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'employees'
+      AND COLUMN_NAME = 'current_plantilla_no'
+    LIMIT 1
+  `);
+
+  if (currentPlantillaColumns.length === 0) {
+    await pool.promise().query(`
+      ALTER TABLE employees
+      ADD COLUMN current_plantilla_no VARCHAR(100) NULL AFTER plantilla_no;
+    `);
+  }
+
+  const [currentAppointmentColumns] = await pool.promise().query(`
+    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'employees'
+      AND COLUMN_NAME = 'current_appointment_date'
+    LIMIT 1
+  `);
+
+  if (currentAppointmentColumns.length === 0) {
+    await pool.promise().query(`
+      ALTER TABLE employees
+      ADD COLUMN current_appointment_date DATE NULL AFTER date_of_first_appointment;
+    `);
+  }
+
+  const [sgColumns] = await pool.promise().query(`
+    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'employees'
+      AND COLUMN_NAME = 'sg'
+    LIMIT 1
+  `);
+
+  if (sgColumns.length === 0) {
+    await pool.promise().query(`
+      ALTER TABLE employees
+      ADD COLUMN sg VARCHAR(20) NULL AFTER plantilla_no;
+    `);
+  }
+
+  const [currentSgColumns] = await pool.promise().query(`
+    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'employees'
+      AND COLUMN_NAME = 'current_sg'
+    LIMIT 1
+  `);
+
+  if (currentSgColumns.length === 0) {
+    await pool.promise().query(`
+      ALTER TABLE employees
+      ADD COLUMN current_sg VARCHAR(20) NULL AFTER sg;
+    `);
+  }
 
   await pool.promise().query(`
     UPDATE employees
@@ -376,6 +463,10 @@ const ensureEmployeeProfileSchema = async () => {
         employee_no = NULLIF(TRIM(employee_no), ''),
         work_email = NULLIF(TRIM(work_email), ''),
         plantilla_no = NULLIF(TRIM(plantilla_no), ''),
+        current_position = NULLIF(TRIM(current_position), ''),
+        current_plantilla_no = NULLIF(TRIM(current_plantilla_no), ''),
+      sg = NULLIF(TRIM(sg), ''),
+        current_sg = NULLIF(TRIM(current_sg), ''),
         prc_license_no = NULLIF(TRIM(prc_license_no), ''),
         tin = NULLIF(TRIM(tin), ''),
         gsis_bp_no = NULLIF(TRIM(gsis_bp_no), ''),
@@ -424,6 +515,149 @@ const ensureEmployeeProfileSchema = async () => {
   }
 };
 
+const ensureWorkInformationTable = async () => {
+  await pool.promise().query(`
+    CREATE TABLE IF NOT EXISTS work_information (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      employee_id INT NOT NULL,
+      employee_type VARCHAR(32) NULL,
+      employee_no VARCHAR(100) NULL,
+      work_email VARCHAR(255) NULL,
+      district VARCHAR(255) NULL,
+      position VARCHAR(255) NULL,
+      position_id INT NULL,
+      plantilla_no VARCHAR(100) NULL,
+      sg VARCHAR(20) NULL,
+      date_of_first_appointment DATE NULL,
+      years_in_service INT NULL,
+      loyalty_bonus ENUM('Yes', 'No') NOT NULL DEFAULT 'No',
+      current_employee_type VARCHAR(32) NULL,
+      current_position VARCHAR(255) NULL,
+      current_plantilla_no VARCHAR(100) NULL,
+      current_appointment_date DATE NULL,
+      current_sg VARCHAR(20) NULL,
+      prc_license_no VARCHAR(100) NULL,
+      tin VARCHAR(50) NULL,
+      gsis_bp_no VARCHAR(50) NULL,
+      gsis_crn_no VARCHAR(50) NULL,
+      pagibig_no VARCHAR(50) NULL,
+      philhealth_no VARCHAR(50) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uk_work_information_employee_id (employee_id),
+      UNIQUE KEY uk_work_information_employee_no (employee_no),
+      UNIQUE KEY uk_work_information_work_email (work_email),
+      UNIQUE KEY uk_work_information_plantilla_no (plantilla_no),
+      UNIQUE KEY uk_work_information_prc_license_no (prc_license_no),
+      UNIQUE KEY uk_work_information_tin (tin),
+      UNIQUE KEY uk_work_information_gsis_bp_no (gsis_bp_no),
+      UNIQUE KEY uk_work_information_gsis_crn_no (gsis_crn_no),
+      UNIQUE KEY uk_work_information_pagibig_no (pagibig_no),
+      UNIQUE KEY uk_work_information_philhealth_no (philhealth_no),
+      KEY idx_work_information_position_id (position_id),
+      CONSTRAINT fk_work_information_employee_id FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT fk_work_information_position_id FOREIGN KEY (position_id) REFERENCES positions(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `);
+
+  await pool.promise().query(`
+    INSERT INTO work_information (
+      employee_id,
+      employee_type,
+      employee_no,
+      work_email,
+      district,
+      position,
+      position_id,
+      plantilla_no,
+      sg,
+      date_of_first_appointment,
+      years_in_service,
+      loyalty_bonus,
+      current_employee_type,
+      current_position,
+      current_plantilla_no,
+      current_appointment_date,
+      current_sg,
+      prc_license_no,
+      tin,
+      gsis_bp_no,
+      gsis_crn_no,
+      pagibig_no,
+      philhealth_no
+    )
+    SELECT
+      e.id,
+      e.employee_type,
+      e.employee_no,
+      e.work_email,
+      e.district,
+      e.position,
+      e.position_id,
+      e.plantilla_no,
+      e.sg,
+      e.date_of_first_appointment,
+      e.years_in_service,
+      e.loyalty_bonus,
+      e.current_employee_type,
+      e.current_position,
+      e.current_plantilla_no,
+      e.current_appointment_date,
+      e.current_sg,
+      e.prc_license_no,
+      e.tin,
+      e.gsis_bp_no,
+      e.gsis_crn_no,
+      e.pagibig_no,
+      e.philhealth_no
+    FROM employees e
+    ON DUPLICATE KEY UPDATE
+      employee_type = VALUES(employee_type),
+      employee_no = VALUES(employee_no),
+      work_email = VALUES(work_email),
+      district = VALUES(district),
+      position = VALUES(position),
+      position_id = VALUES(position_id),
+      plantilla_no = VALUES(plantilla_no),
+      sg = VALUES(sg),
+      date_of_first_appointment = VALUES(date_of_first_appointment),
+      years_in_service = VALUES(years_in_service),
+      loyalty_bonus = VALUES(loyalty_bonus),
+      current_employee_type = VALUES(current_employee_type),
+      current_position = VALUES(current_position),
+      current_plantilla_no = VALUES(current_plantilla_no),
+      current_appointment_date = VALUES(current_appointment_date),
+      current_sg = VALUES(current_sg),
+      prc_license_no = VALUES(prc_license_no),
+      tin = VALUES(tin),
+      gsis_bp_no = VALUES(gsis_bp_no),
+      gsis_crn_no = VALUES(gsis_crn_no),
+      pagibig_no = VALUES(pagibig_no),
+      philhealth_no = VALUES(philhealth_no),
+      updated_at = CURRENT_TIMESTAMP;
+  `);
+
+  await pool.promise().query(`
+    UPDATE work_information
+    SET employee_no = NULLIF(TRIM(employee_no), ''),
+        work_email = NULLIF(TRIM(work_email), ''),
+        district = NULLIF(TRIM(district), ''),
+        position = NULLIF(TRIM(position), ''),
+        plantilla_no = NULLIF(TRIM(plantilla_no), ''),
+        sg = NULLIF(TRIM(sg), ''),
+        current_employee_type = NULLIF(TRIM(current_employee_type), ''),
+        current_position = NULLIF(TRIM(current_position), ''),
+        current_plantilla_no = NULLIF(TRIM(current_plantilla_no), ''),
+        current_sg = NULLIF(TRIM(current_sg), ''),
+        prc_license_no = NULLIF(TRIM(prc_license_no), ''),
+        tin = NULLIF(TRIM(tin), ''),
+        gsis_bp_no = NULLIF(TRIM(gsis_bp_no), ''),
+        gsis_crn_no = NULLIF(TRIM(gsis_crn_no), ''),
+        pagibig_no = NULLIF(TRIM(pagibig_no), ''),
+        philhealth_no = NULLIF(TRIM(philhealth_no), '');
+  `);
+};
+
 const syncEmployeeServiceMetrics = async () => {
   await pool.promise().query(`
     UPDATE employees
@@ -450,7 +684,6 @@ const syncEmployeeServiceMetrics = async () => {
 };
 
 const ensureBacklogArchiveSchema = async () => {
-
   await pool.promise().query(`
     UPDATE backlogs
     SET is_archived = 0
@@ -695,6 +928,102 @@ const ensureEmployeeCivilStatusSexFK = async () => {
   }
 };
 
+const getColumnTypeSql = async (
+  tableName,
+  columnName,
+  fallbackType = "INT",
+) => {
+  const [rows] = await pool.promise().query(
+    `SELECT COLUMN_TYPE AS column_type
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = ?
+     LIMIT 1`,
+    [tableName, columnName],
+  );
+
+  return rows?.[0]?.column_type || fallbackType;
+};
+
+const ensureTableEngineInnoDb = async (tableName) => {
+  const [rows] = await pool.promise().query(
+    `SELECT ENGINE AS engine
+     FROM INFORMATION_SCHEMA.TABLES
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+     LIMIT 1`,
+    [tableName],
+  );
+
+  const currentEngine = String(rows?.[0]?.engine || "").toUpperCase();
+  if (currentEngine && currentEngine !== "INNODB") {
+    await pool.promise().query(`ALTER TABLE \`${tableName}\` ENGINE=InnoDB`);
+  }
+};
+
+const ensureIndexedColumn = async (tableName, columnName, indexName) => {
+  const [rows] = await pool.promise().query(
+    `SELECT 1
+     FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = ?
+     LIMIT 1`,
+    [tableName, columnName],
+  );
+
+  if (rows.length > 0) {
+    return;
+  }
+
+  try {
+    await pool
+      .promise()
+      .query(
+        `CREATE INDEX \`${indexName}\` ON \`${tableName}\` (\`${columnName}\`)`,
+      );
+  } catch (err) {
+    if (!/Duplicate|exists/i.test(err.message)) {
+      throw err;
+    }
+  }
+};
+
+const ensureForeignKeyConstraint = async ({
+  tableName,
+  constraintName,
+  columnName,
+  referencedTable,
+  referencedColumn,
+  onDelete,
+  onUpdate,
+}) => {
+  const [rows] = await pool.promise().query(
+    `SELECT 1
+     FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS
+     WHERE CONSTRAINT_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND CONSTRAINT_NAME = ?
+     LIMIT 1`,
+    [tableName, constraintName],
+  );
+
+  if (rows.length > 0) {
+    return;
+  }
+
+  const deleteClause = onDelete ? ` ON DELETE ${onDelete}` : "";
+  const updateClause = onUpdate ? ` ON UPDATE ${onUpdate}` : "";
+
+  await pool.promise().query(`
+    ALTER TABLE \`${tableName}\`
+    ADD CONSTRAINT \`${constraintName}\`
+      FOREIGN KEY (\`${columnName}\`)
+      REFERENCES \`${referencedTable}\`(\`${referencedColumn}\`)${deleteClause}${updateClause};
+  `);
+};
+
 const ensureSalaryInformationTable = async () => {
   const salaryInformationRemarkValues = [
     "Step Increment",
@@ -705,10 +1034,15 @@ const ensureSalaryInformationTable = async () => {
     .map((value) => `'${String(value).replace(/'/g, "''")}'`)
     .join(",");
 
+  const employeeIdColumnType = await getColumnTypeSql("employees", "id", "INT");
+
+  await ensureTableEngineInnoDb("employees");
+  await ensureIndexedColumn("employees", "id", "idx_employees_id_fk");
+
   await pool.promise().query(`
     CREATE TABLE IF NOT EXISTS salary_information (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      employee_id INT NOT NULL,
+      employee_id ${employeeIdColumnType} NOT NULL,
       salary_date DATE NOT NULL,
       plantilla VARCHAR(100) NULL,
       sg VARCHAR(20) NULL,
@@ -719,15 +1053,25 @@ const ensureSalaryInformationTable = async () => {
       remarks ENUM(${salaryInformationRemarksSql}) NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      CONSTRAINT fk_salary_information_employee_id
-        FOREIGN KEY (employee_id)
-        REFERENCES employees(id)
-        ON DELETE CASCADE,
       INDEX idx_salary_information_employee_id (employee_id),
       INDEX idx_salary_information_employee_date (employee_id, salary_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
   `);
 
+  await pool.promise().query(`
+    ALTER TABLE salary_information
+    MODIFY COLUMN employee_id ${employeeIdColumnType} NOT NULL;
+  `);
+
+  await ensureForeignKeyConstraint({
+    tableName: "salary_information",
+    constraintName: "fk_salary_information_employee_id",
+    columnName: "employee_id",
+    referencedTable: "employees",
+    referencedColumn: "id",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
 
   await pool.promise().query(`
     UPDATE salary_information
@@ -746,6 +1090,114 @@ const ensureSalaryInformationTable = async () => {
   await pool.promise().query(`
     ALTER TABLE salary_information
     MODIFY COLUMN remarks ENUM(${salaryInformationRemarksSql}) NULL;
+  `);
+};
+
+const syncEmployeeSgFromSalaryInformation = async () => {
+  await pool.promise().query(`
+    UPDATE employees e
+    SET e.sg = (
+      SELECT si.sg
+      FROM salary_information si
+      WHERE si.employee_id = e.id
+        AND si.sg IS NOT NULL
+        AND TRIM(si.sg) <> ''
+      ORDER BY si.salary_date DESC, si.id DESC
+      LIMIT 1
+    )
+    WHERE (e.sg IS NULL OR TRIM(e.sg) = '')
+      AND EXISTS (
+        SELECT 1
+        FROM salary_information sx
+        WHERE sx.employee_id = e.id
+          AND sx.sg IS NOT NULL
+          AND TRIM(sx.sg) <> ''
+      );
+  `);
+};
+
+const ensureSalaryIncrementNoticesTable = async () => {
+  const stepIncrementRemarkValues = [
+    "Step Increment",
+    "Step Increment Increase",
+  ];
+  const stepIncrementRemarksSql = stepIncrementRemarkValues
+    .map((value) => `'${String(value).replace(/'/g, "''")}'`)
+    .join(",");
+
+  const employeeIdColumnType = await getColumnTypeSql("employees", "id", "INT");
+  const salaryInformationIdColumnType = await getColumnTypeSql(
+    "salary_information",
+    "id",
+    "INT",
+  );
+
+  await ensureTableEngineInnoDb("employees");
+  await ensureTableEngineInnoDb("salary_information");
+  await ensureIndexedColumn("employees", "id", "idx_employees_id_fk");
+  await ensureIndexedColumn(
+    "salary_information",
+    "id",
+    "idx_salary_information_id_fk",
+  );
+
+  await pool.promise().query(`
+    CREATE TABLE IF NOT EXISTS salary_increment_notices (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      employee_id ${employeeIdColumnType} NOT NULL,
+      salary_information_id ${salaryInformationIdColumnType} NOT NULL,
+      notice_reference VARCHAR(80) NOT NULL,
+      effective_date DATE NOT NULL,
+      previous_salary DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+      new_salary DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+      increment_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+      remarks ENUM(${stepIncrementRemarksSql}) NOT NULL DEFAULT 'Step Increment',
+      generated_by_user_id INT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uk_salary_increment_notices_salary_info_id (salary_information_id),
+      INDEX idx_salary_increment_notices_employee_id (employee_id),
+      INDEX idx_salary_increment_notices_effective_date (effective_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `);
+
+  await pool.promise().query(`
+    ALTER TABLE salary_increment_notices
+    MODIFY COLUMN employee_id ${employeeIdColumnType} NOT NULL,
+    MODIFY COLUMN salary_information_id ${salaryInformationIdColumnType} NOT NULL;
+  `);
+
+  await ensureForeignKeyConstraint({
+    tableName: "salary_increment_notices",
+    constraintName: "fk_salary_increment_notices_employee_id",
+    columnName: "employee_id",
+    referencedTable: "employees",
+    referencedColumn: "id",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
+
+  await ensureForeignKeyConstraint({
+    tableName: "salary_increment_notices",
+    constraintName: "fk_salary_increment_notices_salary_info_id",
+    columnName: "salary_information_id",
+    referencedTable: "salary_information",
+    referencedColumn: "id",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
+
+  await pool.promise().query(`
+    UPDATE salary_increment_notices
+    SET remarks = 'Step Increment'
+    WHERE remarks IS NULL
+       OR TRIM(remarks) = ''
+       OR remarks NOT IN (${stepIncrementRemarksSql});
+  `);
+
+  await pool.promise().query(`
+    ALTER TABLE salary_increment_notices
+    MODIFY COLUMN remarks ENUM(${stepIncrementRemarksSql}) NOT NULL DEFAULT 'Step Increment';
   `);
 };
 
@@ -779,12 +1231,17 @@ const ensureIndexes = async () => {
   }
 };
 
+const securityHeader = (req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=()");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  next();
+};
+
 // Middleware
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-  }),
-);
+app.use(securityHeader);
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(bodyParser.json({ limit: MAX_JSON_BODY_SIZE }));
@@ -1275,6 +1732,54 @@ app.delete(
   },
 );
 
+const ensureAutoIncrementPrimaryKeyId = async (tableName) => {
+  const [columnRows] = await pool.promise().query(
+    `SELECT COLUMN_NAME, COLUMN_TYPE, COLUMN_KEY, EXTRA
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = 'id'
+     LIMIT 1`,
+    [tableName],
+  );
+
+  if (columnRows.length === 0) {
+    console.warn(`[Schema] Table ${tableName} has no id column; skipping.`);
+    return;
+  }
+
+  const idColumn = columnRows[0];
+  const hasPrimaryKey = String(idColumn.COLUMN_KEY || "").toUpperCase() === "PRI";
+  const isAutoIncrement = String(idColumn.EXTRA || "")
+    .toLowerCase()
+    .includes("auto_increment");
+
+  if (!hasPrimaryKey) {
+    try {
+      await pool
+        .promise()
+        .query(`ALTER TABLE \`${tableName}\` ADD PRIMARY KEY (\`id\`)`);
+      console.log(`✔  Added PRIMARY KEY(id) on ${tableName}`);
+    } catch (err) {
+      if (!/multiple primary key defined/i.test(err.message)) {
+        throw err;
+      }
+    }
+  }
+
+  if (!isAutoIncrement) {
+    await pool.promise().query(
+      `ALTER TABLE \`${tableName}\` MODIFY COLUMN \`id\` INT NOT NULL AUTO_INCREMENT`,
+    );
+    console.log(`✔  Enabled AUTO_INCREMENT on ${tableName}.id`);
+  }
+};
+
+const ensureRegistrationAndSchoolSchema = async () => {
+  await ensureAutoIncrementPrimaryKeyId("schools");
+  await ensureAutoIncrementPrimaryKeyId("registration_requests");
+};
+
 // Start the server
 app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);
@@ -1282,6 +1787,9 @@ app.listen(PORT, async () => {
     const conn = await pool.promise().getConnection();
     console.log("✔  MySQL database connected successfully");
     conn.release();
+
+    await ensureRegistrationAndSchoolSchema();
+    console.log("✔  Registration and school schema are ready");
 
     await ensureSecurityTables();
     console.log("✔  Security tables are ready");
@@ -1334,8 +1842,17 @@ app.listen(PORT, async () => {
     await ensureEmployeeCivilStatusSexFK();
     console.log("✔  Employee civil status and sex foreign keys are ready");
 
+    await ensureWorkInformationTable();
+    console.log("✔  Work information table is ready and backfilled");
+
     await ensureSalaryInformationTable();
     console.log("✔  Salary information table is ready");
+
+    await syncEmployeeSgFromSalaryInformation();
+    console.log("✔  Employee SG values are synced from salary information");
+
+    await ensureSalaryIncrementNoticesTable();
+    console.log("✔  Salary increment notices table is ready");
 
     const salaryDateSyncStartupResult =
       await SalaryInformation.syncThreeYearSalaryDateEntries();

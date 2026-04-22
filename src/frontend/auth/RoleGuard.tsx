@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import LoadingAnimation from "../components/LoadingAnimation/loadinganimation";
 import { canAccessPage } from "./roleAccess";
 import { APP_ROUTES, getDashboardRouteByRoleLoose } from "@/frontend/route";
 
@@ -66,7 +67,7 @@ export function RoleGuard({
 
   // Show loading or fallback while checking authorization
   if (isChecking) {
-    return fallback || <div className="p-4">Loading...</div>;
+    return fallback || <LoadingAnimation label="Checking access" fullScreen />;
   }
 
   // Show fallback if not authorized

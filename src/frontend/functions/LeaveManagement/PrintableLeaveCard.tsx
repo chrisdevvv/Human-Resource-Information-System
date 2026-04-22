@@ -310,6 +310,32 @@ const DocumentHeader = React.memo(function DocumentHeader({
   );
 });
 
+const ContinuedPageEmployeeName = React.memo(
+  function ContinuedPageEmployeeName({
+    employeeName,
+  }: {
+    employeeName: string;
+  }) {
+    const employeeNameDisplay = employeeName.trim()
+      ? employeeName.trim().toUpperCase()
+      : "N/A";
+
+    return (
+      <div
+        className="mb-2"
+        style={{
+          fontSize: "10pt",
+          lineHeight: 1.2,
+          textAlign: "left",
+        }}
+      >
+        Name of Employee:{" "}
+        <span style={{ fontWeight: "bold" }}>{employeeNameDisplay}</span>
+      </div>
+    );
+  },
+);
+
 const EmptyStateRow = React.memo(function EmptyStateRow() {
   return (
     <tr>
@@ -324,6 +350,28 @@ const EmptyStateRow = React.memo(function EmptyStateRow() {
         }}
       >
         No leave entries available.
+      </td>
+    </tr>
+  );
+});
+
+const NothingFollowsRow = React.memo(function NothingFollowsRow() {
+  return (
+    <tr>
+      <td
+        colSpan={11}
+        className="border px-1.5 text-center"
+        style={{
+          borderColor: CARD_COLORS.black,
+          paddingTop: "8px",
+          paddingBottom: "8px",
+          fontStyle: "italic",
+          fontWeight: "bold",
+          textTransform: "uppercase",
+          backgroundColor: CARD_COLORS.white,
+        }}
+      >
+        *** nothing follows ***
       </td>
     </tr>
   );
@@ -525,6 +573,7 @@ const PrintableLeaveCard = React.forwardRef<
             backgroundColor: CARD_COLORS.white,
           }}
         >
+          <ContinuedPageEmployeeName employeeName={employeeName} />
           <div className="border" style={{ borderColor: CARD_COLORS.black }}>
             <table className="w-full border-collapse">
               <LeaveTableHeader />
@@ -588,7 +637,11 @@ const PrintableLeaveCard = React.forwardRef<
                 position: "relative",
               }}
             >
-              {isFirstPage && <DocumentHeader employeeName={employeeName} />}
+              {isFirstPage ? (
+                <DocumentHeader employeeName={employeeName} />
+              ) : (
+                <ContinuedPageEmployeeName employeeName={employeeName} />
+              )}
 
               <div
                 className="border"
@@ -598,13 +651,18 @@ const PrintableLeaveCard = React.forwardRef<
                   <LeaveTableHeader />
                   <tbody style={{ fontSize: "11px" }}>
                     {pageRows.length > 0 ? (
-                      pageRows.map((row, index) => (
-                        <LeaveDataRow
-                          key={`${row.id ?? index}-${pageIndex}-${index}`}
-                          row={row}
-                          index={index}
-                        />
-                      ))
+                      <>
+                        {pageRows.map((row, index) => (
+                          <LeaveDataRow
+                            key={`${row.id ?? index}-${pageIndex}-${index}`}
+                            row={row}
+                            index={index}
+                          />
+                        ))}
+                        {pageIndex === pageChunks.length - 1 && (
+                          <NothingFollowsRow />
+                        )}
+                      </>
                     ) : (
                       <EmptyStateRow />
                     )}

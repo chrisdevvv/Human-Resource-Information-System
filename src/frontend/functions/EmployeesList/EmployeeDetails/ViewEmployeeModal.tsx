@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Loader2,
   Pencil,
   XCircle,
   Save,
@@ -21,6 +20,7 @@ import SalaryInformation, {
   type SalaryHistoryRecord,
 } from "./SalaryInformation";
 import { createClearHandler } from "../../../utils/clearFormUtils";
+import { InlineModalSkeleton } from "../../../components/Skeleton/SkeletonLoaders";
 
 type School = {
   id: number;
@@ -73,6 +73,11 @@ type EditSnapshot = {
   position: string;
   plantillaNo: string;
   dateOfFirstAppointment: string;
+  currentEmployeeType: string;
+  currentPosition: string;
+  currentPlantillaNo: string;
+  currentAppointmentDate: string;
+  currentSg: string;
   employeeType: "teaching" | "non-teaching" | "teaching-related";
   schoolId: number | null;
   schoolName: string;
@@ -83,11 +88,6 @@ type EditSnapshot = {
   gsisCrnNo: string;
   pagibigNo: string;
   philhealthNo: string;
-  tinNotAvailable: boolean;
-  gsisBpNotAvailable: boolean;
-  gsisCrnNotAvailable: boolean;
-  pagibigNotAvailable: boolean;
-  philhealthNotAvailable: boolean;
 };
 
 type EmployeeListResponse = {
@@ -142,6 +142,12 @@ type EmployeeDetailsResponse = {
   position?: string | null;
   position_id?: number | null;
   plantilla_no?: string | null;
+  sg?: string | null;
+  current_employee_type?: string | null;
+  current_position?: string | null;
+  current_plantilla_no?: string | null;
+  current_appointment_date?: string | null;
+  current_sg?: string | null;
   age?: number | null;
   birthdate?: string | null;
   date_of_first_appointment?: string | null;
@@ -176,6 +182,7 @@ type ViewEmployeeModalProps = {
     schoolId: number | null;
     schoolName: string;
     birthdate: string;
+    sg?: string | null;
   } | null;
   canEdit: boolean;
   onEmployeeUpdated: (employee: {
@@ -189,6 +196,7 @@ type ViewEmployeeModalProps = {
     schoolId: number | null;
     schoolName: string;
     birthdate: string;
+    sg?: string | null;
   }) => void;
   onClose: () => void;
 };
@@ -246,7 +254,11 @@ const toDateInputValue = (value: string | null | undefined): string => {
 
   const parsed = new Date(raw);
   if (Number.isNaN(parsed.getTime())) return "";
-  return parsed.toISOString().slice(0, 10);
+
+  const year = String(parsed.getFullYear());
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 const isValidDateValue = (value: string): boolean => {
@@ -349,34 +361,21 @@ const createEditSnapshotFromDetails = (
     position: data.position || "",
     plantillaNo: normalizePlantillaNo(data.plantilla_no || ""),
     dateOfFirstAppointment: toDateInputValue(data.date_of_first_appointment),
+    currentEmployeeType: String(data.current_employee_type || "").trim(),
+    currentPosition: String(data.current_position || "").trim(),
+    currentPlantillaNo: normalizePlantillaNo(data.current_plantilla_no || ""),
+    currentAppointmentDate: toDateInputValue(data.current_appointment_date),
+    currentSg: String(data.current_sg || "").trim(),
     employeeType: data.employee_type || "non-teaching",
     schoolId: data.school_id || null,
     schoolName: data.school_name || "",
     positionId: data.position_id || null,
     licenseNoPrc: data.prc_license_no || data.license_no_prc || "",
-    tin:
-      nextTin.toUpperCase() === "N/A"
-        ? "N/A"
-        : formatMaskedId(nextTin, GOV_ID_MASKS.tin),
-    gsisBpNo:
-      nextGsisBpNo.toUpperCase() === "N/A" ? "N/A" : formatGsisBp(nextGsisBpNo),
-    gsisCrnNo:
-      nextGsisCrnNo.toUpperCase() === "N/A"
-        ? "N/A"
-        : normalize12Digits(nextGsisCrnNo),
-    pagibigNo:
-      nextPagibigNo.toUpperCase() === "N/A"
-        ? "N/A"
-        : normalize12Digits(nextPagibigNo),
-    philhealthNo:
-      nextPhilhealthNo.toUpperCase() === "N/A"
-        ? "N/A"
-        : normalizePhilhealth(nextPhilhealthNo),
-    tinNotAvailable: nextTin.toUpperCase() === "N/A",
-    gsisBpNotAvailable: nextGsisBpNo.toUpperCase() === "N/A",
-    gsisCrnNotAvailable: nextGsisCrnNo.toUpperCase() === "N/A",
-    pagibigNotAvailable: nextPagibigNo.toUpperCase() === "N/A",
-    philhealthNotAvailable: nextPhilhealthNo.toUpperCase() === "N/A",
+    tin: formatMaskedId(nextTin, GOV_ID_MASKS.tin),
+    gsisBpNo: formatGsisBp(nextGsisBpNo),
+    gsisCrnNo: normalize12Digits(nextGsisCrnNo),
+    pagibigNo: normalize12Digits(nextPagibigNo),
+    philhealthNo: normalizePhilhealth(nextPhilhealthNo),
   };
 };
 
@@ -509,9 +508,6 @@ const formatGsisBp = (value: string): string => {
 
 const isGsisBpValid = (value: string): boolean => {
   const normalized = value.trim();
-  if (!normalized || normalized.toUpperCase() === "N/A") {
-    return true;
-  }
   return /^[A-Z0-9]{5}-[A-Z0-9]{6}$/.test(normalized);
 };
 
@@ -531,9 +527,6 @@ const hasComparableUniqueValue = (value: string): boolean => {
 
 const isPhilhealthValid = (value: string): boolean => {
   const normalized = value.trim();
-  if (!normalized || normalized.toUpperCase() === "N/A") {
-    return true;
-  }
   return /^\d{12}$/.test(normalized);
 };
 
@@ -636,6 +629,14 @@ export default function ViewEmployeeModal({
   const [editPlantillaNo, setEditPlantillaNo] = useState(PLANTILLA_PREFIX);
   const [editDateOfFirstAppointment, setEditDateOfFirstAppointment] =
     useState("");
+  const [editCurrentEmployeeType, setEditCurrentEmployeeType] = useState("");
+  const [editCurrentPosition, setEditCurrentPosition] = useState("");
+  const [editCurrentPlantillaNo, setEditCurrentPlantillaNo] = useState("");
+  const [editCurrentAppointmentDate, setEditCurrentAppointmentDate] =
+    useState("");
+  const [editCurrentSg, setEditCurrentSg] = useState("");
+  const [editWorkSg, setEditWorkSg] = useState("");
+  const [initialWorkSg, setInitialWorkSg] = useState("");
   const [editEmployeeType, setEditEmployeeType] = useState<
     "teaching" | "non-teaching" | "teaching-related"
   >("non-teaching");
@@ -648,11 +649,6 @@ export default function ViewEmployeeModal({
   const [editGsisCrnNo, setEditGsisCrnNo] = useState("");
   const [editPagibigNo, setEditPagibigNo] = useState("");
   const [editPhilhealthNo, setEditPhilhealthNo] = useState("");
-  const [tinNotAvailable, setTinNotAvailable] = useState(false);
-  const [gsisBpNotAvailable, setGsisBpNotAvailable] = useState(false);
-  const [gsisCrnNotAvailable, setGsisCrnNotAvailable] = useState(false);
-  const [pagibigNotAvailable, setPagibigNotAvailable] = useState(false);
-  const [philhealthNotAvailable, setPhilhealthNotAvailable] = useState(false);
 
   const [schools, setSchools] = useState<School[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -661,9 +657,12 @@ export default function ViewEmployeeModal({
   const [sexes, setSexes] = useState<Sex[]>([]);
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
   const [showPositionDropdown, setShowPositionDropdown] = useState(false);
+  const [showCurrentPositionDropdown, setShowCurrentPositionDropdown] =
+    useState(false);
   const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState("");
   const [positionSearch, setPositionSearch] = useState("");
+  const [currentPositionSearch, setCurrentPositionSearch] = useState("");
   const [districtSearch, setDistrictSearch] = useState("");
 
   const [editError, setEditError] = useState<string | null>(null);
@@ -718,6 +717,11 @@ export default function ViewEmployeeModal({
     setEditPosition(snapshot.position);
     setEditPlantillaNo(normalizePlantillaNo(snapshot.plantillaNo));
     setEditDateOfFirstAppointment(snapshot.dateOfFirstAppointment);
+    setEditCurrentEmployeeType(snapshot.currentEmployeeType);
+    setEditCurrentPosition(snapshot.currentPosition);
+    setEditCurrentPlantillaNo(normalizePlantillaNo(snapshot.currentPlantillaNo));
+    setEditCurrentAppointmentDate(snapshot.currentAppointmentDate);
+    setEditCurrentSg(snapshot.currentSg);
     setEditEmployeeType(snapshot.employeeType);
     setEditSchoolId(snapshot.schoolId);
     setEditSchoolName(snapshot.schoolName);
@@ -728,11 +732,6 @@ export default function ViewEmployeeModal({
     setEditGsisCrnNo(snapshot.gsisCrnNo);
     setEditPagibigNo(snapshot.pagibigNo);
     setEditPhilhealthNo(snapshot.philhealthNo);
-    setTinNotAvailable(snapshot.tinNotAvailable);
-    setGsisBpNotAvailable(snapshot.gsisBpNotAvailable);
-    setGsisCrnNotAvailable(snapshot.gsisCrnNotAvailable);
-    setPagibigNotAvailable(snapshot.pagibigNotAvailable);
-    setPhilhealthNotAvailable(snapshot.philhealthNotAvailable);
   };
 
   const showToast = (message: string, type: "success" | "error") => {
@@ -753,6 +752,7 @@ export default function ViewEmployeeModal({
       school_id: employee.schoolId,
       school_name: employee.schoolName,
       birthdate: employee.birthdate || null,
+      sg: employee.sg || null,
     };
   }, [employee]);
 
@@ -768,6 +768,32 @@ export default function ViewEmployeeModal({
   const resolvedLoyaltyBonus = isEditing
     ? computedSalaryMetrics.loyaltyBonus
     : (resolvedDetails?.loyalty_bonus ?? computedSalaryMetrics.loyaltyBonus);
+  const latestSalaryHistoryRow = useMemo(() => {
+    if (!salaryHistoryRows.length) return null;
+
+    const normalizeSalaryDate = (value: string | null | undefined) => {
+      const raw = String(value || "").trim();
+      return /^\d{4}-\d{2}-\d{2}/.test(raw) ? raw.slice(0, 10) : "";
+    };
+
+    return salaryHistoryRows.reduce<SalaryHistoryRecord | null>(
+      (latest, row) => {
+        if (!latest) return row;
+
+        const latestDate = normalizeSalaryDate(latest.salary_date || null);
+        const rowDate = normalizeSalaryDate(row.salary_date || null);
+        const dateCompare = rowDate.localeCompare(latestDate);
+
+        if (dateCompare > 0) return row;
+        if (dateCompare < 0) return latest;
+
+        return Number(row.id || 0) > Number(latest.id || 0) ? row : latest;
+      },
+      null,
+    );
+  }, [salaryHistoryRows]);
+  const resolvedWorkSg =
+    latestSalaryHistoryRow?.sg ?? resolvedDetails?.sg ?? null;
   const canManageSalaryHistory = isEditing && canEdit;
   const hasPendingSalaryHistoryDraft =
     Boolean(salaryHistoryCreateDraft) || Boolean(salaryHistoryEditDraft);
@@ -918,16 +944,32 @@ export default function ViewEmployeeModal({
   }, [isEditing]);
 
   useEffect(() => {
+    if (isEditing) return;
+
+    const normalizedSg = String(resolvedWorkSg ?? "").trim();
+    setEditWorkSg(normalizedSg);
+    setInitialWorkSg(normalizedSg);
+  }, [isEditing, resolvedWorkSg]);
+
+  useEffect(() => {
     if (isEditing) {
       setDistrictSearch(editDistrict);
       setPositionSearch(editPosition);
+      setCurrentPositionSearch(editCurrentPosition);
       setSchoolSearch(editSchoolName);
     } else {
       setDistrictSearch("");
       setPositionSearch("");
+      setCurrentPositionSearch("");
       setSchoolSearch("");
     }
-  }, [isEditing, editDistrict, editPosition, editSchoolName]);
+  }, [
+    isEditing,
+    editDistrict,
+    editPosition,
+    editCurrentPosition,
+    editSchoolName,
+  ]);
 
   useEffect(() => {
     if (!visible) return;
@@ -1082,7 +1124,7 @@ export default function ViewEmployeeModal({
   const hasEditChanges =
     isEditing &&
     initialEditSnapshot !== null &&
-    JSON.stringify({
+    (JSON.stringify({
       firstName: editFirstName,
       middleName: editMiddleName,
       noMiddleName,
@@ -1103,6 +1145,11 @@ export default function ViewEmployeeModal({
       position: editPosition,
       plantillaNo: editPlantillaNo,
       dateOfFirstAppointment: editDateOfFirstAppointment,
+      currentEmployeeType: editCurrentEmployeeType,
+      currentPosition: editCurrentPosition,
+      currentPlantillaNo: editCurrentPlantillaNo,
+      currentAppointmentDate: editCurrentAppointmentDate,
+      currentSg: editCurrentSg,
       employeeType: editEmployeeType,
       schoolId: editSchoolId,
       schoolName: editSchoolName,
@@ -1113,22 +1160,23 @@ export default function ViewEmployeeModal({
       gsisCrnNo: editGsisCrnNo,
       pagibigNo: editPagibigNo,
       philhealthNo: editPhilhealthNo,
-      tinNotAvailable,
-      gsisBpNotAvailable,
-      gsisCrnNotAvailable,
-      pagibigNotAvailable,
-      philhealthNotAvailable,
-    }) !== JSON.stringify(initialEditSnapshot);
+    }) !== JSON.stringify(initialEditSnapshot) ||
+      editWorkSg.trim() !== initialWorkSg.trim());
 
   const handleClearEditChanges = () => {
     if (!initialEditSnapshot) return;
     applyEditSnapshot(initialEditSnapshot);
+    setEditWorkSg(initialWorkSg);
     setErrors([]);
     setEditError(null);
   };
 
   const handleEditPlantillaNoChange = (value: string) => {
     setEditPlantillaNo(normalizePlantillaNo(value));
+  };
+
+  const handleEditCurrentPlantillaNoChange = (value: string) => {
+    setEditCurrentPlantillaNo(normalizePlantillaNo(value));
   };
 
   const handleSaveChanges = async () => {
@@ -1162,6 +1210,7 @@ export default function ViewEmployeeModal({
     }
 
     const firstAppointmentDate = editDateOfFirstAppointment.trim();
+    const normalizedWorkSg = editWorkSg.trim();
     if (firstAppointmentDate && !isValidDateValue(firstAppointmentDate)) {
       newErrors.push({
         field: "Date of First Appointment",
@@ -1181,6 +1230,46 @@ export default function ViewEmployeeModal({
           message: "Date of First Appointment cannot be in the future",
         });
       }
+    }
+
+    if (normalizedWorkSg.length > 20) {
+      newErrors.push({
+        field: "SG",
+        message: "SG must be at most 20 characters",
+      });
+    }
+
+    const normalizedCurrentAppointmentDate =
+      editCurrentAppointmentDate.trim();
+    if (
+      normalizedCurrentAppointmentDate &&
+      !isValidDateValue(normalizedCurrentAppointmentDate)
+    ) {
+      newErrors.push({
+        field: "Current Appointment Date",
+        message: "Current Appointment Date must be a valid date",
+      });
+    }
+
+    if (normalizedCurrentAppointmentDate) {
+      const parsedCurrentAppointmentDate = new Date(normalizedCurrentAppointmentDate);
+      const currentDate = new Date();
+      if (
+        !Number.isNaN(parsedCurrentAppointmentDate.getTime()) &&
+        parsedCurrentAppointmentDate > currentDate
+      ) {
+        newErrors.push({
+          field: "Current Appointment Date",
+          message: "Current Appointment Date cannot be in the future",
+        });
+      }
+    }
+
+    if (editCurrentSg.trim().length > 20) {
+      newErrors.push({
+        field: "Current SG",
+        message: "Current SG must be at most 20 characters",
+      });
     }
 
     if (
@@ -1259,21 +1348,35 @@ export default function ViewEmployeeModal({
       }
     }
 
-    if (!isGovernmentIdValid(editTin, GOV_ID_MASKS.tin)) {
+    if (!editTin.trim() || !isGovernmentIdValid(editTin, GOV_ID_MASKS.tin)) {
       newErrors.push({
         field: "TIN",
         message: "TIN must follow 000-000-000 format",
       });
     }
 
-    if (!isGsisBpValid(editGsisBpNo)) {
+    if (!editGsisBpNo.trim() || !isGsisBpValid(editGsisBpNo)) {
       newErrors.push({
         field: "GSIS BP Number",
         message: "GSIS BP Number must follow 00000-000000 format",
       });
     }
 
-    if (!isPhilhealthValid(editPhilhealthNo)) {
+    if (!editGsisCrnNo.trim() || !/^\d{12}$/.test(editGsisCrnNo.trim())) {
+      newErrors.push({
+        field: "GSIS CRN Number",
+        message: "GSIS CRN Number must be exactly 12 digits",
+      });
+    }
+
+    if (!editPagibigNo.trim() || !/^\d{12}$/.test(editPagibigNo.trim())) {
+      newErrors.push({
+        field: "PAG-IBIG Number",
+        message: "PAG-IBIG Number must be exactly 12 digits",
+      });
+    }
+
+    if (!editPhilhealthNo.trim() || !isPhilhealthValid(editPhilhealthNo)) {
       newErrors.push({
         field: "PhilHealth Number",
         message: "PhilHealth Number must be exactly 12 digits",
@@ -1440,6 +1543,7 @@ export default function ViewEmployeeModal({
         firstAppointmentDate || null,
       );
       const normalizedMiddleName = editMiddleName.trim();
+      const hasSgChanged = normalizedWorkSg !== initialWorkSg.trim();
       const updatePayload = {
         first_name: editFirstName.trim(),
         middle_name: noMiddleName ? "N/A" : normalizedMiddleName || null,
@@ -1464,8 +1568,13 @@ export default function ViewEmployeeModal({
         position: editPosition.trim(),
         position_id: editPositionId,
         plantilla_no: editPlantillaNo.trim(),
+        ...(hasSgChanged ? { sg: normalizedWorkSg || null } : {}),
         date_of_first_appointment: firstAppointmentDate || null,
-        // Compatibility keys for backend variants while keeping current API contract.
+        current_employee_type: editCurrentEmployeeType.trim() || null,
+        current_position: editCurrentPosition.trim() || null,
+        current_plantilla_no: editCurrentPlantillaNo.trim() || null,
+        current_appointment_date: normalizedCurrentAppointmentDate || null,
+        current_sg: editCurrentSg.trim() || null,
         dateOfFirstAppointment: firstAppointmentDate || null,
         years_in_service: firstAppointmentMetrics.yearsInService,
         yearsInService: firstAppointmentMetrics.yearsInService,
@@ -1544,6 +1653,10 @@ export default function ViewEmployeeModal({
         const refreshedSnapshot =
           createEditSnapshotFromDetails(refreshedDetails);
         setInitialEditSnapshot(refreshedSnapshot);
+      }
+
+      if (hasSgChanged) {
+        await loadSalaryHistory(employee.id);
       }
 
       onEmployeeUpdated({
@@ -1910,7 +2023,7 @@ export default function ViewEmployeeModal({
       {toastMessage ? (
         <ChangesToast message={toastMessage} type={toastType} />
       ) : null}
-      <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-blue-200 bg-white p-5 shadow-2xl sm:p-6">
+      <div className="relative max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-xl border border-blue-200 bg-white p-5 shadow-2xl sm:p-6">
         <div className="show-scrollbar">
           <div className="mb-3 sm:mb-4">
             <div className="flex items-start justify-between gap-3">
@@ -1985,9 +2098,8 @@ export default function ViewEmployeeModal({
           </div>
 
           {isLoadingDetails ? (
-            <div className="mb-3 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-700">
-              <Loader2 size={16} className="animate-spin" />
-              Loading full employee details...
+            <div className="mb-3">
+              <InlineModalSkeleton fields={6} />
             </div>
           ) : null}
 
@@ -2106,6 +2218,10 @@ export default function ViewEmployeeModal({
               isEditing={isEditing}
               resolvedSchoolName={resolvedDetails?.school_name}
               employeeSchoolName={employee.schoolName}
+              workDateOfFirstAppointment={resolvedSalaryDate}
+              setEditDateOfFirstAppointment={setEditDateOfFirstAppointment}
+              workSg={isEditing ? editWorkSg : resolvedWorkSg}
+              setEditWorkSg={setEditWorkSg}
               editEmployeeType={editEmployeeType}
               setEditEmployeeType={setEditEmployeeType}
               editPosition={editPosition}
@@ -2114,6 +2230,20 @@ export default function ViewEmployeeModal({
               setEditPositionId={setEditPositionId}
               editPlantillaNo={editPlantillaNo}
               setEditPlantillaNo={handleEditPlantillaNoChange}
+              editCurrentEmployeeType={editCurrentEmployeeType}
+              setEditCurrentEmployeeType={setEditCurrentEmployeeType}
+              editCurrentPosition={editCurrentPosition}
+              setEditCurrentPosition={setEditCurrentPosition}
+              currentPositionSearch={currentPositionSearch}
+              setCurrentPositionSearch={setCurrentPositionSearch}
+              showCurrentPositionDropdown={showCurrentPositionDropdown}
+              setShowCurrentPositionDropdown={setShowCurrentPositionDropdown}
+              editCurrentPlantillaNo={editCurrentPlantillaNo}
+              setEditCurrentPlantillaNo={handleEditCurrentPlantillaNoChange}
+              editCurrentAppointmentDate={editCurrentAppointmentDate}
+              setEditCurrentAppointmentDate={setEditCurrentAppointmentDate}
+              editCurrentSg={editCurrentSg}
+              setEditCurrentSg={setEditCurrentSg}
               positionSearch={positionSearch}
               setPositionSearch={setPositionSearch}
               showPositionDropdown={showPositionDropdown}
@@ -2141,24 +2271,14 @@ export default function ViewEmployeeModal({
               setEditLicenseNoPrc={setEditLicenseNoPrc}
               editTin={editTin}
               setEditTin={setEditTin}
-              tinNotAvailable={tinNotAvailable}
-              setTinNotAvailable={setTinNotAvailable}
               editGsisBpNo={editGsisBpNo}
               setEditGsisBpNo={setEditGsisBpNo}
-              gsisBpNotAvailable={gsisBpNotAvailable}
-              setGsisBpNotAvailable={setGsisBpNotAvailable}
               editGsisCrnNo={editGsisCrnNo}
               setEditGsisCrnNo={setEditGsisCrnNo}
-              gsisCrnNotAvailable={gsisCrnNotAvailable}
-              setGsisCrnNotAvailable={setGsisCrnNotAvailable}
               editPagibigNo={editPagibigNo}
               setEditPagibigNo={setEditPagibigNo}
-              pagibigNotAvailable={pagibigNotAvailable}
-              setPagibigNotAvailable={setPagibigNotAvailable}
               editPhilhealthNo={editPhilhealthNo}
               setEditPhilhealthNo={setEditPhilhealthNo}
-              philhealthNotAvailable={philhealthNotAvailable}
-              setPhilhealthNotAvailable={setPhilhealthNotAvailable}
               formatEmployeeType={formatEmployeeType}
               formatValue={formatValue}
               formatDate={formatDate}
@@ -2210,7 +2330,12 @@ export default function ViewEmployeeModal({
             {!isEditing && canEdit && (
               <button
                 type="button"
-                onClick={() => setIsEditing(true)}
+                onClick={() => {
+                  const baselineSg = String(resolvedWorkSg ?? "").trim();
+                  setEditWorkSg(baselineSg);
+                  setInitialWorkSg(baselineSg);
+                  setIsEditing(true);
+                }}
                 className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
               >
                 <Pencil size={14} />

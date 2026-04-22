@@ -12,14 +12,14 @@ import {
   Eye,
   Search,
 } from "lucide-react";
+import { UserTableSkeleton } from "../../../components/Skeleton/SkeletonLoaders";
 import PendingAccounts from "./PendingAccounts";
 import UserSettingModal from "../../components/UserSettingModal";
 import UserDetailsEditModal from "../../components/UserDetailsEditModal";
 import AddUserModal from "./AddUserModal";
 import ToastMessage from "../../../components/ToastMessage";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type User = {
   id: number;
@@ -384,7 +384,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
       <div className="flex flex-col sm:flex-row justify-start gap-2 mb-4">
         <button
           onClick={() => setActiveTab("users")}
-          className={`w-full sm:w-auto px-4 py-2 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-4 py-1 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "users"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -397,7 +397,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
         </button>
         <button
           onClick={() => setActiveTab("pending")}
-          className={`w-full sm:w-auto px-4 py-2 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-4 py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "pending"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -412,7 +412,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
 
       {/* Tab Content */}
       {activeTab === "users" && (
-        <div className="w-full min-w-0 bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col">
+        <div className="w-full min-w-0 bg-white rounded-lg shadow-lg p-2 sm:p-3 flex flex-col border border-gray-100">
           <h1
             style={{ fontSize: "20px" }}
             className="font-bold text-gray-900 mb-4 inline-flex items-center gap-2"
@@ -424,8 +424,8 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
           {/* Header with search and controls */}
           <div className="flex flex-col gap-4 mb-6">
             {/* Search and Status Row */}
-            <div className="grid gap-3 sm:flex sm:flex-row sm:items-center">
-              <div className="flex-1 relative">
+            <div className="flex flex-col gap-2 min-w-0 sm:flex-row sm:items-center sm:gap-3">
+              <div className="relative min-w-0 flex-1">
                 <input
                   type="text"
                   placeholder="Search name, email, or school"
@@ -436,7 +436,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
               </div>
               <button
                 onClick={handleSearch}
-                className="inline-flex w-full sm:w-auto items-center justify-center gap-1 px-5 py-2 sm:py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+                className="inline-flex w-full shrink-0 sm:w-auto items-center justify-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-xs sm:text-sm cursor-pointer whitespace-nowrap"
               >
                 <Search size={14} />
                 Search
@@ -557,9 +557,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
           {/* Table */}
           <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
             {userLoading ? (
-              <div className="flex items-center justify-center py-10">
-                <p className="text-gray-500">Loading users...</p>
-              </div>
+              <UserTableSkeleton rows={5} />
             ) : userError ? (
               <div className="flex items-center justify-center py-10">
                 <p className="text-red-500">Error: {userError}</p>
@@ -592,7 +590,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                         key={user.id}
                         className="border-b border-gray-100 hover:bg-gray-50 transition"
                       >
-                        <td className="py-0.5 px-3 text-gray-900 text-sm font-medium">
+                        <td className="py-1 px-3 text-gray-900 text-sm font-medium">
                           {user.firstName} {user.lastName}
                         </td>
                         <td className="py-0.5 px-3 text-gray-500 text-sm">
@@ -685,7 +683,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
 
           {/* Pagination */}
           {filteredUsers.length > 0 && (
-            <div className="mt-6 space-y-3">
+            <div className="mt-6">
               <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
                 <label className="flex items-center gap-2 text-sm text-gray-600">
                   Show
@@ -711,7 +709,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    className="p-2 text-gray-500 hover:bg-gray-50 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
                     aria-label="Previous page"
                   >
                     <ChevronLeft size={18} />
@@ -731,7 +729,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                         className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
                           currentPage === item
                             ? "bg-blue-600 text-white"
-                            : "text-gray-500 hover:bg-gray-100"
+                            : "text-gray-500 hover:bg-gray-50"
                         }`}
                       >
                         {item}
@@ -743,7 +741,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                       setCurrentPage(Math.min(totalPages, currentPage + 1))
                     }
                     disabled={currentPage === totalPages}
-                    className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    className="p-2 text-gray-500 hover:bg-gray-50 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
                     aria-label="Next page"
                   >
                     <ChevronRight size={18} />
@@ -986,4 +984,3 @@ function DetailsRow({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-

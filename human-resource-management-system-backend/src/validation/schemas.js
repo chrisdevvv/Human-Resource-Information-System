@@ -40,6 +40,7 @@ const workEmailSchema = Joi.string()
   .allow(null, "");
 const districtSchema = Joi.string().trim().max(255).allow(null, "");
 const positionSchema = Joi.string().trim().max(255).allow(null, "");
+const salaryGradeSchema = Joi.string().trim().max(20).allow(null, "");
 const plantillaNoSchema = Joi.string().trim().max(100).allow(null, "");
 const prcLicenseNoSchema = Joi.string().trim().max(100).allow(null, "");
 const tinSchema = Joi.string().trim().max(50).allow(null, "");
@@ -53,6 +54,11 @@ const employeeTypeSchema = Joi.string()
   .lowercase()
   .valid("teaching", "non-teaching", "teaching-related", "teaching related")
   .required();
+const optionalEmployeeTypeSchema = Joi.string()
+  .trim()
+  .lowercase()
+  .valid("teaching", "non-teaching", "teaching-related", "teaching related")
+  .allow(null, "");
 
 const requiredMiddleNameWhenApplicable = middleNameSchema.when(
   "no_middle_name",
@@ -97,6 +103,12 @@ const employeeCreateBodySchema = Joi.object({
   district: districtSchema,
   work_district: districtSchema,
   position: positionSchema,
+  sg: salaryGradeSchema,
+  current_employee_type: optionalEmployeeTypeSchema,
+  current_position: positionSchema,
+  current_plantilla_no: plantillaNoSchema,
+  current_appointment_date: firstAppointmentDateSchema.allow(null, ""),
+  current_sg: salaryGradeSchema,
   position_id: Joi.number().integer().positive().allow(null, ""),
   plantilla_no: plantillaNoSchema,
   prc_license_no: prcLicenseNoSchema,
@@ -140,6 +152,12 @@ const employeeUpdateBodySchema = Joi.object({
   district: districtSchema,
   work_district: districtSchema,
   position: positionSchema,
+  sg: salaryGradeSchema,
+  current_employee_type: optionalEmployeeTypeSchema,
+  current_position: positionSchema,
+  current_plantilla_no: plantillaNoSchema,
+  current_appointment_date: firstAppointmentDateSchema.allow(null, ""),
+  current_sg: salaryGradeSchema,
   position_id: Joi.number().integer().positive().allow(null, ""),
   plantilla_no: plantillaNoSchema,
   prc_license_no: prcLicenseNoSchema,

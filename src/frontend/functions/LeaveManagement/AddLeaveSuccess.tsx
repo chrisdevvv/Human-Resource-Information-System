@@ -42,11 +42,6 @@ export default function AddLeaveSuccess({
     return null;
   }
 
-  const handleClose = () => {
-    setIsVisible(false);
-    onClose();
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
@@ -102,15 +97,6 @@ export default function AddLeaveSuccess({
         </div>
 
         {/* Close button */}
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="flex-1 cursor-pointer rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-green-700"
-          >
-            Close
-          </button>
-        </div>
       </div>
     </div>
   );

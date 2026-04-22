@@ -9,13 +9,13 @@ export default function AppFooter() {
 
   return (
     <>
-      <footer className="bg-blue-700 text-white px-4 py-2.5 md:px-6 md:py-2 shadow-inner">
+      <footer className="bg-white text-gray-600 px-4 py-2.5 md:px-6 md:py-2 shadow-inner">
         <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 text-[11px] sm:text-xs">
           <div className="text-left sm:mr-auto">
             <button
               type="button"
               onClick={() => setShowContactModal(true)}
-              className="cursor-pointer font-semibold hover:underline underline-offset-4 hover:text-blue-100 transition text-[11px] sm:text-xs"
+              className="cursor-pointer font-semibold hover:underline underline-offset-4 hover:text-gray-900 transition text-[11px] sm:text-xs"
             >
               Contact Us
             </button>

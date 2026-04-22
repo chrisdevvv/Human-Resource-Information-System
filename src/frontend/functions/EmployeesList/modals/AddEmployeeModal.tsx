@@ -187,9 +187,7 @@ const formatGsisBp = (value: string): string => {
 
 const isGsisBpValid = (value: string): boolean => {
   const normalized = value.trim();
-  if (!normalized || normalized.toUpperCase() === "N/A") {
-    return true;
-  }
+  if (!normalized || normalized.toUpperCase() === "N/A") return false;
   return /^[A-Z0-9]{5}-[A-Z0-9]{6}$/.test(normalized);
 };
 
@@ -209,17 +207,19 @@ const hasComparableUniqueValue = (value: string): boolean => {
 
 const isPhilhealthValid = (value: string): boolean => {
   const normalized = value.trim();
-  if (!normalized || normalized.toUpperCase() === "N/A") {
-    return true;
-  }
+  if (!normalized || normalized.toUpperCase() === "N/A") return false;
+  return /^\d{12}$/.test(normalized);
+};
+
+const is12DigitGovernmentNumber = (value: string): boolean => {
+  const normalized = value.trim();
+  if (!normalized || normalized.toUpperCase() === "N/A") return false;
   return /^\d{12}$/.test(normalized);
 };
 
 const isGovernmentIdValid = (value: string, config: IdMaskConfig): boolean => {
   const normalized = value.trim();
-  if (!normalized || normalized.toUpperCase() === "N/A") {
-    return true;
-  }
+  if (!normalized || normalized.toUpperCase() === "N/A") return false;
 
   const expected = formatMaskedId(normalized, config);
   return (
@@ -395,11 +395,6 @@ export default function AddEmployeeModal({
   const [pagibigNo, setPagibigNo] = useState("");
   const [philhealthNo, setPhilhealthNo] = useState("");
   const [dateOfFirstAppointment, setDateOfFirstAppointment] = useState("");
-  const [tinNotAvailable, setTinNotAvailable] = useState(false);
-  const [gsisBpNotAvailable, setGsisBpNotAvailable] = useState(false);
-  const [gsisCrnNotAvailable, setGsisCrnNotAvailable] = useState(false);
-  const [pagibigNotAvailable, setPagibigNotAvailable] = useState(false);
-  const [philhealthNotAvailable, setPhilhealthNotAvailable] = useState(false);
 
   const [schools, setSchools] = useState<School[]>([]);
   const [schoolsLoading, setSchoolsLoading] = useState(false);
@@ -554,11 +549,6 @@ export default function AddEmployeeModal({
     setPagibigNo("");
     setPhilhealthNo("");
     setDateOfFirstAppointment("");
-    setTinNotAvailable(false);
-    setGsisBpNotAvailable(false);
-    setGsisCrnNotAvailable(false);
-    setPagibigNotAvailable(false);
-    setPhilhealthNotAvailable(false);
     setSchools([]);
     setSchoolsLoading(false);
     setPositions([]);
@@ -1127,21 +1117,36 @@ export default function AddEmployeeModal({
     if (!isGovernmentIdValid(tin, GOV_ID_MASKS.tin)) {
       fieldErrors.push({
         field: "TIN",
-        message: "TIN must follow 000-000-000 format.",
+        message: "TIN is required and must follow 000-000-000 format.",
       });
     }
 
     if (!isGsisBpValid(gsisBpNo)) {
       fieldErrors.push({
         field: "GSIS BP Number",
-        message: "GSIS BP Number must follow 00000-000000 format.",
+        message:
+          "GSIS BP Number is required and must follow 00000-000000 format.",
+      });
+    }
+
+    if (!is12DigitGovernmentNumber(gsisCrnNo)) {
+      fieldErrors.push({
+        field: "GSIS CRN Number",
+        message: "GSIS CRN Number is required and must be exactly 12 digits.",
+      });
+    }
+
+    if (!is12DigitGovernmentNumber(pagibigNo)) {
+      fieldErrors.push({
+        field: "PAG-IBIG Number",
+        message: "PAG-IBIG Number is required and must be exactly 12 digits.",
       });
     }
 
     if (!isPhilhealthValid(philhealthNo)) {
       fieldErrors.push({
         field: "PhilHealth Number",
-        message: "PhilHealth Number must be exactly 12 digits.",
+        message: "PhilHealth Number is required and must be exactly 12 digits.",
       });
     }
 
@@ -1576,11 +1581,6 @@ export default function AddEmployeeModal({
     setPagibigNo("");
     setPhilhealthNo("");
     setDateOfFirstAppointment("");
-    setTinNotAvailable(false);
-    setGsisBpNotAvailable(false);
-    setGsisCrnNotAvailable(false);
-    setPagibigNotAvailable(false);
-    setPhilhealthNotAvailable(false);
 
     // Reset form state
     setStep("personal");
@@ -2211,25 +2211,12 @@ export default function AddEmployeeModal({
                   onChange={(e) =>
                     setTin(formatMaskedId(e.target.value, GOV_ID_MASKS.tin))
                   }
-                  disabled={tinNotAvailable}
                   inputMode="numeric"
                   maxLength={11}
                   className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-100"
                   placeholder="000-000-000"
+                  required
                 />
-                <label className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-gray-600">
-                  <input
-                    type="checkbox"
-                    checked={tinNotAvailable}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setTinNotAvailable(checked);
-                      setTin(checked ? "N/A" : "");
-                    }}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  Not Available
-                </label>
                 {renderFieldError("TIN")}
               </div>
 
@@ -2241,25 +2228,12 @@ export default function AddEmployeeModal({
                   type="text"
                   value={gsisBpNo}
                   onChange={(e) => setGsisBpNo(formatGsisBp(e.target.value))}
-                  disabled={gsisBpNotAvailable}
                   inputMode="text"
                   maxLength={12}
                   className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-100"
                   placeholder="00000-000000"
+                  required
                 />
-                <label className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-gray-600">
-                  <input
-                    type="checkbox"
-                    checked={gsisBpNotAvailable}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setGsisBpNotAvailable(checked);
-                      setGsisBpNo(checked ? "N/A" : "");
-                    }}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  Not Available
-                </label>
                 {renderFieldError("GSIS BP Number")}
               </div>
 
@@ -2273,25 +2247,12 @@ export default function AddEmployeeModal({
                   onChange={(e) =>
                     setGsisCrnNo(normalize12Digits(e.target.value))
                   }
-                  disabled={gsisCrnNotAvailable}
                   inputMode="numeric"
                   maxLength={12}
                   className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-100"
                   placeholder="000000000000"
+                  required
                 />
-                <label className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-gray-600">
-                  <input
-                    type="checkbox"
-                    checked={gsisCrnNotAvailable}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setGsisCrnNotAvailable(checked);
-                      setGsisCrnNo(checked ? "N/A" : "");
-                    }}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  Not Available
-                </label>
                 {renderFieldError("GSIS CRN Number")}
               </div>
 
@@ -2305,25 +2266,12 @@ export default function AddEmployeeModal({
                   onChange={(e) =>
                     setPagibigNo(normalize12Digits(e.target.value))
                   }
-                  disabled={pagibigNotAvailable}
                   inputMode="numeric"
                   maxLength={12}
                   className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-100"
                   placeholder="000000000000"
+                  required
                 />
-                <label className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-gray-600">
-                  <input
-                    type="checkbox"
-                    checked={pagibigNotAvailable}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setPagibigNotAvailable(checked);
-                      setPagibigNo(checked ? "N/A" : "");
-                    }}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  Not Available
-                </label>
                 {renderFieldError("PAG-IBIG Number")}
               </div>
 
@@ -2337,25 +2285,12 @@ export default function AddEmployeeModal({
                   onChange={(e) =>
                     setPhilhealthNo(normalizePhilhealth(e.target.value))
                   }
-                  disabled={philhealthNotAvailable}
                   inputMode="numeric"
                   maxLength={12}
                   className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-100"
                   placeholder="000000000000"
+                  required
                 />
-                <label className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-gray-600">
-                  <input
-                    type="checkbox"
-                    checked={philhealthNotAvailable}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setPhilhealthNotAvailable(checked);
-                      setPhilhealthNo(checked ? "N/A" : "");
-                    }}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  Not Available
-                </label>
                 {renderFieldError("PhilHealth Number")}
               </div>
             </div>

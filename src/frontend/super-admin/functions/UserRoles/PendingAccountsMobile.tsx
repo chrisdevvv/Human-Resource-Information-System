@@ -9,9 +9,11 @@ import {
   Search,
   UserCheck,
 } from "lucide-react";
+import { SkeletonListItem } from "../../../components/Skeleton/SkeletonUtils";
 import { type RegistrationDetail } from "../../components/UserRolesDetailsModal";
 import RoleAssignmentModal from "../../components/RoleAssignmentModal";
 import RejectModal from "../../components/RejectModal";
+import ToastMessage from "../../../components/ToastMessage";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
@@ -60,8 +62,32 @@ export default function PendingAccountsMobile({
     id: number;
     name: string;
   } | null>(null);
+  const [toastState, setToastState] = useState<{
+    isVisible: boolean;
+    variant: "success" | "error";
+    title: string;
+    message: string;
+  }>({
+    isVisible: false,
+    variant: "success",
+    title: "",
+    message: "",
+  });
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+  const showToast = (
+    variant: "success" | "error",
+    title: string,
+    message: string,
+  ) => {
+    setToastState({
+      isVisible: true,
+      variant,
+      title,
+      message,
+    });
+  };
 
   const fetchData = async (
     status: string,
@@ -190,6 +216,21 @@ export default function PendingAccountsMobile({
 
   return (
     <div className="w-full px-3 py-4">
+      <ToastMessage
+        isVisible={toastState.isVisible}
+        variant={toastState.variant}
+        title={toastState.title}
+        message={toastState.message}
+        position="top-right"
+        autoCloseDuration={2600}
+        onClose={() =>
+          setToastState((prev) => ({
+            ...prev,
+            isVisible: false,
+          }))
+        }
+      />
+
       <h1 className="text-lg font-bold text-gray-900 mb-4 inline-flex items-center gap-2">
         <UserCheck size={16} className="text-blue-600" />
         Pending Accounts
@@ -198,7 +239,7 @@ export default function PendingAccountsMobile({
       {/* Filters */}
       <div className="flex flex-col gap-2 mb-4">
         {/* Search */}
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <input
             type="text"
             placeholder="Search name, email, or school"
@@ -207,11 +248,11 @@ export default function PendingAccountsMobile({
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             onClick={() => setCurrentPage(1)}
-            className="inline-flex items-center gap-1 px-4 py-1 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer"
+            className="inline-flex w-full sm:w-auto items-center justify-center gap-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer whitespace-nowrap"
           >
             <Search size={14} />
             Search
@@ -281,9 +322,15 @@ export default function PendingAccountsMobile({
       {/* Account list */}
       <div className="border border-blue-200 bg-white rounded-xl shadow-lg p-4 flex flex-col gap-4">
         {loading ? (
-          <p className="text-center text-sm text-gray-500 py-8">
-            Loading pending accounts...
-          </p>
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <SkeletonListItem
+                key={i}
+                includeIcon={false}
+                includeAvatar={true}
+              />
+            ))}
+          </div>
         ) : error ? (
           <p className="text-center text-sm text-red-500 py-8">
             Error: {error}
@@ -471,6 +518,11 @@ export default function PendingAccountsMobile({
           onClose={() => setAssignTarget(null)}
           onSuccess={() => {
             setAssignTarget(null);
+            showToast(
+              "success",
+              "Role Assigned",
+              `${assignTarget.name} has been assigned a role.`,
+            );
             fetchData(statusFilter);
             onRefreshUsers?.();
           }}
@@ -485,6 +537,11 @@ export default function PendingAccountsMobile({
           onClose={() => setRejectTarget(null)}
           onSuccess={() => {
             setRejectTarget(null);
+            showToast(
+              "success",
+              "Registration Rejected",
+              `${rejectTarget.name}'s registration has been rejected.`,
+            );
             fetchData(statusFilter);
             onRefreshUsers?.();
           }}

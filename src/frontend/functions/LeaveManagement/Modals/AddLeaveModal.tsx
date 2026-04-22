@@ -6,6 +6,7 @@ import ConfirmationAddLeave from "../ConfirmationAddLeave";
 import AddLeaveSuccess from "../AddLeaveSuccess";
 import { getLeaveHistoryByEmployee, getLeaveParticulars } from "../leaveApi";
 import { createClearHandler, hasFormData } from "../../../utils/clearFormUtils";
+import { SkeletonListItem } from "../../../components/Skeleton/SkeletonUtils";
 
 export type AddLeaveFormValues = {
   employee_id: number;
@@ -462,11 +463,7 @@ export default function AddLeaveModal({
                   setTimeout(() => setShowParticularDropdown(false), 150);
                 }}
                 disabled={particularsLoading}
-                placeholder={
-                  particularsLoading
-                    ? "Loading particulars..."
-                    : "Type to search particulars..."
-                }
+                placeholder="Type to search particulars..."
                 className={`${inputClass} ${
                   particularsLoading ? "bg-gray-100 cursor-not-allowed" : ""
                 }`}
@@ -474,8 +471,14 @@ export default function AddLeaveModal({
               {showParticularDropdown && (
                 <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-md border border-blue-200 bg-white shadow-lg max-h-64 overflow-y-auto">
                   {particularsLoading ? (
-                    <div className="px-3 py-2 text-center text-sm text-gray-500">
-                      Loading particulars...
+                    <div className="flex flex-col gap-1 p-2">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <SkeletonListItem
+                          key={i}
+                          includeIcon={false}
+                          includeAvatar={false}
+                        />
+                      ))}
                     </div>
                   ) : particularOptions.length === 0 ? (
                     <div className="px-3 py-2 text-center text-sm text-gray-500">

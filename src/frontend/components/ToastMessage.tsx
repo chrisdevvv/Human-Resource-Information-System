@@ -20,8 +20,8 @@ type ToastMessageProps = {
 
 const getPositionClassName = (position: ToastPosition) =>
   position === "top-right"
-    ? "fixed right-4 top-4 z-60 w-[min(360px,calc(100vw-2rem))]"
-    : "fixed bottom-5 right-5 z-50 w-[min(360px,calc(100vw-2rem))]";
+    ? "fixed right-2 sm:right-4 top-2 sm:top-4 z-[60] w-[min(360px,calc(100vw-2rem))]"
+    : "fixed bottom-2 sm:bottom-5 right-2 sm:right-5 z-[50] w-[min(360px,calc(100vw-2rem))]";
 
 const getMotionClassName = (position: ToastPosition, isShown: boolean) => {
   const base =

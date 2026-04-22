@@ -6,6 +6,7 @@ import SidebarIndex from "../../frontend/sidebar/SidebarIndex";
 import SidebarMobile from "../../frontend/sidebar/SidebarMobile";
 import StickyHeader from "../../frontend/components/StickyHeader";
 import AppFooter from "../../frontend/footer/page";
+import { ShellSkeleton } from "../../frontend/components/Skeleton/ShellSkeleton";
 import { hasAccessToFeature } from "../../frontend/auth/roleAccess";
 import { setPageTitle } from "../../frontend/utils/pageTitle";
 import { APP_ROUTES } from "@/frontend/route";
@@ -19,6 +20,7 @@ export default function Page() {
   const [activeTab, setActiveTab] = useState("employee-management");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
     const verifyAuth = () => {
@@ -74,6 +76,8 @@ export default function Page() {
       } catch {
         setIsAuthorized(false);
         router.replace(APP_ROUTES.LOGIN);
+      } finally {
+        setIsCheckingAuth(false);
       }
     };
 
@@ -85,6 +89,10 @@ export default function Page() {
   useEffect(() => {
     setPageTitle(activeTab);
   }, [activeTab]);
+
+  if (isCheckingAuth) {
+    return <ShellSkeleton />;
+  }
 
   if (!isAuthorized) {
     return null;

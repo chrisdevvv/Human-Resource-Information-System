@@ -1,4 +1,5 @@
 const pool = require("../../config/db");
+const SalaryIncrementNotice = require("./salaryIncrementNoticeModel");
 
 const THREE_YEAR_INTERVAL = 3;
 const DEFAULT_AUTO_REMARK = "Step Increment";
@@ -119,7 +120,20 @@ const SalaryInformation = {
     return rows[0] || null;
   },
 
-  create: async (employeeId, payload) => {
+  getLatestByEmployeeId: async (employeeId) => {
+    const [rows] = await pool.promise().query(
+      `SELECT id, employee_id, DATE_FORMAT(salary_date, '%Y-%m-%d') AS salary_date, plantilla, sg, step, salary, increment_amount, increment_mode, remarks, created_at, updated_at
+       FROM salary_information
+       WHERE employee_id = ?
+       ORDER BY salary_date DESC, id DESC
+       LIMIT 1`,
+      [employeeId],
+    );
+
+    return rows[0] || null;
+  },
+
+  create: async (employeeId, payload, options = {}) => {
     const normalizedSalaryDate = normalizeOptionalDate(payload.date);
     const normalizedSalary = toMoney(payload.salary);
     const providedIncrement = getProvidedIncrementValue(payload);
@@ -151,10 +165,16 @@ const SalaryInformation = {
 
     await SalaryInformation.recomputeEmployeeIncrements(employeeId);
 
+    await SalaryIncrementNotice.upsertFromSalaryInformation(
+      employeeId,
+      result.insertId,
+      options.actorUserId,
+    );
+
     return SalaryInformation.getById(employeeId, result.insertId);
   },
 
-  update: async (employeeId, id, payload) => {
+  update: async (employeeId, id, payload, options = {}) => {
     const existing = await SalaryInformation.getById(employeeId, id);
     if (!existing) {
       return null;
@@ -222,10 +242,18 @@ const SalaryInformation = {
 
     await SalaryInformation.recomputeEmployeeIncrements(employeeId);
 
+    await SalaryIncrementNotice.upsertFromSalaryInformation(
+      employeeId,
+      id,
+      options.actorUserId,
+    );
+
     return SalaryInformation.getById(employeeId, id);
   },
 
   delete: async (employeeId, id) => {
+    await SalaryIncrementNotice.deleteBySalaryInformationId(employeeId, id);
+
     const [result] = await pool.promise().query(
       "DELETE FROM salary_information WHERE id = ? AND employee_id = ?",
       [id, employeeId],
@@ -313,6 +341,7 @@ const SalaryInformation = {
 
     let generated = 0;
     const touchedEmployeeIds = new Set();
+    const generatedSalaryInfoIdsByEmployee = new Map();
 
     for (const row of latestPerEmployeeRows) {
       let cursorDate = normalizeOptionalDate(row.salary_date);
@@ -337,7 +366,7 @@ const SalaryInformation = {
           continue;
         }
 
-        await pool.promise().query(
+        const [insertResult] = await pool.promise().query(
           `INSERT INTO salary_information
            (employee_id, salary_date, plantilla, sg, step, salary, increment_amount, increment_mode, remarks)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -355,13 +384,28 @@ const SalaryInformation = {
         );
 
         generated += 1;
-        touchedEmployeeIds.add(Number(row.employee_id));
+        const normalizedEmployeeId = Number(row.employee_id);
+        touchedEmployeeIds.add(normalizedEmployeeId);
+        if (!generatedSalaryInfoIdsByEmployee.has(normalizedEmployeeId)) {
+          generatedSalaryInfoIdsByEmployee.set(normalizedEmployeeId, []);
+        }
+        generatedSalaryInfoIdsByEmployee
+          .get(normalizedEmployeeId)
+          .push(Number(insertResult.insertId));
         cursorDate = nextDate;
       }
     }
 
     for (const employeeId of touchedEmployeeIds) {
       await SalaryInformation.recomputeEmployeeIncrements(employeeId);
+
+      const insertedIds = generatedSalaryInfoIdsByEmployee.get(employeeId) || [];
+      for (const salaryInformationId of insertedIds) {
+        await SalaryIncrementNotice.upsertFromSalaryInformation(
+          employeeId,
+          salaryInformationId,
+        );
+      }
     }
 
     return {

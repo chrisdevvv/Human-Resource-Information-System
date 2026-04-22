@@ -16,6 +16,7 @@ import LogsReportGeneration, {
   type LogsReportRecord,
 } from "./LogsReportGeneration";
 import { getLogsReportRoute } from "@/frontend/route";
+import { ActivityLogsMobileSkeleton } from "../../../components/Skeleton/SkeletonLoaders";
 
 type Log = {
   id: number;
@@ -36,8 +37,7 @@ type ArchiveFlowStep = "range" | "generate-prompt" | "confirm" | "success";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 const createLogSearchIndex = (log: {
   firstName: string;
@@ -819,9 +819,7 @@ export default function LogsMobile() {
       {/* Logs list */}
       <div className="border border-blue-200 bg-white rounded-xl shadow-lg p-4 flex flex-col gap-4">
         {logsLoading ? (
-          <p className="text-center text-sm text-gray-500 py-8">
-            Loading logs...
-          </p>
+          <ActivityLogsMobileSkeleton />
         ) : logsError ? (
           <p className="text-center text-sm text-red-500 py-8">
             Error: {logsError}
@@ -1164,4 +1162,3 @@ export default function LogsMobile() {
     </div>
   );
 }
-

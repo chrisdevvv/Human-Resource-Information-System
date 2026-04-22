@@ -7,12 +7,9 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff } from "../assets/icons";
 import { CircleHelp, Clock3, Mail as MailContact } from "lucide-react";
-import {
-  LoginSuccessModal,
-  ForgotModal,
-  ErrorModal,
-  RegistrationModal,
-} from "./components";
+import { ForgotModal, ErrorModal, RegistrationModal } from "./components";
+import ToastMessage from "@/frontend/components/ToastMessage";
+import DotLoader from "@/frontend/components/DotLoader";
 import {
   isAccountLocked,
   getRemainingLockTime,
@@ -66,19 +63,22 @@ export default function LoginPage() {
   const [showForgot, setShowForgot] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
-  const [showLoginSuccess, setShowLoginSuccess] = useState(false);
-  const [loggedInUser, setLoggedInUser] = useState<{
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    role?: string;
-  } | null>(null);
   const [error, setError] = useState<{ title?: string; desc?: string } | null>(
     null,
   );
+  const [toastState, setToastState] = useState<{
+    isVisible: boolean;
+    variant: "success" | "error";
+    title: string;
+    message: string;
+  }>({
+    isVisible: false,
+    variant: "success",
+    title: "",
+    message: "",
+  });
   const [remainingLockTime, setRemainingLockTime] = useState<number>(0);
 
-  // Update lock time countdown
   useEffect(() => {
     if (!email) return;
 
@@ -133,7 +133,6 @@ export default function LoginPage() {
       return;
     }
 
-    // Check if account is locked
     if (isAccountLocked(email)) {
       const remaining = getRemainingLockTime(email);
       setError({
@@ -159,12 +158,10 @@ export default function LoginPage() {
         const backendMessage =
           typeof data?.message === "string" ? data.message : "";
 
-        // Only increment failed attempts for invalid credentials
         if (backendMessage.toLowerCase() === "invalid credentials") {
           incrementFailedAttempt(email);
           const remaining = getRemainingLockTime(email);
 
-          // Check if account just got locked
           if (remaining > 0) {
             setError({
               title: "Login Error",
@@ -188,7 +185,6 @@ export default function LoginPage() {
         return;
       }
 
-      // Successful login - reset failed attempts
       resetLoginAttempts(email);
       setRemainingLockTime(0);
 
@@ -210,8 +206,28 @@ export default function LoginPage() {
         return;
       }
 
-      setLoggedInUser(data.user);
-      setShowLoginSuccess(true);
+      const dashboardRoute = getDashboardRouteByRoleStrict(
+        data.user?.role,
+        APP_ROUTES.LOGIN,
+      );
+
+      if (dashboardRoute === APP_ROUTES.LOGIN) {
+        setError({
+          title: "Login Error",
+          desc: "Your account role does not have an assigned dashboard.",
+        });
+        return;
+      }
+
+      setToastState({
+        isVisible: true,
+        variant: "success",
+        title: "Login Successful",
+        message: "Redirecting to your dashboard...",
+      });
+
+      router.replace(dashboardRoute);
+      return;
     } catch (err) {
       setError({
         title: "Login Error",
@@ -223,13 +239,28 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="flex min-h-screen flex-col bg-gray-100">
+      <ToastMessage
+        isVisible={toastState.isVisible}
+        variant={toastState.variant}
+        title={toastState.title}
+        message={toastState.message}
+        position="bottom-right"
+        autoCloseDuration={5000}
+        onClose={() =>
+          setToastState((prev) => ({
+            ...prev,
+            isVisible: false,
+          }))
+        }
+      />
+
       {/* Sticky Header */}
-      <header className="sticky top-0 z-50 bg-blue-700 text-white py-4 px-6 shadow-md">
-        <div className="w-full flex items-center justify-start gap-3">
+      <header className="sticky top-0 z-50 bg-blue-700 px-6 py-4 text-white shadow-md">
+        <div className="flex w-full items-center justify-start gap-3">
           <img
-            src="/images/[DEPED] ELMS Logo.svg"
-            alt="DepEd ELMS Logo"
+            src="/images/DepEd-CHRIS.svg"
+            alt="DepEd CHRIS"
             className="h-12 w-auto"
           />
           <div className="text-left">
@@ -239,7 +270,7 @@ export default function LoginPage() {
             <h1 className="text-xl font-bold leading-tight">
               CITY OF SAN JOSE DEL MONTE
             </h1>
-            <p className="text-sm font-normal tracking-wide leading-tight">
+            <p className="text-sm font-normal leading-tight tracking-wide">
               CSJDM DepEd Human Resource Information System - CHRIS
             </p>
           </div>
@@ -247,10 +278,9 @@ export default function LoginPage() {
       </header>
 
       {/* Login Form Section */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4">
+      <div className="flex flex-1 flex-col items-center justify-center p-4">
         {/* Logos Container */}
         <div className="-mt-10 flex items-center justify-center gap-6">
-          {/* Logo */}
           <img src="/sdologo-new.svg" alt="SD Logo" className="h-50 w-auto" />
         </div>
 
@@ -263,93 +293,119 @@ export default function LoginPage() {
             Use your email and password to continue
           </p>
 
-          {/* Email Field */}
-          <div className="mb-4">
-            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-              <Mail className="text-blue-600" size={18} />
-              Email
-            </label>
-            <input
-              id="loginEmail"
-              type="email"
-              placeholder="you@deped.gov.ph"
-              value={email}
-              onChange={(e) => {
-                const v = e.target.value;
-                setEmail(v);
-                if (emailError && validateEmail(v)) setEmailError(null);
-              }}
-              onBlur={() => {
-                if (!email) setEmailError("Email is required");
-                else if (!validateEmail(email))
-                  setEmailError("Please enter a valid email address");
-                else setEmailError(null);
-              }}
-              className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 ${emailError ? "border-red-500" : "border-gray-300"}`}
-            />
-            {emailError && (
-              <p className="text-sm text-red-600 mt-1">{emailError}</p>
-            )}
-          </div>
-
-          {/* Password Field */}
-          <div className="mb-6">
-            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-              <Lock className="text-blue-600" size={18} />
-              Password
-            </label>
-            <div className="relative">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleLogin();
+            }}
+          >
+            {/* Email Field */}
+            <div className="mb-4">
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
+                <Mail className="text-blue-600" size={18} />
+                Email
+              </label>
               <input
-                placeholder="••••••••"
-                id="loginPassword"
-                type={showPassword ? "text" : "password"}
-                value={password}
+                id="loginEmail"
+                type="email"
+                placeholder="you@deped.gov.ph"
+                value={email}
                 onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (passwordError) setPasswordError(null);
+                  const v = e.target.value;
+                  setEmail(v);
+                  if (emailError && validateEmail(v)) setEmailError(null);
                 }}
                 onBlur={() => {
-                  if (!password) setPasswordError("Password is required");
-                  else setPasswordError(null);
+                  if (!email) setEmailError("Email is required");
+                  else if (!validateEmail(email))
+                    setEmailError("Please enter a valid email address");
+                  else setEmailError(null);
                 }}
-                className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 ${passwordError ? "border-red-500" : "border-gray-300"}`}
+                className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 ${emailError ? "border-red-500" : "border-gray-300"}`}
+                disabled={isLoading}
               />
-              <button
-                type="button"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+              {emailError && (
+                <p className="mt-1 text-sm text-red-600">{emailError}</p>
+              )}
             </div>
-            {passwordError && (
-              <p className="text-sm text-red-600 mt-1">{passwordError}</p>
-            )}
-          </div>
 
-          {/* Lockout Warning */}
-          {remainingLockTime > 0 && (
-            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-3 py-3">
-              <p className="text-sm font-medium text-red-800">
-                Too many failed login attempts
-              </p>
-              <p className="text-sm text-red-700 mt-1">
-                Account locked. Try again in {remainingLockTime} second
-                {remainingLockTime !== 1 ? "s" : ""}.
+            {/* Password Field */}
+            <div className="mb-6">
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
+                <Lock className="text-blue-600" size={18} />
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  placeholder="••••••••"
+                  id="loginPassword"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (passwordError) setPasswordError(null);
+                  }}
+                  onBlur={() => {
+                    if (!password) setPasswordError("Password is required");
+                    else setPasswordError(null);
+                  }}
+                  className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 ${passwordError ? "border-red-500" : "border-gray-300"}`}
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  disabled={isLoading}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {passwordError && (
+                <p className="mt-1 text-sm text-red-600">{passwordError}</p>
+              )}
+            </div>
+
+            {/* Lockout Warning */}
+            {remainingLockTime > 0 && (
+              <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-3 py-3">
+                <p className="text-sm font-medium text-red-800">
+                  Too many failed login attempts
+                </p>
+                <p className="mt-1 text-sm text-red-700">
+                  Account locked. Try again in {remainingLockTime} second
+                  {remainingLockTime !== 1 ? "s" : ""}.
+                </p>
+              </div>
+            )}
+
+            {/* Login Button */}
+            <button
+              id="submitLogin"
+              type="submit"
+              className="flex w-full cursor-pointer items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isLoading || remainingLockTime > 0}
+            >
+              {isLoading ? (
+                <div className="flex min-h-5 items-center justify-center">
+                  <DotLoader size={6} color="bg-white" />
+                </div>
+              ) : (
+                "Login"
+              )}
+            </button>
+          </form>
+
+          {/* In-card loading state */}
+          {isLoading && (
+            <div className="mt-6 flex flex-col items-center justify-center gap-3 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-6">
+              <DotLoader size={10} color="bg-blue-600" />
+              <p className="text-sm font-medium text-blue-700">
+                Signing in, please wait...
               </p>
             </div>
           )}
-
-          {/* Login Button */}
-          <button
-            id="submitLogin"
-            className="cursor-pointer w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-            onClick={handleLogin}
-            disabled={isLoading || remainingLockTime > 0}
-          >
-            {isLoading ? "Signing in..." : "Login"}
-          </button>
 
           {/* Links */}
           <div className="mt-4 flex flex-col gap-2 text-sm sm:flex-row sm:justify-between">
@@ -358,6 +414,7 @@ export default function LoginPage() {
               id="registerLink"
               onClick={(e) => {
                 e.preventDefault();
+                if (isLoading) return;
                 setShowRegister(true);
               }}
               className="text-blue-600 hover:underline"
@@ -369,6 +426,7 @@ export default function LoginPage() {
               id="forgotLink"
               onClick={(e) => {
                 e.preventDefault();
+                if (isLoading) return;
                 setShowForgot(true);
               }}
               className="text-gray-600 hover:underline"
@@ -379,13 +437,13 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <footer className="bg-blue-700 text-white px-6 py-4 shadow-inner">
-        <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
+      <footer className="bg-white px-6 py-4 text-gray-600 shadow-inner">
+        <div className="flex w-full flex-col gap-1.5 text-[11px] sm:flex-row sm:items-center sm:justify-between sm:text-xs">
           <div className="text-left sm:mr-auto">
             <button
               type="button"
               onClick={() => setShowContactModal(true)}
-              className="cursor-pointer font-semibold hover:underline underline-offset-4 hover:text-blue-100 transition"
+              className="cursor-pointer text-[11px] font-semibold transition hover:text-gray-900 hover:underline underline-offset-4 sm:text-xs"
             >
               Contact Us
             </button>
@@ -403,14 +461,14 @@ export default function LoginPage() {
 
       {showContactModal && (
         <div
-          className="fixed inset-0 z-60 bg-black/50 backdrop-blur-[1px] flex items-center justify-center p-4"
+          className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 p-4 backdrop-blur-[1px]"
           onClick={() => setShowContactModal(false)}
           role="dialog"
           aria-modal="true"
           aria-label="Contact details"
         >
           <div
-            className="w-full max-w-lg rounded-xl bg-white p-5 sm:p-6 shadow-2xl"
+            className="w-full max-w-lg rounded-xl bg-white p-5 shadow-2xl sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3">
@@ -422,13 +480,13 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => setShowContactModal(false)}
                 aria-label="Close contact modal"
-                className="cursor-pointer rounded-md border border-gray-200 w-7 h-7 flex items-center justify-center text-sm font-bold text-gray-600 hover:bg-red-500 hover:text-white hover:border-red-500 transition"
+                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-gray-200 text-sm font-bold text-gray-600 transition hover:border-red-500 hover:bg-red-500 hover:text-white"
               >
                 X
               </button>
             </div>
 
-            <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+            <p className="mt-2 text-sm leading-relaxed text-gray-600">
               Have a question or need assistance with the Human Resource
               Information System? Reach out to us through any of the channels
               below.
@@ -442,7 +500,7 @@ export default function LoginPage() {
                 <div className="mt-1 flex items-start gap-2">
                   <MailContact size={16} className="mt-0.5 text-blue-700" />
                   <div>
-                    <p className="text-sm font-semibold text-gray-900 break-all">
+                    <p className="break-all text-sm font-semibold text-gray-900">
                       arthur.francisco@deped.gov.ph
                     </p>
                     <p className="text-xs text-gray-600">
@@ -473,21 +531,6 @@ export default function LoginPage() {
           </div>
         </div>
       )}
-
-      <LoginSuccessModal
-        visible={showLoginSuccess}
-        user={loggedInUser}
-        onClose={() => {
-          setShowLoginSuccess(false);
-          const dashboardRoute = getDashboardRouteByRoleStrict(
-            loggedInUser?.role,
-            "",
-          );
-          if (dashboardRoute) {
-            router.push(dashboardRoute);
-          }
-        }}
-      />
 
       <ForgotModal visible={showForgot} onClose={() => setShowForgot(false)} />
       <RegistrationModal

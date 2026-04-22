@@ -231,21 +231,26 @@ const register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const [result] = await pool
+
+    const [dbCheck] = await pool
       .promise()
-      .query(
-        "INSERT INTO registration_requests (first_name, middle_name, last_name, email, password_hash, school_name, requested_role, birthdate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        [
-          first_name,
-          middle_name || null,
-          last_name,
-          email,
-          hashedPassword,
-          school_name.trim(),
-          requested_role || null,
-          normalizedBirthdate,
-        ],
-      );
+      .query("SELECT DATABASE() AS db, @@hostname AS host, @@port AS port");
+
+    console.log("REGISTER DB CHECK:", dbCheck);
+
+    const [result] = await pool.promise().query(
+      "INSERT INTO registration_requests (first_name, middle_name, last_name, email, password_hash, school_name, requested_role, birthdate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      [
+        first_name,
+        middle_name || null,
+        last_name,
+        email,
+        hashedPassword,
+        school_name.trim(),
+        requested_role || null,
+        normalizedBirthdate,
+      ],
+    );
     // Fire-and-forget — email failure must not block the registration response
     const shouldSuppressPendingEmail =
       suppress_pending_email === true || suppress_pending_email === "true";
@@ -259,6 +264,7 @@ const register = async (req, res) => {
       requestId: result.insertId,
     });
   } catch (error) {
+    console.error("REGISTER ERROR:", error);
     res.status(500).json({
       message: "Error submitting registration request",
       error: error.message,

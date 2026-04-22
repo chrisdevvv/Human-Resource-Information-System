@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import ListLayout from "./ListLayout";
 import { Building2 } from "lucide-react";
 
@@ -26,6 +27,27 @@ export default function SchoolsList({
   sortValue,
   onSortChange,
 }: SchoolsListProps) {
+  const [localSearchValue, setLocalSearchValue] = useState(searchValue);
+
+  useEffect(() => {
+    setLocalSearchValue(searchValue);
+  }, [searchValue]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (localSearchValue !== searchValue) {
+        onSearchChange(localSearchValue);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [localSearchValue, searchValue, onSearchChange]);
+
+  const handleClearFilters = () => {
+    setLocalSearchValue("");
+    onClearFilters();
+  };
+
   return (
     <ListLayout
       title="Schools"
@@ -34,10 +56,10 @@ export default function SchoolsList({
       addLabel="Add School"
       icon={Building2}
       items={items}
-      searchValue={searchValue}
-      onSearchChange={onSearchChange}
+      searchValue={localSearchValue}
+      onSearchChange={setLocalSearchValue}
       hasActiveFilters={hasActiveFilters}
-      onClearFilters={onClearFilters}
+      onClearFilters={handleClearFilters}
       onAdd={onAdd}
       onDelete={onDelete}
       sortValue={sortValue}
