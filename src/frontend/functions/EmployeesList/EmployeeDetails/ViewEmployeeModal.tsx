@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Loader2,
   Pencil,
   XCircle,
   Save,

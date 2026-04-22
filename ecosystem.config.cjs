@@ -3,8 +3,9 @@ module.exports = {
     {
       name: "hris-frontend",
       cwd: "C:/inetpub/chris2/Human-Resource-Information-System",
-      script: "node",
+      script: "C:/Program Files/nodejs/node.exe",
       args: "./node_modules/next/dist/bin/next start -p 3001",
+      interpreter: "none",
       env: {
         NODE_ENV: "production"
       }
@@ -12,8 +13,9 @@ module.exports = {
     {
       name: "hris-backend",
       cwd: "C:/inetpub/chris2/Human-Resource-Information-System/human-resource-management-system-backend",
-      script: "node",
+      script: "C:/Program Files/nodejs/node.exe",
       args: "src/app.js",
+      interpreter: "none",
       env: {
         NODE_ENV: "production"
       }

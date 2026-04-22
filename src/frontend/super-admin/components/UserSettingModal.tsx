@@ -95,7 +95,7 @@ export default function UserSettingModal({
     };
 
     fetchUserDetails();
-  }, [userId]);
+  }, [userId, onError]);
 
   useEffect(() => {
     if (selectedRole !== "SUPER_ADMIN") {

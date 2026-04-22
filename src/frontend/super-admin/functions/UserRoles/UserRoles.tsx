@@ -12,7 +12,6 @@ import {
   Eye,
   Search,
 } from "lucide-react";
-import { SkeletonLine } from "../../../components/Skeleton/SkeletonUtils";
 import { UserTableSkeleton } from "../../../components/Skeleton/SkeletonLoaders";
 import PendingAccounts from "./PendingAccounts";
 import UserSettingModal from "../../components/UserSettingModal";

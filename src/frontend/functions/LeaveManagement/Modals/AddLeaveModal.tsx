@@ -6,10 +6,7 @@ import ConfirmationAddLeave from "../ConfirmationAddLeave";
 import AddLeaveSuccess from "../AddLeaveSuccess";
 import { getLeaveHistoryByEmployee, getLeaveParticulars } from "../leaveApi";
 import { createClearHandler, hasFormData } from "../../../utils/clearFormUtils";
-import {
-  SkeletonBlock,
-  SkeletonListItem,
-} from "../../../components/Skeleton/SkeletonUtils";
+import { SkeletonListItem } from "../../../components/Skeleton/SkeletonUtils";
 
 export type AddLeaveFormValues = {
   employee_id: number;

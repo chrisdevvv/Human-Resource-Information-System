@@ -1,7 +1,7 @@
 "use client";
 
+
 import React from "react";
-import { LayoutDashboard } from "lucide-react";
 
 type DashboardSkeletonProps = {
   showRecentLogs?: boolean;

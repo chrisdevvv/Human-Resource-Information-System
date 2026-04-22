@@ -223,11 +223,7 @@ export function LogsReportSkeleton() {
   );
 }
 
-export function GenericFormModalSkeleton({
-  title = "Form",
-}: {
-  title?: string;
-}) {
+export function GenericFormModalSkeleton() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4 max-h-96 overflow-y-auto">
