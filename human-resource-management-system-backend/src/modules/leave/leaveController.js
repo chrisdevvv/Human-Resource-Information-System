@@ -80,6 +80,23 @@ const chunkRows = (rows, chunkSize) => {
   return output;
 };
 
+const formatEmployeeFullName = (employeeLike) => {
+  const joinedFullName = String(employeeLike?.full_name || "").trim();
+  if (joinedFullName) return joinedFullName;
+
+  const composedFullName = [
+    employeeLike?.first_name,
+    employeeLike?.middle_name,
+    employeeLike?.last_name,
+  ]
+    .map((part) => String(part || "").trim())
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return composedFullName || "employee";
+};
+
 const normalizePeriod = (yearInput, monthInput) => {
   const now = new Date();
   const year = yearInput !== undefined ? Number(yearInput) : now.getFullYear();
@@ -885,6 +902,7 @@ const createLeaveRequest = async (req, res) => {
     if (!employee) {
       return res.status(404).json({ message: "Employee not found" });
     }
+    const employeeFullName = formatEmployeeFullName(employee);
 
     if (isSchoolScopedWriteRole(req.user?.role)) {
       if (!isSameSchool(req.user?.school_id, employee.school_id)) {
@@ -959,7 +977,7 @@ const createLeaveRequest = async (req, res) => {
       employee_id: employeeId,
       leave_id: result.insertId,
       action: "LEAVE_CREATED",
-      details: `${period_of_leave}${particulars ? ` — ${particulars}` : ""}`,
+      details: `${period_of_leave} — ${employeeFullName}${particulars ? ` — ${particulars}` : ""}`,
     });
 
     res
@@ -1502,7 +1520,7 @@ const updateLeaveRequest = async (req, res) => {
       employee_id: leave.employee_id || null,
       leave_id: Number(req.params.id),
       action: "LEAVE_UPDATED",
-      details: `${period_of_leave} — record corrected`,
+      details: `${period_of_leave} — ${formatEmployeeFullName(leave)} — record corrected`,
     });
 
     res
@@ -1542,7 +1560,7 @@ const deleteLeaveRequest = async (req, res) => {
       // Leave row is already deleted above; keep backlog insert valid.
       leave_id: null,
       action: "LEAVE_DELETED",
-      details: `${leave.period_of_leave} — ${leave.full_name || "employee"}`,
+      details: `${leave.period_of_leave} — ${formatEmployeeFullName(leave)}`,
     });
     res
       .status(200)
@@ -1605,6 +1623,16 @@ const deleteMonthlyCredit = async (req, res) => {
 
     const entryIds = entries.map((entry) => entry.id);
     const affectedEmployeeIds = [...new Set(entries.map((e) => e.employee_id))];
+    const affectedEmployeeNames = (
+      await Promise.all(
+        affectedEmployeeIds.map(async (employeeId) => {
+          const employee = await Employee.getById(employeeId, {
+            includeArchived: true,
+          });
+          return formatEmployeeFullName(employee);
+        }),
+      )
+    ).filter((name, index, arr) => name && arr.indexOf(name) === index);
 
     const result = await Leave.deleteByIds(entryIds);
 
@@ -1619,7 +1647,7 @@ const deleteMonthlyCredit = async (req, res) => {
       employee_id: null,
       leave_id: null,
       action: "LEAVE_MONTHLY_CREDIT_DELETE",
-      details: `${period} — deleted ${Number(result.affectedRows || 0)} monthly credit entries`,
+      details: `${period} — deleted ${Number(result.affectedRows || 0)} monthly credit entries — ${affectedEmployeeNames.join(", ") || "employee"}`,
     });
 
     return res.status(200).json({

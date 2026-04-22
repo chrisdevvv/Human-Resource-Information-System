@@ -595,7 +595,7 @@ export default function LeaveManagementModal({
               <Trash2 size={12} />
               {isDeleteMode
                 ? `Delete Entry (${selectedHistoryIds.size})`
-                : "Delete Entry"}
+                : "Select Entries to Delete"}
             </button>
             {isDeleteMode ? (
               <button
