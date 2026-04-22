@@ -265,7 +265,17 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
   };
 
   useEffect(() => {
+    const hasOpenModal =
+      Boolean(settingsTarget) ||
+      Boolean(detailsTargetId) ||
+      Boolean(detailsEditTarget) ||
+      showAddUserModal;
+
     fetchUsers();
+
+    if (hasOpenModal) {
+      return;
+    }
 
     const intervalId = window.setInterval(() => {
       fetchUsers(false);
@@ -284,6 +294,10 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
     accountStatusFilter,
     letterFilter,
     sortOrder,
+    settingsTarget,
+    detailsTargetId,
+    detailsEditTarget,
+    showAddUserModal,
   ]);
 
   useEffect(() => {
@@ -385,7 +399,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
       <div className="flex flex-col sm:flex-row justify-start gap-2 mb-4">
         <button
           onClick={() => setActiveTab("users")}
-          className={`w-full sm:w-auto px-4 py-2 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-4 py-1 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "users"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -398,7 +412,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
         </button>
         <button
           onClick={() => setActiveTab("pending")}
-          className={`w-full sm:w-auto px-4 py-2 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-4 py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "pending"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -413,7 +427,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
 
       {/* Tab Content */}
       {activeTab === "users" && (
-        <div className="w-full min-w-0 bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col">
+        <div className="w-full min-w-0 bg-white rounded-lg shadow-lg p-2 sm:p-3 flex flex-col border border-gray-100">
           <h1
             style={{ fontSize: "20px" }}
             className="font-bold text-gray-900 mb-4 inline-flex items-center gap-2"
@@ -432,7 +446,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                   placeholder="Search name, email, or school"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="text-gray-500 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="text-gray-500 w-full px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
               <button
@@ -591,7 +605,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                         key={user.id}
                         className="border-b border-gray-100 hover:bg-gray-50 transition"
                       >
-                        <td className="py-0.5 px-3 text-gray-900 text-sm font-medium">
+                        <td className="py-1 px-3 text-gray-900 text-sm font-medium">
                           {user.firstName} {user.lastName}
                         </td>
                         <td className="py-0.5 px-3 text-gray-500 text-sm">
@@ -684,7 +698,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
 
           {/* Pagination */}
           {filteredUsers.length > 0 && (
-            <div className="mt-6 space-y-3">
+            <div className="mt-6">
               <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
                 <label className="flex items-center gap-2 text-sm text-gray-600">
                   Show
@@ -710,7 +724,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    className="p-2 text-gray-500 hover:bg-gray-50 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
                     aria-label="Previous page"
                   >
                     <ChevronLeft size={18} />
@@ -730,7 +744,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                         className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
                           currentPage === item
                             ? "bg-blue-600 text-white"
-                            : "text-gray-500 hover:bg-gray-100"
+                            : "text-gray-500 hover:bg-gray-50"
                         }`}
                       >
                         {item}
@@ -742,7 +756,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                       setCurrentPage(Math.min(totalPages, currentPage + 1))
                     }
                     disabled={currentPage === totalPages}
-                    className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    className="p-2 text-gray-500 hover:bg-gray-50 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
                     aria-label="Next page"
                   >
                     <ChevronRight size={18} />
