@@ -206,7 +206,7 @@ export default function WorkInformation({
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm sm:p-4">
-      <div className="mb-4 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 to-white px-4 py-3">
+      <div className="mb-4 rounded-2xl border border-blue-100 bg-linear-to-r from-blue-50 to-white px-4 py-3">
         <h3 className="text-lg font-bold text-gray-800">Work Information</h3>
         <p className="mt-1 text-sm text-gray-500">
           {formatValue(resolvedSchoolName || employeeSchoolName)}
