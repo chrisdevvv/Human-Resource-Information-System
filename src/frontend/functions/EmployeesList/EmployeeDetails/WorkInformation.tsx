@@ -186,6 +186,18 @@ export default function WorkInformation({
   normalizePhilhealth,
   GOV_ID_MASKS,
 }: WorkInformationProps) {
+  const truncateDisplayValue = (
+    value: string | number | null | undefined,
+    maxLength = 100,
+  ) => {
+    const formatted = formatValue(value);
+    if (formatted.length <= maxLength) return formatted;
+    return `${formatted.slice(0, maxLength)}...`;
+  };
+
+  const inputClass =
+    "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500";
+
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-3 sm:p-4">
       <div className="mb-3 sm:mb-4">
@@ -196,237 +208,243 @@ export default function WorkInformation({
       </div>
 
       <div className="space-y-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12 sm:gap-4">
-          <InfoField
-            label="Employee Type"
-            value={formatEmployeeType(editEmployeeType)}
-            isEditing={isEditing}
-            className="lg:col-span-2"
-            errorMessage={getValidationError("Employee Type")}
-          >
-            <select
-              value={editEmployeeType}
-              onChange={(e) =>
-                setEditEmployeeType(
-                  e.target.value as
-                    | "teaching"
-                    | "non-teaching"
-                    | "teaching-related",
-                )
-              }
-              className="w-full cursor-pointer rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+        <div>
+          <h4 className="mb-3 text-lg font-bold text-orange-700">Original</h4>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12 sm:gap-4">
+            <InfoField
+              label="Employee Type"
+              value={truncateDisplayValue(formatEmployeeType(editEmployeeType))}
+              isEditing={isEditing}
+              className="lg:col-span-2"
+              errorMessage={getValidationError("Employee Type")}
             >
-              <option value="teaching">Teaching</option>
-              <option value="non-teaching">Non-Teaching</option>
-              <option value="teaching-related">Teaching-Related</option>
-            </select>
-          </InfoField>
+              <select
+                value={editEmployeeType}
+                onChange={(e) =>
+                  setEditEmployeeType(
+                    e.target.value as
+                      | "teaching"
+                      | "non-teaching"
+                      | "teaching-related",
+                  )
+                }
+                className={inputClass}
+              >
+                <option value="teaching">Teaching</option>
+                <option value="non-teaching">Non-Teaching</option>
+                <option value="teaching-related">Teaching-Related</option>
+              </select>
+            </InfoField>
 
-          <InfoField
-            label="Position"
-            value={formatValue(editPosition)}
-            isEditing={isEditing}
-            className="lg:col-span-3"
-            errorMessage={getValidationError("Position")}
-          >
-            <div className="relative">
+            <InfoField
+              label="Position"
+              value={truncateDisplayValue(editPosition, 24)}
+              isEditing={isEditing}
+              className="lg:col-span-3"
+              errorMessage={getValidationError("Position")}
+            >
+              <div className="relative">
+                <input
+                  type="text"
+                  value={positionSearch}
+                  onChange={(e) => setPositionSearch(e.target.value)}
+                  onFocus={() => setShowPositionDropdown(true)}
+                  onBlur={() => setShowPositionDropdown(false)}
+                  placeholder="Position"
+                  className={inputClass}
+                />
+                {showPositionDropdown && (
+                  <div className="no-scrollbar absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-sm">
+                    {positions
+                      .filter((p) =>
+                        p.position_name
+                          .toLowerCase()
+                          .includes(positionSearch.toLowerCase()),
+                      )
+                      .map((position) => (
+                        <button
+                          key={position.id}
+                          type="button"
+                          onMouseDown={() => {
+                            setEditPositionId(position.id);
+                            setEditPosition(position.position_name);
+                            setPositionSearch(position.position_name);
+                            setShowPositionDropdown(false);
+                          }}
+                          className="block w-full cursor-pointer border-t border-gray-100 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 first:border-t-0"
+                        >
+                          {position.position_name}
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </InfoField>
+
+            <InfoField
+              label="Plantilla Number"
+              value={truncateDisplayValue(editPlantillaNo, 24)}
+              isEditing={isEditing}
+              className="lg:col-span-3"
+              errorMessage={getValidationError("Plantilla Number")}
+            >
               <input
                 type="text"
-                value={positionSearch}
-                onChange={(e) => setPositionSearch(e.target.value)}
-                onFocus={() => setShowPositionDropdown(true)}
-                onBlur={() => setShowPositionDropdown(false)}
-                placeholder="Position"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-xs outline-none focus:border-blue-500"
+                value={editPlantillaNo}
+                onChange={(e) => setEditPlantillaNo(e.target.value)}
+                className={inputClass}
               />
-              {showPositionDropdown && (
-                <div className="no-scrollbar absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-sm">
-                  {positions
-                    .filter((p) =>
-                      p.position_name
-                        .toLowerCase()
-                        .includes(positionSearch.toLowerCase()),
-                    )
-                    .map((position) => (
-                      <button
-                        key={position.id}
-                        type="button"
-                        onMouseDown={() => {
-                          setEditPositionId(position.id);
-                          setEditPosition(position.position_name);
-                          setPositionSearch(position.position_name);
-                          setShowPositionDropdown(false);
-                        }}
-                        className="block w-full cursor-pointer border-t border-gray-100 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 first:border-t-0"
-                      >
-                        {position.position_name}
-                      </button>
-                    ))}
-                </div>
-              )}
-            </div>
-          </InfoField>
+            </InfoField>
 
-          <InfoField
-            label="Plantilla Number"
-            value={formatValue(editPlantillaNo)}
-            isEditing={isEditing}
-            className="lg:col-span-3"
-            errorMessage={getValidationError("Plantilla Number")}
-          >
-            <input
-              type="text"
-              value={editPlantillaNo}
-              onChange={(e) => setEditPlantillaNo(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-            />
-          </InfoField>
+            <InfoField
+              label="First Appointment Date"
+              value={truncateDisplayValue(formatDate(workDateOfFirstAppointment))}
+              isEditing={isEditing}
+              className="lg:col-span-3"
+              errorMessage={getValidationError("Date of First Appointment")}
+            >
+              <input
+                type="date"
+                value={workDateOfFirstAppointment || ""}
+                onChange={(e) => setEditDateOfFirstAppointment(e.target.value)}
+                className={inputClass}
+              />
+            </InfoField>
 
-          <InfoField
-            label="First Appointment Date"
-            value={formatDate(workDateOfFirstAppointment)}
-            isEditing={isEditing}
-            className="lg:col-span-3"
-            errorMessage={getValidationError("Date of First Appointment")}
-          >
-            <input
-              type="date"
-              value={workDateOfFirstAppointment || ""}
-              onChange={(e) => setEditDateOfFirstAppointment(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-            />
-          </InfoField>
-
-          <InfoField
-            label="SG"
-            value={formatValue(workSg)}
-            isEditing={isEditing}
-            className="lg:col-span-1"
-            errorMessage={getValidationError("SG")}
-          >
-            <input
-              type="text"
-              value={String(workSg ?? "")}
-              onChange={(e) => setEditWorkSg(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-            />
-          </InfoField>
+            <InfoField
+              label="SG"
+              value={truncateDisplayValue(workSg)}
+              isEditing={isEditing}
+              className="lg:col-span-1"
+              errorMessage={getValidationError("SG")}
+            >
+              <input
+                type="text"
+                value={String(workSg ?? "")}
+                onChange={(e) => setEditWorkSg(e.target.value)}
+                className={inputClass}
+              />
+            </InfoField>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12 sm:gap-4">
-          <InfoField
-            label="Current Employee Type"
-            value={formatValue(editCurrentEmployeeType)}
-            isEditing={isEditing}
-            className="lg:col-span-2"
-            errorMessage={getValidationError("Current Employee Type")}
-          >
-            <select
-              value={editCurrentEmployeeType}
-              onChange={(e) => setEditCurrentEmployeeType(e.target.value)}
-              className="w-full cursor-pointer rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+        <div>
+          <h4 className="mb-3 text-lg font-bold text-green-700">Current</h4>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12 sm:gap-4">
+            <InfoField
+              label="Employee Type"
+              value={truncateDisplayValue(editCurrentEmployeeType)}
+              isEditing={isEditing}
+              className="lg:col-span-2"
+              errorMessage={getValidationError("Current Employee Type")}
             >
-              <option value="">N/A</option>
-              <option value="teaching">Teaching</option>
-              <option value="non-teaching">Non-Teaching</option>
-              <option value="teaching-related">Teaching-Related</option>
-            </select>
-          </InfoField>
+              <select
+                value={editCurrentEmployeeType}
+                onChange={(e) => setEditCurrentEmployeeType(e.target.value)}
+                className={inputClass}
+              >
+                <option value="">N/A</option>
+                <option value="teaching">Teaching</option>
+                <option value="non-teaching">Non-Teaching</option>
+                <option value="teaching-related">Teaching-Related</option>
+              </select>
+            </InfoField>
 
-          <InfoField
-            label="Current Position"
-            value={formatValue(editCurrentPosition)}
-            isEditing={isEditing}
-            className="lg:col-span-3"
-            errorMessage={getValidationError("Current Position")}
-          >
-            <div className="relative">
+            <InfoField
+              label="Position"
+              value={truncateDisplayValue(editCurrentPosition, 24)}
+              isEditing={isEditing}
+              className="lg:col-span-3"
+              errorMessage={getValidationError("Current Position")}
+            >
+              <div className="relative">
+                <input
+                  type="text"
+                  value={currentPositionSearch}
+                  onChange={(e) => setCurrentPositionSearch(e.target.value)}
+                  onFocus={() => setShowCurrentPositionDropdown(true)}
+                  onBlur={() => setShowCurrentPositionDropdown(false)}
+                  placeholder="Position"
+                  className={inputClass}
+                />
+                {showCurrentPositionDropdown && (
+                  <div className="no-scrollbar absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-sm">
+                    {positions
+                      .filter((p) =>
+                        p.position_name
+                          .toLowerCase()
+                          .includes(currentPositionSearch.toLowerCase()),
+                      )
+                      .map((position) => (
+                        <button
+                          key={position.id}
+                          type="button"
+                          onMouseDown={() => {
+                            setEditCurrentPosition(position.position_name);
+                            setCurrentPositionSearch(position.position_name);
+                            setShowCurrentPositionDropdown(false);
+                          }}
+                          className="block w-full cursor-pointer border-t border-gray-100 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 first:border-t-0"
+                        >
+                          {position.position_name}
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </InfoField>
+
+            <InfoField
+              label="Plantilla Number"
+              value={truncateDisplayValue(editCurrentPlantillaNo, 24)}
+              isEditing={isEditing}
+              className="lg:col-span-3"
+              errorMessage={getValidationError("Current Plantilla Number")}
+            >
               <input
                 type="text"
-                value={currentPositionSearch}
-                onChange={(e) => setCurrentPositionSearch(e.target.value)}
-                onFocus={() => setShowCurrentPositionDropdown(true)}
-                onBlur={() => setShowCurrentPositionDropdown(false)}
-                placeholder="Current Position"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-xs outline-none focus:border-blue-500"
+                value={editCurrentPlantillaNo}
+                onChange={(e) => setEditCurrentPlantillaNo(e.target.value)}
+                className={inputClass}
               />
-              {showCurrentPositionDropdown && (
-                <div className="no-scrollbar absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-sm">
-                  {positions
-                    .filter((p) =>
-                      p.position_name
-                        .toLowerCase()
-                        .includes(currentPositionSearch.toLowerCase()),
-                    )
-                    .map((position) => (
-                      <button
-                        key={position.id}
-                        type="button"
-                        onMouseDown={() => {
-                          setEditCurrentPosition(position.position_name);
-                          setCurrentPositionSearch(position.position_name);
-                          setShowCurrentPositionDropdown(false);
-                        }}
-                        className="block w-full cursor-pointer border-t border-gray-100 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 first:border-t-0"
-                      >
-                        {position.position_name}
-                      </button>
-                    ))}
-                </div>
-              )}
-            </div>
-          </InfoField>
+            </InfoField>
 
-          <InfoField
-            label="Current Plantilla Number"
-            value={formatValue(editCurrentPlantillaNo)}
-            isEditing={isEditing}
-            className="lg:col-span-3"
-            errorMessage={getValidationError("Current Plantilla Number")}
-          >
-            <input
-              type="text"
-              value={editCurrentPlantillaNo}
-              onChange={(e) => setEditCurrentPlantillaNo(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-            />
-          </InfoField>
+            <InfoField
+              label="Appointment Date"
+              value={truncateDisplayValue(formatDate(editCurrentAppointmentDate))}
+              isEditing={isEditing}
+              className="lg:col-span-3"
+              errorMessage={getValidationError("Current Appointment Date")}
+            >
+              <input
+                type="date"
+                value={editCurrentAppointmentDate || ""}
+                onChange={(e) => setEditCurrentAppointmentDate(e.target.value)}
+                className={inputClass}
+              />
+            </InfoField>
 
-          <InfoField
-            label="Current Appointment Date"
-            value={formatDate(editCurrentAppointmentDate)}
-            isEditing={isEditing}
-            className="lg:col-span-3"
-            errorMessage={getValidationError("Current Appointment Date")}
-          >
-            <input
-              type="date"
-              value={editCurrentAppointmentDate || ""}
-              onChange={(e) => setEditCurrentAppointmentDate(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-            />
-          </InfoField>
-
-          <InfoField
-            label="Current SG"
-            value={formatValue(editCurrentSg)}
-            isEditing={isEditing}
-            className="lg:col-span-1"
-            errorMessage={getValidationError("Current SG")}
-          >
-            <input
-              type="text"
-              value={editCurrentSg}
-              onChange={(e) => setEditCurrentSg(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
-            />
-          </InfoField>
+            <InfoField
+              label="SG"
+              value={truncateDisplayValue(editCurrentSg)}
+              isEditing={isEditing}
+              className="lg:col-span-1"
+              errorMessage={getValidationError("Current SG")}
+            >
+              <input
+                type="text"
+                value={editCurrentSg}
+                onChange={(e) => setEditCurrentSg(e.target.value)}
+                className={inputClass}
+              />
+            </InfoField>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
           <InfoField
             label="District"
-            value={formatValue(editDistrict)}
+            value={truncateDisplayValue(editDistrict)}
             isEditing={isEditing}
             errorMessage={getValidationError("District")}
           >
@@ -442,7 +460,7 @@ export default function WorkInformation({
                 onFocus={() => setShowDistrictDropdown(true)}
                 onBlur={() => setShowDistrictDropdown(false)}
                 placeholder="District"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-xs outline-none focus:border-blue-500"
+                className={inputClass}
               />
               {showDistrictDropdown && (
                 <div className="no-scrollbar absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-sm">
@@ -473,7 +491,7 @@ export default function WorkInformation({
 
           <InfoField
             label="School Name"
-            value={formatValue(editSchoolName)}
+            value={truncateDisplayValue(editSchoolName)}
             isEditing={isEditing}
             errorMessage={getValidationError("School")}
           >
@@ -485,7 +503,7 @@ export default function WorkInformation({
                 onFocus={() => setShowSchoolDropdown(true)}
                 onBlur={() => setShowSchoolDropdown(false)}
                 placeholder="School"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder:text-xs outline-none focus:border-blue-500"
+                className={inputClass}
               />
               {showSchoolDropdown && (
                 <div className="no-scrollbar absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-sm">
@@ -519,7 +537,7 @@ export default function WorkInformation({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <InfoField
             label="Employee Number"
-            value={formatValue(editEmployeeNo)}
+            value={truncateDisplayValue(editEmployeeNo)}
             isEditing={isEditing}
             errorMessage={getValidationError("Employee Number")}
           >
@@ -527,26 +545,24 @@ export default function WorkInformation({
               type="text"
               value={editEmployeeNo}
               onChange={(e) => {
-                const digitsOnly = e.target.value
-                  .replace(/\D/g, "")
-                  .slice(0, 7);
+                const digitsOnly = e.target.value.replace(/\D/g, "").slice(0, 7);
                 setEditEmployeeNo(digitsOnly);
               }}
               maxLength={7}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+              className={inputClass}
             />
           </InfoField>
 
           <InfoField
             label="License No PRC"
-            value={formatValue(editLicenseNoPrc)}
+            value={truncateDisplayValue(editLicenseNoPrc)}
             isEditing={isEditing}
           >
             <input
               type="text"
               value={editLicenseNoPrc}
               onChange={(e) => setEditLicenseNoPrc(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+              className={inputClass}
             />
           </InfoField>
         </div>
@@ -554,7 +570,7 @@ export default function WorkInformation({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
           <InfoField
             label="TIN"
-            value={formatValue(editTin)}
+            value={truncateDisplayValue(editTin)}
             isEditing={isEditing}
             errorMessage={getValidationError("TIN")}
           >
@@ -566,14 +582,14 @@ export default function WorkInformation({
               }
               inputMode="numeric"
               maxLength={11}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+              className={inputClass}
               placeholder="000-000-000"
             />
           </InfoField>
 
           <InfoField
             label="GSIS BP Number"
-            value={formatValue(editGsisBpNo)}
+            value={truncateDisplayValue(editGsisBpNo)}
             isEditing={isEditing}
             errorMessage={getValidationError("GSIS BP Number")}
           >
@@ -583,14 +599,14 @@ export default function WorkInformation({
               onChange={(e) => setEditGsisBpNo(formatGsisBp(e.target.value))}
               inputMode="text"
               maxLength={12}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+              className={inputClass}
               placeholder="00000-000000"
             />
           </InfoField>
 
           <InfoField
             label="GSIS CRN Number"
-            value={formatValue(editGsisCrnNo)}
+            value={truncateDisplayValue(editGsisCrnNo)}
             isEditing={isEditing}
             errorMessage={getValidationError("GSIS CRN Number")}
           >
@@ -602,14 +618,14 @@ export default function WorkInformation({
               }
               inputMode="numeric"
               maxLength={12}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+              className={inputClass}
               placeholder="000000000000"
             />
           </InfoField>
 
           <InfoField
             label="PAG-IBIG Number"
-            value={formatValue(editPagibigNo)}
+            value={truncateDisplayValue(editPagibigNo)}
             isEditing={isEditing}
             errorMessage={getValidationError("PAG-IBIG Number")}
           >
@@ -621,14 +637,14 @@ export default function WorkInformation({
               }
               inputMode="numeric"
               maxLength={12}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+              className={inputClass}
               placeholder="000000000000"
             />
           </InfoField>
 
           <InfoField
             label="PhilHealth Number"
-            value={formatValue(editPhilhealthNo)}
+            value={truncateDisplayValue(editPhilhealthNo)}
             isEditing={isEditing}
             errorMessage={getValidationError("PhilHealth Number")}
           >
@@ -640,7 +656,7 @@ export default function WorkInformation({
               }
               inputMode="numeric"
               maxLength={12}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500"
+              className={inputClass}
               placeholder="000000000000"
             />
           </InfoField>

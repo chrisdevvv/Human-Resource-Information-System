@@ -1576,7 +1576,6 @@ export default function ViewEmployeeModal({
         current_plantilla_no: editCurrentPlantillaNo.trim() || null,
         current_appointment_date: normalizedCurrentAppointmentDate || null,
         current_sg: editCurrentSg.trim() || null,
-        // Compatibility keys for backend variants while keeping current API contract.
         dateOfFirstAppointment: firstAppointmentDate || null,
         years_in_service: firstAppointmentMetrics.yearsInService,
         yearsInService: firstAppointmentMetrics.yearsInService,
@@ -2025,7 +2024,7 @@ export default function ViewEmployeeModal({
       {toastMessage ? (
         <ChangesToast message={toastMessage} type={toastType} />
       ) : null}
-      <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-blue-200 bg-white p-5 shadow-2xl sm:p-6">
+      <div className="relative max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-xl border border-blue-200 bg-white p-5 shadow-2xl sm:p-6">
         <div className="show-scrollbar">
           <div className="mb-3 sm:mb-4">
             <div className="flex items-start justify-between gap-3">
