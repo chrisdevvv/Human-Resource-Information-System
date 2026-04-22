@@ -81,8 +81,8 @@ export default function SidebarIndex({
             {!isCollapsed && (
               <div className="flex flex-1 flex-col items-center justify-center">
                 <img
-                  src="/images/[DEPED] ELMS Logo.svg"
-                  alt="ELMS Logo"
+                  src="/images/DepEd-CHRIS.svg"
+                  alt="DepEd CHRIS"
                   className="mb-2 h-24 w-auto"
                 />
                 <p className="text-center text-xs uppercase tracking-widest text-blue-100">
@@ -112,8 +112,8 @@ export default function SidebarIndex({
 
             {isCollapsed && (
               <img
-                src="/images/[DEPED] ELMS Logo.svg"
-                alt="ELMS Logo"
+                src="/images/DepEd-CHRIS.svg"
+                alt="DepEd CHRIS"
                 className="h-16 w-auto"
               />
             )}

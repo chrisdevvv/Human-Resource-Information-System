@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import { type BacklogRecord, useDashboardData } from "./useDashboardData";
+import DashboardSkeleton from "./DashboardSkeleton";
 
 type StatCard = {
   title: string;
@@ -148,14 +149,7 @@ export default function Dashboard({
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700 mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton showRecentLogs={showRecentLogs} />;
   }
 
   return (

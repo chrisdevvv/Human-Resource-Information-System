@@ -11,14 +11,14 @@ import {
   Eye,
   Search,
 } from "lucide-react";
+import { SkeletonListItem } from "../../../components/Skeleton/SkeletonUtils";
 import PendingAccountsMobile from "./PendingAccountsMobile";
 import UserSettingModal from "../../components/UserSettingModal";
 import UserDetailsEditModal from "../../components/UserDetailsEditModal";
 import AddUserModal from "./AddUserModal";
 import ToastMessage from "../../../components/ToastMessage";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 type User = {
   id: number;
@@ -400,7 +400,7 @@ export default function UserRolesMobile() {
           {/* Filters */}
           <div className="flex flex-col gap-2">
             {/* Search */}
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
               <input
                 type="text"
                 placeholder="Search name, email, or school"
@@ -409,11 +409,11 @@ export default function UserRolesMobile() {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 onClick={() => setCurrentPage(1)}
-                className="inline-flex items-center gap-1 px-4 py-1 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer"
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer whitespace-nowrap"
               >
                 <Search size={14} />
                 Search
@@ -530,9 +530,15 @@ export default function UserRolesMobile() {
 
           {/* User list */}
           {userLoading ? (
-            <p className="text-center text-sm text-gray-500 py-8">
-              Loading users...
-            </p>
+            <div className="flex flex-col gap-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <SkeletonListItem
+                  key={i}
+                  includeIcon={false}
+                  includeAvatar={true}
+                />
+              ))}
+            </div>
           ) : userError ? (
             <p className="text-center text-sm text-red-500 py-8">
               Error: {userError}
@@ -914,4 +920,3 @@ function MRow({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-

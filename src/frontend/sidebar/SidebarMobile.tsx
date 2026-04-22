@@ -56,8 +56,8 @@ export default function SidebarMobile({
         </button>
         <div className="flex items-center gap-2">
           <img
-            src="/images/[DEPED] ELMS Logo.svg"
-            alt="ELMS Logo"
+            src="/images/DepEd-CHRIS.svg"
+            alt="DepEd CHRIS"
             className="h-8 w-auto"
           />
           <h1 className="text-lg font-semibold">{title}</h1>
@@ -87,8 +87,8 @@ export default function SidebarMobile({
         {/* Logo and Title Header */}
         <div className="border-b border-blue-700 p-2 flex flex-col items-center justify-center">
           <img
-            src="/images/[DEPED] ELMS Logo.svg"
-            alt="ELMS Logo"
+            src="/images/DepEd-CHRIS.svg"
+            alt="DepEd CHRIS"
             className="h-10 w-auto mb-1"
           />
           <p className="text-xs uppercase tracking-widest text-blue-100 text-center">

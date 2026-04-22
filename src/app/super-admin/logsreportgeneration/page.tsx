@@ -7,6 +7,7 @@ import LogsReportGeneration, {
   downloadLogsReportPdf,
   type LogsReportRecord,
 } from "../../../frontend/super-admin/functions/Logs/LogsReportGeneration";
+import { LogsReportSkeleton } from "@/frontend/components/Skeleton/SkeletonLoaders";
 import RoleGuard from "@/frontend/auth/RoleGuard";
 import { APP_ROUTES } from "@/frontend/route";
 
@@ -255,9 +256,7 @@ function LogsReportGenerationContent() {
 
         <div className="overflow-hidden rounded-lg border border-blue-200 bg-white p-2 shadow-sm md:p-4">
           {loading ? (
-            <div className="py-16 text-center text-gray-500">
-              Loading report...
-            </div>
+            <LogsReportSkeleton />
           ) : (
             <div ref={previewViewportRef} className="w-full">
               <div style={{ height: scaledPreviewHeight || undefined }}>

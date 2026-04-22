@@ -7,6 +7,7 @@ import { logoutNow } from "@/frontend/auth/session";
 import { APP_ROUTES } from "@/frontend/route";
 import { createClearHandler } from "../../utils/clearFormUtils";
 import ToastMessage from "../../components/ToastMessage";
+import { SkeletonBlock } from "../../components/Skeleton/SkeletonUtils";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
@@ -1116,40 +1117,54 @@ export default function ProfileSettings() {
                     className="mt-1 w-full px-3 py-2 border border-gray-200 bg-gray-100 rounded-lg text-sm text-gray-500"
                   />
                 ) : (
-                  <select
-                    value={profileEditor.schoolId}
-                    onChange={(e) => {
-                      setProfileEditor((prev) => ({
-                        ...prev,
-                        schoolId: e.target.value,
-                        schoolName:
-                          schools.find(
-                            (school) => String(school.id) === e.target.value,
-                          )?.school_name || prev.schoolName,
-                      }));
-                      if (profileFieldErrors.schoolId) {
-                        setProfileFieldErrors((prev) => ({
-                          ...prev,
-                          schoolId: "",
-                        }));
-                      }
-                    }}
-                    disabled={!isEditingProfile || schoolsLoading}
-                    className={`mt-1 w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      isEditingProfile
-                        ? "border-gray-300 text-gray-700 bg-white"
-                        : "border-gray-200 bg-gray-100 text-gray-500"
-                    }`}
-                  >
-                    <option value="">
-                      {schoolsLoading ? "Loading schools..." : "Select school"}
-                    </option>
-                    {schools.map((school) => (
-                      <option key={school.id} value={String(school.id)}>
-                        {school.school_name}
-                      </option>
-                    ))}
-                  </select>
+                  <>
+                    {schoolsLoading ? (
+                      <SkeletonBlock
+                        width="w-full"
+                        height="h-10"
+                        rounded="rounded-lg"
+                        className="mt-1"
+                      />
+                    ) : (
+                      <select
+                        value={profileEditor.schoolId}
+                        onChange={(e) => {
+                          setProfileEditor((prev) => ({
+                            ...prev,
+                            schoolId: e.target.value,
+                            schoolName:
+                              schools.find(
+                                (school) =>
+                                  String(school.id) === e.target.value,
+                              )?.school_name || prev.schoolName,
+                          }));
+                          if (profileFieldErrors.schoolId) {
+                            setProfileFieldErrors((prev) => ({
+                              ...prev,
+                              schoolId: "",
+                            }));
+                          }
+                        }}
+                        disabled={!isEditingProfile || schoolsLoading}
+                        className={`mt-1 w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          isEditingProfile
+                            ? "border-gray-300 text-gray-700 bg-white"
+                            : "border-gray-200 bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        <option value="">
+                          {schoolsLoading
+                            ? "Loading schools..."
+                            : "Select school"}
+                        </option>
+                        {schools.map((school) => (
+                          <option key={school.id} value={String(school.id)}>
+                            {school.school_name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </>
                 )}
 
                 <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">

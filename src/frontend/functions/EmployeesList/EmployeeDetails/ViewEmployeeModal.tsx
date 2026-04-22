@@ -21,6 +21,7 @@ import SalaryInformation, {
   type SalaryHistoryRecord,
 } from "./SalaryInformation";
 import { createClearHandler } from "../../../utils/clearFormUtils";
+import { InlineModalSkeleton } from "../../../components/Skeleton/SkeletonLoaders";
 
 type School = {
   id: number;
@@ -2015,9 +2016,8 @@ export default function ViewEmployeeModal({
           </div>
 
           {isLoadingDetails ? (
-            <div className="mb-3 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-700">
-              <Loader2 size={16} className="animate-spin" />
-              Loading full employee details...
+            <div className="mb-3">
+              <InlineModalSkeleton fields={6} />
             </div>
           ) : null}
 

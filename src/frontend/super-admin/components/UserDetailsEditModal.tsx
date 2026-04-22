@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Loader2, Save, Settings, Shield, XCircle } from "lucide-react";
 import ConfirmationModal from "./ConfirmationModal";
 import { createClearHandler } from "../../utils/clearFormUtils";
+import { InlineModalSkeleton } from "../../components/Skeleton/SkeletonLoaders";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
@@ -466,9 +467,8 @@ export default function UserDetailsEditModal({
         </div>
 
         {loading ? (
-          <div className="mb-3 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-700">
-            <Loader2 size={16} className="animate-spin" />
-            Loading user details...
+          <div className="mb-3">
+            <InlineModalSkeleton fields={4} />
           </div>
         ) : null}
 
