@@ -74,6 +74,11 @@ type EditSnapshot = {
   position: string;
   plantillaNo: string;
   dateOfFirstAppointment: string;
+  currentEmployeeType: string;
+  currentPosition: string;
+  currentPlantillaNo: string;
+  currentAppointmentDate: string;
+  currentSg: string;
   employeeType: "teaching" | "non-teaching" | "teaching-related";
   schoolId: number | null;
   schoolName: string;
@@ -139,6 +144,11 @@ type EmployeeDetailsResponse = {
   position_id?: number | null;
   plantilla_no?: string | null;
   sg?: string | null;
+  current_employee_type?: string | null;
+  current_position?: string | null;
+  current_plantilla_no?: string | null;
+  current_appointment_date?: string | null;
+  current_sg?: string | null;
   age?: number | null;
   birthdate?: string | null;
   date_of_first_appointment?: string | null;
@@ -352,6 +362,11 @@ const createEditSnapshotFromDetails = (
     position: data.position || "",
     plantillaNo: normalizePlantillaNo(data.plantilla_no || ""),
     dateOfFirstAppointment: toDateInputValue(data.date_of_first_appointment),
+    currentEmployeeType: String(data.current_employee_type || "").trim(),
+    currentPosition: String(data.current_position || "").trim(),
+    currentPlantillaNo: normalizePlantillaNo(data.current_plantilla_no || ""),
+    currentAppointmentDate: toDateInputValue(data.current_appointment_date),
+    currentSg: String(data.current_sg || "").trim(),
     employeeType: data.employee_type || "non-teaching",
     schoolId: data.school_id || null,
     schoolName: data.school_name || "",
@@ -615,6 +630,12 @@ export default function ViewEmployeeModal({
   const [editPlantillaNo, setEditPlantillaNo] = useState(PLANTILLA_PREFIX);
   const [editDateOfFirstAppointment, setEditDateOfFirstAppointment] =
     useState("");
+  const [editCurrentEmployeeType, setEditCurrentEmployeeType] = useState("");
+  const [editCurrentPosition, setEditCurrentPosition] = useState("");
+  const [editCurrentPlantillaNo, setEditCurrentPlantillaNo] = useState("");
+  const [editCurrentAppointmentDate, setEditCurrentAppointmentDate] =
+    useState("");
+  const [editCurrentSg, setEditCurrentSg] = useState("");
   const [editWorkSg, setEditWorkSg] = useState("");
   const [initialWorkSg, setInitialWorkSg] = useState("");
   const [editEmployeeType, setEditEmployeeType] = useState<
@@ -637,9 +658,12 @@ export default function ViewEmployeeModal({
   const [sexes, setSexes] = useState<Sex[]>([]);
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
   const [showPositionDropdown, setShowPositionDropdown] = useState(false);
+  const [showCurrentPositionDropdown, setShowCurrentPositionDropdown] =
+    useState(false);
   const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState("");
   const [positionSearch, setPositionSearch] = useState("");
+  const [currentPositionSearch, setCurrentPositionSearch] = useState("");
   const [districtSearch, setDistrictSearch] = useState("");
 
   const [editError, setEditError] = useState<string | null>(null);
@@ -694,6 +718,11 @@ export default function ViewEmployeeModal({
     setEditPosition(snapshot.position);
     setEditPlantillaNo(normalizePlantillaNo(snapshot.plantillaNo));
     setEditDateOfFirstAppointment(snapshot.dateOfFirstAppointment);
+    setEditCurrentEmployeeType(snapshot.currentEmployeeType);
+    setEditCurrentPosition(snapshot.currentPosition);
+    setEditCurrentPlantillaNo(normalizePlantillaNo(snapshot.currentPlantillaNo));
+    setEditCurrentAppointmentDate(snapshot.currentAppointmentDate);
+    setEditCurrentSg(snapshot.currentSg);
     setEditEmployeeType(snapshot.employeeType);
     setEditSchoolId(snapshot.schoolId);
     setEditSchoolName(snapshot.schoolName);
@@ -927,13 +956,21 @@ export default function ViewEmployeeModal({
     if (isEditing) {
       setDistrictSearch(editDistrict);
       setPositionSearch(editPosition);
+      setCurrentPositionSearch(editCurrentPosition);
       setSchoolSearch(editSchoolName);
     } else {
       setDistrictSearch("");
       setPositionSearch("");
+      setCurrentPositionSearch("");
       setSchoolSearch("");
     }
-  }, [isEditing, editDistrict, editPosition, editSchoolName]);
+  }, [
+    isEditing,
+    editDistrict,
+    editPosition,
+    editCurrentPosition,
+    editSchoolName,
+  ]);
 
   useEffect(() => {
     if (!visible) return;
@@ -1109,6 +1146,11 @@ export default function ViewEmployeeModal({
       position: editPosition,
       plantillaNo: editPlantillaNo,
       dateOfFirstAppointment: editDateOfFirstAppointment,
+      currentEmployeeType: editCurrentEmployeeType,
+      currentPosition: editCurrentPosition,
+      currentPlantillaNo: editCurrentPlantillaNo,
+      currentAppointmentDate: editCurrentAppointmentDate,
+      currentSg: editCurrentSg,
       employeeType: editEmployeeType,
       schoolId: editSchoolId,
       schoolName: editSchoolName,
@@ -1132,6 +1174,10 @@ export default function ViewEmployeeModal({
 
   const handleEditPlantillaNoChange = (value: string) => {
     setEditPlantillaNo(normalizePlantillaNo(value));
+  };
+
+  const handleEditCurrentPlantillaNoChange = (value: string) => {
+    setEditCurrentPlantillaNo(normalizePlantillaNo(value));
   };
 
   const handleSaveChanges = async () => {
@@ -1191,6 +1237,39 @@ export default function ViewEmployeeModal({
       newErrors.push({
         field: "SG",
         message: "SG must be at most 20 characters",
+      });
+    }
+
+    const normalizedCurrentAppointmentDate =
+      editCurrentAppointmentDate.trim();
+    if (
+      normalizedCurrentAppointmentDate &&
+      !isValidDateValue(normalizedCurrentAppointmentDate)
+    ) {
+      newErrors.push({
+        field: "Current Appointment Date",
+        message: "Current Appointment Date must be a valid date",
+      });
+    }
+
+    if (normalizedCurrentAppointmentDate) {
+      const parsedCurrentAppointmentDate = new Date(normalizedCurrentAppointmentDate);
+      const currentDate = new Date();
+      if (
+        !Number.isNaN(parsedCurrentAppointmentDate.getTime()) &&
+        parsedCurrentAppointmentDate > currentDate
+      ) {
+        newErrors.push({
+          field: "Current Appointment Date",
+          message: "Current Appointment Date cannot be in the future",
+        });
+      }
+    }
+
+    if (editCurrentSg.trim().length > 20) {
+      newErrors.push({
+        field: "Current SG",
+        message: "Current SG must be at most 20 characters",
       });
     }
 
@@ -1492,6 +1571,11 @@ export default function ViewEmployeeModal({
         plantilla_no: editPlantillaNo.trim(),
         ...(hasSgChanged ? { sg: normalizedWorkSg || null } : {}),
         date_of_first_appointment: firstAppointmentDate || null,
+        current_employee_type: editCurrentEmployeeType.trim() || null,
+        current_position: editCurrentPosition.trim() || null,
+        current_plantilla_no: editCurrentPlantillaNo.trim() || null,
+        current_appointment_date: normalizedCurrentAppointmentDate || null,
+        current_sg: editCurrentSg.trim() || null,
         // Compatibility keys for backend variants while keeping current API contract.
         dateOfFirstAppointment: firstAppointmentDate || null,
         years_in_service: firstAppointmentMetrics.yearsInService,
@@ -2148,6 +2232,20 @@ export default function ViewEmployeeModal({
               setEditPositionId={setEditPositionId}
               editPlantillaNo={editPlantillaNo}
               setEditPlantillaNo={handleEditPlantillaNoChange}
+              editCurrentEmployeeType={editCurrentEmployeeType}
+              setEditCurrentEmployeeType={setEditCurrentEmployeeType}
+              editCurrentPosition={editCurrentPosition}
+              setEditCurrentPosition={setEditCurrentPosition}
+              currentPositionSearch={currentPositionSearch}
+              setCurrentPositionSearch={setCurrentPositionSearch}
+              showCurrentPositionDropdown={showCurrentPositionDropdown}
+              setShowCurrentPositionDropdown={setShowCurrentPositionDropdown}
+              editCurrentPlantillaNo={editCurrentPlantillaNo}
+              setEditCurrentPlantillaNo={handleEditCurrentPlantillaNoChange}
+              editCurrentAppointmentDate={editCurrentAppointmentDate}
+              setEditCurrentAppointmentDate={setEditCurrentAppointmentDate}
+              editCurrentSg={editCurrentSg}
+              setEditCurrentSg={setEditCurrentSg}
               positionSearch={positionSearch}
               setPositionSearch={setPositionSearch}
               showPositionDropdown={showPositionDropdown}

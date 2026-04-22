@@ -828,6 +828,13 @@ ALTER TABLE `schools` MODIFY `id` int NOT NULL AUTO_INCREMENT;
 ALTER TABLE `sexes` MODIFY `id` int NOT NULL AUTO_INCREMENT;
 ALTER TABLE `users` MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
+ALTER TABLE `employees`
+  ADD COLUMN IF NOT EXISTS `current_employee_type` enum('teaching','non-teaching','teaching-related') COLLATE utf8mb4_general_ci DEFAULT NULL AFTER `employee_type`,
+  ADD COLUMN IF NOT EXISTS `current_position` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL AFTER `position`,
+  ADD COLUMN IF NOT EXISTS `current_plantilla_no` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL AFTER `plantilla_no`,
+  ADD COLUMN IF NOT EXISTS `current_appointment_date` date DEFAULT NULL AFTER `date_of_first_appointment`,
+  ADD COLUMN IF NOT EXISTS `current_sg` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL AFTER `sg`;
+
 -- Add missing foreign keys after indexes/PKs are in place.
 ALTER TABLE `backlogs`
   ADD CONSTRAINT `fk_backlogs_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
