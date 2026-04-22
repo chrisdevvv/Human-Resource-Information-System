@@ -3,7 +3,6 @@ require("./config/loadEnv");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const helmet = require("helmet");
 const cron = require("node-cron");
 const authRoutes = require("./modules/auth/authRoutes");
 const leaveRoutes = require("./modules/leave/leaveRoutes");
@@ -1011,12 +1010,17 @@ const ensureIndexes = async () => {
   }
 };
 
+const securityHeader = (req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=()");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  next();
+};
+
 // Middleware
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-  }),
-);
+app.use(securityHeader);
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(bodyParser.json({ limit: MAX_JSON_BODY_SIZE }));
