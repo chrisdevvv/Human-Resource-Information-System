@@ -358,6 +358,66 @@ const ensureEmployeeTypeSchema = async () => {
 };
 
 const ensureEmployeeProfileSchema = async () => {
+  const [currentEmployeeTypeColumns] = await pool.promise().query(`
+    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'employees'
+      AND COLUMN_NAME = 'current_employee_type'
+    LIMIT 1
+  `);
+
+  if (currentEmployeeTypeColumns.length === 0) {
+    await pool.promise().query(`
+      ALTER TABLE employees
+      ADD COLUMN current_employee_type ENUM('teaching','non-teaching','teaching-related') NULL AFTER employee_type;
+    `);
+  }
+
+  const [currentPositionColumns] = await pool.promise().query(`
+    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'employees'
+      AND COLUMN_NAME = 'current_position'
+    LIMIT 1
+  `);
+
+  if (currentPositionColumns.length === 0) {
+    await pool.promise().query(`
+      ALTER TABLE employees
+      ADD COLUMN current_position VARCHAR(255) NULL AFTER position;
+    `);
+  }
+
+  const [currentPlantillaColumns] = await pool.promise().query(`
+    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'employees'
+      AND COLUMN_NAME = 'current_plantilla_no'
+    LIMIT 1
+  `);
+
+  if (currentPlantillaColumns.length === 0) {
+    await pool.promise().query(`
+      ALTER TABLE employees
+      ADD COLUMN current_plantilla_no VARCHAR(100) NULL AFTER plantilla_no;
+    `);
+  }
+
+  const [currentAppointmentColumns] = await pool.promise().query(`
+    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'employees'
+      AND COLUMN_NAME = 'current_appointment_date'
+    LIMIT 1
+  `);
+
+  if (currentAppointmentColumns.length === 0) {
+    await pool.promise().query(`
+      ALTER TABLE employees
+      ADD COLUMN current_appointment_date DATE NULL AFTER date_of_first_appointment;
+    `);
+  }
+
   const [sgColumns] = await pool.promise().query(`
     SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
     WHERE TABLE_SCHEMA = DATABASE()
@@ -370,6 +430,21 @@ const ensureEmployeeProfileSchema = async () => {
     await pool.promise().query(`
       ALTER TABLE employees
       ADD COLUMN sg VARCHAR(20) NULL AFTER plantilla_no;
+    `);
+  }
+
+  const [currentSgColumns] = await pool.promise().query(`
+    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'employees'
+      AND COLUMN_NAME = 'current_sg'
+    LIMIT 1
+  `);
+
+  if (currentSgColumns.length === 0) {
+    await pool.promise().query(`
+      ALTER TABLE employees
+      ADD COLUMN current_sg VARCHAR(20) NULL AFTER sg;
     `);
   }
 
@@ -388,7 +463,10 @@ const ensureEmployeeProfileSchema = async () => {
         employee_no = NULLIF(TRIM(employee_no), ''),
         work_email = NULLIF(TRIM(work_email), ''),
         plantilla_no = NULLIF(TRIM(plantilla_no), ''),
+        current_position = NULLIF(TRIM(current_position), ''),
+        current_plantilla_no = NULLIF(TRIM(current_plantilla_no), ''),
       sg = NULLIF(TRIM(sg), ''),
+        current_sg = NULLIF(TRIM(current_sg), ''),
         prc_license_no = NULLIF(TRIM(prc_license_no), ''),
         tin = NULLIF(TRIM(tin), ''),
         gsis_bp_no = NULLIF(TRIM(gsis_bp_no), ''),
@@ -435,6 +513,149 @@ const ensureEmployeeProfileSchema = async () => {
       }
     }
   }
+};
+
+const ensureWorkInformationTable = async () => {
+  await pool.promise().query(`
+    CREATE TABLE IF NOT EXISTS work_information (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      employee_id INT NOT NULL,
+      employee_type VARCHAR(32) NULL,
+      employee_no VARCHAR(100) NULL,
+      work_email VARCHAR(255) NULL,
+      district VARCHAR(255) NULL,
+      position VARCHAR(255) NULL,
+      position_id INT NULL,
+      plantilla_no VARCHAR(100) NULL,
+      sg VARCHAR(20) NULL,
+      date_of_first_appointment DATE NULL,
+      years_in_service INT NULL,
+      loyalty_bonus ENUM('Yes', 'No') NOT NULL DEFAULT 'No',
+      current_employee_type VARCHAR(32) NULL,
+      current_position VARCHAR(255) NULL,
+      current_plantilla_no VARCHAR(100) NULL,
+      current_appointment_date DATE NULL,
+      current_sg VARCHAR(20) NULL,
+      prc_license_no VARCHAR(100) NULL,
+      tin VARCHAR(50) NULL,
+      gsis_bp_no VARCHAR(50) NULL,
+      gsis_crn_no VARCHAR(50) NULL,
+      pagibig_no VARCHAR(50) NULL,
+      philhealth_no VARCHAR(50) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uk_work_information_employee_id (employee_id),
+      UNIQUE KEY uk_work_information_employee_no (employee_no),
+      UNIQUE KEY uk_work_information_work_email (work_email),
+      UNIQUE KEY uk_work_information_plantilla_no (plantilla_no),
+      UNIQUE KEY uk_work_information_prc_license_no (prc_license_no),
+      UNIQUE KEY uk_work_information_tin (tin),
+      UNIQUE KEY uk_work_information_gsis_bp_no (gsis_bp_no),
+      UNIQUE KEY uk_work_information_gsis_crn_no (gsis_crn_no),
+      UNIQUE KEY uk_work_information_pagibig_no (pagibig_no),
+      UNIQUE KEY uk_work_information_philhealth_no (philhealth_no),
+      KEY idx_work_information_position_id (position_id),
+      CONSTRAINT fk_work_information_employee_id FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT fk_work_information_position_id FOREIGN KEY (position_id) REFERENCES positions(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `);
+
+  await pool.promise().query(`
+    INSERT INTO work_information (
+      employee_id,
+      employee_type,
+      employee_no,
+      work_email,
+      district,
+      position,
+      position_id,
+      plantilla_no,
+      sg,
+      date_of_first_appointment,
+      years_in_service,
+      loyalty_bonus,
+      current_employee_type,
+      current_position,
+      current_plantilla_no,
+      current_appointment_date,
+      current_sg,
+      prc_license_no,
+      tin,
+      gsis_bp_no,
+      gsis_crn_no,
+      pagibig_no,
+      philhealth_no
+    )
+    SELECT
+      e.id,
+      e.employee_type,
+      e.employee_no,
+      e.work_email,
+      e.district,
+      e.position,
+      e.position_id,
+      e.plantilla_no,
+      e.sg,
+      e.date_of_first_appointment,
+      e.years_in_service,
+      e.loyalty_bonus,
+      e.current_employee_type,
+      e.current_position,
+      e.current_plantilla_no,
+      e.current_appointment_date,
+      e.current_sg,
+      e.prc_license_no,
+      e.tin,
+      e.gsis_bp_no,
+      e.gsis_crn_no,
+      e.pagibig_no,
+      e.philhealth_no
+    FROM employees e
+    ON DUPLICATE KEY UPDATE
+      employee_type = VALUES(employee_type),
+      employee_no = VALUES(employee_no),
+      work_email = VALUES(work_email),
+      district = VALUES(district),
+      position = VALUES(position),
+      position_id = VALUES(position_id),
+      plantilla_no = VALUES(plantilla_no),
+      sg = VALUES(sg),
+      date_of_first_appointment = VALUES(date_of_first_appointment),
+      years_in_service = VALUES(years_in_service),
+      loyalty_bonus = VALUES(loyalty_bonus),
+      current_employee_type = VALUES(current_employee_type),
+      current_position = VALUES(current_position),
+      current_plantilla_no = VALUES(current_plantilla_no),
+      current_appointment_date = VALUES(current_appointment_date),
+      current_sg = VALUES(current_sg),
+      prc_license_no = VALUES(prc_license_no),
+      tin = VALUES(tin),
+      gsis_bp_no = VALUES(gsis_bp_no),
+      gsis_crn_no = VALUES(gsis_crn_no),
+      pagibig_no = VALUES(pagibig_no),
+      philhealth_no = VALUES(philhealth_no),
+      updated_at = CURRENT_TIMESTAMP;
+  `);
+
+  await pool.promise().query(`
+    UPDATE work_information
+    SET employee_no = NULLIF(TRIM(employee_no), ''),
+        work_email = NULLIF(TRIM(work_email), ''),
+        district = NULLIF(TRIM(district), ''),
+        position = NULLIF(TRIM(position), ''),
+        plantilla_no = NULLIF(TRIM(plantilla_no), ''),
+        sg = NULLIF(TRIM(sg), ''),
+        current_employee_type = NULLIF(TRIM(current_employee_type), ''),
+        current_position = NULLIF(TRIM(current_position), ''),
+        current_plantilla_no = NULLIF(TRIM(current_plantilla_no), ''),
+        current_sg = NULLIF(TRIM(current_sg), ''),
+        prc_license_no = NULLIF(TRIM(prc_license_no), ''),
+        tin = NULLIF(TRIM(tin), ''),
+        gsis_bp_no = NULLIF(TRIM(gsis_bp_no), ''),
+        gsis_crn_no = NULLIF(TRIM(gsis_crn_no), ''),
+        pagibig_no = NULLIF(TRIM(pagibig_no), ''),
+        philhealth_no = NULLIF(TRIM(philhealth_no), '');
+  `);
 };
 
 const syncEmployeeServiceMetrics = async () => {
@@ -1620,6 +1841,9 @@ app.listen(PORT, async () => {
 
     await ensureEmployeeCivilStatusSexFK();
     console.log("✔  Employee civil status and sex foreign keys are ready");
+
+    await ensureWorkInformationTable();
+    console.log("✔  Work information table is ready and backfilled");
 
     await ensureSalaryInformationTable();
     console.log("✔  Salary information table is ready");

@@ -64,7 +64,6 @@ export default function LeaveManagementModal({
     null,
   );
 
-  // Added missing state and refs
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -218,7 +217,6 @@ export default function LeaveManagementModal({
   const handleLeaveStatusToggle = (
     event: React.MouseEvent<HTMLInputElement>,
   ) => {
-    // Prevent immediate visual toggle; wait for confirmation modal.
     event.preventDefault();
     requestLeaveStatusChange();
   };
@@ -403,7 +401,7 @@ export default function LeaveManagementModal({
       setError("Please select at least one entry to delete.");
       return;
     }
-    // Open confirmation modal instead of using window.confirm
+
     setIsDeleteConfirmOpen(true);
   };
 
@@ -437,109 +435,23 @@ export default function LeaveManagementModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 sm:px-4">
-      <div className="relative flex max-h-[94vh] w-full max-w-screen-2xl flex-col overflow-hidden rounded-xl border border-blue-200 bg-white shadow-2xl">
-        <div className="border-b border-gray-200 px-5 py-4 sm:px-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-3 py-4 sm:flex sm:items-center sm:justify-center sm:px-4">
+      <div className="mx-auto my-4 flex w-full max-w-screen-2xl flex-col overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-2xl max-h-[calc(100dvh-2rem)]">
+        <div className="border-b border-gray-200 px-4 py-4 sm:px-6">
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <h2 className="text-xl font-bold text-gray-800">
+              <h2 className="text-xl font-bold text-gray-800 sm:text-2xl">
                 Leave Management Details
               </h2>
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3">
-                <label className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:text-xs">
-                    Employee Name
-                  </span>
-                  <input
-                    type="text"
-                    value={employeeNameDisplay}
-                    readOnly
-                    className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1.5 text-xs text-gray-700 sm:px-3 sm:py-2 sm:text-sm"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:text-xs">
-                    Email Address
-                  </span>
-                  <input
-                    type="text"
-                    value={employeeEmailDisplay}
-                    readOnly
-                    className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1.5 text-xs text-gray-700 sm:px-3 sm:py-2 sm:text-sm"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:text-xs">
-                    Employee Type
-                  </span>
-                  <input
-                    type="text"
-                    value={employeeTypeLabel}
-                    readOnly
-                    className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1.5 text-xs text-gray-700 sm:px-3 sm:py-2 sm:text-sm"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:text-xs">
-                    School
-                  </span>
-                  <input
-                    type="text"
-                    value={employeeSchool}
-                    readOnly
-                    className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1.5 text-xs text-gray-700 sm:px-3 sm:py-2 sm:text-sm"
-                  />
-                </label>
-              </div>
-              <div className="mt-3 flex items-start gap-3">
-                <input
-                  id="mark-on-leave"
-                  type="checkbox"
-                  checked={isMarkedOnLeave}
-                  onClick={handleLeaveStatusToggle}
-                  onChange={() => {
-                    // Controlled via confirmation modal flow.
-                  }}
-                  disabled={isLeaveStatusLoading || isLeaveStatusUpdating}
-                  className="mt-1 h-7 w-7 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
-                />
-                <div>
-                  <label
-                    htmlFor="mark-on-leave"
-                    onClick={(event) => {
-                      event.preventDefault();
-                      requestLeaveStatusChange();
-                    }}
-                    className="cursor-pointer text-lg font-bold text-gray-700"
-                  >
-                    Mark as on leave
-                  </label>
-                  <p className="mt-1 text-base text-gray-700">
-                    Status:{" "}
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${
-                        isMarkedOnLeave
-                          ? "bg-red-100 text-red-700"
-                          : "bg-green-100 text-green-700"
-                      }`}
-                    >
-                      {isMarkedOnLeave ? "On leave" : "Not on leave"}
-                    </span>
-                  </p>
-                  {leaveStatusError && (
-                    <p className="text-sm text-red-500">{leaveStatusError}</p>
-                  )}
-                </div>
-              </div>
+              <p className="mt-1 text-sm text-gray-500">
+                View leave history, manage entries, and generate leave card.
+              </p>
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="cursor-pointer rounded-lg bg-gray-100 p-2 text-gray-600 transition hover:bg-gray-200"
+              className="cursor-pointer rounded-xl bg-gray-100 p-2 text-gray-600 transition hover:bg-gray-200"
               aria-label="Close"
               title="Close"
             >
@@ -547,112 +459,301 @@ export default function LeaveManagementModal({
             </button>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:text-xs">
+                Employee Name
+              </span>
+              <input
+                type="text"
+                value={employeeNameDisplay}
+                readOnly
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:text-xs">
+                Email Address
+              </span>
+              <input
+                type="text"
+                value={employeeEmailDisplay}
+                readOnly
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:text-xs">
+                Employee Type
+              </span>
+              <input
+                type="text"
+                value={employeeTypeLabel}
+                readOnly
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:text-xs">
+                School
+              </span>
+              <input
+                type="text"
+                value={employeeSchool}
+                readOnly
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+              />
+            </label>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-gray-200 bg-linear-to-r from-slate-50 to-blue-50 p-4">
+            <div className="flex items-start gap-3">
+              <input
+                id="mark-on-leave"
+                type="checkbox"
+                checked={isMarkedOnLeave}
+                onClick={handleLeaveStatusToggle}
+                onChange={() => {}}
+                disabled={isLeaveStatusLoading || isLeaveStatusUpdating}
+                className="mt-1 h-6 w-6 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+              />
+              <div className="min-w-0 flex-1">
+                <label
+                  htmlFor="mark-on-leave"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    requestLeaveStatusChange();
+                  }}
+                  className="cursor-pointer text-base font-bold text-gray-800 sm:text-lg"
+                >
+                  Mark as on leave
+                </label>
+                <p className="mt-1 text-sm text-gray-600">
+                  Toggle employee leave availability status.
+                </p>
+                <p className="mt-2 text-sm text-gray-700">
+                  Status:{" "}
+                  <span
+                    className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${
+                      isMarkedOnLeave
+                        ? "bg-red-100 text-red-700"
+                        : "bg-green-100 text-green-700"
+                    }`}
+                  >
+                    {isMarkedOnLeave ? "On leave" : "Not on leave"}
+                  </span>
+                </p>
+                {leaveStatusError && (
+                  <p className="mt-2 text-sm text-red-500">{leaveStatusError}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ================= DESKTOP ACTION/TAB BAR ================= */}
+          <div className="mt-4 hidden flex-wrap items-center gap-2 lg:flex">
             <button
               type="button"
               onClick={() => setActiveTab("history")}
-              className={`inline-flex h-8.5 w-full cursor-pointer items-center justify-center gap-1 rounded-md px-2 text-[12px] font-semibold leading-tight transition sm:h-auto sm:w-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-medium ${
+              className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
                 activeTab === "history"
-                  ? "hover:bg-blue-700 bg-blue-600 text-white"
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              <span className="inline-flex items-center gap-1">
-                <FileText size={12} />
-                Leave History
-              </span>
+              <FileText size={16} />
+              Leave History
             </button>
+
             <button
               type="button"
               onClick={() => setActiveTab("card")}
-              className={`inline-flex h-8.5 w-full cursor-pointer items-center justify-center gap-1 rounded-md px-2 text-[12px] font-semibold leading-tight transition sm:h-auto sm:w-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-medium ${
+              className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
                 activeTab === "card"
-                  ? "bg-blue-600 text-white"
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              <span className="inline-flex items-center gap-1 text-center">
-                <IdCard size={12} />
-                Printable Leave Card
-              </span>
+              <IdCard size={16} />
+              Printable Leave Card
             </button>
+
             <button
               type="button"
               onClick={handleOpenHistoryInNewTab}
-              className="inline-flex h-8.5 w-full cursor-pointer items-center justify-center gap-1 rounded-md bg-gray-100 px-2 text-[12px] font-semibold leading-tight text-gray-700 transition hover:bg-gray-200 sm:h-auto sm:w-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-medium"
+              className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-200"
             >
-              <span className="inline-flex items-center gap-1 text-center">
-                <ExternalLink size={12} />
-                Open in Another Tab
-              </span>
+              <ExternalLink size={16} />
+              Open in Another Tab
             </button>
+
             <button
               type="button"
               onClick={handleDeleteSelectedEntries}
               disabled={activeTab !== "history" || isDeletingEntries}
-              className="inline-flex h-8.5 w-full cursor-pointer items-center justify-center gap-1 rounded-md bg-red-600 px-2 text-[12px] font-semibold leading-tight text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 sm:h-auto sm:w-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-medium"
+              className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Trash2 size={12} />
+              <Trash2 size={16} />
               {isDeleteMode
                 ? `Delete Entry (${selectedHistoryIds.size})`
                 : "Select Entries to Delete"}
             </button>
-            {isDeleteMode ? (
+
+            {isDeleteMode && (
               <button
                 type="button"
                 onClick={handleCancelDeleteMode}
                 disabled={isDeletingEntries}
-                className="inline-flex h-8.5 w-full cursor-pointer items-center justify-center gap-1 rounded-md bg-gray-100 px-2 text-[12px] font-semibold leading-tight text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60 sm:h-auto sm:w-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-medium"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <span className="inline-flex items-center gap-1">
-                  <XCircle size={12} />
-                  Cancel
-                </span>
+                <XCircle size={16} />
+                Cancel
               </button>
-            ) : null}
+            )}
 
-            <div className="col-span-2 grid w-full grid-cols-2 gap-2.5 sm:col-span-1 sm:ml-auto sm:flex sm:w-auto sm:flex-wrap sm:justify-end sm:gap-2">
+            <div className="ml-auto flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setIsAddOpen(true)}
                 disabled={isSaving}
-                className="inline-flex h-8.5 w-full cursor-pointer items-center justify-center gap-1 rounded-md bg-blue-600 px-2 text-[12px] font-semibold leading-tight text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:h-auto sm:w-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-medium"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <Plus size={12} />
+                <Plus size={16} />
                 Add Leave
               </button>
+
               <button
                 type="button"
                 onClick={() => fetchHistory(true)}
                 disabled={isSaving}
-                className="inline-flex h-8.5 w-full cursor-pointer items-center justify-center gap-1 rounded-md bg-gray-100 px-2 text-[12px] font-semibold leading-tight text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60 sm:h-auto sm:w-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-medium"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <RefreshCcw size={12} />
+                <RefreshCcw size={16} />
                 Refresh
               </button>
+
               <button
                 type="button"
                 onClick={handleDownloadPdf}
                 disabled={isSaving || pdfCooldownRemaining > 0}
-                className="col-span-2 inline-flex h-8.5 w-full cursor-pointer items-center justify-center gap-1 rounded-md bg-rose-500 px-2 text-[12px] font-semibold leading-tight text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1 sm:h-auto sm:w-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-medium"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <Download size={12} />
+                <Download size={16} />
                 {pdfCooldownRemaining > 0
                   ? `Download PDF (${pdfCooldownRemaining}s)`
                   : "Download PDF"}
               </button>
             </div>
           </div>
+
+          {/* ================= MOBILE ACTION/TAB BLOCK (COMPACT) ================= */}
+          <div className="mt-3 space-y-2 lg:hidden">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab("history")}
+                className={`flex-1 rounded-xl px-2 py-2 text-xs font-semibold transition ${
+                  activeTab === "history"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                <FileText size={14} className="mx-auto mb-0.5" />
+                History
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("card")}
+                className={`flex-1 rounded-xl px-2 py-2 text-xs font-semibold transition ${
+                  activeTab === "card"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                <IdCard size={14} className="mx-auto mb-0.5" />
+                Card
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsAddOpen(true)}
+              disabled={isSaving}
+              className="w-full rounded-xl bg-blue-600 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-60"
+            >
+              <span className="inline-flex items-center gap-2">
+                <Plus size={14} />
+                Add Leave
+              </span>
+            </button>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => fetchHistory(true)}
+                disabled={isSaving}
+                className="rounded-xl bg-gray-100 py-2 text-xs font-semibold text-gray-700"
+              >
+                <RefreshCcw size={14} className="mx-auto mb-0.5" />
+                Refresh
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={isSaving || pdfCooldownRemaining > 0}
+                className="rounded-xl bg-rose-500 py-2 text-xs font-semibold text-white"
+              >
+                <Download size={14} className="mx-auto mb-0.5" />
+                {pdfCooldownRemaining > 0 ? `${pdfCooldownRemaining}s` : "PDF"}
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleOpenHistoryInNewTab}
+              className="w-full rounded-xl bg-gray-100 py-2 text-xs font-semibold text-gray-700"
+            >
+              Open in Tab
+            </button>
+
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={handleDeleteSelectedEntries}
+                disabled={activeTab !== "history" || isDeletingEntries}
+                className="w-full rounded-xl bg-red-600 py-2 text-xs font-semibold text-white"
+              >
+                {isDeleteMode
+                  ? `Delete (${selectedHistoryIds.size})`
+                  : "Select to Delete"}
+              </button>
+
+              {isDeleteMode && (
+                <button
+                  type="button"
+                  onClick={handleCancelDeleteMode}
+                  className="mt-1 w-full rounded-xl bg-gray-200 py-2 text-xs font-semibold text-gray-700"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 sm:p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
           {activeTab === "history" ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setHistoryViewTab("leave-records")}
-                  className={`cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                  className={`cursor-pointer rounded-xl px-4 py-2 text-sm font-semibold transition ${
                     historyViewTab === "leave-records"
                       ? "bg-blue-600 text-white"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -663,7 +764,7 @@ export default function LeaveManagementModal({
                 <button
                   type="button"
                   onClick={() => setHistoryViewTab("monthly-credit")}
-                  className={`cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                  className={`cursor-pointer rounded-xl px-4 py-2 text-sm font-semibold transition ${
                     historyViewTab === "monthly-credit"
                       ? "bg-blue-600 text-white"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -712,6 +813,7 @@ export default function LeaveManagementModal({
         onConfirm={handleConfirmLeaveStatusChange}
         onClose={handleCloseLeaveStatusConfirm}
       />
+
       <DeleteEntryConfirmation
         isOpen={isDeleteConfirmOpen}
         onClose={() => setIsDeleteConfirmOpen(false)}

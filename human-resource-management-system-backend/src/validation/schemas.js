@@ -54,6 +54,11 @@ const employeeTypeSchema = Joi.string()
   .lowercase()
   .valid("teaching", "non-teaching", "teaching-related", "teaching related")
   .required();
+const optionalEmployeeTypeSchema = Joi.string()
+  .trim()
+  .lowercase()
+  .valid("teaching", "non-teaching", "teaching-related", "teaching related")
+  .allow(null, "");
 
 const requiredMiddleNameWhenApplicable = middleNameSchema.when(
   "no_middle_name",
@@ -99,6 +104,11 @@ const employeeCreateBodySchema = Joi.object({
   work_district: districtSchema,
   position: positionSchema,
   sg: salaryGradeSchema,
+  current_employee_type: optionalEmployeeTypeSchema,
+  current_position: positionSchema,
+  current_plantilla_no: plantillaNoSchema,
+  current_appointment_date: firstAppointmentDateSchema.allow(null, ""),
+  current_sg: salaryGradeSchema,
   position_id: Joi.number().integer().positive().allow(null, ""),
   plantilla_no: plantillaNoSchema,
   prc_license_no: prcLicenseNoSchema,
@@ -143,6 +153,11 @@ const employeeUpdateBodySchema = Joi.object({
   work_district: districtSchema,
   position: positionSchema,
   sg: salaryGradeSchema,
+  current_employee_type: optionalEmployeeTypeSchema,
+  current_position: positionSchema,
+  current_plantilla_no: plantillaNoSchema,
+  current_appointment_date: firstAppointmentDateSchema.allow(null, ""),
+  current_sg: salaryGradeSchema,
   position_id: Joi.number().integer().positive().allow(null, ""),
   plantilla_no: plantillaNoSchema,
   prc_license_no: prcLicenseNoSchema,
