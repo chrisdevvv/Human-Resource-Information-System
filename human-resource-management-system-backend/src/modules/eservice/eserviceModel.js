@@ -56,6 +56,12 @@ const EService = {
         ? filters.civilStatus.trim()
         : "";
     const sex = typeof filters.sex === "string" ? filters.sex.trim() : "";
+    const employeeType =
+      typeof filters.employeeType === "string"
+        ? filters.employeeType.trim()
+        : "";
+    const letter =
+      typeof filters.letter === "string" ? filters.letter.trim() : "";
     const sortOrder =
       String(filters.sortOrder || "DESC").toUpperCase() === "ASC"
         ? "ASC"
@@ -116,6 +122,16 @@ const EService = {
       params.push(sex);
     }
 
+    if (employeeType) {
+      whereParts.push("teacher_status = ?");
+      params.push(employeeType);
+    }
+
+    if (letter) {
+      whereParts.push("firstName LIKE ?");
+      params.push(`${letter}%`);
+    }
+
     const whereClause =
       whereParts.length > 0 ? `WHERE ${whereParts.join(" AND ")}` : "";
 
@@ -147,7 +163,7 @@ const EService = {
         teacher_status
       FROM emppersonalinfo
       ${whereClause}
-      ORDER BY id ${sortOrder}
+      ORDER BY firstName ${sortOrder}
       LIMIT ? OFFSET ?
       `,
       [...params, pageSize, offset],

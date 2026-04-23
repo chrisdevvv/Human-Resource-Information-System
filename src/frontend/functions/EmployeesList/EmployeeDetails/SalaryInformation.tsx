@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
-import { Check, FileText, Pencil, Plus, X } from "lucide-react";
+import { Check, FileText, Info, Pencil, Plus, X } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
@@ -807,12 +807,38 @@ export default function SalaryInformation({
             <InfoField
               label="Years in Service"
               value={formatYearsInService(salaryYearsInService)}
-            />
+            >
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={formatYearsInService(salaryYearsInService)}
+                  className={`${baseInputClass} bg-gray-50 cursor-not-allowed`}
+                  title="Auto-calculated from appointment date"
+                />
+                <span className="text-xs text-gray-500" title="Auto-calculated by backend">
+                  <Info size={14} className="text-blue-500" />
+                </span>
+              </div>
+            </InfoField>
 
             <InfoField
               label="Loyalty Bonus"
               value={formatLoyaltyBonus(salaryLoyaltyBonus)}
-            />
+            >
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={formatLoyaltyBonus(salaryLoyaltyBonus)}
+                  className={`${baseInputClass} bg-gray-50 cursor-not-allowed`}
+                  title="Auto-calculated from years in service"
+                />
+                <span className="text-xs text-gray-500" title="Auto-calculated by backend">
+                  <Info size={14} className="text-blue-500" />
+                </span>
+              </div>
+            </InfoField>
           </div>
 
           <div className="rounded-2xl border border-blue-100 bg-blue-50/40 p-3 sm:p-4">

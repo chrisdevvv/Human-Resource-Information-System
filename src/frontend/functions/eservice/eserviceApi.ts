@@ -91,6 +91,8 @@ export const getEServiceEmployees = async (params: {
   school?: string;
   civilStatus?: string;
   sex?: string;
+  employeeType?: string;
+  letter?: string;
   sortOrder?: "ASC" | "DESC";
   page?: number;
   pageSize?: number;
@@ -104,6 +106,8 @@ export const getEServiceEmployees = async (params: {
     query.set("civilStatus", params.civilStatus.trim());
   }
   if (params.sex?.trim()) query.set("sex", params.sex.trim());
+  if (params.employeeType?.trim()) query.set("employeeType", params.employeeType.trim());
+  if (params.letter?.trim()) query.set("letter", params.letter.trim());
   query.set("sortOrder", params.sortOrder || "DESC");
   query.set("page", String(params.page || 1));
   query.set("pageSize", String(params.pageSize || 10));

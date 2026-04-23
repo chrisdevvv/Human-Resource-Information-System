@@ -79,8 +79,10 @@ export default function AddEmployeePersonalInfoModal({
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [noMiddleName, setNoMiddleName] = useState(false);
+  const [initialFormState, setInitialFormState] = useState<EmployeePersonalInfoForm>(INITIAL_FORM);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -90,7 +92,7 @@ export default function AddEmployeePersonalInfoModal({
         initialData.district.toUpperCase() === "SDO" ||
         initialData.school.toUpperCase() === "SDO";
 
-      setForm({
+      const editForm = {
         firstName: initialData.firstName,
         lastName: initialData.lastName,
         middleName: initialData.middleName,
@@ -105,13 +107,16 @@ export default function AddEmployeePersonalInfoModal({
         civilStatus: initialData.civilStatus,
         teacher_status: initialData.teacherStatus || "Active",
         isSdoEmployee,
-      });
+      };
+      setForm(editForm);
+      setInitialFormState(editForm);
       setNoMiddleName(!initialData.middleName && !initialData.middleInitial);
       setErrors({});
       return;
     }
 
     setForm(INITIAL_FORM);
+    setInitialFormState(INITIAL_FORM);
     setNoMiddleName(false);
     setErrors({});
   }, [isOpen, mode, initialData]);
@@ -258,12 +263,13 @@ export default function AddEmployeePersonalInfoModal({
     if (mode === "add") {
       setShowConfirmation(true);
     } else {
-      await performSubmit();
+      setShowSaveConfirmation(true);
     }
   };
 
   const performSubmit = async () => {
     setShowConfirmation(false);
+    setShowSaveConfirmation(false);
     setSubmitting(true);
 
     try {
@@ -276,6 +282,16 @@ export default function AddEmployeePersonalInfoModal({
       setSubmitting(false);
     }
   };
+
+  const handleClearAll = () => {
+    setForm(initialFormState);
+    setErrors({});
+  };
+
+  const hasChanges = useMemo(() => {
+    if (mode !== "edit") return false;
+    return JSON.stringify(form) !== JSON.stringify(initialFormState);
+  }, [form, initialFormState, mode]);
 
   if (!isOpen) return null;
 
@@ -783,27 +799,41 @@ export default function AddEmployeePersonalInfoModal({
             </div>
           </div>
 
-          <div className="mt-5 flex flex-col-reverse gap-2 border-t border-gray-200 pt-4 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-50 sm:text-sm"
-            >
-              Cancel
-            </button>
+          <div className="mt-5 flex flex-col-reverse gap-2 border-t border-gray-200 pt-4 sm:flex-row sm:justify-between">
+            <div className="flex gap-2">
+              {mode === "edit" && hasChanges && (
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  className="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-50 sm:text-sm"
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="cursor-pointer inline-flex items-center justify-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-70 sm:text-sm"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              {submitting
-                ? "Saving..."
-                : mode === "edit"
-                  ? "Save Changes"
-                  : "Add New"}
-            </button>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={onClose}
+                className="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-50 sm:text-sm"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="cursor-pointer inline-flex items-center justify-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-70 sm:text-sm"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                {submitting
+                  ? "Saving..."
+                  : mode === "edit"
+                    ? "Save Changes"
+                    : "Add New"}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -820,10 +850,22 @@ export default function AddEmployeePersonalInfoModal({
         onCancel={() => setShowConfirmation(false)}
       />
 
+      <ConfirmationModal
+        visible={showSaveConfirmation}
+        title="Confirm Save Changes"
+        message={`Are you sure you want to save changes for ${employeeName}?`}
+        confirmLabel="Yes, Save"
+        cancelLabel="Cancel"
+        confirmClassName="bg-green-600 hover:bg-green-700 text-white"
+        loading={submitting}
+        onConfirm={performSubmit}
+        onCancel={() => setShowSaveConfirmation(false)}
+      />
+
       <ToastMessage
         isVisible={showToast}
         title="Success"
-        message="Employee added successfully!"
+        message={mode === "edit" ? "Employee updated successfully!" : "Employee added successfully!"}
         variant="success"
         position="bottom-right"
         onClose={() => setShowToast(false)}

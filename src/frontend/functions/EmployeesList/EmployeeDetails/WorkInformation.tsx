@@ -337,12 +337,16 @@ export default function WorkInformation({
               className="lg:col-span-1"
               errorMessage={getValidationError("SG")}
             >
-              <input
-                type="text"
-                value={String(workSg ?? "")}
-                onChange={(e) => setEditWorkSg(e.target.value)}
-                className={inputClass}
-              />
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  value={String(workSg ?? "")}
+                  onChange={(e) => setEditWorkSg(e.target.value)}
+                  className={inputClass}
+                  placeholder="Auto-synced"
+                  title="Syncs from latest salary information if empty"
+                />
+              </div>
             </InfoField>
           </div>
         </div>
@@ -455,12 +459,16 @@ export default function WorkInformation({
               className="lg:col-span-1"
               errorMessage={getValidationError("Current SG")}
             >
-              <input
-                type="text"
-                value={editCurrentSg}
-                onChange={(e) => setEditCurrentSg(e.target.value)}
-                className={inputClass}
-              />
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  value={editCurrentSg}
+                  onChange={(e) => setEditCurrentSg(e.target.value)}
+                  className={inputClass}
+                  placeholder="Auto-synced"
+                  title="Syncs from latest salary information if empty"
+                />
+              </div>
             </InfoField>
           </div>
         </div>

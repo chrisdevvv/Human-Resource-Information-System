@@ -12,6 +12,7 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import type { EmployeePersonalInfoRecord } from "../modals/AddEmployeePersonalInfoModal";
+import EPITSkeleton from "./EPITSkeleton";
 
 type Props = {
   loading: boolean;
@@ -24,6 +25,18 @@ type Props = {
   onDelete: (employee: EmployeePersonalInfoRecord) => void;
   onPageChange: (page: number) => void;
   onItemsPerPageChange: (value: number) => void;
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+  employeeTypeFilter: string;
+  onEmployeeTypeChange: (value: string) => void;
+  schoolFilter: string;
+  onSchoolChange: (value: string) => void;
+  letterFilter: string;
+  onLetterChange: (value: string) => void;
+  sortOrder: "asc" | "desc";
+  onSortOrderChange: () => void;
+  schools: Array<{ id: number | string; name: string }>;
+  onSearch: () => void;
 };
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
@@ -87,10 +100,22 @@ export default function EmployeePersonalInfoTable({
   onDelete,
   onPageChange,
   onItemsPerPageChange,
+  searchQuery,
+  onSearchChange,
+  employeeTypeFilter,
+  onEmployeeTypeChange,
+  schoolFilter,
+  onSchoolChange,
+  letterFilter,
+  onLetterChange,
+  sortOrder,
+  onSortOrderChange,
+  schools,
+  onSearch,
 }: Props) {
   const [mobileCardIndex, setMobileCardIndex] = React.useState(0);
   const [pageJumpInput, setPageJumpInput] = React.useState("1");
-  
+
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const startIndex = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const endIndex = Math.min(currentPage * itemsPerPage, totalItems);
@@ -102,10 +127,12 @@ export default function EmployeePersonalInfoTable({
     totalPages,
     pageGroupStart + PAGE_WINDOW_SIZE - 1,
   );
+
   const pageNumberItems: Array<number | "ellipsis"> = Array.from(
     { length: pageGroupEnd - pageGroupStart + 1 },
     (_, i) => pageGroupStart + i,
   );
+
   if (pageGroupEnd < totalPages) {
     if (totalPages - pageGroupEnd > 1) {
       pageNumberItems.push("ellipsis");
@@ -122,6 +149,17 @@ export default function EmployeePersonalInfoTable({
     setPageJumpInput(String(currentPage));
   }, [currentPage, totalPages, onPageChange]);
 
+  React.useEffect(() => {
+    if (!rows.length) {
+      setMobileCardIndex(0);
+      return;
+    }
+
+    if (mobileCardIndex > rows.length - 1) {
+      setMobileCardIndex(rows.length - 1);
+    }
+  }, [rows, mobileCardIndex]);
+
   const handleJumpToPage = () => {
     const parsed = Number.parseInt(pageJumpInput, 10);
     if (Number.isNaN(parsed)) {
@@ -136,6 +174,10 @@ export default function EmployeePersonalInfoTable({
 
   const hasData = !loading && !error && rows.length > 0;
 
+  if (loading) {
+    return <EPITSkeleton />;
+  }
+
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm sm:p-4">
       {/* Top Filters */}
@@ -144,11 +186,14 @@ export default function EmployeePersonalInfoTable({
           <input
             type="text"
             placeholder="Search employee"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
             className="w-full rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-700 placeholder:text-xs placeholder:text-gray-400 outline-none transition focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]/10"
           />
 
           <button
             type="button"
+            onClick={onSearch}
             className="cursor-pointer inline-flex h-7 items-center justify-center gap-1 rounded-lg bg-[#2563eb] px-3 text-xs font-medium text-white transition hover:bg-[#1d4ed8] sm:min-w-[90px]"
           >
             <Search className="h-3 w-3" />
@@ -157,16 +202,40 @@ export default function EmployeePersonalInfoTable({
         </div>
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-[170px_minmax(0,1fr)_140px_150px_92px]">
-          <select className="cursor-pointer h-7 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-700 outline-none transition focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]/10">
-            <option>All Employee Types</option>
+          <select
+            value={employeeTypeFilter}
+            onChange={(e) => onEmployeeTypeChange(e.target.value)}
+            className="cursor-pointer h-7 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-700 outline-none transition focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]/10"
+          >
+            <option value="">All Employee Types</option>
+            <option value="teaching">Teaching</option>
+            <option value="non-teaching">Non-Teaching</option>
           </select>
 
-          <select className="cursor-pointer h-7 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-700 outline-none transition focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]/10">
-            <option>All Schools</option>
+          <select
+            value={schoolFilter}
+            onChange={(e) => onSchoolChange(e.target.value)}
+            className="cursor-pointer h-7 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-700 outline-none transition focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]/10"
+          >
+            <option value="">All Schools</option>
+            {schools.map((school) => (
+              <option key={String(school.id)} value={school.name}>
+                {school.name}
+              </option>
+            ))}
           </select>
 
-          <select className="cursor-pointer h-7 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-700 outline-none transition focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]/10">
-            <option>All Letters</option>
+          <select
+            value={letterFilter}
+            onChange={(e) => onLetterChange(e.target.value)}
+            className="cursor-pointer h-7 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-700 outline-none transition focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]/10"
+          >
+            <option value="">All Letters</option>
+            {"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map((letter) => (
+              <option key={letter} value={letter}>
+                {letter}
+              </option>
+            ))}
           </select>
 
           <select className="cursor-pointer h-7 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-700 outline-none transition focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]/10">
@@ -175,19 +244,20 @@ export default function EmployeePersonalInfoTable({
 
           <button
             type="button"
+            onClick={onSortOrderChange}
             className="cursor-pointer inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-gray-300 bg-white px-2.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
           >
             <ArrowUpDown className="h-3 w-3" />
-            A-Z
+            {sortOrder === "asc" ? "A-Z" : "Z-A"}
           </button>
         </div>
       </div>
 
       {/* Desktop Table */}
       <div className="hidden overflow-hidden rounded-xl border border-gray-200 md:block">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-auto max-h-[calc(10*3.5rem)]">
           <table className="w-full min-w-[1750px]">
-            <thead className="bg-[#dbe8fb]">
+            <thead className="sticky top-0 z-10 bg-[#dbe8fb]">
               <tr>
                 {[
                   "ID",
@@ -216,16 +286,7 @@ export default function EmployeePersonalInfoTable({
             </thead>
 
             <tbody>
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan={14}
-                    className="px-4 py-10 text-center text-sm text-gray-500"
-                  >
-                    Loading employee records...
-                  </td>
-                </tr>
-              ) : error ? (
+              {error ? (
                 <tr>
                   <td
                     colSpan={14}
@@ -288,7 +349,7 @@ export default function EmployeePersonalInfoTable({
                     <td className="whitespace-nowrap px-3 py-2.5 align-top">
                       <span
                         className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${getStatusClasses(
-                          employee.teacherStatus
+                          employee.teacherStatus,
                         )}`}
                       >
                         {employee.teacherStatus || "—"}
@@ -327,11 +388,7 @@ export default function EmployeePersonalInfoTable({
 
       {/* Mobile Card View */}
       <div className="md:hidden">
-        {loading ? (
-          <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500 shadow-sm">
-            Loading employee records...
-          </div>
-        ) : error ? (
+        {error ? (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-8 text-center text-sm text-red-500 shadow-sm">
             {error}
           </div>
@@ -360,7 +417,7 @@ export default function EmployeePersonalInfoTable({
 
                       <span
                         className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium ${getStatusClasses(
-                          employee.teacherStatus
+                          employee.teacherStatus,
                         )}`}
                       >
                         {employee.teacherStatus || "—"}
@@ -405,7 +462,10 @@ export default function EmployeePersonalInfoTable({
                         label="Date of Birth"
                         value={formatDateForDisplay(employee.dateOfBirth)}
                       />
-                      <MobileField label="Place of Birth" value={employee.place || "—"} />
+                      <MobileField
+                        label="Place of Birth"
+                        value={employee.place || "—"}
+                      />
                     </div>
                   </div>
 
@@ -438,21 +498,21 @@ export default function EmployeePersonalInfoTable({
                 <button
                   type="button"
                   onClick={() => setMobileCardIndex(0)}
-                  disabled={mobileCardIndex === rows.length - 1}
-                  className="cursor-pointer inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-gray-200 bg-white px-3 text-xs font-medium text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Jump to Start
-                  <ChevronsLeft className="h-3.5 w-3.5" />
-                </button>
-
-                              <button
-                  type="button"
-                  onClick={() => setMobileCardIndex(rows.length - 1)}
                   disabled={mobileCardIndex === 0}
                   className="cursor-pointer inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-gray-200 bg-white px-3 text-xs font-medium text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <ChevronsRight  className="h-3.5 w-3.5" />
+                  <ChevronsLeft className="h-3.5 w-3.5" />
+                  Jump to Start
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMobileCardIndex(rows.length - 1)}
+                  disabled={mobileCardIndex === rows.length - 1}
+                  className="cursor-pointer inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-gray-200 bg-white px-3 text-xs font-medium text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
                   Jump to Last
+                  <ChevronsRight className="h-3.5 w-3.5" />
                 </button>
               </div>
 
@@ -473,7 +533,9 @@ export default function EmployeePersonalInfoTable({
 
                 <button
                   type="button"
-                  onClick={() => setMobileCardIndex(Math.min(rows.length - 1, mobileCardIndex + 1))}
+                  onClick={() =>
+                    setMobileCardIndex(Math.min(rows.length - 1, mobileCardIndex + 1))
+                  }
                   disabled={mobileCardIndex === rows.length - 1}
                   className="cursor-pointer inline-flex h-9 flex-1 items-center justify-center gap-1 rounded-lg border border-gray-200 bg-white px-3 text-xs font-medium text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -516,38 +578,36 @@ export default function EmployeePersonalInfoTable({
               Previous
             </button>
 
-            {pageNumberItems.map(
-              (item: number | "ellipsis", index: number) => {
-                if (item === "ellipsis") {
-                  return (
-                    <span
-                      key={`ellipsis-${index}`}
-                      className="px-2 text-xs text-gray-400 select-none"
-                    >
-                      ...
-                    </span>
-                  );
-                }
-
-                const isActive = item === currentPage;
-
+            {pageNumberItems.map((item, index) => {
+              if (item === "ellipsis") {
                 return (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => onPageChange(item)}
-                    disabled={!hasData}
-                    className={`cursor-pointer inline-flex h-6 min-w-[24px] items-center justify-center rounded-md px-1.5 text-xs font-medium transition ${
-                      isActive
-                        ? "bg-[#2563eb] text-white"
-                        : "text-gray-600 hover:bg-gray-100"
-                    } disabled:cursor-not-allowed disabled:opacity-50`}
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="select-none px-2 text-xs text-gray-400"
                   >
-                    {item}
-                  </button>
+                    ...
+                  </span>
                 );
-              },
-            )}
+              }
+
+              const isActive = item === currentPage;
+
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => onPageChange(item)}
+                  disabled={!hasData}
+                  className={`cursor-pointer inline-flex h-6 min-w-[24px] items-center justify-center rounded-md px-1.5 text-xs font-medium transition ${
+                    isActive
+                      ? "bg-[#2563eb] text-white"
+                      : "text-gray-600 hover:bg-gray-100"
+                  } disabled:cursor-not-allowed disabled:opacity-50`}
+                >
+                  {item}
+                </button>
+              );
+            })}
 
             <button
               type="button"

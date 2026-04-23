@@ -6,6 +6,8 @@ import AddEmployeePersonalInfoModal, {
   type EmployeePersonalInfoRecord,
 } from "./modals/AddEmployeePersonalInfoModal";
 import EmployeePersonalInfoTable from "./components/EmployeePersonalInfoTable";
+import ConfirmationModal from "@/frontend/super-admin/components/ConfirmationModal";
+import ToastMessage from "@/frontend/components/ToastMessage";
 import {
   createEServiceEmployee,
   deleteEServiceEmployee,
@@ -69,6 +71,11 @@ export default function EServicePersonalInfo() {
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
   const [selectedEmployee, setSelectedEmployee] =
     useState<EmployeePersonalInfoRecord | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [employeeToDelete, setEmployeeToDelete] =
+    useState<EmployeePersonalInfoRecord | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteToast, setShowDeleteToast] = useState(false);
 
   const [employees, setEmployees] = useState<EmployeePersonalInfoRecord[]>([]);
   const [districts, setDistricts] = useState<DistrictOption[]>([]);
@@ -79,6 +86,9 @@ export default function EServicePersonalInfo() {
   const [schoolFilter, setSchoolFilter] = useState("");
   const [civilStatusFilter, setCivilStatusFilter] = useState("");
   const [sexFilter, setSexFilter] = useState("");
+  const [employeeTypeFilter, setEmployeeTypeFilter] = useState("");
+  const [letterFilter, setLetterFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
@@ -98,7 +108,9 @@ export default function EServicePersonalInfo() {
         school: schoolFilter,
         civilStatus: civilStatusFilter,
         sex: sexFilter,
-        sortOrder: "DESC",
+        employeeType: employeeTypeFilter,
+        letter: letterFilter,
+        sortOrder: sortOrder.toUpperCase() as "ASC" | "DESC",
         page: currentPage,
         pageSize: itemsPerPage,
       });
@@ -152,6 +164,9 @@ export default function EServicePersonalInfo() {
     schoolFilter,
     civilStatusFilter,
     sexFilter,
+    employeeTypeFilter,
+    letterFilter,
+    sortOrder,
     currentPage,
     itemsPerPage,
   ]);
@@ -189,17 +204,26 @@ export default function EServicePersonalInfo() {
   };
 
   const handleDelete = async (employee: EmployeePersonalInfoRecord) => {
-    const confirmed = window.confirm(
-      `Delete ${employee.fullName || employee.id}?`,
-    );
+    setEmployeeToDelete(employee);
+    setShowDeleteConfirmation(true);
+  };
 
-    if (!confirmed) return;
+  const performDelete = async () => {
+    if (!employeeToDelete) return;
 
+    setDeleting(true);
     try {
-      await deleteEServiceEmployee(employee.id);
+      await deleteEServiceEmployee(employeeToDelete.id);
       await loadEmployees(false);
+      setShowDeleteConfirmation(false);
+      setEmployeeToDelete(null);
+      setTimeout(() => {
+        setShowDeleteToast(true);
+      }, 100);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete record.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -221,6 +245,9 @@ export default function EServicePersonalInfo() {
     setSchoolFilter("");
     setCivilStatusFilter("");
     setSexFilter("");
+    setEmployeeTypeFilter("");
+    setLetterFilter("");
+    setSortOrder("asc");
     setCurrentPage(1);
   };
 
@@ -229,7 +256,10 @@ export default function EServicePersonalInfo() {
     districtFilter !== "" ||
     schoolFilter !== "" ||
     civilStatusFilter !== "" ||
-    sexFilter !== "";
+    sexFilter !== "" ||
+    employeeTypeFilter !== "" ||
+    letterFilter !== "" ||
+    sortOrder !== "asc";
 
   return (
     <div className="w-full rounded-2xl bg-[#f4f6fb] p-2 sm:p-4">
@@ -567,6 +597,30 @@ export default function EServicePersonalInfo() {
               setItemsPerPage(value);
               setCurrentPage(1);
             }}
+            searchQuery={searchQuery}
+            onSearchChange={(value) => {
+              setSearchQuery(value);
+              setCurrentPage(1);
+            }}
+            employeeTypeFilter={employeeTypeFilter}
+            onEmployeeTypeChange={(value) => {
+              setEmployeeTypeFilter(value);
+              setCurrentPage(1);
+            }}
+            schoolFilter={schoolFilter}
+            onSchoolChange={(value) => {
+              setSchoolFilter(value);
+              setCurrentPage(1);
+            }}
+            letterFilter={letterFilter}
+            onLetterChange={(value) => {
+              setLetterFilter(value);
+              setCurrentPage(1);
+            }}
+            sortOrder={sortOrder}
+            onSortOrderChange={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+            schools={filteredSchoolOptions}
+            onSearch={() => loadEmployees()}
           />
         </div>
       </div>
@@ -582,6 +636,31 @@ export default function EServicePersonalInfo() {
           setSelectedEmployee(null);
         }}
         onSubmit={handleSubmit}
+      />
+
+      <ConfirmationModal
+        visible={showDeleteConfirmation}
+        title="Confirm Delete"
+        message={`Are you sure you want to delete ${employeeToDelete?.fullName || `employee #${employeeToDelete?.id}`}? This action cannot be undone.`}
+        confirmLabel="Yes, Delete"
+        cancelLabel="Cancel"
+        confirmClassName="bg-red-600 hover:bg-red-700 text-white"
+        loading={deleting}
+        onConfirm={performDelete}
+        onCancel={() => {
+          setShowDeleteConfirmation(false);
+          setEmployeeToDelete(null);
+        }}
+      />
+
+      <ToastMessage
+        isVisible={showDeleteToast}
+        title="Success"
+        message="Employee deleted successfully!"
+        variant="success"
+        position="bottom-right"
+        onClose={() => setShowDeleteToast(false)}
+        autoCloseDuration={2000}
       />
     </div>
   );
