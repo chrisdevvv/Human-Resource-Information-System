@@ -143,7 +143,7 @@ export default function LeaveHistoryTable({
               rows.map((row, i) => (
                 <tr
                   key={row.id}
-                  className={`border-b ${i % 2 ? "bg-sky-50" : "bg-white"}`}
+                  className={`${i % 2 ? "bg-sky-50" : "bg-white"}`}
                 >
                   {selectable && (
                     <td className="px-2 py-2 text-center">
@@ -151,7 +151,7 @@ export default function LeaveHistoryTable({
                         type="checkbox"
                         checked={Boolean(selectedIds?.has(row.id))}
                         onChange={() => onToggleRow?.(row.id)}
-                        className="h-4 w-4 cursor-pointer rounded border-gray-300"
+                        className="h-4 w-4 cursor-pointer rounded border-gray-100"
                       />
                     </td>
                   )}
