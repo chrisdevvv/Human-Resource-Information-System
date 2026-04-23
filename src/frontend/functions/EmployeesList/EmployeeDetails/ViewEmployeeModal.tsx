@@ -133,6 +133,11 @@ type EmployeeDetailsResponse = {
   sex?: string | null;
   sex_id?: number | null;
   employee_type?: "teaching" | "non-teaching" | "teaching-related";
+  resolved_employee_type?: "teaching" | "non-teaching" | "teaching-related";
+  resolved_position?: string | null;
+  resolved_plantilla_no?: string | null;
+  resolved_appointment_date?: string | null;
+  resolved_sg?: string | null;
   school_id?: number | null;
   school_name?: string | null;
   employee_no?: string | null;
@@ -759,7 +764,10 @@ export default function ViewEmployeeModal({
   const resolvedDetails = details || fallbackDetails;
   const resolvedSalaryDate = isEditing
     ? editDateOfFirstAppointment
-    : resolvedDetails?.date_of_first_appointment || null;
+    : (resolvedDetails?.resolved_appointment_date || 
+       resolvedDetails?.current_appointment_date || 
+       resolvedDetails?.date_of_first_appointment || 
+       null);
   const computedSalaryMetrics = computeServiceMetrics(resolvedSalaryDate);
   const resolvedYearsInService = isEditing
     ? computedSalaryMetrics.yearsInService
@@ -793,7 +801,11 @@ export default function ViewEmployeeModal({
     );
   }, [salaryHistoryRows]);
   const resolvedWorkSg =
-    latestSalaryHistoryRow?.sg ?? resolvedDetails?.sg ?? null;
+    latestSalaryHistoryRow?.sg ?? 
+    resolvedDetails?.resolved_sg ?? 
+    resolvedDetails?.current_sg ?? 
+    resolvedDetails?.sg ?? 
+    null;
   const canManageSalaryHistory = isEditing && canEdit;
   const hasPendingSalaryHistoryDraft =
     Boolean(salaryHistoryCreateDraft) || Boolean(salaryHistoryEditDraft);
@@ -1117,6 +1129,19 @@ export default function ViewEmployeeModal({
     (resolvedDetails?.archived_by
       ? `User #${resolvedDetails.archived_by}`
       : "N/A");
+
+  const displayEmployeeType: "teaching" | "non-teaching" | "teaching-related" = (() => {
+    const type = 
+      resolvedDetails?.resolved_employee_type || 
+      resolvedDetails?.current_employee_type || 
+      resolvedDetails?.employee_type || 
+      employee.employeeType;
+    
+    if (type === "teaching" || type === "non-teaching" || type === "teaching-related") {
+      return type;
+    }
+    return "non-teaching";
+  })();
 
   const getValidationError = (field: string): string | null =>
     errors.find((error) => error.field === field)?.message ?? null;
@@ -2170,8 +2195,8 @@ export default function ViewEmployeeModal({
               InfoField={InfoField}
               isEditing={isEditing}
               fullName={fullName}
-              employeeType={employee.employeeType}
-              resolvedEmployeeType={resolvedDetails?.employee_type}
+              employeeType={displayEmployeeType}
+              resolvedEmployeeType={displayEmployeeType}
               editLastName={editLastName}
               setEditLastName={setEditLastName}
               editFirstName={editFirstName}

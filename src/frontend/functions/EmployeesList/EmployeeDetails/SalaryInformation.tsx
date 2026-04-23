@@ -366,7 +366,7 @@ export default function SalaryInformation({
     isOpen: false,
     row: null,
     stationNo: "",
-    headOfAgencyName: "ARTHUR B. FRANCISCO, ITO I",
+    headOfAgencyName: "JUAN B. DELA CRUZ",
     headOfAgencyTitle: "Head of Agency",
   });
 
@@ -1131,7 +1131,7 @@ export default function SalaryInformation({
                                       type="button"
                                       onClick={() => openNoticeModal(row)}
                                       disabled={Boolean(salaryHistoryCreateDraft)}
-                                      className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                      className="cursor-pointer inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
                                       title="Generate NOSI PDF"
                                     >
                                       <FileText size={13} />
@@ -1388,7 +1388,7 @@ export default function SalaryInformation({
 
                   <div>
                     <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-600">
-                      Head of Agency Title
+                      Title of Personnel
                     </label>
                     <input
                       type="text"
@@ -1432,6 +1432,7 @@ export default function SalaryInformation({
                         display: "flex",
                         flexDirection: "column",
                         justifyContent: "space-between",
+                        lineHeight: 1,
                       }}
                     >
                       <div>
@@ -1463,19 +1464,18 @@ export default function SalaryInformation({
                           >
                             {resolvedEmployeeName || "-"}
                           </p>
-                          <p style={{ margin: "2mm 0 0 0" }}>
+                          <p style={{ margin: 0 }}>
                             {resolvedSchoolDisplay || "-"}
                           </p>
-                          <p style={{ margin: "2mm 0 0 0" }}>
+                          <p style={{ margin: 0 }}>
                             Employee Number {resolvedEmployeeNumber || "-"}
                           </p>
-                          <p style={{ margin: "2mm 0 0 0" }}>
+                          <p style={{ margin: 0 }}>
                             {resolvedDistrictDisplay || "-"}
                           </p>
-
                           <div
                             style={{
-                              marginTop: "2mm",
+                              marginTop: 0,
                               display: "flex",
                               alignItems: "center",
                               gap: "2mm",
@@ -1506,7 +1506,6 @@ export default function SalaryInformation({
                           style={{
                             marginTop: "10mm",
                             textAlign: "justify",
-                            lineHeight: 1.4,
                           }}
                         >
                           <p style={{ margin: 0 }}>
@@ -1523,8 +1522,7 @@ export default function SalaryInformation({
                             follows:
                           </p>
                         </div>
-
-                        <div style={{ marginTop: "10mm", lineHeight: 1.35 }}>
+                        <div style={{ marginTop: "10mm" }}>
                           <div
                             style={{
                               display: "grid",
@@ -1537,7 +1535,7 @@ export default function SalaryInformation({
                               <p style={{ margin: 0 }}>
                                 1. Actual Monthly basic salary as of
                               </p>
-                              <p style={{ margin: "2mm 0 0 12mm" }}>
+                              <p style={{ margin: 0, paddingLeft: "12mm" }}>
                                 SG-{formatCellValue(resolvedCurrentSalaryGrade)} Step{" "}
                                 {previousStepValue}
                               </p>
@@ -1549,14 +1547,13 @@ export default function SalaryInformation({
                               P {formatNoticeCurrency(previousSalary)}
                             </div>
                           </div>
-
                           <div
                             style={{
                               display: "grid",
                               gridTemplateColumns: "1fr auto",
                               columnGap: "6mm",
                               alignItems: "start",
-                              marginTop: "4mm",
+                              marginTop: 0,
                             }}
                           >
                             <div>
@@ -1568,14 +1565,13 @@ export default function SalaryInformation({
                               P {formatNoticeCurrency(incrementAmount)}
                             </div>
                           </div>
-
                           <div
                             style={{
                               display: "grid",
                               gridTemplateColumns: "1fr auto auto",
                               columnGap: "6mm",
                               alignItems: "start",
-                              marginTop: "4mm",
+                              marginTop: 0,
                             }}
                           >
                             <div>
@@ -1596,7 +1592,6 @@ export default function SalaryInformation({
                           style={{
                             marginTop: "10mm",
                             textAlign: "justify",
-                            lineHeight: 1.4,
                           }}
                         >
                           <p style={{ margin: 0 }}>
@@ -1621,41 +1616,40 @@ export default function SalaryInformation({
                               overflow: "visible",
                             }}
                           >
-                            <p style={{ margin: 0, textAlign: "left" }}>
+                            <p style={{ margin: 0, textAlign: "right" }}>
                               Very truly yours,
                             </p>
-
-                            <div style={{ height: "14mm" }} />
-
-                            <p
-                              style={{
-                                margin: 0,
-                                fontFamily: DOCUMENT_FONT,
-                                fontSize: "12pt",
-                                lineHeight: 1.2,
-                                fontWeight: 700,
-                                textTransform: "uppercase",
-                                wordBreak: "break-word",
-                                overflowWrap: "anywhere",
-                                whiteSpace: "normal",
-                              }}
-                            >
-                              {noticeModal.headOfAgencyName || "-"}
-                            </p>
-
-                            <p
-                              style={{
-                                margin: "2mm 0 0 0",
-                                fontFamily: DOCUMENT_FONT,
-                                fontSize: "12pt",
-                                lineHeight: 1.2,
-                                wordBreak: "break-word",
-                                overflowWrap: "anywhere",
-                                whiteSpace: "normal",
-                              }}
-                            >
-                              {noticeModal.headOfAgencyTitle || "-"}
-                            </p>
+                            <div style={{ height: "25mm" }} />
+                            <div style={{ marginLeft: "auto", width: "fit-content" }}>
+                              <p
+                                style={{
+                                  margin: 0,
+                                  fontFamily: DOCUMENT_FONT,
+                                  fontSize: "12pt",
+                                  fontWeight: 700,
+                                  textTransform: "uppercase",
+                                  wordBreak: "break-word",
+                                  overflowWrap: "anywhere",
+                                  whiteSpace: "normal",
+                                  textAlign: "center",
+                                }}
+                              >
+                                {noticeModal.headOfAgencyName || "-"}
+                              </p>
+                              <p
+                                style={{
+                                  margin: 0,
+                                  fontFamily: DOCUMENT_FONT,
+                                  fontSize: "12pt",
+                                  wordBreak: "break-word",
+                                  overflowWrap: "anywhere",
+                                  whiteSpace: "normal",
+                                  textAlign: "center",
+                                }}
+                              >
+                                {noticeModal.headOfAgencyTitle || "-"}
+                              </p>
+                            </div>
                           </div>
                         </div>
 
@@ -1669,7 +1663,7 @@ export default function SalaryInformation({
                               : ""}
                             {" "}Personal Services Itemization
                           </p>
-                          <p style={{ margin: "2mm 0 0 0" }}>
+                          <p style={{ margin: 0 }}>
                             And/or Plantilla of Personnel{" "}
                             {resolvedCurrentPlantilla ||
                               formatCellValue(activeNoticeRow.plantilla)}
@@ -1687,7 +1681,7 @@ export default function SalaryInformation({
                 type="button"
                 onClick={closeNoticeModal}
                 disabled={isDownloadingPdf}
-                className="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+                className="cursor-pointer inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -1696,7 +1690,7 @@ export default function SalaryInformation({
                 type="button"
                 onClick={handleDownloadPdf}
                 disabled={isDownloadingPdf}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <FileText size={16} />
                 {isDownloadingPdf ? "Generating PDF..." : "Download PDF"}

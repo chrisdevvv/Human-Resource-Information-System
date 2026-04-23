@@ -31,6 +31,7 @@ type EmployeeRecordApi = {
   school_name?: string | null;
   school_id?: number | null;
   employee_type?: "teaching" | "non-teaching" | "teaching-related";
+  resolved_employee_type?: "teaching" | "non-teaching" | "teaching-related";
   birthdate?: string | null;
 };
 
@@ -150,7 +151,7 @@ const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
     middleName,
     lastName,
     fullName,
-    employeeType: item.employee_type || "non-teaching",
+    employeeType: item.resolved_employee_type || item.employee_type || "non-teaching",
     email: item.email?.trim() || "",
     schoolId:
       typeof item.school_id === "number" ? item.school_id || null : null,
