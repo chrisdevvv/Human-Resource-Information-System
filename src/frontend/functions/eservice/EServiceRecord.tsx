@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Filter, RotateCcw } from "lucide-react";
 import AddEmployeePersonalInfoModal, {
   type EmployeePersonalInfoRecord,
 } from "./modals/AddEmployeePersonalInfoModal";
@@ -232,156 +232,326 @@ export default function EServicePersonalInfo() {
     sexFilter !== "";
 
   return (
-    <div className="w-full rounded-xl bg-[#f4f4f4] p-2 sm:p-4">
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-        <div className="bg-[#0d3df2] px-4 py-5 text-white sm:px-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold uppercase leading-tight">
-                Department of Education
-              </h1>
-              <p className="text-sm uppercase tracking-wide text-blue-100">
-                Region III · Division of City of San Jose Del Monte
-              </p>
-            </div>
+    <div className="w-full rounded-2xl bg-[#f4f6fb] p-2 sm:p-4">
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div className="bg-gradient-to-r from-[#0d3df2] via-[#1749f5] to-[#2a5cff] px-4 py-5 text-white sm:px-6">
+          <div className="flex flex-col gap-3">
+            <h1 className="text-xl font-bold uppercase leading-tight sm:text-2xl">
+              Department of Education
+            </h1>
+            <p className="text-xs uppercase tracking-[0.18em] text-blue-100 sm:text-sm">
+              Region III · Division of City of San Jose Del Monte
+            </p>
           </div>
         </div>
 
         <div className="p-4 sm:p-6">
-          <div className="mb-4 flex items-center justify-end">
+          {/* Desktop / Tablet Header */}
+          <div className="mb-4 hidden items-center justify-between gap-4 md:flex">
             <button
               type="button"
               onClick={handleOpenAdd}
-              className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700"
+              className="cursor-pointer inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-green-700 sm:text-sm"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               Add New
             </button>
           </div>
 
-          <div className="mb-5 grid grid-cols-1 gap-4 xl:grid-cols-12">
-            <div className="xl:col-span-3">
-              <label className="mb-1 block text-xs font-bold uppercase text-gray-700">
-                District
-              </label>
-              <select
-                value={districtFilter}
-                onChange={(e) => {
-                  setDistrictFilter(e.target.value);
-                  setSchoolFilter("");
-                  setCurrentPage(1);
-                }}
-                disabled={lookupLoading}
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              >
-                <option value="">Select district</option>
-                {districts
-                  .filter((district) => district.status !== 0)
-                  .map((district) => (
-                    <option
-                      key={district.districtId}
-                      value={district.districtName}
-                    >
-                      {district.districtName}
-                    </option>
-                  ))}
-              </select>
-            </div>
+          {/* Mobile Header */}
+          <div className="mb-4 md:hidden">
+            <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-3 shadow-sm">
+              <div className="flex flex-col gap-2.5">
+                <div>
+                  <h2 className="text-sm font-semibold text-gray-900">
+                    Employee Personal Information
+                  </h2>
+                  <p className="mt-1 text-[11px] text-gray-500">
+                    Manage employee records and filters.
+                  </p>
+                </div>
 
-            <div className="xl:col-span-3">
-              <label className="mb-1 block text-xs font-bold uppercase text-gray-700">
-                Schools
-              </label>
-              <select
-                value={schoolFilter}
-                onChange={(e) => {
-                  setSchoolFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-                disabled={lookupLoading}
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              >
-                <option value="">Select school</option>
-                {filteredSchoolOptions.map((school) => (
-                  <option key={String(school.id)} value={school.name}>
-                    {school.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="xl:col-span-2">
-              <label className="mb-1 block text-xs font-bold uppercase text-gray-700">
-                Civil Status
-              </label>
-              <select
-                value={civilStatusFilter}
-                onChange={(e) => {
-                  setCivilStatusFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              >
-                <option value="">Select civil status</option>
-                {CIVIL_STATUS_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="xl:col-span-2">
-              <label className="mb-1 block text-xs font-bold uppercase text-gray-700">
-                Sex
-              </label>
-              <select
-                value={sexFilter}
-                onChange={(e) => {
-                  setSexFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              >
-                <option value="">Select sex</option>
-                {SEX_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="xl:col-span-2">
-              <label className="mb-1 block text-xs font-bold uppercase text-gray-700">
-                Search
-              </label>
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <input
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  placeholder="Search..."
-                  className="w-full rounded-lg border border-gray-300 pl-10 pr-4 py-3 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                />
+                <button
+                  type="button"
+                  onClick={handleOpenAdd}
+                  className="cursor-pointer inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-700"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add New
+                </button>
               </div>
             </div>
           </div>
 
-          {hasActiveFilters ? (
-            <div className="mb-4">
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="text-sm text-gray-500 underline transition hover:text-gray-700"
-              >
-                Clear filters
-              </button>
+          {/* Desktop / Tablet Filters */}
+          <div className="mb-4 hidden md:block">
+            <div className="rounded-2xl border border-gray-200 bg-[#fafbff] p-3 shadow-sm">
+              <div className="mb-3 flex items-center gap-1.5">
+                <Filter className="h-3.5 w-3.5 text-[#2563eb]" />
+                <h3 className="text-xs font-semibold text-gray-900">Filters</h3>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-5">
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-700">
+                    District
+                  </label>
+                  <select
+                    value={districtFilter}
+                    onChange={(e) => {
+                      setDistrictFilter(e.target.value);
+                      setSchoolFilter("");
+                      setCurrentPage(1);
+                    }}
+                    disabled={lookupLoading}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  >
+                    <option value="">Select district</option>
+                    {districts
+                      .filter((district) => district.status !== 0)
+                      .map((district) => (
+                        <option
+                          key={district.districtId}
+                          value={district.districtName}
+                        >
+                          {district.districtName}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-700">
+                    Schools
+                  </label>
+                  <select
+                    value={schoolFilter}
+                    onChange={(e) => {
+                      setSchoolFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    disabled={lookupLoading}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  >
+                    <option value="">Select school</option>
+                    {filteredSchoolOptions.map((school) => (
+                      <option key={String(school.id)} value={school.name}>
+                        {school.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-700">
+                    Civil Status
+                  </label>
+                  <select
+                    value={civilStatusFilter}
+                    onChange={(e) => {
+                      setCivilStatusFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  >
+                    <option value="">Select civil status</option>
+                    {CIVIL_STATUS_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-700">
+                    Sex
+                  </label>
+                  <select
+                    value={sexFilter}
+                    onChange={(e) => {
+                      setSexFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  >
+                    <option value="">Select sex</option>
+                    {SEX_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-700">
+                    Search
+                  </label>
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-400" />
+                    <input
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      placeholder="Search..."
+                      className="w-full rounded-lg border border-gray-300 py-1.5 pl-8 pr-2.5 text-xs text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {hasActiveFilters ? (
+                <div className="mt-3 flex justify-start">
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="cursor-pointer inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50 hover:text-gray-800"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Clear Filters
+                  </button>
+                </div>
+              ) : null}
             </div>
-          ) : null}
+          </div>
+
+          {/* Mobile Filters Separate View */}
+          <div className="mb-4 md:hidden">
+            <div className="rounded-2xl border border-gray-200 bg-[#fafbff] p-3 shadow-sm">
+              <div className="mb-3 flex items-center gap-1.5">
+                <Filter className="h-3.5 w-3.5 text-[#2563eb]" />
+                <h3 className="text-xs font-semibold text-gray-900">Filters</h3>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-700">
+                    Search
+                  </label>
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-400" />
+                    <input
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      placeholder="Search..."
+                      className="w-full rounded-lg border border-gray-300 py-1.5 pl-8 pr-2.5 text-xs text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-700">
+                    District
+                  </label>
+                  <select
+                    value={districtFilter}
+                    onChange={(e) => {
+                      setDistrictFilter(e.target.value);
+                      setSchoolFilter("");
+                      setCurrentPage(1);
+                    }}
+                    disabled={lookupLoading}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  >
+                    <option value="">Select district</option>
+                    {districts
+                      .filter((district) => district.status !== 0)
+                      .map((district) => (
+                        <option
+                          key={district.districtId}
+                          value={district.districtName}
+                        >
+                          {district.districtName}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-700">
+                    Schools
+                  </label>
+                  <select
+                    value={schoolFilter}
+                    onChange={(e) => {
+                      setSchoolFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    disabled={lookupLoading}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  >
+                    <option value="">Select school</option>
+                    {filteredSchoolOptions.map((school) => (
+                      <option key={String(school.id)} value={school.name}>
+                        {school.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-700">
+                    Civil Status
+                  </label>
+                  <select
+                    value={civilStatusFilter}
+                    onChange={(e) => {
+                      setCivilStatusFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  >
+                    <option value="">Select civil status</option>
+                    {CIVIL_STATUS_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-700">
+                    Sex
+                  </label>
+                  <select
+                    value={sexFilter}
+                    onChange={(e) => {
+                      setSexFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  >
+                    <option value="">Select sex</option>
+                    {SEX_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {hasActiveFilters ? (
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="cursor-pointer inline-flex w-full items-center justify-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50 hover:text-gray-800"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Clear Filters
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </div>
 
           <EmployeePersonalInfoTable
             loading={loading}
