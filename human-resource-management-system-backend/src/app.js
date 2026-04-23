@@ -1040,40 +1040,70 @@ const syncEmployeeSgFromSalaryInformation = async () => {
 const syncEmployeeServiceMetrics = async () => {
   await pool.promise().query(`
     UPDATE work_information
-    SET date_of_first_appointment = NULL
-    WHERE date_of_first_appointment IS NULL;
-  `);
+    SET
+      years_in_service = CASE
+        WHEN 
+          CASE
+            WHEN current_appointment_date IS NOT NULL THEN current_appointment_date
+            ELSE date_of_first_appointment
+          END IS NULL
+        THEN NULL
 
-  await pool.promise().query(`
-    UPDATE work_information
-    SET years_in_service = CASE
-          WHEN COALESCE(current_appointment_date, date_of_first_appointment) IS NULL THEN NULL
-          WHEN COALESCE(current_appointment_date, date_of_first_appointment) > CURDATE() THEN 0
-          ELSE TIMESTAMPDIFF(
-            YEAR,
-            COALESCE(current_appointment_date, date_of_first_appointment),
-            CURDATE()
-          )
-        END,
-        loyalty_bonus = CASE
-          WHEN COALESCE(current_appointment_date, date_of_first_appointment) IS NULL THEN 'No'
-          WHEN COALESCE(current_appointment_date, date_of_first_appointment) > CURDATE() THEN 'No'
-          WHEN TIMESTAMPDIFF(
+        WHEN 
+          CASE
+            WHEN current_appointment_date IS NOT NULL THEN current_appointment_date
+            ELSE date_of_first_appointment
+          END > CURDATE()
+        THEN 0
+
+        ELSE TIMESTAMPDIFF(
+          YEAR,
+          CASE
+            WHEN current_appointment_date IS NOT NULL THEN current_appointment_date
+            ELSE date_of_first_appointment
+          END,
+          CURDATE()
+        )
+      END,
+
+      loyalty_bonus = CASE
+        WHEN 
+          CASE
+            WHEN current_appointment_date IS NOT NULL THEN current_appointment_date
+            ELSE date_of_first_appointment
+          END IS NULL
+        THEN 'No'
+
+        WHEN 
+          CASE
+            WHEN current_appointment_date IS NOT NULL THEN current_appointment_date
+            ELSE date_of_first_appointment
+          END > CURDATE()
+        THEN 'No'
+
+        WHEN TIMESTAMPDIFF(
+               YEAR,
+               CASE
+                 WHEN current_appointment_date IS NOT NULL THEN current_appointment_date
+                 ELSE date_of_first_appointment
+               END,
+               CURDATE()
+             ) > 0
+             AND MOD(
+               TIMESTAMPDIFF(
                  YEAR,
-                 COALESCE(current_appointment_date, date_of_first_appointment),
+                 CASE
+                   WHEN current_appointment_date IS NOT NULL THEN current_appointment_date
+                   ELSE date_of_first_appointment
+                 END,
                  CURDATE()
-               ) > 0
-               AND MOD(
-                 TIMESTAMPDIFF(
-                   YEAR,
-                   COALESCE(current_appointment_date, date_of_first_appointment),
-                   CURDATE()
-                 ),
-                 5
-               ) = 0
-            THEN 'Yes'
-          ELSE 'No'
-        END;
+               ),
+               5
+             ) = 0
+        THEN 'Yes'
+
+        ELSE 'No'
+      END;
   `);
 };
 
@@ -1255,7 +1285,6 @@ app.use("/api/backlogs", backlogRoutes);
 app.use("/api/registrations", registrationRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/eservice", eserviceRoutes);
-
 
 app.get(
   "/api/districts",
