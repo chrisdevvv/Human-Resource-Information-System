@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Loader2, Save, Settings, Shield, XCircle } from "lucide-react";
+import { Save, Settings, Shield, XCircle } from "lucide-react";
 import ConfirmationModal from "./ConfirmationModal";
 import { createClearHandler } from "../../utils/clearFormUtils";
 import { InlineModalSkeleton } from "../../components/Skeleton/SkeletonLoaders";
