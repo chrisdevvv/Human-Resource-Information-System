@@ -1132,7 +1132,6 @@ export default function ViewEmployeeModal({
 
   const displayEmployeeType: "teaching" | "non-teaching" | "teaching-related" = (() => {
     const type = 
-      resolvedDetails?.resolved_employee_type || 
       resolvedDetails?.current_employee_type || 
       resolvedDetails?.employee_type || 
       employee.employeeType;

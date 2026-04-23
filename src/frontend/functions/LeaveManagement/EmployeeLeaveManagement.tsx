@@ -31,6 +31,7 @@ type EmployeeRecordApi = {
   school_name?: string | null;
   school_id?: number | null;
   employee_type?: "teaching" | "non-teaching";
+  current_employee_type?: "teaching" | "non-teaching" | "teaching-related" | null;
   created_at?: string | null;
   on_leave?: boolean | number | string | null;
 };
@@ -114,7 +115,7 @@ const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
     id: item.id,
     employeeId: item.id,
     fullName,
-    employeeType: item.employee_type || "non-teaching",
+    employeeType: item.current_employee_type || item.employee_type || "non-teaching",
     periodOfLeave: "",
     particulars: "",
     balVl: 0,
