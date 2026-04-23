@@ -32,7 +32,10 @@ const buildFullName = (firstName, middleName, lastName) =>
   [firstName, middleName, lastName].filter(Boolean).join(" ").trim();
 
 const getEffectiveEmployeeType = (payload = {}) =>
-  payload.current_employee_type || payload.employee_type || null;
+  payload.resolved_employee_type ||
+  payload.current_employee_type ||
+  payload.employee_type ||
+  null;
 
 const getAllEmployees = async (req, res) => {
   try {
@@ -437,10 +440,9 @@ const updateEmployee = async (req, res) => {
         req.body.date_of_first_appointment ?? existing.date_of_first_appointment,
     };
 
-    const hasRequestedSgUpdate = Object.prototype.hasOwnProperty.call(
-      req.body,
-      "sg",
-    );
+    const hasRequestedSgUpdate =
+      Object.prototype.hasOwnProperty.call(req.body, "sg") ||
+      Object.prototype.hasOwnProperty.call(req.body, "current_sg");
 
     const result = await Employee.update(req.params.id, mergedBody);
     if (result.affectedRows === 0) {
@@ -454,10 +456,12 @@ const updateEmployee = async (req, res) => {
       );
 
       if (latestSalaryInfo?.id) {
+        const effectiveSgValue =
+          mergedBody.current_sg ?? mergedBody.sg ?? null;
         const normalizedSg =
-          mergedBody.sg === undefined || mergedBody.sg === null
+          effectiveSgValue === undefined || effectiveSgValue === null
             ? null
-            : String(mergedBody.sg).trim();
+            : String(effectiveSgValue).trim();
 
         await SalaryInformation.update(
           employeeId,
