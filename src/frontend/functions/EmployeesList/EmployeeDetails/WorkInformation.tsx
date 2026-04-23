@@ -195,6 +195,16 @@ export default function WorkInformation({
     return `${formatted.slice(0, maxLength)}...`;
   };
 
+  const formatCurrentEmployeeTypeLabel = (value: string) => {
+    const normalized = String(value || "").trim().toLowerCase();
+
+    if (normalized === "teaching") return "Teaching";
+    if (normalized === "non-teaching") return "Non-teaching";
+    if (normalized === "teaching-related") return "Teaching-related";
+
+    return formatValue(value);
+  };
+
   const inputClass =
     "w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
 
@@ -240,7 +250,7 @@ export default function WorkInformation({
                 className={inputClass}
               >
                 <option value="teaching">Teaching</option>
-                <option value="non-teaching">Non-Teaching</option>
+                <option value="non-teaching">Non-teaching</option>
                 <option value="teaching-related">Teaching-Related</option>
               </select>
             </InfoField>
@@ -345,7 +355,9 @@ export default function WorkInformation({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12 sm:gap-4">
             <InfoField
               label="Employee Type"
-              value={truncateDisplayValue(editCurrentEmployeeType)}
+              value={truncateDisplayValue(
+                formatCurrentEmployeeTypeLabel(editCurrentEmployeeType),
+              )}
               isEditing={isEditing}
               className="lg:col-span-2"
               errorMessage={getValidationError("Current Employee Type")}
@@ -357,7 +369,7 @@ export default function WorkInformation({
               >
                 <option value="">N/A</option>
                 <option value="teaching">Teaching</option>
-                <option value="non-teaching">Non-Teaching</option>
+                <option value="non-teaching">Non-teaching</option>
                 <option value="teaching-related">Teaching-Related</option>
               </select>
             </InfoField>
