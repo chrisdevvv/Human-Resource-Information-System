@@ -12,6 +12,7 @@ const Position = require("./modules/position/positionModel");
 const SalaryInformation = require("./modules/employee/salaryInformationModel");
 const backlogRoutes = require("./modules/backlog/backlogRoutes");
 const registrationRoutes = require("./modules/registration/registrationRoutes");
+const eserviceRoutes = require("./modules/eservice/eserviceRoutes");
 const userRoutes = require("./modules/user/userRoutes");
 const { autoCreditCurrentMonth } = require("./modules/leave/leaveController");
 const authMiddleware = require("./middleware/authMiddleware");
@@ -1223,6 +1224,8 @@ app.use("/api/schools", schoolRoutes);
 app.use("/api/backlogs", backlogRoutes);
 app.use("/api/registrations", registrationRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/eservice", eserviceRoutes);
+
 
 app.get(
   "/api/districts",

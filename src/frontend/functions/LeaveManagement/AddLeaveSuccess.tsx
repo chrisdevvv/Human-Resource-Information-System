@@ -42,11 +42,6 @@ export default function AddLeaveSuccess({
     return null;
   }
 
-  const handleClose = () => {
-    setIsVisible(false);
-    onClose();
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">

@@ -10,7 +10,6 @@ import {
   Building2,
   LayoutDashboard,
   ArrowRight,
-  Sparkles,
   Clock3,
 } from "lucide-react";
 import { type BacklogRecord, useDashboardData } from "./useDashboardData";
