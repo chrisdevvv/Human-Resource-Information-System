@@ -567,8 +567,9 @@ const Employee = {
       middle_initial ||
       (middle_name ? String(middle_name).trim().charAt(0) : null);
     const resolvedDistrict = district || work_district || null;
-    const normalizedEmployeeType =
-      normalizeEmployeeTypeForStorage(employee_type);
+    const normalizedEmployeeType = normalizeEmployeeTypeForStorage(
+      employee_type ?? current_employee_type,
+    );
     const normalizedMobileNumber = uniqueValues.mobileNumber;
     const normalizedEmployeeNo = uniqueValues.employeeNo;
     const normalizedWorkEmail = uniqueValues.workEmail;
@@ -727,8 +728,9 @@ const Employee = {
       middle_initial ||
       (middle_name ? String(middle_name).trim().charAt(0) : null);
     const resolvedDistrict = district || work_district || null;
-    const normalizedEmployeeType =
-      normalizeEmployeeTypeForStorage(employee_type);
+    const normalizedEmployeeType = normalizeEmployeeTypeForStorage(
+      employee_type ?? current_employee_type,
+    );
     const normalizedMobileNumber = uniqueValues.mobileNumber;
     const normalizedEmployeeNo = uniqueValues.employeeNo;
     const normalizedWorkEmail = uniqueValues.workEmail;
