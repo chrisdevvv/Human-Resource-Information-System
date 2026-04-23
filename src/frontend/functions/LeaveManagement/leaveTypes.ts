@@ -1,7 +1,7 @@
 export type LeaveModalRecord = {
   id: number;
   fullName: string;
-  employeeType: "teaching" | "non-teaching";
+  employeeType: "teaching" | "non-teaching" | "teaching-related";
   schoolName?: string;
   periodOfLeave: string;
   particulars: string;
