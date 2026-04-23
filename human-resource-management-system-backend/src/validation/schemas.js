@@ -60,6 +60,23 @@ const optionalEmployeeTypeSchema = Joi.string()
   .valid("teaching", "non-teaching", "teaching-related", "teaching related")
   .allow(null, "");
 
+const ensureAtLeastOneEmployeeType = (value, helpers) => {
+  const hasEmployeeType =
+    typeof value.employee_type === "string" && value.employee_type.trim() !== "";
+  const hasCurrentEmployeeType =
+    typeof value.current_employee_type === "string" &&
+    value.current_employee_type.trim() !== "";
+
+  if (!hasEmployeeType && !hasCurrentEmployeeType) {
+    return helpers.error("any.custom", {
+      message:
+        "Either employee_type or current_employee_type is required.",
+    });
+  }
+
+  return value;
+};
+
 const requiredMiddleNameWhenApplicable = middleNameSchema.when(
   "no_middle_name",
   {
@@ -96,7 +113,7 @@ const employeeCreateBodySchema = Joi.object({
   civil_status_id: Joi.number().integer().positive().allow(null, ""),
   sex: sexSchema,
   sex_id: Joi.number().integer().positive().allow(null, ""),
-  employee_type: employeeTypeSchema,
+  employee_type: optionalEmployeeTypeSchema,
   school_id: Joi.number().integer().positive().required(),
   employee_no: employeeNoSchema,
   work_email: workEmailSchema,
@@ -120,7 +137,11 @@ const employeeCreateBodySchema = Joi.object({
   birthdate: birthdateSchema.required(),
   date_of_first_appointment: firstAppointmentDateSchema.allow(null, ""),
   age: ageSchema,
-});
+})
+  .custom(ensureAtLeastOneEmployeeType)
+  .messages({
+    "any.custom": "{{#message}}",
+  });
 
 const employeeUpdateBodySchema = Joi.object({
   first_name: Joi.string().trim().min(1).max(100).required(),
@@ -145,7 +166,7 @@ const employeeUpdateBodySchema = Joi.object({
   civil_status_id: Joi.number().integer().positive().allow(null, ""),
   sex: sexSchema,
   sex_id: Joi.number().integer().positive().allow(null, ""),
-  employee_type: employeeTypeSchema,
+  employee_type: optionalEmployeeTypeSchema,
   school_id: Joi.number().integer().positive().required(),
   employee_no: employeeNoSchema,
   work_email: workEmailSchema,
@@ -169,7 +190,11 @@ const employeeUpdateBodySchema = Joi.object({
   birthdate: birthdateSchema.allow(null),
   date_of_first_appointment: firstAppointmentDateSchema.allow(null, ""),
   age: ageSchema,
-});
+})
+  .custom(ensureAtLeastOneEmployeeType)
+  .messages({
+    "any.custom": "{{#message}}",
+  });
 
 const employeePatchBodySchema = employeeUpdateBodySchema.fork(
   Object.keys(employeeUpdateBodySchema.describe().keys),

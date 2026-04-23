@@ -2335,7 +2335,11 @@ export default function AddEmployeeModal({
                       computedSalaryMetrics.yearsInService,
                     )}
                     className="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                    title="Auto-calculated from appointment date"
                   />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Auto-calculated by backend
+                  </p>
                 </div>
 
                 <div>
@@ -2349,7 +2353,11 @@ export default function AddEmployeeModal({
                       computedSalaryMetrics.loyaltyBonus,
                     )}
                     className="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                    title="Auto-calculated from years in service (every 5 years)"
                   />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Auto-calculated by backend
+                  </p>
                 </div>
               </div>
             </div>

@@ -243,7 +243,7 @@ export default function LeaveHistoryTable({
                 {mobileRow.periodOfLeave}
               </div>
 
-              <div className="mb-2 text-xs font-bold text-gray-600">
+              <div className="mb-2 text-xs font-bold text-gray-800">
                 {mobileRow.particulars || "-"}
               </div>
 
@@ -273,7 +273,7 @@ export default function LeaveHistoryTable({
 
                 <div>
                   <span className="font-bold text-gray-500">VL Balance</span>
-                  <div className="font-bold">
+                  <div className="font-bold text-gray-700">
                     {formatNumber(mobileRow.balVl)}
                   </div>
                 </div>
@@ -303,7 +303,7 @@ export default function LeaveHistoryTable({
 
                 <div>
                   <span className="font-bold text-gray-500">SL Balance</span>
-                  <div className="font-bold">
+                  <div className="font-bold text-gray-700">
                     {formatNumber(mobileRow.balSl)}
                   </div>
                 </div>

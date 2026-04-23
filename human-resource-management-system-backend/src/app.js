@@ -12,6 +12,7 @@ const Position = require("./modules/position/positionModel");
 const SalaryInformation = require("./modules/employee/salaryInformationModel");
 const backlogRoutes = require("./modules/backlog/backlogRoutes");
 const registrationRoutes = require("./modules/registration/registrationRoutes");
+const eserviceRoutes = require("./modules/eservice/eserviceRoutes");
 const userRoutes = require("./modules/user/userRoutes");
 const { autoCreditCurrentMonth } = require("./modules/leave/leaveController");
 const authMiddleware = require("./middleware/authMiddleware");
@@ -1001,23 +1002,38 @@ const ensureSalaryInformationTable = async () => {
 const syncEmployeeSgFromSalaryInformation = async () => {
   await pool.promise().query(`
     UPDATE work_information wi
-    SET wi.sg = (
-      SELECT si.sg
-      FROM salary_information si
-      WHERE si.employee_id = wi.employee_id
-        AND si.sg IS NOT NULL
-        AND TRIM(si.sg) <> ''
-      ORDER BY si.salary_date DESC, si.id DESC
-      LIMIT 1
-    )
-    WHERE (wi.sg IS NULL OR TRIM(wi.sg) = '')
-      AND EXISTS (
-        SELECT 1
-        FROM salary_information sx
-        WHERE sx.employee_id = wi.employee_id
-          AND sx.sg IS NOT NULL
-          AND TRIM(sx.sg) <> ''
-      );
+    SET
+      wi.sg = CASE
+        WHEN wi.sg IS NULL OR TRIM(wi.sg) = '' THEN (
+          SELECT si.sg
+          FROM salary_information si
+          WHERE si.employee_id = wi.employee_id
+            AND si.sg IS NOT NULL
+            AND TRIM(si.sg) <> ''
+          ORDER BY si.salary_date DESC, si.id DESC
+          LIMIT 1
+        )
+        ELSE wi.sg
+      END,
+      wi.current_sg = CASE
+        WHEN wi.current_sg IS NULL OR TRIM(wi.current_sg) = '' THEN (
+          SELECT si.sg
+          FROM salary_information si
+          WHERE si.employee_id = wi.employee_id
+            AND si.sg IS NOT NULL
+            AND TRIM(si.sg) <> ''
+          ORDER BY si.salary_date DESC, si.id DESC
+          LIMIT 1
+        )
+        ELSE wi.current_sg
+      END
+    WHERE EXISTS (
+      SELECT 1
+      FROM salary_information sx
+      WHERE sx.employee_id = wi.employee_id
+        AND sx.sg IS NOT NULL
+        AND TRIM(sx.sg) <> ''
+    );
   `);
 };
 
@@ -1031,15 +1047,30 @@ const syncEmployeeServiceMetrics = async () => {
   await pool.promise().query(`
     UPDATE work_information
     SET years_in_service = CASE
-          WHEN date_of_first_appointment IS NULL THEN NULL
-          WHEN date_of_first_appointment > CURDATE() THEN 0
-          ELSE TIMESTAMPDIFF(YEAR, date_of_first_appointment, CURDATE())
+          WHEN COALESCE(current_appointment_date, date_of_first_appointment) IS NULL THEN NULL
+          WHEN COALESCE(current_appointment_date, date_of_first_appointment) > CURDATE() THEN 0
+          ELSE TIMESTAMPDIFF(
+            YEAR,
+            COALESCE(current_appointment_date, date_of_first_appointment),
+            CURDATE()
+          )
         END,
         loyalty_bonus = CASE
-          WHEN date_of_first_appointment IS NULL THEN 'No'
-          WHEN date_of_first_appointment > CURDATE() THEN 'No'
-          WHEN TIMESTAMPDIFF(YEAR, date_of_first_appointment, CURDATE()) > 0
-               AND MOD(TIMESTAMPDIFF(YEAR, date_of_first_appointment, CURDATE()), 5) = 0
+          WHEN COALESCE(current_appointment_date, date_of_first_appointment) IS NULL THEN 'No'
+          WHEN COALESCE(current_appointment_date, date_of_first_appointment) > CURDATE() THEN 'No'
+          WHEN TIMESTAMPDIFF(
+                 YEAR,
+                 COALESCE(current_appointment_date, date_of_first_appointment),
+                 CURDATE()
+               ) > 0
+               AND MOD(
+                 TIMESTAMPDIFF(
+                   YEAR,
+                   COALESCE(current_appointment_date, date_of_first_appointment),
+                   CURDATE()
+                 ),
+                 5
+               ) = 0
             THEN 'Yes'
           ELSE 'No'
         END;
@@ -1223,6 +1254,8 @@ app.use("/api/schools", schoolRoutes);
 app.use("/api/backlogs", backlogRoutes);
 app.use("/api/registrations", registrationRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/eservice", eserviceRoutes);
+
 
 app.get(
   "/api/districts",
