@@ -2243,7 +2243,7 @@ export default function ViewEmployeeModal({
               isEditing={isEditing}
               resolvedSchoolName={resolvedDetails?.school_name}
               employeeSchoolName={employee.schoolName}
-              workDateOfFirstAppointment={resolvedSalaryDate}
+              workDateOfFirstAppointment={resolvedDetails?.date_of_first_appointment || null}
               setEditDateOfFirstAppointment={setEditDateOfFirstAppointment}
               workSg={isEditing ? editWorkSg : resolvedWorkSg}
               setEditWorkSg={setEditWorkSg}

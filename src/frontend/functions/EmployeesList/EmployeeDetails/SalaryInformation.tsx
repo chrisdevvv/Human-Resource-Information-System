@@ -247,7 +247,9 @@ const subtractOneDay = (dateString: string): string => {
 };
 
 const getSalutation = (sex: string | null | undefined): "Ms." | "Mr." => {
-  const normalized = String(sex || "").trim().toLowerCase();
+  const normalized = String(sex || "")
+    .trim()
+    .toLowerCase();
   if (normalized === "f" || normalized === "female") return "Ms.";
   return "Mr.";
 };
@@ -262,7 +264,11 @@ const getValueByPath = (source: unknown, path: string): unknown => {
   if (!source || typeof source !== "object") return undefined;
 
   return path.split(".").reduce<unknown>((acc, key) => {
-    if (acc && typeof acc === "object" && key in (acc as Record<string, unknown>)) {
+    if (
+      acc &&
+      typeof acc === "object" &&
+      key in (acc as Record<string, unknown>)
+    ) {
       return (acc as Record<string, unknown>)[key];
     }
     return undefined;
@@ -816,7 +822,10 @@ export default function SalaryInformation({
                   className={`${baseInputClass} bg-gray-50 cursor-not-allowed`}
                   title="Auto-calculated from appointment date"
                 />
-                <span className="text-xs text-gray-500" title="Auto-calculated by backend">
+                <span
+                  className="text-xs text-gray-500"
+                  title="Auto-calculated by backend"
+                >
                   <Info size={14} className="text-blue-500" />
                 </span>
               </div>
@@ -834,7 +843,10 @@ export default function SalaryInformation({
                   className={`${baseInputClass} bg-gray-50 cursor-not-allowed`}
                   title="Auto-calculated from years in service"
                 />
-                <span className="text-xs text-gray-500" title="Auto-calculated by backend">
+                <span
+                  className="text-xs text-gray-500"
+                  title="Auto-calculated by backend"
+                >
                   <Info size={14} className="text-blue-500" />
                 </span>
               </div>
@@ -869,12 +881,16 @@ export default function SalaryInformation({
                 <table className="w-full min-w-245 border-collapse text-sm">
                   <thead className="bg-blue-100">
                     <tr className="border-b border-blue-200 text-xs uppercase tracking-wide text-blue-800">
-                      <th className="px-3 py-3 text-left font-semibold">Date</th>
+                      <th className="px-3 py-3 text-left font-semibold">
+                        Date
+                      </th>
                       <th className="px-3 py-3 text-left font-semibold">
                         Plantilla
                       </th>
                       <th className="px-3 py-3 text-left font-semibold">SG</th>
-                      <th className="px-3 py-3 text-left font-semibold">Step</th>
+                      <th className="px-3 py-3 text-left font-semibold">
+                        Step
+                      </th>
                       <th className="px-3 py-3 text-right font-semibold">
                         Salary
                       </th>
@@ -1061,7 +1077,9 @@ export default function SalaryInformation({
                               <td className="px-3 py-3 text-gray-700">
                                 {isEditingRow ? (
                                   <select
-                                    value={salaryHistoryEditDraft?.remarks || ""}
+                                    value={
+                                      salaryHistoryEditDraft?.remarks || ""
+                                    }
                                     onChange={(e) =>
                                       onChangeSalaryHistoryEditDraft(
                                         "remarks",
@@ -1072,11 +1090,13 @@ export default function SalaryInformation({
                                     className={`${tableInputClass} cursor-pointer`}
                                   >
                                     <option value="">Select remark</option>
-                                    {salaryHistoryRemarkOptions.map((option) => (
-                                      <option key={option} value={option}>
-                                        {option}
-                                      </option>
-                                    ))}
+                                    {salaryHistoryRemarkOptions.map(
+                                      (option) => (
+                                        <option key={option} value={option}>
+                                          {option}
+                                        </option>
+                                      ),
+                                    )}
                                   </select>
                                 ) : (
                                   formatCellValue(row.remarks)
@@ -1091,7 +1111,9 @@ export default function SalaryInformation({
                                         <>
                                           <button
                                             type="button"
-                                            onClick={onSubmitSalaryHistoryUpdate}
+                                            onClick={
+                                              onSubmitSalaryHistoryUpdate
+                                            }
                                             disabled={salaryHistoryUpdating}
                                             className={actionPrimaryClass}
                                             title="Update salary row"
@@ -1130,7 +1152,9 @@ export default function SalaryInformation({
                                     <button
                                       type="button"
                                       onClick={() => openNoticeModal(row)}
-                                      disabled={Boolean(salaryHistoryCreateDraft)}
+                                      disabled={Boolean(
+                                        salaryHistoryCreateDraft,
+                                      )}
                                       className="cursor-pointer inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
                                       title="Generate NOSI PDF"
                                     >
@@ -1182,7 +1206,10 @@ export default function SalaryInformation({
                                 type="text"
                                 value={salaryHistoryCreateDraft.sg}
                                 onChange={(e) =>
-                                  onChangeSalaryHistoryDraft("sg", e.target.value)
+                                  onChangeSalaryHistoryDraft(
+                                    "sg",
+                                    e.target.value,
+                                  )
                                 }
                                 disabled={salaryHistoryCreating}
                                 placeholder="SG"
@@ -1513,11 +1540,12 @@ export default function SalaryInformation({
                             Department of Budget and Management Circular No. 1
                             dated September 3, 2012, implementing item (4)(d) of
                             the Senate and House of Representatives Joint
-                            Resolution No. 4, s. 2009, approved on June 17, 2009,
-                            your salary as {formatCellValue(resolvedCurrentPosition)} -
-                            Salary Grade {formatCellValue(resolvedCurrentSalaryGrade)}{" "}
-                            Step {formatCellValue(activeNoticeRow.step)} is hereby
-                            adjusted effective{" "}
+                            Resolution No. 4, s. 2009, approved on June 17,
+                            2009, your salary as{" "}
+                            {formatCellValue(resolvedCurrentPosition)} - Salary
+                            Grade {formatCellValue(resolvedCurrentSalaryGrade)}{" "}
+                            Step {formatCellValue(activeNoticeRow.step)} is
+                            hereby adjusted effective{" "}
                             {formatDateCell(activeNoticeEffectivityDate)} as
                             follows:
                           </p>
@@ -1536,8 +1564,8 @@ export default function SalaryInformation({
                                 1. Actual Monthly basic salary as of
                               </p>
                               <p style={{ margin: 0, paddingLeft: "12mm" }}>
-                                SG-{formatCellValue(resolvedCurrentSalaryGrade)} Step{" "}
-                                {previousStepValue}
+                                SG-{formatCellValue(resolvedCurrentSalaryGrade)}{" "}
+                                Step {previousStepValue}
                               </p>
                             </div>
                             <div style={{ whiteSpace: "nowrap" }}>
@@ -1596,8 +1624,8 @@ export default function SalaryInformation({
                         >
                           <p style={{ margin: 0 }}>
                             This salary adjustment is subject to review and post
-                            audit, and to appropriate re-adjustment and refund if
-                            found not in order.
+                            audit, and to appropriate re-adjustment and refund
+                            if found not in order.
                           </p>
                         </div>
                       </div>
@@ -1620,7 +1648,12 @@ export default function SalaryInformation({
                               Very truly yours,
                             </p>
                             <div style={{ height: "25mm" }} />
-                            <div style={{ marginLeft: "auto", width: "fit-content" }}>
+                            <div
+                              style={{
+                                marginLeft: "auto",
+                                width: "fit-content",
+                              }}
+                            >
                               <p
                                 style={{
                                   margin: 0,
@@ -1660,8 +1693,8 @@ export default function SalaryInformation({
                               ? new Date(
                                   `${activeNoticeEffectivityDate}T00:00:00`,
                                 ).getFullYear()
-                              : ""}
-                            {" "}Personal Services Itemization
+                              : ""}{" "}
+                            Personal Services Itemization
                           </p>
                           <p style={{ margin: 0 }}>
                             And/or Plantilla of Personnel{" "}
