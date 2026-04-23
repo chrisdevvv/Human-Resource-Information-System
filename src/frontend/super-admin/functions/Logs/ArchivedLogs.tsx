@@ -510,11 +510,12 @@ export default function ArchivedLogs() {
                     <td className="py-0.5 px-3 text-center">
                       <button
                         onClick={() => setSelectedLog(log)}
-                        className="p-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer"
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer font-bold text-xs"
                         aria-label={`View log #${log.id}`}
                         title="View details"
                       >
                         <Eye size={12} />
+                        View
                       </button>
                     </td>
                   </tr>

@@ -565,11 +565,12 @@ export default function UserRolesMobile() {
                   <div className="mt-2 flex justify-end">
                     <button
                       onClick={() => setViewTarget(user)}
-                      className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition cursor-pointer shrink-0"
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition cursor-pointer shrink-0 font-bold text-xs"
                       aria-label={`View details for ${user.firstName} ${user.lastName}`}
                       title="View details"
                     >
                       <Eye size={14} />
+                      View
                     </button>
                   </div>
                 </div>

@@ -660,11 +660,12 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => setDetailsTargetId(user.id)}
-                              className="p-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer"
+                              className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer font-bold text-xs"
                               aria-label={`View details for ${user.firstName} ${user.lastName}`}
                               title="View details"
                             >
                               <Eye size={12} />
+                              View
                             </button>
 
                             <button
