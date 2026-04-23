@@ -221,8 +221,8 @@ const createDuplicateEmployeeError = (label) => {
   return error;
 };
 
-const computeServiceMetrics = (dateOfFirstAppointment) => {
-  const normalizedDate = normalizeOptionalDate(dateOfFirstAppointment);
+const computeServiceMetrics = (appointmentDate) => {
+  const normalizedDate = normalizeOptionalDate(appointmentDate);
   if (!normalizedDate) {
     return { yearsInService: null, loyaltyBonus: "No" };
   }
@@ -607,8 +607,11 @@ const Employee = {
     const normalizedPagibigNo = uniqueValues.pagibigNo;
     const normalizedPhilhealthNo = uniqueValues.philhealthNo;
 
+    const serviceMetricBaseDate =
+      normalizedCurrentAppointmentDate || normalizedFirstAppointmentDate;
+
     const { yearsInService, loyaltyBonus } = computeServiceMetrics(
-      normalizedFirstAppointmentDate,
+      serviceMetricBaseDate,
     );
 
     const duplicateField = await findEmployeeUniqueConflict(uniqueValues);
@@ -757,8 +760,12 @@ const Employee = {
     const normalizedFirstAppointmentDate = normalizeOptionalDate(
       date_of_first_appointment,
     );
+
+    const serviceMetricBaseDate =
+      normalizedCurrentAppointmentDate || normalizedFirstAppointmentDate;
+
     const { yearsInService, loyaltyBonus } = computeServiceMetrics(
-      normalizedFirstAppointmentDate,
+      serviceMetricBaseDate,
     );
 
     const duplicateField = await findEmployeeUniqueConflict(uniqueValues, id);
