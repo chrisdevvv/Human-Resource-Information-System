@@ -763,7 +763,8 @@ export default function EmployeeLeaveManagement() {
 
           {filteredEmployees.length > 0 && (
             <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-3">
-              <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+              {/* Desktop/Tablet View */}
+              <div className="hidden sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-3">
                 <label className="flex items-center gap-2 text-sm text-gray-600">
                   Show
                   <select
@@ -784,7 +785,7 @@ export default function EmployeeLeaveManagement() {
                   entries
                 </label>
 
-                <div className="flex items-center justify-center gap-2 sm:justify-self-center">
+                <div className="flex items-center justify-center gap-2">
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
@@ -835,7 +836,7 @@ export default function EmployeeLeaveManagement() {
                   </button>
                 </div>
 
-                <div className="flex items-center gap-2 text-sm text-gray-600 sm:justify-self-end">
+                <div className="flex items-center gap-2 text-sm text-gray-600 justify-self-end">
                   <span>Jump to</span>
                   <input
                     type="number"
@@ -854,6 +855,109 @@ export default function EmployeeLeaveManagement() {
                   <button
                     onClick={handleJumpToPage}
                     className="rounded bg-white px-2 py-1 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Go
+                  </button>
+                </div>
+              </div>
+
+              {/* Mobile View */}
+              <div className="flex flex-col gap-3 sm:hidden">
+                {/* Entries Selector */}
+                <div className="flex items-center justify-center gap-2">
+                  <label className="flex items-center gap-2 text-xs text-gray-600">
+                    Show
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        setItemsPerPage(Number(e.target.value));
+                        setCurrentPage(1);
+                        setPageJumpInput("1");
+                      }}
+                      className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 bg-white"
+                    >
+                      {PAGE_SIZE_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                    entries
+                  </label>
+                </div>
+
+                {/* Page Navigation */}
+                <div className="flex items-center justify-center gap-1">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="p-1.5 text-gray-500 hover:bg-white rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+
+                  {pageNumberItems.map(
+                    (item: number | "ellipsis", index: number) => {
+                      if (item === "ellipsis") {
+                        return (
+                          <span
+                            key={`ellipsis-${index}`}
+                            className="px-1 text-xs text-gray-400 select-none"
+                          >
+                            ...
+                          </span>
+                        );
+                      }
+
+                      return (
+                        <button
+                          key={item}
+                          onClick={() => setCurrentPage(item)}
+                          className={`min-w-[32px] h-8 px-2 rounded font-medium text-xs transition cursor-pointer ${
+                            currentPage === item
+                              ? "bg-blue-600 text-white"
+                              : "text-gray-500 hover:bg-white"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      );
+                    },
+                  )}
+
+                  <button
+                    onClick={() =>
+                      setCurrentPage(Math.min(totalPages, currentPage + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="p-1.5 text-gray-500 hover:bg-white rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+
+                {/* Jump to Page */}
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-xs text-gray-600">Jump to</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    value={pageJumpInput}
+                    onChange={(e) => setPageJumpInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleJumpToPage();
+                      }
+                    }}
+                    className="w-14 rounded border border-gray-300 px-2 py-1 text-xs text-center text-gray-700 bg-white"
+                  />
+                  <button
+                    onClick={handleJumpToPage}
+                    className="rounded bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-100 border border-gray-300"
                   >
                     Go
                   </button>
