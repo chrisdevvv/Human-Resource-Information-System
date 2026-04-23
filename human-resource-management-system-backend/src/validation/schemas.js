@@ -143,7 +143,7 @@ const employeeCreateBodySchema = Joi.object({
     "any.custom": "{{#message}}",
   });
 
-const employeeUpdateBodySchema = Joi.object({
+const employeeUpdateBodySchemaFields = {
   first_name: Joi.string().trim().min(1).max(100).required(),
   middle_name: requiredMiddleNameWhenApplicable,
   no_middle_name: noMiddleNameSchema,
@@ -190,14 +190,16 @@ const employeeUpdateBodySchema = Joi.object({
   birthdate: birthdateSchema.allow(null),
   date_of_first_appointment: firstAppointmentDateSchema.allow(null, ""),
   age: ageSchema,
-})
+};
+
+const employeeUpdateBodySchema = Joi.object(employeeUpdateBodySchemaFields)
   .custom(ensureAtLeastOneEmployeeType)
   .messages({
     "any.custom": "{{#message}}",
   });
 
-const employeePatchBodySchema = employeeUpdateBodySchema.fork(
-  Object.keys(employeeUpdateBodySchema.describe().keys),
+const employeePatchBodySchema = Joi.object(employeeUpdateBodySchemaFields).fork(
+  Object.keys(employeeUpdateBodySchemaFields),
   (schema) => schema.optional(),
 );
 
