@@ -1,15 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { AlertTriangle, Check, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import ConfirmationAddLeave from "../ConfirmationAddLeave";
 import AddLeaveSuccess from "../AddLeaveSuccess";
 import { getLeaveHistoryByEmployee, getLeaveParticulars } from "../leaveApi";
 import { createClearHandler, hasFormData } from "../../../utils/clearFormUtils";
-import {
-  SkeletonBlock,
-  SkeletonListItem,
-} from "../../../components/Skeleton/SkeletonUtils";
+import { SkeletonListItem } from "../../../components/Skeleton/SkeletonUtils";
 
 export type AddLeaveFormValues = {
   employee_id: number;
@@ -84,11 +81,6 @@ const defaultForm: AddLeaveFormState = {
   abs_without_pay_sl: "",
 };
 
-type BalanceErrorState = {
-  title: string;
-  desc: string;
-};
-
 export default function AddLeaveModal({
   isOpen,
   employeeId,
@@ -115,38 +107,21 @@ export default function AddLeaveModal({
   const [particularInputValue, setParticularInputValue] = useState("");
   const [showParticularDropdown, setShowParticularDropdown] = useState(false);
   const [formError, setFormError] = useState("");
-  const [balanceError, setBalanceError] = useState<BalanceErrorState | null>(
-    null,
-  );
 
   useEffect(() => {
     if (isOpen) {
       setForm(defaultForm);
       setParticularInputValue("");
       setShowParticularDropdown(false);
-      setCurrentBalVl(null);
-      setCurrentBalSl(null);
       setIsConfirmOpen(false);
       setPendingPayload(null);
       setIsSuccessOpen(false);
       setSuccessData(null);
       setFormError("");
-      setBalanceError(null);
+      setCurrentBalVl(null);
+      setCurrentBalSl(null);
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    if (!balanceError) {
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [balanceError]);
 
   useEffect(() => {
     const loadParticularOptions = async () => {
@@ -172,6 +147,7 @@ export default function AddLeaveModal({
 
       try {
         const rows = await getLeaveHistoryByEmployee(employeeId);
+
         if (!rows || rows.length === 0) {
           setCurrentBalVl(0);
           setCurrentBalSl(0);
@@ -182,13 +158,12 @@ export default function AddLeaveModal({
         setCurrentBalVl(Number(latest.balVl || 0));
         setCurrentBalSl(Number(latest.balSl || 0));
       } catch {
-        // Keep form usable even if balance fetch fails.
         setCurrentBalVl(null);
         setCurrentBalSl(null);
       }
     };
 
-    loadCurrentBalance();
+    void loadCurrentBalance();
   }, [isOpen, employeeId]);
 
   if (!isOpen || !employeeId) {
@@ -201,6 +176,7 @@ export default function AddLeaveModal({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) {
     const { name, value } = e.target;
+
     if (formError) {
       setFormError("");
     }
@@ -226,6 +202,7 @@ export default function AddLeaveModal({
 
   function handleVacationLeaveToggle(e: React.ChangeEvent<HTMLInputElement>) {
     const checked = e.target.checked;
+
     if (formError) {
       setFormError("");
     }
@@ -233,15 +210,12 @@ export default function AddLeaveModal({
     setForm((prev) => ({
       ...prev,
       hasVacationLeave: checked,
-      hasSickLeave: checked ? false : prev.hasSickLeave,
-      earned_sl: checked ? "" : prev.earned_sl,
-      abs_with_pay_sl: checked ? "" : prev.abs_with_pay_sl,
-      abs_without_pay_sl: checked ? "" : prev.abs_without_pay_sl,
     }));
   }
 
   function handleSickLeaveToggle(e: React.ChangeEvent<HTMLInputElement>) {
     const checked = e.target.checked;
+
     if (formError) {
       setFormError("");
     }
@@ -249,17 +223,12 @@ export default function AddLeaveModal({
     setForm((prev) => ({
       ...prev,
       hasSickLeave: checked,
-      hasVacationLeave: checked ? false : prev.hasVacationLeave,
-      earned_vl: checked ? "" : prev.earned_vl,
-      abs_with_pay_vl: checked ? "" : prev.abs_with_pay_vl,
-      abs_without_pay_vl: checked ? "" : prev.abs_without_pay_vl,
     }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
-    setBalanceError(null);
 
     if (!form.period_of_leave.trim()) {
       setFormError("Period of leave is required.");
@@ -281,40 +250,8 @@ export default function AddLeaveModal({
       return;
     }
 
-    const parseNumber = (value: string) => Number(value || 0);
-    const balanceIssues: string[] = [];
-
-    if (currentBalVl !== null) {
-      const projectedVl =
-        Number(currentBalVl) +
-        parseNumber(form.earned_vl) -
-        parseNumber(form.abs_with_pay_vl);
-
-      if (!Number.isFinite(projectedVl) || projectedVl < 0) {
-        balanceIssues.push(
-          `Vacation Leave balance would become ${projectedVl.toFixed(3)}.`,
-        );
-      }
-    }
-
-    if (currentBalSl !== null) {
-      const projectedSl =
-        Number(currentBalSl) +
-        parseNumber(form.earned_sl) -
-        parseNumber(form.abs_with_pay_sl);
-
-      if (!Number.isFinite(projectedSl) || projectedSl < 0) {
-        balanceIssues.push(
-          `Sick Leave balance would become ${projectedSl.toFixed(3)}.`,
-        );
-      }
-    }
-
-    if (balanceIssues.length > 0) {
-      setBalanceError({
-        title: "Invalid Leave Balance",
-        desc: `${balanceIssues.join(" ")} Please adjust the leave entry before saving.`,
-      });
+    if (!form.hasVacationLeave && !form.hasSickLeave) {
+      setFormError("Please select at least one leave type.");
       return;
     }
 
@@ -323,12 +260,20 @@ export default function AddLeaveModal({
       period_of_leave: form.period_of_leave.trim(),
       particulars: form.particulars.trim(),
       isMonetization: false,
-      earned_vl: Number(form.earned_vl || 0),
-      abs_with_pay_vl: Number(form.abs_with_pay_vl || 0),
-      abs_without_pay_vl: Number(form.abs_without_pay_vl || 0),
-      earned_sl: Number(form.earned_sl || 0),
-      abs_with_pay_sl: Number(form.abs_with_pay_sl || 0),
-      abs_without_pay_sl: Number(form.abs_without_pay_sl || 0),
+      earned_vl: form.hasVacationLeave ? Number(form.earned_vl || 0) : 0,
+      abs_with_pay_vl: form.hasVacationLeave
+        ? Number(form.abs_with_pay_vl || 0)
+        : 0,
+      abs_without_pay_vl: form.hasVacationLeave
+        ? Number(form.abs_without_pay_vl || 0)
+        : 0,
+      earned_sl: form.hasSickLeave ? Number(form.earned_sl || 0) : 0,
+      abs_with_pay_sl: form.hasSickLeave
+        ? Number(form.abs_with_pay_sl || 0)
+        : 0,
+      abs_without_pay_sl: form.hasSickLeave
+        ? Number(form.abs_without_pay_sl || 0)
+        : 0,
     };
 
     setPendingPayload(payload);
@@ -343,11 +288,7 @@ export default function AddLeaveModal({
     try {
       await onSave(pendingPayload);
       setFormError("");
-
-      // Close confirmation modal
       setIsConfirmOpen(false);
-
-      // Show success message
       setSuccessData({
         employeeName,
         period_of_leave: pendingPayload.period_of_leave,
@@ -368,10 +309,6 @@ export default function AddLeaveModal({
     }
   }
 
-  function closeBalanceError() {
-    setBalanceError(null);
-  }
-
   function handleCancelConfirm() {
     if (isSaving) {
       return;
@@ -385,17 +322,16 @@ export default function AddLeaveModal({
     setParticularInputValue("");
     setShowParticularDropdown(false);
     setFormError("");
-    setBalanceError(null);
   }
 
   const inputClass =
     "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
   const labelClass = "mb-1 block text-sm font-medium text-gray-700";
-  const disableVacationOption = form.hasSickLeave;
-  const disableSickOption = form.hasVacationLeave;
+
   const filteredParticularOptions = particularOptions.filter((option) =>
     option.toLowerCase().includes(particularInputValue.trim().toLowerCase()),
   );
+
   const hasEarnedVl = form.earned_vl !== "";
   const hasAbsWithPayVl = form.abs_with_pay_vl !== "";
   const hasAbsWithoutPayVl = form.abs_without_pay_vl !== "";
@@ -404,17 +340,17 @@ export default function AddLeaveModal({
   const hasAbsWithoutPaySl = form.abs_without_pay_sl !== "";
 
   const disableEarnedVl = hasAbsWithPayVl || hasAbsWithoutPayVl;
-  const disableAbsWithPayVlByBalance =
-    currentBalVl !== null && Number(currentBalVl) <= 0;
+  const disableAbsWithPayVlByNegativeBalance =
+    currentBalVl !== null && Number(currentBalVl) < 0;
   const disableAbsWithPayVl =
-    hasEarnedVl || hasAbsWithoutPayVl || disableAbsWithPayVlByBalance;
+    hasEarnedVl || hasAbsWithoutPayVl || disableAbsWithPayVlByNegativeBalance;
   const disableAbsWithoutPayVl = hasEarnedVl || hasAbsWithPayVl;
 
   const disableEarnedSl = hasAbsWithPaySl || hasAbsWithoutPaySl;
-  const disableAbsWithPaySlByBalance =
-    currentBalSl !== null && Number(currentBalSl) <= 0;
+  const disableAbsWithPaySlByNegativeBalance =
+    currentBalSl !== null && Number(currentBalSl) < 0;
   const disableAbsWithPaySl =
-    hasEarnedSl || hasAbsWithoutPaySl || disableAbsWithPaySlByBalance;
+    hasEarnedSl || hasAbsWithoutPaySl || disableAbsWithPaySlByNegativeBalance;
   const disableAbsWithoutPaySl = hasEarnedSl || hasAbsWithPaySl;
 
   return (
@@ -468,11 +404,11 @@ export default function AddLeaveModal({
                 disabled={particularsLoading}
                 placeholder="Type to search particulars..."
                 className={`${inputClass} ${
-                  particularsLoading ? "bg-gray-100 cursor-not-allowed" : ""
+                  particularsLoading ? "cursor-not-allowed bg-gray-100" : ""
                 }`}
               />
               {showParticularDropdown && (
-                <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-md border border-blue-200 bg-white shadow-lg max-h-64 overflow-y-auto">
+                <div className="absolute left-0 top-full z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-blue-200 bg-white shadow-lg">
                   {particularsLoading ? (
                     <div className="flex flex-col gap-1 p-2">
                       {Array.from({ length: 4 }).map((_, i) => (
@@ -535,35 +471,21 @@ export default function AddLeaveModal({
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-gray-800">Leave Type</h3>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <label
-                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                  disableVacationOption
-                    ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                    : "cursor-pointer border-gray-300 bg-white text-gray-700"
-                }`}
-              >
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition">
                 <input
                   type="checkbox"
                   checked={form.hasVacationLeave}
                   onChange={handleVacationLeaveToggle}
-                  disabled={disableVacationOption}
                   className="h-4 w-4"
                 />
                 Vacation Leave
               </label>
 
-              <label
-                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                  disableSickOption
-                    ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                    : "cursor-pointer border-gray-300 bg-white text-gray-700"
-                }`}
-              >
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition">
                 <input
                   type="checkbox"
                   checked={form.hasSickLeave}
                   onChange={handleSickLeaveToggle}
-                  disabled={disableSickOption}
                   className="h-4 w-4"
                 />
                 Sick Leave
@@ -615,9 +537,9 @@ export default function AddLeaveModal({
                         : ""
                     }`}
                   />
-                  {disableAbsWithPayVlByBalance && (
+                  {disableAbsWithPayVlByNegativeBalance && (
                     <p className="mt-1 text-xs text-blue-600">
-                      Disabled because current VL balance is 0.
+                      Disabled because current VL balance is negative.
                     </p>
                   )}
                 </div>
@@ -689,9 +611,9 @@ export default function AddLeaveModal({
                         : ""
                     }`}
                   />
-                  {disableAbsWithPaySlByBalance && (
+                  {disableAbsWithPaySlByNegativeBalance && (
                     <p className="mt-1 text-xs text-blue-600">
-                      Disabled because current SL balance is 0.
+                      Disabled because current SL balance is negative.
                     </p>
                   )}
                 </div>
@@ -758,38 +680,6 @@ export default function AddLeaveModal({
             </button>
           </div>
         </form>
-
-        {balanceError && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40 px-4">
-            <div className="relative w-full max-w-md rounded-xl border border-red-200 bg-white p-6 shadow-2xl">
-              <div className="flex items-start gap-3">
-                <div className="rounded-full bg-red-50 p-2 text-red-600">
-                  <AlertTriangle size={20} />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-800">
-                    {balanceError.title}
-                  </h3>
-                </div>
-              </div>
-              <p className="mt-2 text-sm leading-6 text-gray-600">
-                {balanceError.desc}
-              </p>
-              <div className="mt-5 flex justify-end">
-                <button
-                  type="button"
-                  onClick={closeBalanceError}
-                  className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
-                >
-                  <span className="inline-flex items-center gap-1.5">
-                    <X size={14} />
-                    Okay
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         <ConfirmationAddLeave
           isOpen={isConfirmOpen}

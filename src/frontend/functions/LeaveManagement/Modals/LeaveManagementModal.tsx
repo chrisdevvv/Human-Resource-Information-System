@@ -436,7 +436,7 @@ export default function LeaveManagementModal({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-3 py-4 sm:flex sm:items-center sm:justify-center sm:px-4">
-      <div className="mx-auto my-4 flex w-full max-w-screen-2xl flex-col overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-2xl max-h-[calc(100dvh-2rem)]">
+      <div className="mx-auto my-4 flex w-full max-w-screen-2xl flex-col overflow-y-auto rounded-2xl border border-blue-200 bg-white shadow-2xl max-h-[calc(100dvh-2rem)]">
         <div className="border-b border-gray-200 px-4 py-4 sm:px-6">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
@@ -553,7 +553,6 @@ export default function LeaveManagementModal({
             </div>
           </div>
 
-          {/* ================= DESKTOP ACTION/TAB BAR ================= */}
           <div className="mt-4 hidden flex-wrap items-center gap-2 lg:flex">
             <button
               type="button"
@@ -649,7 +648,6 @@ export default function LeaveManagementModal({
             </div>
           </div>
 
-          {/* ================= MOBILE ACTION/TAB BLOCK (COMPACT) ================= */}
           <div className="mt-3 space-y-2 lg:hidden">
             <div className="flex gap-2">
               <button
@@ -746,9 +744,9 @@ export default function LeaveManagementModal({
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+        <div className="flex-1 p-4 sm:p-6">
           {activeTab === "history" ? (
-            <div className="space-y-4">
+            <div className="space-y-4 pb-4">
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
