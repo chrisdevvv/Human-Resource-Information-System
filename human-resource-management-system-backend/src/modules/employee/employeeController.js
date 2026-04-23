@@ -31,6 +31,9 @@ const isSameSchool = (userSchoolId, targetSchoolId) =>
 const buildFullName = (firstName, middleName, lastName) =>
   [firstName, middleName, lastName].filter(Boolean).join(" ").trim();
 
+const getEffectiveEmployeeType = (payload = {}) =>
+  payload.current_employee_type || payload.employee_type || null;
+
 const getAllEmployees = async (req, res) => {
   try {
     const {
@@ -239,7 +242,6 @@ const createEmployee = async (req, res) => {
         });
       }
 
-      // Enforce trusted school assignment for scoped roles.
       req.body.school_id = Number(req.user?.school_id);
     } else {
       req.body.school_id = requestedSchoolId;
@@ -258,16 +260,18 @@ const createEmployee = async (req, res) => {
     }
 
     const result = await Employee.create(req.body);
-    const { first_name, middle_name, last_name, employee_type, school_id } =
-      req.body;
+    const { first_name, middle_name, last_name, school_id } = req.body;
+    const effectiveEmployeeType = getEffectiveEmployeeType(req.body);
+
     await Backlog.record({
       user_id: req.user.id,
       school_id: school_id || null,
       employee_id: result.insertId,
       leave_id: null,
       action: "EMPLOYEE_CREATED",
-      details: `${buildFullName(first_name, middle_name, last_name)} (${employee_type})`,
+      details: `${buildFullName(first_name, middle_name, last_name)} (${effectiveEmployeeType || "N/A"})`,
     });
+
     res
       .status(201)
       .json({ message: "Employee created successfully", data: result });
@@ -353,15 +357,18 @@ const updateEmployee = async (req, res) => {
         });
       }
 
-      // Enforce trusted school assignment for scoped roles.
       req.body.school_id = Number(req.user?.school_id);
     } else {
       req.body.school_id = resolvedSchoolId;
     }
 
-    const requestedDistrict = String(
-      req.body?.district ?? req.body?.work_district ?? "",
-    ).trim();
+    const resolvedDistrictInput =
+      req.body?.district ??
+      req.body?.work_district ??
+      existing.district ??
+      "";
+
+    const requestedDistrict = String(resolvedDistrictInput).trim();
 
     if (!requestedDistrict) {
       return res.status(400).json({
@@ -383,19 +390,59 @@ const updateEmployee = async (req, res) => {
       });
     }
 
-    req.body.district = districtRows[0].district_name;
-    req.body.work_district = districtRows[0].district_name;
+    const normalizedDistrict = districtRows[0].district_name;
+
+    const mergedBody = {
+      first_name: req.body.first_name ?? existing.first_name,
+      middle_name: req.body.middle_name ?? existing.middle_name,
+      last_name: req.body.last_name ?? existing.last_name,
+      middle_initial: req.body.middle_initial ?? existing.middle_initial,
+      personal_email: req.body.personal_email ?? existing.email,
+      email: req.body.email ?? existing.email,
+      mobile_number: req.body.mobile_number ?? existing.mobile_number,
+      home_address: req.body.home_address ?? existing.home_address,
+      place_of_birth: req.body.place_of_birth ?? existing.place_of_birth,
+      civil_status: req.body.civil_status ?? existing.civil_status,
+      civil_status_id: req.body.civil_status_id ?? existing.civil_status_id,
+      sex: req.body.sex ?? existing.sex,
+      sex_id: req.body.sex_id ?? existing.sex_id,
+      employee_type: req.body.employee_type ?? existing.employee_type,
+      school_id: req.body.school_id ?? existing.school_id,
+      employee_no: req.body.employee_no ?? existing.employee_no,
+      work_email: req.body.work_email ?? existing.work_email,
+      district: normalizedDistrict,
+      work_district: normalizedDistrict,
+      position: req.body.position ?? existing.position,
+      position_id: req.body.position_id ?? existing.position_id,
+      plantilla_no: req.body.plantilla_no ?? existing.plantilla_no,
+      sg: req.body.sg ?? existing.sg,
+      current_employee_type:
+        req.body.current_employee_type ?? existing.current_employee_type,
+      current_position:
+        req.body.current_position ?? existing.current_position,
+      current_plantilla_no:
+        req.body.current_plantilla_no ?? existing.current_plantilla_no,
+      current_appointment_date:
+        req.body.current_appointment_date ?? existing.current_appointment_date,
+      current_sg: req.body.current_sg ?? existing.current_sg,
+      prc_license_no: req.body.prc_license_no ?? existing.prc_license_no,
+      tin: req.body.tin ?? existing.tin,
+      gsis_bp_no: req.body.gsis_bp_no ?? existing.gsis_bp_no,
+      gsis_crn_no: req.body.gsis_crn_no ?? existing.gsis_crn_no,
+      pagibig_no: req.body.pagibig_no ?? existing.pagibig_no,
+      philhealth_no: req.body.philhealth_no ?? existing.philhealth_no,
+      age: req.body.age ?? existing.age,
+      birthdate: req.body.birthdate ?? existing.birthdate,
+      date_of_first_appointment:
+        req.body.date_of_first_appointment ?? existing.date_of_first_appointment,
+    };
 
     const hasRequestedSgUpdate = Object.prototype.hasOwnProperty.call(
       req.body,
       "sg",
     );
 
-    if (!hasRequestedSgUpdate) {
-      req.body.sg = existing.sg ?? null;
-    }
-
-    const result = await Employee.update(req.params.id, req.body);
+    const result = await Employee.update(req.params.id, mergedBody);
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Employee not found" });
     }
@@ -408,9 +455,9 @@ const updateEmployee = async (req, res) => {
 
       if (latestSalaryInfo?.id) {
         const normalizedSg =
-          req.body.sg === undefined || req.body.sg === null
+          mergedBody.sg === undefined || mergedBody.sg === null
             ? null
-            : String(req.body.sg).trim();
+            : String(mergedBody.sg).trim();
 
         await SalaryInformation.update(
           employeeId,
@@ -421,16 +468,21 @@ const updateEmployee = async (req, res) => {
       }
     }
 
-    const { first_name, middle_name, last_name, employee_type, school_id } =
-      req.body;
+    const effectiveEmployeeType = getEffectiveEmployeeType(mergedBody);
+
     await Backlog.record({
       user_id: req.user.id,
-      school_id: school_id || null,
+      school_id: mergedBody.school_id || null,
       employee_id: Number(req.params.id),
       leave_id: null,
       action: "EMPLOYEE_UPDATED",
-      details: `${buildFullName(first_name, middle_name, last_name)} (${employee_type})`,
+      details: `${buildFullName(
+        mergedBody.first_name,
+        mergedBody.middle_name,
+        mergedBody.last_name,
+      )} (${effectiveEmployeeType || "N/A"})`,
     });
+
     res
       .status(200)
       .json({ message: "Employee updated successfully", data: result });
@@ -470,14 +522,17 @@ const deleteEmployee = async (req, res) => {
     }
 
     const result = await Employee.delete(req.params.id);
+    const effectiveEmployeeType = getEffectiveEmployeeType(employee);
+
     await Backlog.record({
       user_id: req.user.id,
       school_id: employee.school_id || null,
       employee_id: Number(req.params.id),
       leave_id: null,
       action: "EMPLOYEE_DELETED",
-      details: `${employee.first_name} ${employee.last_name} (${employee.employee_type})`,
+      details: `${employee.first_name} ${employee.last_name} (${effectiveEmployeeType || "N/A"})`,
     });
+
     res
       .status(200)
       .json({ message: "Employee deleted successfully", data: result });
@@ -492,7 +547,6 @@ const archiveEmployee = async (req, res) => {
   try {
     const { password, archive_reason } = req.body;
 
-    // Require password for archiving
     if (!password) {
       return res
         .status(400)
@@ -515,7 +569,6 @@ const archiveEmployee = async (req, res) => {
       return res.status(409).json({ message: "Employee is already archived" });
     }
 
-    // Verify the user's password before allowing the archive
     const [userRows] = await pool
       .promise()
       .query("SELECT password_hash FROM users WHERE id = ? AND is_active = 1", [
@@ -542,13 +595,15 @@ const archiveEmployee = async (req, res) => {
       return res.status(404).json({ message: "Employee not found" });
     }
 
+    const effectiveEmployeeType = getEffectiveEmployeeType(employee);
+
     await Backlog.record({
       user_id: req.user.id,
       school_id: employee.school_id || null,
       employee_id: Number(req.params.id),
       leave_id: null,
       action: "EMPLOYEE_ARCHIVED",
-      details: `${employee.first_name} ${employee.last_name} (${employee.employee_type}) — Reason: ${archiveReason}`,
+      details: `${employee.first_name} ${employee.last_name} (${effectiveEmployeeType || "N/A"}) — Reason: ${archiveReason}`,
     });
 
     return res.status(200).json({ message: "Employee archived successfully" });
@@ -572,7 +627,6 @@ const unarchiveEmployee = async (req, res) => {
       return res.status(409).json({ message: "Employee is not archived" });
     }
 
-    // Verify password before allowing unarchive
     const { password } = req.body;
     if (!password) {
       return res
@@ -602,13 +656,15 @@ const unarchiveEmployee = async (req, res) => {
       return res.status(404).json({ message: "Employee not found" });
     }
 
+    const effectiveEmployeeType = getEffectiveEmployeeType(employee);
+
     await Backlog.record({
       user_id: req.user.id,
       school_id: employee.school_id || null,
       employee_id: Number(req.params.id),
       leave_id: null,
       action: "EMPLOYEE_UNARCHIVED",
-      details: `${employee.first_name} ${employee.last_name} (${employee.employee_type})`,
+      details: `${employee.first_name} ${employee.last_name} (${effectiveEmployeeType || "N/A"})`,
     });
 
     return res.status(200).json({ message: "Employee restored successfully" });
