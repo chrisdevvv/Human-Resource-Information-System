@@ -182,6 +182,9 @@ export default function EmployeesListLayout() {
   const [totalItems, setTotalItems] = useState<number>(0);
   const [employeeLoading, setEmployeeLoading] = useState(true);
   const [employeeError, setEmployeeError] = useState<string | null>(null);
+  const [allSchoolOptions, setAllSchoolOptions] = useState<
+    Array<{ id: number; name: string }>
+  >([]);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [selectedViewEmployee, setSelectedViewEmployee] =
@@ -220,8 +223,9 @@ export default function EmployeesListLayout() {
         params.set("school_id", schoolFilter);
       }
       if (letterFilter !== "ALL") params.set("letter", letterFilter);
-      if (retirementFilter !== "ALL")
+      if (retirementFilter !== "ALL") {
         params.set("retirement", retirementFilter);
+      }
       params.set("sortOrder", sortOrder);
       params.set("page", String(currentPage));
       params.set("pageSize", String(itemsPerPage));
@@ -266,6 +270,63 @@ export default function EmployeesListLayout() {
     }
   };
 
+  const fetchAllSchools = async () => {
+    if (currentUserRole !== "SUPER_ADMIN") {
+      setAllSchoolOptions([]);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        return;
+      }
+
+      const scopedEndpoint = getEmployeesEndpoint();
+      const params = new URLSearchParams();
+      params.set("sortOrder", "asc");
+      params.set("page", "1");
+      params.set("pageSize", "1000");
+
+      const response = await fetch(
+        `${API_BASE}${scopedEndpoint}?${params.toString()}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const body = await parseApiBody<EmployeeApiResponse>(response);
+      if (!response.ok) {
+        throw new Error(
+          body.message || `Failed to fetch schools (HTTP ${response.status}).`,
+        );
+      }
+
+      const unique = new Map<number, string>();
+      (body.data || []).forEach((item) => {
+        if (
+          typeof item.school_id === "number" &&
+          item.school_id > 0 &&
+          item.school_name?.trim()
+        ) {
+          unique.set(item.school_id, item.school_name.trim());
+        }
+      });
+
+      const schools = Array.from(unique.entries())
+        .map(([id, name]) => ({ id, name }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      setAllSchoolOptions(schools);
+    } catch {
+      setAllSchoolOptions([]);
+    }
+  };
+
   useEffect(() => {
     if (activeTab !== "list") {
       return;
@@ -290,19 +351,36 @@ export default function EmployeesListLayout() {
     currentUserRole,
   ]);
 
+  useEffect(() => {
+    if (activeTab !== "list") {
+      return;
+    }
+
+    fetchAllSchools();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, currentUserRole]);
+
   const filteredEmployees = useMemo(() => employeeData, [employeeData]);
 
   const schoolOptions = useMemo(() => {
     const unique = new Map<number, string>();
+
+    allSchoolOptions.forEach((school) => {
+      if (school.id > 0 && school.name.trim()) {
+        unique.set(school.id, school.name.trim());
+      }
+    });
+
     employeeData.forEach((employee) => {
       if (employee.schoolId && employee.schoolName.trim()) {
         unique.set(employee.schoolId, employee.schoolName.trim());
       }
     });
+
     return Array.from(unique.entries())
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [employeeData]);
+  }, [allSchoolOptions, employeeData]);
 
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const paginatedEmployees = filteredEmployees;
@@ -392,6 +470,7 @@ export default function EmployeesListLayout() {
       setIsArchiveOpen(false);
       setShowArchiveSuccess(true);
       await fetchEmployees(false);
+      await fetchAllSchools();
     } catch (err) {
       setArchiveError(
         err instanceof Error
@@ -969,6 +1048,7 @@ export default function EmployeesListLayout() {
           setShowAddSuccessToast(true);
           if (activeTab === "list") {
             fetchEmployees(false);
+            fetchAllSchools();
           }
         }}
       />

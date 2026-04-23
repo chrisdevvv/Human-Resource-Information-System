@@ -8,6 +8,10 @@ import {
   ArrowDownAZ,
   Search,
   UserCheck,
+  Info,
+  ShieldCheck,
+  XCircle,
+  ArrowRight,
 } from "lucide-react";
 import { UserTableSkeleton } from "../../../components/Skeleton/SkeletonLoaders";
 import UserRolesDetailsModal, {
@@ -248,7 +252,7 @@ export default function PendingAccounts({
   };
 
   return (
-    <div className="w-full bg-white rounded-lg shadow-lg p-2 sm:p-3 sticky top-4 flex flex-col">
+    <div className="sticky top-4 flex w-full flex-col rounded-lg bg-white p-2 shadow-lg sm:p-3">
       <ToastMessage
         isVisible={toastState.isVisible}
         variant={toastState.variant}
@@ -266,14 +270,14 @@ export default function PendingAccounts({
 
       <h1
         style={{ fontSize: "20px" }}
-        className="font-bold text-gray-900 mb-4 inline-flex items-center gap-2"
+        className="mb-4 inline-flex items-center gap-2 font-bold text-gray-900"
       >
         <UserCheck size={24} className="text-blue-600" />
         Pending Accounts
       </h1>
 
       {/* Header with search and controls */}
-      <div className="flex flex-col gap-4 mb-6">
+      <div className="mb-6 flex flex-col gap-4">
         {/* Search and Status Row */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <div className="relative min-w-0 flex-1">
@@ -282,12 +286,12 @@ export default function PendingAccounts({
               placeholder="Search name, email, or school"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="text-gray-500 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <button
             onClick={handleSearch}
-            className="inline-flex w-full sm:w-auto items-center justify-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer whitespace-nowrap"
+            className="inline-flex w-full cursor-pointer items-center justify-center gap-1 px-4 py-2 text-sm font-medium whitespace-nowrap text-white bg-blue-600 rounded-lg transition hover:bg-blue-700 sm:w-auto"
           >
             <Search size={14} />
             Search
@@ -295,7 +299,7 @@ export default function PendingAccounts({
         </div>
 
         {/* Filters Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           {/* Status Filter */}
           <select
             value={statusFilter}
@@ -303,7 +307,7 @@ export default function PendingAccounts({
               setStatusFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-1 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="ALL">All</option>
             <option value="PENDING">Pending</option>
@@ -318,7 +322,7 @@ export default function PendingAccounts({
               setLetterFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-1 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="ALL">All Letters</option>
             {alphabet.map((letter) => (
@@ -335,7 +339,7 @@ export default function PendingAccounts({
               setDateSortOrder(e.target.value as "newest" | "oldest");
               setCurrentPage(1);
             }}
-            className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-1 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="newest">Newest</option>
             <option value="oldest">Oldest</option>
@@ -346,7 +350,7 @@ export default function PendingAccounts({
             onClick={() => {
               setSortOrder(sortOrder === "asc" ? "desc" : "asc");
             }}
-            className="text-gray-500 flex items-center gap-2 px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer"
+            className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-500 transition hover:bg-gray-50"
           >
             {sortOrder === "asc" ? (
               <>
@@ -364,7 +368,7 @@ export default function PendingAccounts({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
+      <div className="max-h-[42vh] overflow-x-auto overflow-y-auto sm:max-h-[50vh]">
         {loading ? (
           <UserTableSkeleton rows={5} />
         ) : error ? (
@@ -375,13 +379,13 @@ export default function PendingAccounts({
           <table className="w-full">
             <thead className="sticky top-0 z-10 bg-blue-100">
               <tr className="border-b-2 border-gray-200">
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                <th className="bg-blue-100 px-3 py-1 text-left text-xs font-semibold text-blue-600 uppercase">
                   Name
                 </th>
-                <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                <th className="bg-blue-100 px-3 py-1 text-left text-xs font-semibold text-blue-600 uppercase">
                   Email
                 </th>
-                <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                <th className="bg-blue-100 px-3 py-1 text-center text-xs font-semibold text-blue-600 uppercase">
                   Actions
                 </th>
               </tr>
@@ -391,15 +395,15 @@ export default function PendingAccounts({
                 paginatedData.map((item) => (
                   <tr
                     key={item.id}
-                    className="border-b border-gray-100 hover:bg-gray-50 transition"
+                    className="border-b border-gray-100 transition hover:bg-gray-50"
                   >
-                    <td className="py-0.5 px-3 text-gray-900 text-sm font-medium">
+                    <td className="px-3 py-0.5 text-sm font-medium text-gray-900">
                       {item.firstName} {item.lastName}
                     </td>
-                    <td className="py-0.5 px-3 text-gray-500 text-sm">
+                    <td className="px-3 py-0.5 text-sm text-gray-500">
                       {item.email}
                     </td>
-                    <td className="py-0.5 px-3">
+                    <td className="px-3 py-0.5">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() =>
@@ -416,9 +420,12 @@ export default function PendingAccounts({
                               created_at: item.created_at,
                             })
                           }
-                          className="px-3 py-0.5 bg-blue-400 text-white rounded hover:bg-blue-500 transition text-sm font-medium cursor-pointer"
+                          className="cursor-pointer rounded bg-blue-400 px-3 py-0.5 text-sm font-medium text-white transition hover:bg-blue-500"
                         >
-                          Details
+                          <span className="inline-flex items-center gap-1">
+                            <Info size={14} />
+                            Details
+                          </span>
                         </button>
                         {item.status === "PENDING" ? (
                           <>
@@ -429,9 +436,12 @@ export default function PendingAccounts({
                                   name: `${item.firstName} ${item.lastName}`,
                                 })
                               }
-                              className="px-3 py-0.5 bg-green-400 text-white rounded hover:bg-green-500 transition text-sm font-medium cursor-pointer"
+                              className="cursor-pointer rounded bg-green-400 px-3 py-0.5 text-sm font-medium text-white transition hover:bg-green-500"
                             >
-                              Assign Role
+                              <span className="inline-flex items-center gap-1">
+                                <ShieldCheck size={14} />
+                                Assign Role
+                              </span>
                             </button>
                             <button
                               onClick={() =>
@@ -440,14 +450,17 @@ export default function PendingAccounts({
                                   name: `${item.firstName} ${item.lastName}`,
                                 })
                               }
-                              className="px-3 py-0.5 bg-red-400 text-white rounded hover:bg-red-500 transition text-sm font-medium cursor-pointer"
+                              className="cursor-pointer rounded bg-red-400 px-3 py-0.5 text-sm font-medium text-white transition hover:bg-red-500"
                             >
-                              Reject
+                              <span className="inline-flex items-center gap-1">
+                                <XCircle size={14} />
+                                Reject
+                              </span>
                             </button>
                           </>
                         ) : (
                           <span
-                            className={`px-3 py-0.5 rounded text-sm font-semibold ${
+                            className={`rounded px-3 py-0.5 text-sm font-semibold ${
                               item.status === "APPROVED"
                                 ? "bg-green-100 text-green-700"
                                 : "bg-red-100 text-red-700"
@@ -487,7 +500,7 @@ export default function PendingAccounts({
                   setCurrentPage(1);
                   setPageJumpInput("1");
                 }}
-                className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+                className="cursor-pointer rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
               >
                 {PAGE_SIZE_OPTIONS.map((option) => (
                   <option key={option} value={option}>
@@ -502,7 +515,7 @@ export default function PendingAccounts({
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                className="cursor-pointer rounded p-2 text-gray-500 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Previous page"
               >
                 <ChevronLeft size={18} />
@@ -511,7 +524,7 @@ export default function PendingAccounts({
                 item === "ellipsis" ? (
                   <span
                     key={`ellipsis-${index}`}
-                    className="px-2 text-sm text-gray-400 select-none"
+                    className="select-none px-2 text-sm text-gray-400"
                   >
                     ...
                   </span>
@@ -519,7 +532,7 @@ export default function PendingAccounts({
                   <button
                     key={item}
                     onClick={() => setCurrentPage(item)}
-                    className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
+                    className={`h-9 w-9 cursor-pointer rounded text-sm font-medium transition ${
                       currentPage === item
                         ? "bg-blue-600 text-white"
                         : "text-gray-500 hover:bg-gray-100"
@@ -534,7 +547,7 @@ export default function PendingAccounts({
                   setCurrentPage(Math.min(totalPages, currentPage + 1))
                 }
                 disabled={currentPage === totalPages}
-                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                className="cursor-pointer rounded p-2 text-gray-500 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Next page"
               >
                 <ChevronRight size={18} />
@@ -559,9 +572,12 @@ export default function PendingAccounts({
               />
               <button
                 onClick={handleJumpToPage}
-                className="rounded bg-gray-100 px-2 py-1 text-sm text-gray-700 hover:bg-gray-200"
+                className="cursor-pointer rounded bg-gray-100 px-2 py-1 text-sm text-gray-700 hover:bg-gray-200"
               >
-                Go
+                <span className="inline-flex items-center gap-1">
+                  <ArrowRight size={14} />
+                  Go
+                </span>
               </button>
             </div>
           </div>
