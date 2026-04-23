@@ -70,7 +70,12 @@ const Leave = {
 
     if (!pagination || !pagination.page) {
       const [rows] = await pool.promise().query(
-        `SELECT leaves.*, CONCAT(employees.first_name, ' ', employees.last_name) AS full_name, wi.employee_type AS employee_type, employees.school_id ${baseQuery} ${orderClause}`,
+        `SELECT
+           leaves.*,
+           CONCAT(employees.first_name, ' ', employees.last_name) AS full_name,
+           COALESCE(wi.current_employee_type, wi.employee_type) AS employee_type,
+           employees.school_id
+         ${baseQuery} ${orderClause}`,
         params,
       );
       return rows;
@@ -85,7 +90,12 @@ const Leave = {
       .query(`SELECT COUNT(1) as total ${baseQuery}`, params);
 
     const [rows] = await pool.promise().query(
-      `SELECT leaves.*, CONCAT(employees.first_name, ' ', employees.last_name) AS full_name, wi.employee_type AS employee_type, employees.school_id ${baseQuery} ${orderClause} LIMIT ? OFFSET ?`,
+      `SELECT
+         leaves.*,
+         CONCAT(employees.first_name, ' ', employees.last_name) AS full_name,
+         COALESCE(wi.current_employee_type, wi.employee_type) AS employee_type,
+         employees.school_id
+       ${baseQuery} ${orderClause} LIMIT ? OFFSET ?`,
       [...params, pageSize, offset],
     );
 
@@ -97,7 +107,7 @@ const Leave = {
       `
         SELECT leaves.*,
                CONCAT(employees.first_name, ' ', employees.last_name) AS full_name,
-               wi.employee_type AS employee_type,
+               COALESCE(wi.current_employee_type, wi.employee_type) AS employee_type,
                employees.school_id
         FROM leaves
         JOIN employees ON leaves.employee_id = employees.id
@@ -362,11 +372,18 @@ const Leave = {
   // Returns all non-teaching employees for batch monthly crediting
   getAllNonTeachingEmployees: async () => {
     const [rows] = await pool.promise().query(
-      `SELECT employees.id, employees.first_name, employees.last_name, wi.employee_type, employees.on_leave, employees.on_leave_from, employees.on_leave_until
+      `SELECT
+         employees.id,
+         employees.first_name,
+         employees.last_name,
+         COALESCE(wi.current_employee_type, wi.employee_type) AS employee_type,
+         employees.on_leave,
+         employees.on_leave_from,
+         employees.on_leave_until
        FROM employees
        LEFT JOIN work_information wi ON wi.employee_id = employees.id
        WHERE employees.is_archived = 0
-         AND LOWER(REPLACE(REPLACE(wi.employee_type, '_', '-'), ' ', '-')) = 'non-teaching'`,
+         AND LOWER(REPLACE(REPLACE(COALESCE(wi.current_employee_type, wi.employee_type), '_', '-'), ' ', '-')) = 'non-teaching'`,
     );
     return rows;
   },
@@ -374,18 +391,25 @@ const Leave = {
   // Returns teaching and teaching-related employees (excluded from monthly crediting)
   getAllTeachingEmployees: async () => {
     const [rows] = await pool.promise().query(
-      `SELECT employees.id, employees.first_name, employees.last_name, wi.employee_type, employees.on_leave, employees.on_leave_from, employees.on_leave_until
+      `SELECT
+         employees.id,
+         employees.first_name,
+         employees.last_name,
+         COALESCE(wi.current_employee_type, wi.employee_type) AS employee_type,
+         employees.on_leave,
+         employees.on_leave_from,
+         employees.on_leave_until
        FROM employees
        LEFT JOIN work_information wi ON wi.employee_id = employees.id
        WHERE employees.is_archived = 0
-         AND LOWER(REPLACE(REPLACE(wi.employee_type, '_', '-'), ' ', '-')) IN ('teaching', 'teaching-related')`,
+         AND LOWER(REPLACE(REPLACE(COALESCE(wi.current_employee_type, wi.employee_type), '_', '-'), ' ', '-')) IN ('teaching', 'teaching-related')`,
     );
     return rows;
   },
 
   getEmployeeTypeById: async (employee_id) => {
     const [rows] = await pool.promise().query(
-      `SELECT wi.employee_type
+      `SELECT COALESCE(wi.current_employee_type, wi.employee_type) AS employee_type
        FROM employees
        LEFT JOIN work_information wi ON wi.employee_id = employees.id
        WHERE employees.id = ?

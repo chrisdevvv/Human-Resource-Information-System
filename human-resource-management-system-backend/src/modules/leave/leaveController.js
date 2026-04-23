@@ -97,6 +97,12 @@ const formatEmployeeFullName = (employeeLike) => {
   return composedFullName || "employee";
 };
 
+const getEffectiveEmployeeType = (employeeLike) =>
+  employeeLike?.resolved_employee_type ||
+  employeeLike?.current_employee_type ||
+  employeeLike?.employee_type ||
+  null;
+
 const normalizePeriod = (yearInput, monthInput) => {
   const now = new Date();
   const year = yearInput !== undefined ? Number(yearInput) : now.getFullYear();
@@ -420,7 +426,10 @@ const computeRunningBalance = (previous, effect) => {
 // Recomputes running VL/SL balances for all rows of one employee.
 const recomputeEmployeeLeaveLedger = async (employee_id) => {
   const rows = await Leave.getByEmployeeOrdered(employee_id);
-  const employeeType = await Leave.getEmployeeTypeById(employee_id);
+  const employee = await Employee.getById(employee_id, {
+    includeArchived: true,
+  });
+  const employeeType = getEffectiveEmployeeType(employee);
   let runningVl = 0;
   let runningSl = 0;
 
@@ -552,7 +561,8 @@ const applyMonthlyCredit = async ({
       continue;
     }
 
-    const monthlyCredit = getMonthlyCreditByEmployeeType(emp.employee_type);
+    const employeeType = getEffectiveEmployeeType(emp);
+    const monthlyCredit = getMonthlyCreditByEmployeeType(employeeType);
     if (monthlyCredit.earnedVL <= 0 && monthlyCredit.earnedSL <= 0) {
       skipped++;
       skippedNames.push(fullName);
@@ -596,7 +606,7 @@ const applyMonthlyCredit = async ({
         earned_vl: monthlyCredit.earnedVL,
         earned_sl: monthlyCredit.earnedSL,
       },
-      { employeeType: emp.employee_type },
+      { employeeType },
     );
 
     const { bal_vl, bal_sl } = computeRunningBalance(
@@ -900,7 +910,7 @@ const createLeaveRequest = async (req, res) => {
     const prev_bal_sl = latest ? parseNum(latest.bal_sl) : 0;
 
     const effect = computeEntryEffect(req.body, {
-      employeeType: employee.employee_type,
+      employeeType: getEffectiveEmployeeType(employee),
     });
 
     const paidLeaveBalanceErrors = validatePaidAbsenceAgainstBalance({
@@ -1004,7 +1014,9 @@ const drawLeaveCardEmployeeMeta = (doc, employee) => {
   ]
     .filter(Boolean)
     .join(" ");
-  const normalizedEmployeeType = normalizeEmployeeType(employee.employee_type);
+  const normalizedEmployeeType = normalizeEmployeeType(
+    getEffectiveEmployeeType(employee),
+  );
   const employeeTypeLabel =
     normalizedEmployeeType === "non-teaching"
       ? "Non-Teaching"
@@ -1429,14 +1441,16 @@ const updateLeaveRequest = async (req, res) => {
       particulars = leave.particulars,
     } = req.body;
 
-    const employeeType = await Leave.getEmployeeTypeById(leave.employee_id);
+    const employee = await Employee.getById(leave.employee_id, {
+      includeArchived: true,
+    });
 
     const effect = computeEntryEffect(
       {
         ...leave,
         ...req.body,
       },
-      { employeeType },
+      { employeeType: getEffectiveEmployeeType(employee) },
     );
 
     // Recalculate balance using the entry that came directly before this one

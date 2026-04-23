@@ -18,6 +18,16 @@ const EMPLOYEE_SELECT_WITH_AGE = `
   wi.current_plantilla_no,
   DATE_FORMAT(wi.current_appointment_date, '%Y-%m-%d') AS current_appointment_date,
   wi.current_sg,
+
+  COALESCE(wi.current_employee_type, wi.employee_type) AS resolved_employee_type,
+  COALESCE(wi.current_position, wi.position) AS resolved_position,
+  COALESCE(wi.current_plantilla_no, wi.plantilla_no) AS resolved_plantilla_no,
+  DATE_FORMAT(
+    COALESCE(wi.current_appointment_date, wi.date_of_first_appointment),
+    '%Y-%m-%d'
+  ) AS resolved_appointment_date,
+  COALESCE(wi.current_sg, wi.sg) AS resolved_sg,
+
   wi.prc_license_no,
   wi.tin,
   wi.gsis_bp_no,
@@ -398,17 +408,45 @@ const Employee = {
 
     if (employeeType) {
       whereParts.push(
-        "LOWER(REPLACE(REPLACE(wi.employee_type, '_', '-'), ' ', '-')) = ?",
+        "LOWER(REPLACE(REPLACE(COALESCE(wi.current_employee_type, wi.employee_type), '_', '-'), ' ', '-')) = ?",
       );
       params.push(employeeType);
     }
 
     if (search) {
       whereParts.push(
-        "(employees.first_name LIKE ? OR employees.middle_name LIKE ? OR employees.last_name LIKE ? OR employees.email LIKE ? OR wi.employee_no LIKE ? OR wi.work_email LIKE ? OR wi.position LIKE ? OR schools.school_name LIKE ?)",
+        `(
+          employees.first_name LIKE ?
+          OR employees.middle_name LIKE ?
+          OR employees.last_name LIKE ?
+          OR employees.email LIKE ?
+          OR wi.employee_no LIKE ?
+          OR wi.work_email LIKE ?
+          OR wi.position LIKE ?
+          OR wi.current_position LIKE ?
+          OR wi.plantilla_no LIKE ?
+          OR wi.current_plantilla_no LIKE ?
+          OR wi.sg LIKE ?
+          OR wi.current_sg LIKE ?
+          OR schools.school_name LIKE ?
+        )`,
       );
       const like = `%${search}%`;
-      params.push(like, like, like, like, like, like, like, like);
+      params.push(
+        like,
+        like,
+        like,
+        like,
+        like,
+        like,
+        like,
+        like,
+        like,
+        like,
+        like,
+        like,
+        like,
+      );
     }
 
     if (letter) {
@@ -536,27 +574,38 @@ const Employee = {
     const normalizedWorkEmail = uniqueValues.workEmail;
     const normalizedPlantillaNo = uniqueValues.plantillaNo;
     const normalizedSg = normalizeOptionalText(sg);
+    const normalizedFirstAppointmentDate = normalizeOptionalDate(
+      date_of_first_appointment,
+    );
+
     const normalizedCurrentEmployeeType =
-      current_employee_type === undefined || current_employee_type === null
-        ? null
+      current_employee_type === undefined ||
+      current_employee_type === null ||
+      current_employee_type === ""
+        ? normalizedEmployeeType
         : normalizeEmployeeTypeForStorage(current_employee_type);
-    const normalizedCurrentPosition = normalizeOptionalText(current_position);
-    const normalizedCurrentPlantillaNo = normalizeOptionalText(
-      current_plantilla_no,
-    );
-    const normalizedCurrentAppointmentDate = normalizeOptionalDate(
-      current_appointment_date,
-    );
-    const normalizedCurrentSg = normalizeOptionalText(current_sg);
+
+    const normalizedCurrentPosition =
+      normalizeOptionalText(current_position) ??
+      normalizeOptionalText(position);
+
+    const normalizedCurrentPlantillaNo =
+      normalizeOptionalText(current_plantilla_no) ?? normalizedPlantillaNo;
+
+    const normalizedCurrentAppointmentDate =
+      normalizeOptionalDate(current_appointment_date) ??
+      normalizedFirstAppointmentDate;
+
+    const normalizedCurrentSg =
+      normalizeOptionalText(current_sg) ?? normalizedSg;
+
     const normalizedPrcLicenseNo = uniqueValues.prcLicenseNo;
     const normalizedTin = uniqueValues.tin;
     const normalizedGsisBpNo = uniqueValues.gsisBpNo;
     const normalizedGsisCrnNo = uniqueValues.gsisCrnNo;
     const normalizedPagibigNo = uniqueValues.pagibigNo;
     const normalizedPhilhealthNo = uniqueValues.philhealthNo;
-    const normalizedFirstAppointmentDate = normalizeOptionalDate(
-      date_of_first_appointment,
-    );
+
     const { yearsInService, loyaltyBonus } = computeServiceMetrics(
       normalizedFirstAppointmentDate,
     );
