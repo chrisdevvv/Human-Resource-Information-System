@@ -1,12 +1,20 @@
 "use client";
 // Component: LoginPage
 // Filename: LoginPage.tsx
-// Purpose: Landing page with direct login form and sticky header
+// Purpose: Landing page with portal selection and HRIS login form
 /* eslint-disable @next/next/no-img-element */
+
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff } from "../assets/icons";
-import { CircleHelp, Clock3, Mail as MailContact } from "lucide-react";
+import {
+  CircleHelp,
+  Clock3,
+  Mail as MailContact,
+  FileText,
+  ShieldCheck,
+  ArrowLeft,
+} from "lucide-react";
 import { ForgotModal, ErrorModal, RegistrationModal } from "./components";
 import ToastMessage from "@/frontend/components/ToastMessage";
 import DotLoader from "@/frontend/components/DotLoader";
@@ -54,6 +62,9 @@ function resetLandingTabOnLogin(role?: string) {
 export default function LoginPage() {
   const router = useRouter();
   const currentYear = new Date().getFullYear();
+
+  const [showHrisLogin, setShowHrisLogin] = useState(false);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -239,7 +250,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-100">
+    <div className="flex min-h-screen flex-col bg-[#eef3fb]">
       <ToastMessage
         isVisible={toastState.isVisible}
         variant={toastState.variant}
@@ -255,189 +266,315 @@ export default function LoginPage() {
         }
       />
 
-      {/* Sticky Header */}
-      <header className="sticky top-0 z-50 bg-blue-700 px-6 py-4 text-white shadow-md">
+      <header className="sticky top-0 z-50 border-b border-blue-800/20 bg-blue-700 px-4 py-3 text-white shadow-md sm:px-6 sm:py-4">
         <div className="flex w-full items-center justify-start gap-3">
           <img
             src="/images/DepEd-CHRIS.svg"
             alt="DepEd CHRIS"
-            className="h-12 w-auto"
+            className="h-10 w-auto sm:h-12"
           />
-          <div className="text-left">
-            <p className="text-sm font-medium tracking-wide">
+          <div className="min-w-0 text-left">
+            <p className="text-[10px] font-medium tracking-wide sm:text-sm">
               DEPARTMENT OF EDUCATION
             </p>
-            <h1 className="text-xl font-bold leading-tight">
+            <h1 className="text-sm font-bold leading-tight sm:text-xl">
               CITY OF SAN JOSE DEL MONTE
             </h1>
-            <p className="text-sm font-normal leading-tight tracking-wide">
+            <p className="text-[10px] font-normal leading-tight tracking-wide sm:text-sm">
               CSJDM DepEd Human Resource Information System - CHRIS
             </p>
           </div>
         </div>
       </header>
 
-      {/* Login Form Section */}
-      <div className="flex flex-1 flex-col items-center justify-center p-4">
-        {/* Logos Container */}
-        <div className="-mt-10 flex items-center justify-center gap-6">
-          <img src="/sdologo-new.svg" alt="SD Logo" className="h-50 w-auto" />
-        </div>
-
-        <div className="w-full max-w-2xl rounded-xl border border-blue-200 bg-white p-6 shadow-2xl sm:p-8">
-          <div className="mb-1 flex items-center gap-2">
-            <Lock className="text-blue-600" size={20} />
-            <h2 className="text-xl font-bold text-gray-800">Sign in</h2>
-          </div>
-          <p className="mb-5 text-sm text-gray-500">
-            Use your email and password to continue
-          </p>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleLogin();
-            }}
-          >
-            {/* Email Field */}
-            <div className="mb-4">
-              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-                <Mail className="text-blue-600" size={18} />
-                Email
-              </label>
-              <input
-                id="loginEmail"
-                type="email"
-                placeholder="you@deped.gov.ph"
-                value={email}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setEmail(v);
-                  if (emailError && validateEmail(v)) setEmailError(null);
-                }}
-                onBlur={() => {
-                  if (!email) setEmailError("Email is required");
-                  else if (!validateEmail(email))
-                    setEmailError("Please enter a valid email address");
-                  else setEmailError(null);
-                }}
-                className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 ${emailError ? "border-red-500" : "border-gray-300"}`}
-                disabled={isLoading}
-              />
-              {emailError && (
-                <p className="mt-1 text-sm text-red-600">{emailError}</p>
-              )}
-            </div>
-
-            {/* Password Field */}
-            <div className="mb-6">
-              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-                <Lock className="text-blue-600" size={18} />
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  placeholder="••••••••"
-                  id="loginPassword"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (passwordError) setPasswordError(null);
-                  }}
-                  onBlur={() => {
-                    if (!password) setPasswordError("Password is required");
-                    else setPasswordError(null);
-                  }}
-                  className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 ${passwordError ? "border-red-500" : "border-gray-300"}`}
-                  disabled={isLoading}
+      <main className="flex flex-1 items-center justify-center px-4 py-6 sm:px-6 sm:py-10">
+        {!showHrisLogin ? (
+          <div className="w-full max-w-5xl">
+            <div className="rounded-[28px] border border-blue-100 bg-white/90 px-5 py-8 shadow-2xl backdrop-blur-sm sm:px-8 sm:py-10">
+              <div className="mx-auto mb-8 flex max-w-4xl flex-wrap items-center justify-center gap-5 sm:gap-8">
+                <img
+                  src="/images/DepEd-CHRIS.svg"
+                  alt="DepEd CHRIS"
+                  className="h-14 w-auto object-contain sm:h-16"
                 />
+                <img
+                  src="/sdologo-new.svg"
+                  alt="SD Logo"
+                  className="h-16 w-auto object-contain sm:h-20"
+                />
+              </div>
+
+              <div className="mx-auto max-w-3xl text-center">
+                <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+                  Hello, Guest!
+                </h2>
+                <p className="mt-2 text-lg font-semibold text-gray-800 sm:text-2xl">
+                  Choose your transaction.
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-gray-500 sm:text-base">
+                  Welcome to the official platform for employee records and
+                  human resource services.
+                </p>
+              </div>
+
+              <div className="mx-auto mt-8 grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
                 <button
                   type="button"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  onClick={() => setShowPassword((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  disabled={isLoading}
+                  className="group cursor-pointer rounded-3xl border border-blue-100 bg-white px-6 py-7 text-center shadow-md transition duration-200 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl"
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 transition group-hover:bg-blue-100">
+                    <FileText className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    E-Service Record
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-500">
+                    Access document-related services and record transactions.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowHrisLogin(true)}
+                  className="group cursor-pointer rounded-3xl border border-blue-100 bg-white px-6 py-7 text-center shadow-md transition duration-200 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl"
+                >
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 transition group-hover:bg-blue-100">
+                    <ShieldCheck className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Human Resource Information System
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-500">
+                    Proceed to the CHRIS login portal for authorized users.
+                  </p>
                 </button>
               </div>
-              {passwordError && (
-                <p className="mt-1 text-sm text-red-600">{passwordError}</p>
-              )}
             </div>
-
-            {/* Lockout Warning */}
-            {remainingLockTime > 0 && (
-              <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-3 py-3">
-                <p className="text-sm font-medium text-red-800">
-                  Too many failed login attempts
-                </p>
-                <p className="mt-1 text-sm text-red-700">
-                  Account locked. Try again in {remainingLockTime} second
-                  {remainingLockTime !== 1 ? "s" : ""}.
-                </p>
-              </div>
-            )}
-
-            {/* Login Button */}
-            <button
-              id="submitLogin"
-              type="submit"
-              className="flex w-full cursor-pointer items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={isLoading || remainingLockTime > 0}
-            >
-              {isLoading ? (
-                <div className="flex min-h-5 items-center justify-center">
-                  <DotLoader size={6} color="bg-white" />
-                </div>
-              ) : (
-                "Login"
-              )}
-            </button>
-          </form>
-
-          {/* In-card loading state */}
-          {isLoading && (
-            <div className="mt-6 flex flex-col items-center justify-center gap-3 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-6">
-              <DotLoader size={10} color="bg-blue-600" />
-              <p className="text-sm font-medium text-blue-700">
-                Signing in, please wait...
-              </p>
-            </div>
-          )}
-
-          {/* Links */}
-          <div className="mt-4 flex flex-col gap-2 text-sm sm:flex-row sm:justify-between">
-            <a
-              href="#"
-              id="registerLink"
-              onClick={(e) => {
-                e.preventDefault();
-                if (isLoading) return;
-                setShowRegister(true);
-              }}
-              className="text-blue-600 hover:underline"
-            >
-              Create account
-            </a>
-            <a
-              href="#"
-              id="forgotLink"
-              onClick={(e) => {
-                e.preventDefault();
-                if (isLoading) return;
-                setShowForgot(true);
-              }}
-              className="text-gray-600 hover:underline"
-            >
-              Forgot password?
-            </a>
           </div>
-        </div>
-      </div>
+        ) : (
+          <div className="w-full max-w-5xl">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_0.95fr] lg:gap-10">
+              <div className="hidden lg:flex">
+                <div className="w-full rounded-[28px] border border-blue-100 bg-white/90 p-8 shadow-2xl backdrop-blur-sm">
+                  <div className="mb-8 flex items-center justify-center">
+                    <img
+                      src="/sdologo-new.svg"
+                      alt="SD Logo"
+                      className="h-64 w-auto object-contain"
+                    />
+                  </div>
 
-      <footer className="bg-white px-6 py-4 text-gray-600 shadow-inner">
+                  <div className="text-center">
+                    <h2 className="text-3xl font-bold text-gray-900">
+                      Human Resource Information System
+                    </h2>
+                    <p className="mt-3 text-base leading-relaxed text-gray-600">
+                      Securely sign in to manage employee records, human resource
+                      services, and administrative tasks.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center">
+                <div className="w-full overflow-hidden rounded-[28px] border border-blue-100 bg-white shadow-2xl">
+                  <div className="border-b border-blue-100 bg-gradient-to-br from-blue-50 to-white px-5 py-5 lg:hidden">
+                    <div className="flex flex-col items-center text-center">
+                      <img
+                        src="/sdologo-new.svg"
+                        alt="SD Logo"
+                        className="mb-3 h-24 w-auto object-contain"
+                      />
+                      <h2 className="text-lg font-bold text-gray-900">
+                        Human Resource Information System
+                      </h2>
+                      <p className="mt-1 text-xs leading-relaxed text-gray-500">
+                        Sign in to continue to CHRIS.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-5 sm:p-7">
+                    <button
+                      type="button"
+                      onClick={() => setShowHrisLogin(false)}
+                      className="mb-4 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 hover:text-gray-800"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      Back
+                    </button>
+
+                    <div className="mb-1 flex items-center gap-2">
+                      <Lock className="text-blue-600" size={20} />
+                      <h2 className="text-xl font-bold text-gray-800">
+                        Sign in
+                      </h2>
+                    </div>
+                    <p className="mb-5 text-sm text-gray-500">
+                      Use your email and password to continue
+                    </p>
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleLogin();
+                      }}
+                    >
+                      <div className="mb-4">
+                        <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <Mail className="text-blue-600" size={18} />
+                          Email
+                        </label>
+                        <input
+                          id="loginEmail"
+                          type="email"
+                          placeholder="you@deped.gov.ph"
+                          value={email}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setEmail(v);
+                            if (emailError && validateEmail(v)) {
+                              setEmailError(null);
+                            }
+                          }}
+                          onBlur={() => {
+                            if (!email) setEmailError("Email is required");
+                            else if (!validateEmail(email)) {
+                              setEmailError("Please enter a valid email address");
+                            } else {
+                              setEmailError(null);
+                            }
+                          }}
+                          className={`w-full rounded-xl border bg-white px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${emailError ? "border-red-500" : "border-gray-300"}`}
+                          disabled={isLoading}
+                        />
+                        {emailError && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {emailError}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="mb-6">
+                        <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <Lock className="text-blue-600" size={18} />
+                          Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            placeholder="••••••••"
+                            id="loginPassword"
+                            type={showPassword ? "text" : "password"}
+                            value={password}
+                            onChange={(e) => {
+                              setPassword(e.target.value);
+                              if (passwordError) setPasswordError(null);
+                            }}
+                            onBlur={() => {
+                              if (!password) {
+                                setPasswordError("Password is required");
+                              } else {
+                                setPasswordError(null);
+                              }
+                            }}
+                            className={`w-full rounded-xl border bg-white px-4 py-3 pr-11 text-sm text-gray-700 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${passwordError ? "border-red-500" : "border-gray-300"}`}
+                            disabled={isLoading}
+                          />
+                          <button
+                            type="button"
+                            aria-label={
+                              showPassword ? "Hide password" : "Show password"
+                            }
+                            onClick={() => setShowPassword((s) => !s)}
+                            className="absolute right-3 top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center text-gray-500 transition hover:text-gray-700"
+                            disabled={isLoading}
+                          >
+                            {showPassword ? (
+                              <EyeOff size={18} />
+                            ) : (
+                              <Eye size={18} />
+                            )}
+                          </button>
+                        </div>
+                        {passwordError && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {passwordError}
+                          </p>
+                        )}
+                      </div>
+
+                      {remainingLockTime > 0 && (
+                        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 shadow-sm">
+                          <p className="text-sm font-medium text-red-800">
+                            Too many failed login attempts
+                          </p>
+                          <p className="mt-1 text-sm text-red-700">
+                            Account locked. Try again in {remainingLockTime}{" "}
+                            second{remainingLockTime !== 1 ? "s" : ""}.
+                          </p>
+                        </div>
+                      )}
+
+                      <button
+                        id="submitLogin"
+                        type="submit"
+                        className="flex w-full cursor-pointer items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isLoading || remainingLockTime > 0}
+                      >
+                        {isLoading ? (
+                          <div className="flex min-h-5 items-center justify-center">
+                            <DotLoader size={6} color="bg-white" />
+                          </div>
+                        ) : (
+                          "Login"
+                        )}
+                      </button>
+                    </form>
+
+                    {isLoading && (
+                      <div className="mt-6 flex flex-col items-center justify-center gap-3 rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-6">
+                        <DotLoader size={10} color="bg-blue-600" />
+                        <p className="text-sm font-medium text-blue-700">
+                          Signing in, please wait...
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="mt-5 flex flex-col gap-2 text-sm sm:flex-row sm:justify-between">
+                      <a
+                        href="#"
+                        id="registerLink"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (isLoading) return;
+                          setShowRegister(true);
+                        }}
+                        className="text-blue-600 transition hover:text-blue-700 hover:underline"
+                      >
+                        Create account
+                      </a>
+                      <a
+                        href="#"
+                        id="forgotLink"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (isLoading) return;
+                          setShowForgot(true);
+                        }}
+                        className="text-gray-600 transition hover:text-gray-800 hover:underline"
+                      >
+                        Forgot password?
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      <footer className="border-t border-gray-200 bg-white px-4 py-4 text-gray-600 shadow-inner sm:px-6">
         <div className="flex w-full flex-col gap-1.5 text-[11px] sm:flex-row sm:items-center sm:justify-between sm:text-xs">
           <div className="text-left sm:mr-auto">
             <button
@@ -537,7 +674,6 @@ export default function LoginPage() {
         visible={showRegister}
         onClose={() => setShowRegister(false)}
       />
-
       <ErrorModal error={error} onClose={() => setError(null)} />
     </div>
   );
