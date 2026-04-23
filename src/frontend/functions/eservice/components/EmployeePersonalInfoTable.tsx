@@ -72,7 +72,7 @@ export default function EmployeePersonalInfoTable({
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <table className="min-w-[1450px] w-full">
+        <table className="min-w-362.5 w-full">
           <thead className="bg-[#2f80ed] text-white">
             <tr>
               {[
