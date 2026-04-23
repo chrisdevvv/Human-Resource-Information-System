@@ -2321,10 +2321,17 @@ export default function ViewEmployeeModal({
               onSubmitSalaryHistory={handleSubmitSalaryHistory}
               onStartEditSalaryHistory={handleStartEditSalaryHistory}
               onCancelEditSalaryHistory={handleCancelEditSalaryHistory}
-              onChangeSalaryHistoryEditDraft={
-                handleChangeSalaryHistoryEditDraft
-              }
+              onChangeSalaryHistoryEditDraft={handleChangeSalaryHistoryEditDraft}
               onSubmitSalaryHistoryUpdate={handleSubmitSalaryHistoryUpdate}
+              employeeName={fullName}
+              employeeSex={resolvedDetails?.sex}
+              employeeLastName={resolvedDetails?.last_name || employee.lastName}
+              schoolName={resolvedDetails?.school_name || employee.schoolName}
+              employeeNumber={resolvedDetails?.employee_no || ""}
+              districtName={resolvedDetails?.district || resolvedDetails?.work_district || ""}
+              currentPosition={resolvedDetails?.current_position || resolvedDetails?.position || ""}
+              currentSalaryGrade={resolvedDetails?.current_sg || resolvedDetails?.sg}
+              currentPlantillaNo={resolvedDetails?.current_plantilla_no || resolvedDetails?.plantilla_no || ""}
             />
           )}
           <div className="mt-4 flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
