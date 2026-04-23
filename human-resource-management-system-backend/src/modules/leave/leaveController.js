@@ -267,7 +267,7 @@ const NUMERIC_LEAVE_FIELDS = [
 const validateLeaveFields = (data) => {
   for (const field of NUMERIC_LEAVE_FIELDS) {
     const raw = data[field];
-    if (raw === undefined || raw === null || raw === "") continue; // optional on update
+    if (raw === undefined || raw === null || raw === "") continue;
     const num = Number(raw);
     if (isNaN(num)) return `${field} must be a valid number.`;
     if (num < 0) return `${field} must not be negative.`;
@@ -275,26 +275,9 @@ const validateLeaveFields = (data) => {
   return null;
 };
 
-const validatePaidAbsenceAgainstBalance = ({
-  prev_bal_vl,
-  prev_bal_sl,
-  effect,
-}) => {
-  const errors = [];
-
-  if (effect.abs_with_pay_vl > parseNum(prev_bal_vl)) {
-    errors.push(
-      `Abs With Pay VL (${effect.abs_with_pay_vl}) exceeds available VL balance (${round2(prev_bal_vl)}).`,
-    );
-  }
-
-  if (effect.abs_with_pay_sl > parseNum(prev_bal_sl)) {
-    errors.push(
-      `Abs With Pay SL (${effect.abs_with_pay_sl}) exceeds available SL balance (${round2(prev_bal_sl)}).`,
-    );
-  }
-
-  return errors;
+// FIXED: allow paid leave to exceed available balance so running totals can go negative
+const validatePaidAbsenceAgainstBalance = () => {
+  return [];
 };
 
 const validateParticularAllowed = async (particulars) => {
@@ -419,21 +402,16 @@ const computeEntryEffect = (entryLike, { employeeType } = {}) => {
   };
 };
 
+// FIXED: remove Math.max(0, ...) so balances can become negative
 const computeRunningBalance = (previous, effect) => {
   const prev_vl = parseNum(previous?.bal_vl);
   const prev_sl = parseNum(previous?.bal_sl);
 
   const bal_vl = round2(
-    Math.max(
-      0,
-      prev_vl + effect.earned_vl - effect.abs_with_pay_vl - effect.monetized_vl,
-    ),
+    prev_vl + effect.earned_vl - effect.abs_with_pay_vl - effect.monetized_vl,
   );
   const bal_sl = round2(
-    Math.max(
-      0,
-      prev_sl + effect.earned_sl - effect.abs_with_pay_sl - effect.monetized_sl,
-    ),
+    prev_sl + effect.earned_sl - effect.abs_with_pay_sl - effect.monetized_sl,
   );
 
   return { bal_vl, bal_sl };
