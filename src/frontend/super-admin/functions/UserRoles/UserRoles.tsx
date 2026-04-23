@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -83,10 +83,12 @@ const getInitialUserRolesTab = (): "users" | "pending" => {
 
 export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
   const isAdminMode = mode === "admin";
+
   const [activeTab, setActiveTab] = useState<"users" | "pending">(
     getInitialUserRolesTab,
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [accountStatusFilter, setAccountStatusFilter] = useState<
     "ACTIVE" | "INACTIVE" | "ALL"
@@ -122,7 +124,9 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
     title: "",
     message: "",
   });
+
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+  const fetchRequestIdRef = useRef(0);
 
   const showToast = (
     variant: "success" | "error",
@@ -147,7 +151,9 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
         school_id?: number | string | null;
         schoolId?: number | string | null;
       };
+
       setCurrentUserRole(normalizeRole(parsed.role));
+
       const schoolId = Number(parsed.school_id ?? parsed.schoolId);
       setCurrentUserSchoolId(
         Number.isFinite(schoolId) && schoolId > 0 ? schoolId : null,
@@ -159,6 +165,16 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
   }, []);
 
   useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+      setCurrentPage(1);
+      setPageJumpInput("1");
+    }, 350);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  useEffect(() => {
     const fetchSchools = async () => {
       if (currentUserRole !== "SUPER_ADMIN") {
         setSchoolFilter("ALL");
@@ -168,6 +184,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
 
       try {
         setSchoolsLoading(true);
+
         const response = await fetch(`${API_BASE}/api/schools/public/list`, {
           method: "GET",
           headers: {
@@ -191,111 +208,134 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
     fetchSchools();
   }, [currentUserRole]);
 
-  const fetchUsers = async (
-    showSpinner = true,
-    overrides: { page?: number; pageSize?: number } = {},
-  ) => {
-    try {
-      if (showSpinner) {
-        setUserLoading(true);
-      }
+  const fetchUsers = useCallback(
+    async (
+      showSpinner = true,
+      overrides: {
+        page?: number;
+        pageSize?: number;
+        search?: string;
+      } = {},
+    ) => {
+      const requestId = ++fetchRequestIdRef.current;
 
-      const token = localStorage.getItem("authToken");
-      if (!token) throw new Error("No authentication token found.");
+      try {
+        if (showSpinner) {
+          setUserLoading(true);
+        }
 
-      const params = new URLSearchParams();
-      if (searchQuery) params.set("search", searchQuery);
-      if (roleFilter && roleFilter !== "ALL") params.set("role", roleFilter);
-      if (accountStatusFilter && accountStatusFilter !== "ALL") {
-        params.set("is_active", accountStatusFilter === "ACTIVE" ? "1" : "0");
-      }
-      if (currentUserRole === "SUPER_ADMIN" && schoolFilter !== "ALL") {
-        params.set("school_id", schoolFilter);
-      }
-      if (letterFilter !== "ALL") params.set("letter", letterFilter);
-      if (sortOrder) params.set("sortOrder", sortOrder);
-      const nextPage = overrides.page ?? currentPage;
-      const nextPageSize = overrides.pageSize ?? itemsPerPage;
-      params.set("page", String(nextPage));
-      params.set("pageSize", String(nextPageSize));
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          throw new Error("No authentication token found.");
+        }
 
-      const response = await fetch(
-        `${API_BASE}/api/users/?${params.toString()}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+        const params = new URLSearchParams();
+        const effectiveSearch = overrides.search ?? debouncedSearchQuery;
+        const nextPage = overrides.page ?? currentPage;
+        const nextPageSize = overrides.pageSize ?? itemsPerPage;
+
+        if (effectiveSearch) params.set("search", effectiveSearch);
+        if (roleFilter !== "ALL") params.set("role", roleFilter);
+
+        if (accountStatusFilter !== "ALL") {
+          params.set("is_active", accountStatusFilter === "ACTIVE" ? "1" : "0");
+        }
+
+        if (currentUserRole === "SUPER_ADMIN" && schoolFilter !== "ALL") {
+          params.set("school_id", schoolFilter);
+        } else if (
+          currentUserRole === "ADMIN" &&
+          currentUserSchoolId &&
+          currentUserSchoolId > 0
+        ) {
+          params.set("school_id", String(currentUserSchoolId));
+        }
+
+        if (letterFilter !== "ALL") params.set("letter", letterFilter);
+        if (sortOrder) params.set("sortOrder", sortOrder);
+
+        params.set("page", String(nextPage));
+        params.set("pageSize", String(nextPageSize));
+
+        const response = await fetch(
+          `${API_BASE}/api/users/?${params.toString()}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
           },
-        },
-      );
+        );
 
-      if (!response.ok) throw new Error("Failed to fetch users");
+        if (!response.ok) {
+          throw new Error("Failed to fetch users");
+        }
 
-      const result = await response.json();
-      const rows = (result.data || []) as UserApiRow[];
-      const formatted = rows.map((item) => ({
-        id: item.id,
-        firstName: item.first_name,
-        lastName: item.last_name,
-        email: item.email,
-        schoolId: item.school_id ?? null,
-        schoolName: item.school_name || "N/A",
-        role: item.role,
-        isActive: normalizeIsActive(item.is_active),
-      }));
-      const resultTotal = (result as { total?: number }).total;
-      setUserData(formatted);
-      setTotalItems(
-        typeof resultTotal === "number" ? resultTotal : formatted.length,
-      );
-      setUserError(null);
-    } catch (err) {
-      setUserError(err instanceof Error ? err.message : "An error occurred");
-      if (showSpinner) {
-        setUserData([]);
-        setTotalItems(0);
+        const result = await response.json();
+
+        if (requestId !== fetchRequestIdRef.current) {
+          return;
+        }
+
+        const rows = (result.data || []) as UserApiRow[];
+        const formatted: User[] = rows.map((item) => ({
+          id: item.id,
+          firstName: item.first_name,
+          lastName: item.last_name,
+          email: item.email,
+          schoolId: item.school_id ?? null,
+          schoolName: item.school_name || "N/A",
+          role: item.role,
+          isActive: normalizeIsActive(item.is_active),
+        }));
+
+        const resultTotal = (result as { total?: number }).total;
+
+        setUserData(formatted);
+        setTotalItems(
+          typeof resultTotal === "number" ? resultTotal : formatted.length,
+        );
+        setUserError(null);
+      } catch (err) {
+        if (requestId !== fetchRequestIdRef.current) {
+          return;
+        }
+
+        setUserError(err instanceof Error ? err.message : "An error occurred");
+
+        if (showSpinner) {
+          setUserData([]);
+          setTotalItems(0);
+        }
+      } finally {
+        if (requestId === fetchRequestIdRef.current && showSpinner) {
+          setUserLoading(false);
+        }
       }
-    } finally {
-      if (showSpinner) {
-        setUserLoading(false);
-      }
-    }
-  };
+    },
+    [
+      debouncedSearchQuery,
+      roleFilter,
+      accountStatusFilter,
+      currentUserRole,
+      currentUserSchoolId,
+      schoolFilter,
+      letterFilter,
+      sortOrder,
+      currentPage,
+      itemsPerPage,
+    ],
+  );
 
   useEffect(() => {
     fetchUsers();
-  }, [
-    isAdminMode,
-    currentUserRole,
-    currentUserSchoolId,
-    schoolFilter,
-    currentPage,
-    itemsPerPage,
-    roleFilter,
-    accountStatusFilter,
-    letterFilter,
-    sortOrder,
-    settingsTarget,
-    detailsTargetId,
-    detailsEditTarget,
-    showAddUserModal,
-  ]);
-
-  useEffect(() => {
-    const id = window.setTimeout(() => {
-      setCurrentPage(1);
-      fetchUsers(true, { page: 1, pageSize: itemsPerPage });
-    }, 350);
-
-    return () => window.clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery]);
+  }, [fetchUsers]);
 
   const filteredUsers = userData;
-
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const paginatedUsers = filteredUsers;
+
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =
     Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
@@ -303,10 +343,12 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
     totalPages,
     pageGroupStart + PAGE_WINDOW_SIZE - 1,
   );
+
   const pageNumberItems: Array<number | "ellipsis"> = Array.from(
     { length: pageGroupEnd - pageGroupStart + 1 },
     (_, i) => pageGroupStart + i,
   );
+
   if (pageGroupEnd < totalPages) {
     if (totalPages - pageGroupEnd > 1) {
       pageNumberItems.push("ellipsis");
@@ -324,13 +366,16 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
   }, [currentPage, totalPages]);
 
   const handleSearch = () => {
+    const trimmed = searchQuery.trim();
+    setDebouncedSearchQuery(trimmed);
     setCurrentPage(1);
     setPageJumpInput("1");
-    fetchUsers(true, { page: 1, pageSize: itemsPerPage });
+    fetchUsers(true, { page: 1, pageSize: itemsPerPage, search: trimmed });
   };
 
   const handleResetFilters = () => {
     setSearchQuery("");
+    setDebouncedSearchQuery("");
     setRoleFilter("ALL");
     setAccountStatusFilter("ACTIVE");
     setSchoolFilter("ALL");
@@ -342,6 +387,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
 
   const handleJumpToPage = () => {
     const parsed = Number.parseInt(pageJumpInput, 10);
+
     if (Number.isNaN(parsed)) {
       setPageJumpInput(String(currentPage));
       return;
@@ -377,7 +423,6 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
         }
       />
 
-      {/* Tabs */}
       <div className="flex flex-col sm:flex-row justify-start gap-2 mb-4">
         <button
           onClick={() => setActiveTab("users")}
@@ -392,6 +437,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
             User & Roles
           </span>
         </button>
+
         <button
           onClick={() => setActiveTab("pending")}
           className={`w-full sm:w-auto px-4 py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
@@ -407,7 +453,6 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
         </button>
       </div>
 
-      {/* Tab Content */}
       {activeTab === "users" && (
         <div className="w-full min-w-0 bg-white rounded-lg shadow-lg p-2 sm:p-3 flex flex-col border border-gray-100">
           <h1
@@ -418,9 +463,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
             {isAdminMode ? "User & Roles (Admin Only)" : "User & Roles"}
           </h1>
 
-          {/* Header with search and controls */}
           <div className="flex flex-col gap-4 mb-6">
-            {/* Search and Status Row */}
             <div className="flex flex-col gap-2 min-w-0 sm:flex-row sm:items-center sm:gap-3">
               <div className="relative min-w-0 flex-1">
                 <input
@@ -431,6 +474,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                   className="text-gray-500 w-full px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
+
               <button
                 onClick={handleSearch}
                 className="inline-flex w-full shrink-0 sm:w-auto items-center justify-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-xs sm:text-sm cursor-pointer whitespace-nowrap"
@@ -440,7 +484,6 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
               </button>
             </div>
 
-            {/* Filters Row */}
             <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-center lg:justify-start">
               <div className="grid gap-3 sm:grid-cols-2 lg:flex lg:flex-row lg:items-center">
                 <button
@@ -456,6 +499,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                   onChange={(e) => {
                     setRoleFilter(e.target.value);
                     setCurrentPage(1);
+                    setPageJumpInput("1");
                   }}
                   className="text-gray-500 w-full sm:w-auto sm:min-w-36 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
@@ -473,6 +517,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                     onChange={(e) => {
                       setSchoolFilter(e.target.value);
                       setCurrentPage(1);
+                      setPageJumpInput("1");
                     }}
                     className="w-full sm:w-auto sm:min-w-48 lg:max-w-[18rem] text-gray-500 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                     disabled={schoolsLoading}
@@ -495,6 +540,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                       e.target.value as "ACTIVE" | "INACTIVE" | "ALL",
                     );
                     setCurrentPage(1);
+                    setPageJumpInput("1");
                   }}
                   className="text-gray-500 w-full sm:w-auto sm:min-w-42 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
@@ -508,6 +554,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                   onChange={(e) => {
                     setLetterFilter(e.target.value);
                     setCurrentPage(1);
+                    setPageJumpInput("1");
                   }}
                   className="text-gray-500 w-full sm:w-auto sm:min-w-34 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
                 >
@@ -521,7 +568,9 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
 
                 <button
                   onClick={() => {
-                    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+                    setCurrentPage(1);
+                    setPageJumpInput("1");
                   }}
                   className="text-gray-500 flex items-center justify-center gap-2 px-3 py-2 sm:py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium cursor-pointer whitespace-nowrap shrink-0"
                 >
@@ -551,7 +600,6 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
             </div>
           </div>
 
-          {/* Table */}
           <div className="overflow-x-auto overflow-y-auto max-h-[42vh] sm:max-h-[50vh]">
             {userLoading ? (
               <UserTableSkeleton rows={5} />
@@ -580,6 +628,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                     </th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {paginatedUsers.length > 0 ? (
                     paginatedUsers.map((user) => (
@@ -617,6 +666,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                             >
                               <Eye size={12} />
                             </button>
+
                             <button
                               onClick={() => {
                                 if (isAdminMode) {
@@ -678,7 +728,6 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
             )}
           </div>
 
-          {/* Pagination */}
           {filteredUsers.length > 0 && (
             <div className="mt-6">
               <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
@@ -711,6 +760,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                   >
                     <ChevronLeft size={18} />
                   </button>
+
                   {pageNumberItems.map((item, index) =>
                     item === "ellipsis" ? (
                       <span
@@ -733,6 +783,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                       </button>
                     ),
                   )}
+
                   <button
                     onClick={() =>
                       setCurrentPage(Math.min(totalPages, currentPage + 1))
@@ -774,7 +825,6 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
         </div>
       )}
 
-      {/* Pending Accounts Tab */}
       {activeTab === "pending" && (
         <PendingAccounts onRefreshUsers={() => fetchUsers(false)} />
       )}
@@ -791,6 +841,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
           userId={detailsEditTarget.id}
           onClose={() => setDetailsEditTarget(null)}
           onSuccess={(message) => {
+            setDetailsEditTarget(null);
             fetchUsers(false);
             showToast(
               "success",
@@ -838,6 +889,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
           onSuccess={() => {
             setShowAddUserModal(false);
             fetchUsers(false);
+            showToast("success", "User Added", "User added successfully.");
           }}
         />
       )}
@@ -877,6 +929,7 @@ function UserDetailsModalInline({
     const fetchDetails = async () => {
       try {
         setLoading(true);
+
         const token = localStorage.getItem("authToken");
         if (!token) throw new Error("No authentication token found.");
 
@@ -889,11 +942,17 @@ function UserDetailsModalInline({
         });
 
         if (!response.ok) {
-          const body = await response.json();
+          let body: { message?: string } = {};
+          try {
+            body = (await response.json()) as { message?: string };
+          } catch {
+            body = {};
+          }
           throw new Error(body.message || "Failed to fetch user details.");
         }
 
         const result = (await response.json()) as UserDetailsResponse;
+
         if (!result.data) {
           throw new Error("User details not found.");
         }
@@ -912,6 +971,7 @@ function UserDetailsModalInline({
 
   const formatDate = (value?: string) => {
     if (!value) return "N/A";
+
     return new Date(value).toLocaleString("en-PH", {
       year: "numeric",
       month: "long",

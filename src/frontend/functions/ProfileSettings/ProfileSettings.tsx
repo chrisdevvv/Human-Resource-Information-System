@@ -821,8 +821,6 @@ export default function ProfileSettings() {
   const fieldLabelClass =
     "text-[11px] font-semibold uppercase tracking-[0.14em] text-[#7389b4]";
   const helperLabelClass = "text-sm font-semibold text-[#47608f]";
-  const readOnlyInputClass =
-    "mt-2 w-full rounded-2xl border border-[#d7e4ff] bg-[#f6f9ff] px-3 py-2.5 text-sm text-[#47608f] shadow-sm";
   const editableInputClass =
     "mt-2 w-full rounded-2xl border border-[#c7dafd] bg-white px-3 py-2.5 text-sm text-[#31507c] shadow-sm transition focus:border-[#254ee5] focus:outline-none focus:ring-2 focus:ring-[#254ee5]/20";
   const disabledInputClass =
