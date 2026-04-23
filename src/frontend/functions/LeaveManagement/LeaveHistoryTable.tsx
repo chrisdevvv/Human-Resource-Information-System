@@ -143,7 +143,7 @@ export default function LeaveHistoryTable({
               rows.map((row, i) => (
                 <tr
                   key={row.id}
-                  className={`border-b ${i % 2 ? "bg-sky-50" : "bg-white"}`}
+                  className={`${i % 2 ? "bg-sky-50" : "bg-white"}`}
                 >
                   {selectable && (
                     <td className="px-2 py-2 text-center">
@@ -151,7 +151,7 @@ export default function LeaveHistoryTable({
                         type="checkbox"
                         checked={Boolean(selectedIds?.has(row.id))}
                         onChange={() => onToggleRow?.(row.id)}
-                        className="h-4 w-4 cursor-pointer rounded border-gray-300"
+                        className="h-4 w-4 cursor-pointer rounded border-gray-100"
                       />
                     </td>
                   )}
@@ -263,7 +263,9 @@ export default function LeaveHistoryTable({
                 </div>
 
                 <div>
-                  <span className="font-bold text-gray-500">VL Without Pay</span>
+                  <span className="font-bold text-gray-500">
+                    VL Without Pay
+                  </span>
                   <div className="font-bold text-gray-700">
                     {formatNumber(mobileRow.absWithoutPayVl)}
                   </div>
@@ -271,7 +273,9 @@ export default function LeaveHistoryTable({
 
                 <div>
                   <span className="font-bold text-gray-500">VL Balance</span>
-                  <div className="font-bold">{formatNumber(mobileRow.balVl)}</div>
+                  <div className="font-bold">
+                    {formatNumber(mobileRow.balVl)}
+                  </div>
                 </div>
 
                 <div>
@@ -289,7 +293,9 @@ export default function LeaveHistoryTable({
                 </div>
 
                 <div>
-                  <span className="font-bold text-gray-500">SL Without Pay</span>
+                  <span className="font-bold text-gray-500">
+                    SL Without Pay
+                  </span>
                   <div className="font-bold text-gray-700">
                     {formatNumber(mobileRow.absWithoutPaySl)}
                   </div>
@@ -297,7 +303,9 @@ export default function LeaveHistoryTable({
 
                 <div>
                   <span className="font-bold text-gray-500">SL Balance</span>
-                  <div className="font-bold">{formatNumber(mobileRow.balSl)}</div>
+                  <div className="font-bold">
+                    {formatNumber(mobileRow.balSl)}
+                  </div>
                 </div>
               </div>
 
@@ -318,7 +326,9 @@ export default function LeaveHistoryTable({
               ) : (
                 <button
                   type="button"
-                  onClick={() => setMobileIndex((prev) => Math.max(prev - 1, 0))}
+                  onClick={() =>
+                    setMobileIndex((prev) => Math.max(prev - 1, 0))
+                  }
                   className="rounded-xl bg-blue-100 px-3 py-2 text-xs font-bold text-blue-700"
                 >
                   Previous
@@ -337,7 +347,9 @@ export default function LeaveHistoryTable({
                 <button
                   type="button"
                   onClick={() =>
-                    setMobileIndex((prev) => Math.min(prev + 1, rows.length - 1))
+                    setMobileIndex((prev) =>
+                      Math.min(prev + 1, rows.length - 1),
+                    )
                   }
                   className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white"
                 >

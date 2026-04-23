@@ -1,7 +1,19 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, EyeOff, Pencil, Save, XCircle } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Pencil,
+  Save,
+  XCircle,
+  ShieldCheck,
+  Mail,
+  CalendarDays,
+  School,
+  UserRound,
+  KeyRound,
+} from "lucide-react";
 import ConfirmationModal from "../../super-admin/components/ConfirmationModal";
 import { logoutNow } from "@/frontend/auth/session";
 import { APP_ROUTES } from "@/frontend/route";
@@ -796,8 +808,38 @@ export default function ProfileSettings() {
     }
   };
 
+  const shellClass =
+    "relative overflow-hidden rounded-[28px] border border-[#d7e5ff] bg-white shadow-[0_18px_50px_rgba(37,78,229,0.10)]";
+  const cardClass =
+    "overflow-hidden rounded-[24px] border border-[#dbe7ff] bg-white shadow-[0_10px_35px_rgba(37,78,229,0.08)]";
+  const cardHeaderClass =
+    "flex flex-col gap-3 border-b border-[#dbe7ff] bg-gradient-to-r from-[#eef4ff] via-[#f4f8ff] to-[#eef4ff] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5";
+  const statCardClass =
+    "rounded-2xl border border-[#dbe7ff] bg-white/90 p-3 shadow-[0_6px_18px_rgba(37,78,229,0.06)]";
+  const fieldCardClass =
+    "rounded-2xl border border-[#e4edff] bg-white p-3 sm:p-4 shadow-[0_4px_14px_rgba(37,79,229,0.05)]";
+  const fieldLabelClass =
+    "text-[11px] font-semibold uppercase tracking-[0.14em] text-[#7389b4]";
+  const helperLabelClass = "text-sm font-semibold text-[#47608f]";
+  const editableInputClass =
+    "mt-2 w-full rounded-2xl border border-[#c7dafd] bg-white px-3 py-2.5 text-sm text-[#31507c] shadow-sm transition focus:border-[#254ee5] focus:outline-none focus:ring-2 focus:ring-[#254ee5]/20";
+  const disabledInputClass =
+    "mt-2 w-full rounded-2xl border border-[#d7e4ff] bg-[#f6f9ff] px-3 py-2.5 text-sm text-[#7b92bd] shadow-sm";
+  const subtlePanelClass =
+    "rounded-[24px] border border-[#dbe7ff] bg-gradient-to-br from-[#f8fbff] to-[#f3f7ff] p-4 sm:p-5";
+  const iconWrapClass =
+    "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#d6e4ff] bg-white text-[#254ee5] shadow-sm";
+  const sectionTitleClass = "text-lg font-bold text-[#254ee5]";
+  const sectionDescClass = "text-sm text-[#6f86b6]";
+  const actionPrimaryClass =
+    "rounded-2xl bg-[#254ee5] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1d3fc1] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500";
+  const actionSecondaryClass =
+    "rounded-2xl border border-[#cfe0ff] bg-white px-4 py-2.5 text-sm font-semibold text-[#47608f] shadow-sm transition hover:bg-[#f5f9ff] disabled:cursor-not-allowed disabled:opacity-50";
+  const inlineCheckboxClass =
+    "mt-3 inline-flex items-start gap-2 rounded-xl border border-[#dbe7ff] bg-white px-3 py-2 text-xs text-[#6f86b6] shadow-sm";
+
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-4">
+    <div className="mx-auto w-full max-w-6xl px-3 py-3 sm:px-4 sm:py-4 lg:px-6">
       <ToastMessage
         isVisible={toastState.isVisible}
         variant={toastState.variant}
@@ -813,626 +855,708 @@ export default function ProfileSettings() {
         }
       />
 
-      <div className="overflow-hidden rounded-xl border border-blue-200 bg-white shadow">
-        <div className="bg-blue-800 px-5 py-4 text-white">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-blue-200 bg-blue-600 text-lg font-bold">
-              {`${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}`
-                .toUpperCase()
-                .trim() || "U"}
+      <div className="space-y-4 sm:space-y-5">
+        <div className={shellClass}>
+          <div className="absolute inset-x-0 top-0 h-28 bg-linear-to-r from-[#254ee5]/10 via-[#7aa5ff]/10 to-[#254ee5]/5" />
+          <div className="relative p-4 sm:p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
+              <div className="flex-1 rounded-3xl border border-[#dbe7ff] bg-white/95 p-4 shadow-[0_10px_25px_rgba(37,78,229,0.08)] backdrop-blur sm:p-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[22px] border border-[#cfe0ff] bg-[#254ee5] text-xl font-bold text-white shadow-[0_8px_20px_rgba(37,78,229,0.28)] sm:h-20 sm:w-20 sm:text-2xl">
+                    {`${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}`
+                      .toUpperCase()
+                      .trim() || "U"}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a91bd]">
+                          Profile Overview
+                        </p>
+                        <h2 className="mt-1 wrap-break-word text-xl font-bold text-[#254ee5] sm:text-2xl">
+                          {`${profile.firstName} ${profile.lastName}`.trim()}
+                        </h2>
+                        <p className="mt-2 flex items-start gap-2 break-all text-sm text-[#5f76a3]">
+                          <Mail size={16} className="mt-0.5 shrink-0" />
+                          <span>{profile.email}</span>
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex rounded-full border border-[#bcd1ff] bg-[#f7faff] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#254ee5]">
+                          {profile.role}
+                        </span>
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold ${
+                            profile.accountStatus === "Active"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {profile.accountStatus}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <div className={statCardClass}>
+                        <p className={fieldLabelClass}>Birthday</p>
+                        <p className="mt-1 text-sm font-semibold text-[#35507d]">
+                          {profile.birthdate}
+                        </p>
+                      </div>
+                      <div className={statCardClass}>
+                        <p className={fieldLabelClass}>School</p>
+                        <p className="mt-1 text-sm font-semibold text-[#35507d]">
+                          {profile.school}
+                        </p>
+                      </div>
+                      <div className={statCardClass}>
+                        <p className={fieldLabelClass}>Member Since</p>
+                        <p className="mt-1 text-sm font-semibold text-[#35507d]">
+                          {profile.memberSince}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">
-                {`${profile.firstName} ${profile.lastName}`.trim()}
-              </h2>
-              <p className="text-sm text-blue-100">{profile.email}</p>
-              <span className="mt-1.5 inline-block rounded-md bg-blue-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-100">
-                {profile.role}
-              </span>
+
+            {profileError && (
+              <div className="mt-4">
+                <p className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-600">
+                  {profileError}
+                </p>
+              </div>
+            )}
+
+            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <div className={fieldCardClass}>
+                <div className="flex items-center gap-2">
+                  <div className={iconWrapClass}>
+                    <UserRound size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={fieldLabelClass}>Full Name</p>
+                    <p className="truncate text-sm font-semibold text-[#35507d]">
+                      {`${profile.firstName} ${toMiddleNamePart(profile.middleName)} ${profile.lastName}`
+                        .replace(/\s+/g, " ")
+                        .trim()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className={fieldCardClass}>
+                <div className="flex items-center gap-2">
+                  <div className={iconWrapClass}>
+                    <Mail size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={fieldLabelClass}>Email Address</p>
+                    <p className="truncate text-sm font-semibold text-[#35507d]">
+                      {profile.email}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className={fieldCardClass}>
+                <div className="flex items-center gap-2">
+                  <div className={iconWrapClass}>
+                    <ShieldCheck size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={fieldLabelClass}>Account Status</p>
+                    <p className="truncate text-sm font-semibold text-[#35507d]">
+                      {profile.accountStatus}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className={fieldCardClass}>
+                <div className="flex items-center gap-2">
+                  <div className={iconWrapClass}>
+                    <CalendarDays size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={fieldLabelClass}>Member Since</p>
+                    <p className="truncate text-sm font-semibold text-[#35507d]">
+                      {profile.memberSince}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {profileError && (
-          <p className="px-6 pt-4 text-sm text-red-600">{profileError}</p>
-        )}
+        <div className={cardClass}>
+          <div className={cardHeaderClass}>
+            <div className="flex items-start gap-3">
+              <div className={iconWrapClass}>
+                <UserRound size={18} />
+              </div>
+              <div>
+                <h3 className={sectionTitleClass}>Profile Details</h3>
+                <p className={sectionDescClass}>
+                  Review and update your account information
+                </p>
+              </div>
+            </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 border-t border-gray-200">
-          <div className="border-b border-gray-200 px-5 py-3 sm:border-r">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-              Full Name
-            </p>
-            <input
-              readOnly
-              value={`${profile.firstName} ${toMiddleNamePart(profile.middleName)} ${profile.lastName}`
-                .replace(/\s+/g, " ")
-                .trim()}
-              className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500"
-            />
-          </div>
-          <div className="border-b border-gray-200 px-5 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-              Email Address
-            </p>
-            <input
-              readOnly
-              value={profile.email}
-              className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500"
-            />
-          </div>
-          <div className="border-b border-gray-200 px-5 py-3 sm:border-r">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-              Birthday
-            </p>
-            <input
-              readOnly
-              value={profile.birthdate}
-              className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500"
-            />
-          </div>
-          <div className="border-b border-gray-200 px-5 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-              Account Status
-            </p>
-            <input
-              readOnly
-              value={profile.accountStatus}
-              className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500"
-            />
-          </div>
-          <div className="px-5 py-3 sm:border-r">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-              Role
-            </p>
-            <input
-              readOnly
-              value={profile.role}
-              className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500"
-            />
-          </div>
-          <div className="px-5 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-              Member Since
-            </p>
-            <input
-              readOnly
-              value={profile.memberSince}
-              className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500"
-            />
-          </div>
-        </div>
-
-        <div className="border-t border-gray-200 px-5 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-            School
-          </p>
-          <input
-            readOnly
-            value={profile.school}
-            className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500"
-          />
-        </div>
-      </div>
-
-      <div className="border border-blue-200 bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">
-          Profile Details
-        </h3>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="text-sm font-medium text-gray-700">
-              First Name
-            </label>
-            <input
-              value={profileEditor.firstName}
-              onChange={(e) => {
-                setProfileEditor((prev) => ({
-                  ...prev,
-                  firstName: e.target.value,
-                }));
-                if (profileFieldErrors.firstName) {
-                  setProfileFieldErrors((prev) => ({
-                    ...prev,
-                    firstName: "",
-                  }));
-                }
-              }}
-              readOnly={!isEditingProfile}
-              className={`mt-1 w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                isEditingProfile
-                  ? "border-gray-300 text-gray-700 bg-white"
-                  : "border-gray-200 bg-gray-100 text-gray-500"
-              }`}
-            />
-            {profileFieldErrors.firstName && (
-              <p className="mt-1 text-xs text-red-600">
-                {profileFieldErrors.firstName}
-              </p>
-            )}
+            <div className="rounded-full border border-[#d7e5ff] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#6d86b3]">
+              {isEditingProfile ? "Editing Mode" : "View Mode"}
+            </div>
           </div>
 
-          <div>
-            <label className="text-sm font-medium text-gray-700">
-              Middle Name
-            </label>
-            <input
-              value={profileEditor.middleName}
-              onChange={(e) => {
-                setProfileEditor((prev) => ({
-                  ...prev,
-                  middleName: e.target.value,
-                }));
-                if (profileFieldErrors.middleName) {
-                  setProfileFieldErrors((prev) => ({
-                    ...prev,
-                    middleName: "",
-                  }));
-                }
-              }}
-              readOnly={!isEditingProfile || noMiddleName}
-              placeholder={
-                noMiddleName ? "No middle name provided" : "Middle name"
-              }
-              className={`mt-1 w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                isEditingProfile && !noMiddleName
-                  ? "border-gray-300 text-gray-700 bg-white"
-                  : "border-gray-200 bg-gray-100 text-gray-500"
-              }`}
-            />
-            <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
-              <input
-                type="checkbox"
-                checked={noMiddleName}
-                disabled={!isEditingProfile}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  setNoMiddleName(checked);
-                  if (checked) {
-                    setProfileEditor((prev) => ({ ...prev, middleName: "" }));
-                    setProfileFieldErrors((prev) => ({
-                      ...prev,
-                      middleName: "",
-                    }));
-                  }
-                }}
-                className="h-4 w-4 cursor-pointer disabled:cursor-not-allowed"
-              />
-              I don&apos;t have a middle name
-            </label>
-            {profileFieldErrors.middleName && (
-              <p className="mt-1 text-xs text-red-600">
-                {profileFieldErrors.middleName}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700">
-              Last Name
-            </label>
-            <input
-              value={profileEditor.lastName}
-              onChange={(e) => {
-                setProfileEditor((prev) => ({
-                  ...prev,
-                  lastName: e.target.value,
-                }));
-                if (profileFieldErrors.lastName) {
-                  setProfileFieldErrors((prev) => ({
-                    ...prev,
-                    lastName: "",
-                  }));
-                }
-              }}
-              readOnly={!isEditingProfile}
-              className={`mt-1 w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                isEditingProfile
-                  ? "border-gray-300 text-gray-700 bg-white"
-                  : "border-gray-200 bg-gray-100 text-gray-500"
-              }`}
-            />
-            {profileFieldErrors.lastName && (
-              <p className="mt-1 text-xs text-red-600">
-                {profileFieldErrors.lastName}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700">
-              Birthdate
-            </label>
-            <input
-              type="date"
-              value={profileEditor.birthdate}
-              max={new Date().toISOString().split("T")[0]}
-              onChange={(e) => {
-                setProfileEditor((prev) => ({
-                  ...prev,
-                  birthdate: e.target.value,
-                }));
-                if (profileFieldErrors.birthdate) {
-                  setProfileFieldErrors((prev) => ({
-                    ...prev,
-                    birthdate: "",
-                  }));
-                }
-              }}
-              readOnly={!isEditingProfile}
-              className={`mt-1 w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                isEditingProfile
-                  ? "border-gray-300 text-gray-700 bg-white"
-                  : "border-gray-200 bg-gray-100 text-gray-500"
-              }`}
-            />
-            {profileFieldErrors.birthdate && (
-              <p className="mt-1 text-xs text-red-600">
-                {profileFieldErrors.birthdate}
-              </p>
-            )}
-          </div>
-
-          <div className="sm:col-span-2">
-            <label className="text-sm font-medium text-gray-700">
-              Email Address
-            </label>
-            <input
-              type="email"
-              value={profileEditor.email}
-              onChange={(e) => {
-                setProfileEditor((prev) => ({
-                  ...prev,
-                  email: e.target.value,
-                }));
-                if (profileFieldErrors.email) {
-                  setProfileFieldErrors((prev) => ({
-                    ...prev,
-                    email: "",
-                  }));
-                }
-              }}
-              readOnly={!isEditingProfile}
-              className={`mt-1 w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                isEditingProfile
-                  ? "border-gray-300 text-gray-700 bg-white"
-                  : "border-gray-200 bg-gray-100 text-gray-500"
-              }`}
-            />
-            {profileFieldErrors.email && (
-              <p className="mt-1 text-xs text-red-600">
-                {profileFieldErrors.email}
-              </p>
-            )}
-          </div>
-
-          <div className="sm:col-span-2">
-            <label className="text-sm font-medium text-gray-700">School</label>
-            {canEditSchool ? (
-              <>
-                {useSchoolsDivisionOffice ? (
+          <div className="p-4 sm:p-6">
+            <div className={subtlePanelClass}>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className={fieldCardClass}>
+                  <label className={helperLabelClass}>First Name</label>
                   <input
-                    readOnly
-                    value={SCHOOLS_DIVISION_OFFICE}
-                    className="mt-1 w-full px-3 py-2 border border-gray-200 bg-gray-100 rounded-lg text-sm text-gray-500"
-                  />
-                ) : (
-                  <>
-                    {schoolsLoading ? (
-                      <SkeletonBlock
-                        width="w-full"
-                        height="h-10"
-                        rounded="rounded-lg"
-                        className="mt-1"
-                      />
-                    ) : (
-                      <select
-                        value={profileEditor.schoolId}
-                        onChange={(e) => {
-                          setProfileEditor((prev) => ({
-                            ...prev,
-                            schoolId: e.target.value,
-                            schoolName:
-                              schools.find(
-                                (school) =>
-                                  String(school.id) === e.target.value,
-                              )?.school_name || prev.schoolName,
-                          }));
-                          if (profileFieldErrors.schoolId) {
-                            setProfileFieldErrors((prev) => ({
-                              ...prev,
-                              schoolId: "",
-                            }));
-                          }
-                        }}
-                        disabled={!isEditingProfile || schoolsLoading}
-                        className={`mt-1 w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                          isEditingProfile
-                            ? "border-gray-300 text-gray-700 bg-white"
-                            : "border-gray-200 bg-gray-100 text-gray-500"
-                        }`}
-                      >
-                        <option value="">
-                          {schoolsLoading
-                            ? "Loading schools..."
-                            : "Select school"}
-                        </option>
-                        {schools.map((school) => (
-                          <option key={school.id} value={String(school.id)}>
-                            {school.school_name}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </>
-                )}
-
-                <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
-                  <input
-                    type="checkbox"
-                    checked={useSchoolsDivisionOffice}
-                    disabled={!isEditingProfile}
+                    value={profileEditor.firstName}
                     onChange={(e) => {
-                      const checked = e.target.checked;
-
-                      setUseSchoolsDivisionOffice(checked);
                       setProfileEditor((prev) => ({
                         ...prev,
-                        schoolId: checked ? prev.schoolId : "",
-                        schoolName: checked ? SCHOOLS_DIVISION_OFFICE : "",
+                        firstName: e.target.value,
                       }));
-                      setProfileFieldErrors((prev) => ({
-                        ...prev,
-                        schoolId: "",
-                      }));
+                      if (profileFieldErrors.firstName) {
+                        setProfileFieldErrors((prev) => ({
+                          ...prev,
+                          firstName: "",
+                        }));
+                      }
                     }}
-                    className="h-4 w-4 cursor-pointer disabled:cursor-not-allowed"
+                    readOnly={!isEditingProfile}
+                    className={
+                      isEditingProfile ? editableInputClass : disabledInputClass
+                    }
                   />
-                  Schools Division Office
-                </label>
-              </>
-            ) : (
-              <input
-                readOnly
-                value={profile.school}
-                className="mt-1 w-full px-3 py-2 border border-gray-200 bg-gray-100 rounded-lg text-sm text-gray-500"
-              />
-            )}
-            {profileFieldErrors.schoolId && (
-              <p className="mt-1 text-xs text-red-600">
-                {profileFieldErrors.schoolId}
+                  {profileFieldErrors.firstName && (
+                    <p className="mt-2 text-xs text-red-600">
+                      {profileFieldErrors.firstName}
+                    </p>
+                  )}
+                </div>
+
+                <div className={fieldCardClass}>
+                  <label className={helperLabelClass}>Middle Name</label>
+                  <input
+                    value={profileEditor.middleName}
+                    onChange={(e) => {
+                      setProfileEditor((prev) => ({
+                        ...prev,
+                        middleName: e.target.value,
+                      }));
+                      if (profileFieldErrors.middleName) {
+                        setProfileFieldErrors((prev) => ({
+                          ...prev,
+                          middleName: "",
+                        }));
+                      }
+                    }}
+                    readOnly={!isEditingProfile || noMiddleName}
+                    placeholder={
+                      noMiddleName ? "No middle name provided" : "Middle name"
+                    }
+                    className={
+                      isEditingProfile && !noMiddleName
+                        ? editableInputClass
+                        : disabledInputClass
+                    }
+                  />
+                  <label className={inlineCheckboxClass}>
+                    <input
+                      type="checkbox"
+                      checked={noMiddleName}
+                      disabled={!isEditingProfile}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setNoMiddleName(checked);
+                        if (checked) {
+                          setProfileEditor((prev) => ({ ...prev, middleName: "" }));
+                          setProfileFieldErrors((prev) => ({
+                            ...prev,
+                            middleName: "",
+                          }));
+                        }
+                      }}
+                      className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#254ee5] disabled:cursor-not-allowed"
+                    />
+                    <span>I don&apos;t have a middle name</span>
+                  </label>
+                  {profileFieldErrors.middleName && (
+                    <p className="mt-2 text-xs text-red-600">
+                      {profileFieldErrors.middleName}
+                    </p>
+                  )}
+                </div>
+
+                <div className={fieldCardClass}>
+                  <label className={helperLabelClass}>Last Name</label>
+                  <input
+                    value={profileEditor.lastName}
+                    onChange={(e) => {
+                      setProfileEditor((prev) => ({
+                        ...prev,
+                        lastName: e.target.value,
+                      }));
+                      if (profileFieldErrors.lastName) {
+                        setProfileFieldErrors((prev) => ({
+                          ...prev,
+                          lastName: "",
+                        }));
+                      }
+                    }}
+                    readOnly={!isEditingProfile}
+                    className={
+                      isEditingProfile ? editableInputClass : disabledInputClass
+                    }
+                  />
+                  {profileFieldErrors.lastName && (
+                    <p className="mt-2 text-xs text-red-600">
+                      {profileFieldErrors.lastName}
+                    </p>
+                  )}
+                </div>
+
+                <div className={fieldCardClass}>
+                  <label className={helperLabelClass}>Birthdate</label>
+                  <input
+                    type="date"
+                    value={profileEditor.birthdate}
+                    max={new Date().toISOString().split("T")[0]}
+                    onChange={(e) => {
+                      setProfileEditor((prev) => ({
+                        ...prev,
+                        birthdate: e.target.value,
+                      }));
+                      if (profileFieldErrors.birthdate) {
+                        setProfileFieldErrors((prev) => ({
+                          ...prev,
+                          birthdate: "",
+                        }));
+                      }
+                    }}
+                    readOnly={!isEditingProfile}
+                    className={
+                      isEditingProfile ? editableInputClass : disabledInputClass
+                    }
+                  />
+                  {profileFieldErrors.birthdate && (
+                    <p className="mt-2 text-xs text-red-600">
+                      {profileFieldErrors.birthdate}
+                    </p>
+                  )}
+                </div>
+
+                <div className="md:col-span-2">
+                  <div className={fieldCardClass}>
+                    <label className={helperLabelClass}>Email Address</label>
+                    <input
+                      type="email"
+                      value={profileEditor.email}
+                      onChange={(e) => {
+                        setProfileEditor((prev) => ({
+                          ...prev,
+                          email: e.target.value,
+                        }));
+                        if (profileFieldErrors.email) {
+                          setProfileFieldErrors((prev) => ({
+                            ...prev,
+                            email: "",
+                          }));
+                        }
+                      }}
+                      readOnly={!isEditingProfile}
+                      className={
+                        isEditingProfile
+                          ? editableInputClass
+                          : disabledInputClass
+                      }
+                    />
+                    {profileFieldErrors.email && (
+                      <p className="mt-2 text-xs text-red-600">
+                        {profileFieldErrors.email}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <div className={fieldCardClass}>
+                    <div className="mb-1 flex items-center gap-2">
+                      <div className={iconWrapClass}>
+                        <School size={18} />
+                      </div>
+                      <label className={helperLabelClass}>School</label>
+                    </div>
+
+                    {canEditSchool ? (
+                      <>
+                        {useSchoolsDivisionOffice ? (
+                          <input
+                            readOnly
+                            value={SCHOOLS_DIVISION_OFFICE}
+                            className={disabledInputClass}
+                          />
+                        ) : (
+                          <>
+                            {schoolsLoading ? (
+                              <SkeletonBlock
+                                width="w-full"
+                                height="h-11"
+                                rounded="rounded-2xl"
+                                className="mt-2"
+                              />
+                            ) : (
+                              <select
+                                value={profileEditor.schoolId}
+                                onChange={(e) => {
+                                  setProfileEditor((prev) => ({
+                                    ...prev,
+                                    schoolId: e.target.value,
+                                    schoolName:
+                                      schools.find(
+                                        (school) =>
+                                          String(school.id) === e.target.value,
+                                      )?.school_name || prev.schoolName,
+                                  }));
+                                  if (profileFieldErrors.schoolId) {
+                                    setProfileFieldErrors((prev) => ({
+                                      ...prev,
+                                      schoolId: "",
+                                    }));
+                                  }
+                                }}
+                                disabled={!isEditingProfile || schoolsLoading}
+                                className={
+                                  isEditingProfile
+                                    ? editableInputClass
+                                    : disabledInputClass
+                                }
+                              >
+                                <option value="">
+                                  {schoolsLoading
+                                    ? "Loading schools..."
+                                    : "Select school"}
+                                </option>
+                                {schools.map((school) => (
+                                  <option key={school.id} value={String(school.id)}>
+                                    {school.school_name}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </>
+                        )}
+
+                        <label className={inlineCheckboxClass}>
+                          <input
+                            type="checkbox"
+                            checked={useSchoolsDivisionOffice}
+                            disabled={!isEditingProfile}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+
+                              setUseSchoolsDivisionOffice(checked);
+                              setProfileEditor((prev) => ({
+                                ...prev,
+                                schoolId: checked ? prev.schoolId : "",
+                                schoolName: checked
+                                  ? SCHOOLS_DIVISION_OFFICE
+                                  : "",
+                              }));
+                              setProfileFieldErrors((prev) => ({
+                                ...prev,
+                                schoolId: "",
+                              }));
+                            }}
+                            className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#254ee5] disabled:cursor-not-allowed"
+                          />
+                          <span>Schools Division Office</span>
+                        </label>
+                      </>
+                    ) : (
+                      <input
+                        readOnly
+                        value={profile.school}
+                        className={disabledInputClass}
+                      />
+                    )}
+
+                    {profileFieldErrors.schoolId && (
+                      <p className="mt-2 text-xs text-red-600">
+                        {profileFieldErrors.schoolId}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {profileSaveError && (
+              <p className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+                {profileSaveError}
               </p>
             )}
-          </div>
-        </div>
+            {profileSaveSuccess && (
+              <p className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-600">
+                {profileSaveSuccess}
+              </p>
+            )}
 
-        {profileSaveError && (
-          <p className="text-sm text-red-600 mt-3">{profileSaveError}</p>
-        )}
-        {profileSaveSuccess && (
-          <p className="text-sm text-green-600 mt-3">{profileSaveSuccess}</p>
-        )}
-
-        <div className="mt-5 flex items-center justify-end gap-3">
-          {isEditingProfile && hasProfileChanges && (
-            <button
-              type="button"
-              onClick={createClearHandler(
-                resetProfileEditor,
-                hasProfileChanges,
+            <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
+              {isEditingProfile && hasProfileChanges && (
+                <button
+                  type="button"
+                  onClick={createClearHandler(
+                    resetProfileEditor,
+                    hasProfileChanges,
+                  )}
+                  className="cursor-pointer sm:mr-auto text-left text-sm font-medium text-[#254ee5] transition hover:text-[#1d3fc1] hover:underline"
+                >
+                  Clear All
+                </button>
               )}
-              className="mr-auto cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
-            >
-              Clear All
-            </button>
-          )}
 
-          {!isEditingProfile ? (
-            <button
-              type="button"
-              onClick={() => {
-                setIsEditingProfile(true);
-                setProfileSaveError(null);
-                setProfileSaveSuccess(null);
-                setProfileFieldErrors({
-                  firstName: "",
-                  middleName: "",
-                  lastName: "",
-                  email: "",
-                  birthdate: "",
-                  schoolId: "",
-                });
+              {!isEditingProfile ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditingProfile(true);
+                    setProfileSaveError(null);
+                    setProfileSaveSuccess(null);
+                    setProfileFieldErrors({
+                      firstName: "",
+                      middleName: "",
+                      lastName: "",
+                      email: "",
+                      birthdate: "",
+                      schoolId: "",
+                    });
+                  }}
+                  className={`${actionPrimaryClass} w-full sm:w-auto`}
+                >
+                  <span className="cursor-pointer inline-flex items-center gap-1.5">
+                    <Pencil size={14} />
+                    Edit Profile
+                  </span>
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingProfile(false);
+                      resetProfileEditor();
+                    }}
+                    disabled={savingProfile}
+                    className={`${actionSecondaryClass} w-full sm:w-auto`}
+                  >
+                    <span className="cursor-pointer inline-flex items-center gap-1.5">
+                      <XCircle size={14} />
+                      Cancel
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRequestProfileSave}
+                    disabled={savingProfile || !hasProfileChanges}
+                    className={`${actionPrimaryClass} w-full sm:w-auto`}
+                  >
+                    <span className="cursor-pointer inline-flex items-center gap-1.5">
+                      <Save size={14} />
+                      {savingProfile ? "Saving..." : "Save Profile"}
+                    </span>
+                  </button>
+                </>
+              )}
+            </div>
+
+            <ConfirmationModal
+              visible={showConfirmProfileSave}
+              title="Confirm Profile Update"
+              message="Are you sure you want to save your updated profile details?"
+              confirmLabel="Confirm"
+              cancelLabel="Cancel"
+              loading={savingProfile}
+              onConfirm={handleConfirmProfileSave}
+              onCancel={() => {
+                if (savingProfile) return;
+                setShowConfirmProfileSave(false);
               }}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition cursor-pointer"
-            >
-              <span className="inline-flex items-center gap-1">
-                <Pencil size={14} />
-                Edit Profile
-              </span>
-            </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsEditingProfile(false);
-                  resetProfileEditor();
-                }}
-                disabled={savingProfile}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition cursor-pointer disabled:opacity-50"
-              >
-                <span className="inline-flex items-center gap-1">
-                  <XCircle size={14} />
-                  Cancel
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={handleRequestProfileSave}
-                disabled={savingProfile || !hasProfileChanges}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  savingProfile || !hasProfileChanges
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
-                }`}
-              >
-                <span className="inline-flex items-center gap-1">
-                  <Save size={14} />
-                  {savingProfile ? "Saving..." : "Save Profile"}
-                </span>
-              </button>
-            </>
-          )}
-        </div>
-
-        <ConfirmationModal
-          visible={showConfirmProfileSave}
-          title="Confirm Profile Update"
-          message="Are you sure you want to save your updated profile details?"
-          confirmLabel="Confirm"
-          cancelLabel="Cancel"
-          loading={savingProfile}
-          onConfirm={handleConfirmProfileSave}
-          onCancel={() => {
-            if (savingProfile) return;
-            setShowConfirmProfileSave(false);
-          }}
-        />
-      </div>
-
-      <div className="border border-blue-200 bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">
-          Change Password
-        </h3>
-
-        <div className="space-y-3">
-          <div>
-            <label className="text-sm font-medium text-gray-700">
-              Current Password
-            </label>
-            <div className="relative mt-1">
-              <input
-                type={showCurrentPassword ? "text" : "password"}
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                type="button"
-                onClick={() => setShowCurrentPassword((prev) => !prev)}
-                className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
-                aria-label={
-                  showCurrentPassword ? "Hide password" : "Show password"
-                }
-              >
-                {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">
-              New Password
-            </label>
-            <div className="relative mt-1">
-              <input
-                type={showNewPassword ? "text" : "password"}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                type="button"
-                onClick={() => setShowNewPassword((prev) => !prev)}
-                className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
-                aria-label={showNewPassword ? "Hide password" : "Show password"}
-              >
-                {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">
-              Retype New Password
-            </label>
-            <div className="relative mt-1">
-              <input
-                type={showRetypePassword ? "text" : "password"}
-                value={retypePassword}
-                onChange={(e) => setRetypePassword(e.target.value)}
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                type="button"
-                onClick={() => setShowRetypePassword((prev) => !prev)}
-                className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
-                aria-label={
-                  showRetypePassword ? "Hide password" : "Show password"
-                }
-              >
-                {showRetypePassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
+            />
           </div>
         </div>
 
-        {passwordError && (
-          <p className="text-sm text-red-600 mt-3">{passwordError}</p>
-        )}
-        {passwordSuccess && (
-          <p className="text-sm text-green-600 mt-3">{passwordSuccess}</p>
-        )}
+        <div className={cardClass}>
+          <div className={cardHeaderClass}>
+            <div className="flex items-start gap-3">
+              <div className={iconWrapClass}>
+                <KeyRound size={18} />
+              </div>
+              <div>
+                <h3 className={sectionTitleClass}>Change Password</h3>
+                <p className={sectionDescClass}>
+                  Update your password to keep your account secure
+                </p>
+              </div>
+            </div>
 
-        <div className="mt-5 flex items-center justify-end gap-3">
-          {!!(currentPassword || newPassword || retypePassword) && (
-            <button
-              type="button"
-              onClick={createClearHandler(
-                () => {
-                  setCurrentPassword("");
-                  setNewPassword("");
-                  setRetypePassword("");
-                  setPasswordError("");
-                  setPasswordSuccess("");
-                  setShowCurrentPassword(false);
-                  setShowNewPassword(false);
-                  setShowRetypePassword(false);
-                },
-                !!(currentPassword || newPassword || retypePassword),
+            <div className="rounded-full border border-[#d7e5ff] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#6d86b3]">
+              Security
+            </div>
+          </div>
+
+          <div className="p-4 sm:p-6">
+            <div className={subtlePanelClass}>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                <div className={fieldCardClass}>
+                  <label className={helperLabelClass}>Current Password</label>
+                  <div className="relative mt-2">
+                    <input
+                      type={showCurrentPassword ? "text" : "password"}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className={`${editableInputClass} mt-0 pr-10`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword((prev) => !prev)}
+                      className="absolute inset-y-0 right-0 px-3 text-[#6f86b6] transition hover:text-[#254ee5]"
+                      aria-label={
+                        showCurrentPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showCurrentPassword ? (
+                        <EyeOff size={16} />
+                      ) : (
+                        <Eye size={16} />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className={fieldCardClass}>
+                  <label className={helperLabelClass}>New Password</label>
+                  <div className="relative mt-2">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className={`${editableInputClass} mt-0 pr-10`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword((prev) => !prev)}
+                      className="absolute inset-y-0 right-0 px-3 text-[#6f86b6] transition hover:text-[#254ee5]"
+                      aria-label={
+                        showNewPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showNewPassword ? (
+                        <EyeOff size={16} />
+                      ) : (
+                        <Eye size={16} />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className={fieldCardClass}>
+                  <label className={helperLabelClass}>Retype New Password</label>
+                  <div className="relative mt-2">
+                    <input
+                      type={showRetypePassword ? "text" : "password"}
+                      value={retypePassword}
+                      onChange={(e) => setRetypePassword(e.target.value)}
+                      className={`${editableInputClass} mt-0 pr-10`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRetypePassword((prev) => !prev)}
+                      className="absolute inset-y-0 right-0 px-3 text-[#6f86b6] transition hover:text-[#254ee5]"
+                      aria-label={
+                        showRetypePassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showRetypePassword ? (
+                        <EyeOff size={16} />
+                      ) : (
+                        <Eye size={16} />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {passwordError && (
+              <p className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+                {passwordError}
+              </p>
+            )}
+            {passwordSuccess && (
+              <p className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-600">
+                {passwordSuccess}
+              </p>
+            )}
+
+            <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
+              {!!(currentPassword || newPassword || retypePassword) && (
+                <button
+                  type="button"
+                  onClick={createClearHandler(
+                    () => {
+                      setCurrentPassword("");
+                      setNewPassword("");
+                      setRetypePassword("");
+                      setPasswordError("");
+                      setPasswordSuccess("");
+                      setShowCurrentPassword(false);
+                      setShowNewPassword(false);
+                      setShowRetypePassword(false);
+                    },
+                    !!(currentPassword || newPassword || retypePassword),
+                  )}
+                  className="cursor-pointer sm:mr-auto text-left text-sm font-medium text-[#254ee5] transition hover:text-[#1d3fc1] hover:underline"
+                >
+                  Clear All
+                </button>
               )}
-              className="mr-auto cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
-            >
-              Clear All
-            </button>
-          )}
 
-          <button
-            type="button"
-            onClick={handleSavePassword}
-            disabled={!canSavePassword}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-              canSavePassword
-                ? "bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
-          >
-            <span className="inline-flex items-center gap-1">
-              <Save size={14} />
-              {savingPassword ? "Saving..." : "Save Changes"}
-            </span>
-          </button>
+              <button
+                type="button"
+                onClick={handleSavePassword}
+                disabled={!canSavePassword}
+                className={`${actionPrimaryClass} w-full sm:w-auto`}
+              >
+                <span className="cursor-pointer inline-flex items-center gap-1.5">
+                  <Save size={14} />
+                  {savingPassword ? "Saving..." : "Save Changes"}
+                </span>
+              </button>
+            </div>
+
+            <ConfirmationModal
+              visible={showConfirmPasswordModal}
+              title="Confirm Password Update"
+              message="Are you sure you want to update your password?"
+              warningMessage="You will need to use your new password on your next login."
+              confirmLabel="Confirm"
+              cancelLabel="Cancel"
+              loading={savingPassword}
+              onConfirm={handleConfirmPasswordChange}
+              onCancel={() => setShowConfirmPasswordModal(false)}
+            />
+          </div>
         </div>
-
-        <ConfirmationModal
-          visible={showConfirmPasswordModal}
-          title="Confirm Password Update"
-          message="Are you sure you want to update your password?"
-          warningMessage="You will need to use your new password on your next login."
-          confirmLabel="Confirm"
-          cancelLabel="Cancel"
-          loading={savingPassword}
-          onConfirm={handleConfirmPasswordChange}
-          onCancel={() => setShowConfirmPasswordModal(false)}
-        />
       </div>
     </div>
   );
