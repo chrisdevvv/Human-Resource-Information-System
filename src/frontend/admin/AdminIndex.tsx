@@ -5,7 +5,6 @@ import EmployeeLeaveManagement from "../functions/LeaveManagement/EmployeeLeaveM
 import EmployeesListLayout from "../functions/EmployeesList/EmployeesProfile";
 import EServiceRecord from "../functions/eservice/EServiceRecord";
 import Dashboard from "../functions/Dashboard/Dashboard";
-import DashboardMobile from "../functions/Dashboard/DashboardMobile";
 
 type AdminProps = {
   activeTab?: string;
@@ -40,22 +39,11 @@ export default function Admin({
       return <AdminProfileSettings key={tabKey} />;
     default:
       return (
-        <>
-          <div className="hidden md:block">
-            <Dashboard
-              key={tabKey}
-              onTabChange={onTabChange}
-              showRecentLogs={false}
-            />
-          </div>
-          <div className="block md:hidden">
-            <DashboardMobile
-              key={tabKey}
-              onTabChange={onTabChange}
-              showRecentLogs={false}
-            />
-          </div>
-        </>
+        <Dashboard
+          key={tabKey}
+          onTabChange={onTabChange}
+          showRecentLogs={false}
+        />
       );
   }
 }

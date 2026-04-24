@@ -9,12 +9,12 @@ type DashboardSkeletonProps = {
 
 const Skeleton = ({ className = "" }: { className?: string }) => (
   <div
-    className={`animate-pulse rounded bg-linear-to-r from-gray-200 via-gray-100 to-gray-200 ${className}`}
+    className={`animate-pulse rounded bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 ${className}`}
   />
 );
 
 const DesktopStatCardSkeleton = () => (
-  <div className="overflow-hidden rounded-2xl border border-gray-200 bg-linear-to-br from-gray-50 to-white p-6 shadow-sm ring-1 ring-gray-100">
+  <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-6 shadow-sm ring-1 ring-gray-100">
     <div className="flex items-start justify-between gap-4">
       <div className="min-w-0 flex-1">
         <Skeleton className="h-4 w-28" />
@@ -33,7 +33,7 @@ const DesktopStatCardSkeleton = () => (
 );
 
 const MobileStatCardSkeleton = () => (
-  <div className="overflow-hidden rounded-2xl border border-gray-200 bg-linear-to-br from-gray-50 to-white p-3 shadow-sm">
+  <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-3 shadow-sm">
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0 flex-1">
         <Skeleton className="h-3 w-20" />
@@ -67,7 +67,7 @@ const DesktopLogRowSkeleton = () => (
 );
 
 const MobileLogCardSkeleton = () => (
-  <div className="rounded-2xl border border-gray-100 bg-linear-to-br from-gray-50 to-white px-3 py-3 shadow-sm">
+  <div className="rounded-2xl border border-gray-100 bg-gradient-to-br from-gray-50 to-white px-3 py-3 shadow-sm">
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0 flex-1">
         <Skeleton className="h-3 w-28" />
@@ -85,7 +85,7 @@ export default function DashboardSkeleton({
   showRecentLogs = true,
 }: DashboardSkeletonProps) {
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-blue-50/40">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/40">
       {/* ================= DESKTOP / TABLET SKELETON ================= */}
       <div className="hidden md:block">
         {/* Header */}
@@ -116,7 +116,7 @@ export default function DashboardSkeleton({
 
           {showRecentLogs && (
             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-              <div className="flex flex-col gap-3 border-b border-gray-200 bg-linear-to-r from-yellow-50 to-white px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 border-b border-gray-200 bg-gradient-to-r from-yellow-50 to-white px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <Skeleton className="h-6 w-32" />
                   <Skeleton className="mt-2 h-4 w-44" />
@@ -190,7 +190,7 @@ export default function DashboardSkeleton({
 
           {showRecentLogs && (
             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-              <div className="flex items-center justify-between gap-2 border-b border-gray-100 bg-linear-to-r from-yellow-50 to-white px-3 py-3">
+              <div className="flex items-center justify-between gap-2 border-b border-gray-100 bg-gradient-to-r from-yellow-50 to-white px-3 py-3">
                 <div>
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="mt-1.5 h-3 w-20" />

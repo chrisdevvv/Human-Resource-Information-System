@@ -1271,11 +1271,15 @@ const securityHeader = (req, res, next) => {
   next();
 };
 
+app.set("trust proxy", 1);
 app.use(securityHeader);
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(bodyParser.json({ limit: MAX_JSON_BODY_SIZE }));
 app.use(bodyParser.urlencoded({ extended: true, limit: MAX_FORM_BODY_SIZE }));
+
+const { globalLimiter } = require("./middleware/rateLimiter");
+app.use("/api", globalLimiter);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/leave", leaveRoutes);

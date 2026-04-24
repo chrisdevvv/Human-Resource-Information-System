@@ -426,7 +426,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
       <div className="flex flex-col sm:flex-row justify-start gap-2 mb-4">
         <button
           onClick={() => setActiveTab("users")}
-          className={`w-full sm:w-auto px-4 py-1 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-4 py-1 sm:py-1 font-medium text-sm rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "users"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -440,7 +440,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
 
         <button
           onClick={() => setActiveTab("pending")}
-          className={`w-full sm:w-auto px-4 py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-4 py-1 font-medium text-sm rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "pending"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -477,7 +477,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
 
               <button
                 onClick={handleSearch}
-                className="inline-flex w-full shrink-0 sm:w-auto items-center justify-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-xs sm:text-sm cursor-pointer whitespace-nowrap"
+                className="inline-flex w-full shrink-0 sm:w-auto items-center justify-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm sm:text-sm cursor-pointer whitespace-nowrap"
               >
                 <Search size={14} />
                 Search
@@ -611,19 +611,19 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
               <table className="w-full">
                 <thead className="sticky top-0 z-10 bg-blue-100">
                   <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
                       Name
                     </th>
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
                       Email
                     </th>
-                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                    <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
                       Role
                     </th>
-                    <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                    <th className="text-center py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
                       Status
                     </th>
-                    <th className="text-right py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                    <th className="text-right py-1 px-3 font-semibold text-blue-600 uppercase text-sm bg-blue-100">
                       Actions
                     </th>
                   </tr>
@@ -647,7 +647,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                         </td>
                         <td className="py-0.5 px-3 text-center">
                           <span
-                            className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                            className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
                               user.isActive
                                 ? "bg-green-100 text-green-800"
                                 : "bg-red-100 text-red-800"
@@ -660,7 +660,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => setDetailsTargetId(user.id)}
-                              className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer font-bold text-xs"
+                              className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition cursor-pointer font-bold text-sm"
                               aria-label={`View details for ${user.firstName} ${user.lastName}`}
                               title="View details"
                             >

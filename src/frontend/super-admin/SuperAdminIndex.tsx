@@ -12,7 +12,6 @@ import EmployeeLeaveManagement from "../functions/LeaveManagement/EmployeeLeaveM
 import EmployeesListLayout from "../functions/EmployeesList/EmployeesProfile";
 import EServiceRecord from "../functions/eservice/EServiceRecord";
 import Dashboard from "../functions/Dashboard/Dashboard";
-import DashboardMobile from "../functions/Dashboard/DashboardMobile";
 
 type SuperAdminProps = {
   activeTab?: string;
@@ -73,16 +72,7 @@ export default function SuperAdmin({
       case "profile-settings":
         return <SuperAdminProfileSettings key={tabKey} />;
       default:
-        return (
-          <>
-            <div className="hidden md:block">
-              <Dashboard key={tabKey} onTabChange={onTabChange} />
-            </div>
-            <div className="block md:hidden">
-              <DashboardMobile key={tabKey} onTabChange={onTabChange} />
-            </div>
-          </>
-        );
+        return <Dashboard key={tabKey} onTabChange={onTabChange} />;
     }
   };
 
