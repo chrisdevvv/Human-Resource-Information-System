@@ -1781,7 +1781,6 @@ export default function ViewEmployeeModal({
       ),
       plantilla: "",
       sg: "",
-      step: "",
       salary: "",
       increment: "",
       remarks: "",
@@ -1877,7 +1876,6 @@ export default function ViewEmployeeModal({
             date: dateValue,
             plantilla: salaryHistoryCreateDraft.plantilla.trim() || null,
             sg: salaryHistoryCreateDraft.sg.trim() || null,
-            step: salaryHistoryCreateDraft.step.trim() || null,
             salary: Number(numericSalary.toFixed(2)),
             ...(incrementValueRaw
               ? { increment_amount: Number(numericIncrement.toFixed(2)) }
@@ -1926,7 +1924,6 @@ export default function ViewEmployeeModal({
       date: toDateInputValue(row.salary_date || null),
       plantilla: String(row.plantilla || "").trim(),
       sg: String(row.sg || "").trim(),
-      step: String(row.step || "").trim(),
       salary:
         Number.isFinite(normalizedSalary) && row.salary !== null
           ? String(Number(normalizedSalary.toFixed(2)))
@@ -2034,7 +2031,6 @@ export default function ViewEmployeeModal({
             date: dateValue,
             plantilla: salaryHistoryEditDraft.plantilla.trim() || null,
             sg: salaryHistoryEditDraft.sg.trim() || null,
-            step: salaryHistoryEditDraft.step.trim() || null,
             salary: Number(numericSalary.toFixed(2)),
             ...(salaryHistoryEditIncrementTouched
               ? {
