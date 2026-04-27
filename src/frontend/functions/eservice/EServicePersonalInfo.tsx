@@ -432,14 +432,30 @@ export default function EServicePersonalInfo() {
               setSearchQuery(value);
               setCurrentPage(1);
             }}
-            employeeTypeFilter={employeeTypeFilter}
-            onEmployeeTypeChange={(value) => {
-              setEmployeeTypeFilter(value);
+            districtFilter={districtFilter}
+            onDistrictChange={(value) => {
+              setDistrictFilter(value);
+              setSchoolFilter("");
               setCurrentPage(1);
             }}
             schoolFilter={schoolFilter}
             onSchoolChange={(value) => {
               setSchoolFilter(value);
+              setCurrentPage(1);
+            }}
+            civilStatusFilter={civilStatusFilter}
+            onCivilStatusChange={(value) => {
+              setCivilStatusFilter(value);
+              setCurrentPage(1);
+            }}
+            sexFilter={sexFilter}
+            onSexChange={(value) => {
+              setSexFilter(value);
+              setCurrentPage(1);
+            }}
+            employeeTypeFilter={employeeTypeFilter}
+            onEmployeeTypeChange={(value) => {
+              setEmployeeTypeFilter(value);
               setCurrentPage(1);
             }}
             letterFilter={letterFilter}
@@ -449,7 +465,9 @@ export default function EServicePersonalInfo() {
             }}
             sortOrder={sortOrder}
             onSortOrderChange={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+            districts={districts}
             schools={filteredSchoolOptions}
+            lookupLoading={lookupLoading}
             onSearch={() => loadEmployees()}
           />
         </div>
