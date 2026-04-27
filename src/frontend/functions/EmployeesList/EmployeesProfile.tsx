@@ -27,11 +27,25 @@ import {
 } from "../eservice/eserviceApi";
 
 /**
- * Data Source: eservice/emppersonalinfo API
- * This component fetches employee data from the eservice module which retrieves
- * comprehensive employee personal information from the emppersonalinfo database table.
- * It does NOT use the legacy employees API to avoid data conflicts.
+ * Data Sources: Both eservice/emppersonalinfo AND legacy /api/employees/
+ * This component fetches employee data from TWO sources and merges them:
+ * 1. eservice/emppersonalinfo - comprehensive personal employee information
+ * 2. legacy /api/employees/ - employee summary data
+ * Merged by ID to avoid duplicates and provide complete employee profiles.
  */
+type EmployeeRecordApi = {
+  id: number;
+  first_name: string;
+  middle_name?: string | null;
+  last_name: string;
+  email?: string | null;
+  school_name?: string | null;
+  school_id?: number | null;
+  employee_type?: "teaching" | "non-teaching" | "teaching-related";
+  teacher_status?: string | null;
+  birthdate?: string | null;
+};
+
 type EmployeeRecord = {
   id: number;
   firstName: string;
@@ -110,6 +124,57 @@ const getCurrentUserRole = (): string => {
   }
 };
 
+/**
+ * Fetch employees from legacy /api/employees/ endpoint
+ */
+const fetchLegacyEmployees = async (params?: {
+  search?: string;
+  employeeType?: string;
+  letter?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<EmployeeRecordApi[]> => {
+  const token = localStorage.getItem("authToken");
+  if (!token) {
+    throw new Error("No authentication token found.");
+  }
+
+  const query = new URLSearchParams();
+  if (params?.search) query.append("search", params.search);
+  if (params?.employeeType && params.employeeType !== "ALL") {
+    query.append("employee_type", params.employeeType);
+  }
+  if (params?.letter && params.letter !== "ALL") {
+    query.append("letter", params.letter);
+  }
+  if (params?.page) query.append("page", String(params.page));
+  if (params?.pageSize) query.append("page_size", String(params.pageSize));
+
+  const url = query.toString()
+    ? `${API_BASE}/api/employees?${query.toString()}`
+    : `${API_BASE}/api/employees`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorBody = await parseApiBody<{ message?: string }>(response);
+    throw new Error(
+      errorBody.message || `Legacy API error: ${response.statusText}`,
+    );
+  }
+
+  const body = (await response.json().catch(() => ({}))) as {
+    data?: EmployeeRecordApi[];
+  };
+  return body.data || [];
+};
+
 const toEmployeeRecord = (item: EmployeePersonalInfoApi): EmployeeRecord => {
   // Maps emppersonalinfo API response to local EmployeeRecord type
   // Source: eservice/emppersonalinfo database
@@ -134,6 +199,33 @@ const toEmployeeRecord = (item: EmployeePersonalInfoApi): EmployeeRecord => {
     civilStatus: item.civilStatus?.trim() || "",
     sex: item.gender?.trim() || "",
     birthdate: item.dateOfBirth?.trim() || "",
+  };
+};
+
+/**
+ * Convert legacy /api/employees/ format to EmployeeRecord
+ */
+const toEmployeeRecordFromLegacy = (
+  item: EmployeeRecordApi,
+): EmployeeRecord => {
+  const firstName = item.first_name?.trim() || "Unknown";
+  const rawMiddleName = item.middle_name?.trim() || "";
+  const middleName = rawMiddleName.toUpperCase() === "N/A" ? "" : rawMiddleName;
+  const lastName = item.last_name?.trim() || "Employee";
+  const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
+
+  return {
+    id: item.id,
+    firstName,
+    middleName,
+    lastName,
+    fullName,
+    employeeType: item.employee_type || "non-teaching",
+    teacherStatus: item.teacher_status?.trim() || "N/A",
+    email: item.email?.trim() || "",
+    schoolId: item.school_id ?? null,
+    schoolName: item.school_name?.trim() || "",
+    birthdate: item.birthdate?.trim() || "",
   };
 };
 
@@ -225,27 +317,70 @@ export default function EmployeesListLayout() {
 
       void token;
 
-      // Fetch from eservice/emppersonalinfo API - complete employee personal information
-      // This replaces the legacy employees API to ensure data consistency and avoid conflicts
-      const result = await getEServiceEmployees({
-        search: searchQuery,
-        district: undefined,
-        school: schoolFilter === "ALL" ? undefined : schoolFilter,
-        civilStatus: undefined,
-        sex: undefined,
-        employeeType:
-          employeeTypeFilter === "ALL" ? undefined : employeeTypeFilter,
-        letter: letterFilter === "ALL" ? undefined : letterFilter,
-        sortOrder: sortOrder.toUpperCase() as "ASC" | "DESC",
-        page: currentPage,
-        pageSize: itemsPerPage,
+      // Fetch from BOTH data sources
+      // 1. Legacy /api/employees/ endpoint
+      // 2. eservice/emppersonalinfo API
+      // Merge by ID to avoid duplicates, with eservice data taking precedence (more complete)
+
+      const [legacyEmployees, eserviceResult] = await Promise.all([
+        fetchLegacyEmployees({
+          search: searchQuery,
+          employeeType:
+            employeeTypeFilter === "ALL" ? undefined : employeeTypeFilter,
+          letter: letterFilter === "ALL" ? undefined : letterFilter,
+          page: currentPage,
+          pageSize: itemsPerPage,
+        }).catch(() => []), // Continue even if legacy API fails
+        getEServiceEmployees({
+          search: searchQuery,
+          district: undefined,
+          school: schoolFilter === "ALL" ? undefined : schoolFilter,
+          civilStatus: undefined,
+          sex: undefined,
+          employeeType:
+            employeeTypeFilter === "ALL" ? undefined : employeeTypeFilter,
+          letter: letterFilter === "ALL" ? undefined : letterFilter,
+          sortOrder: sortOrder.toUpperCase() as "ASC" | "DESC",
+          page: currentPage,
+          pageSize: itemsPerPage,
+        }),
+      ]);
+
+      // Merge data: use a Map to combine by ID (eservice takes precedence for better data)
+      const employeeMap = new Map<number, EmployeeRecord>();
+
+      // First add legacy employees
+      legacyEmployees.forEach((emp) => {
+        employeeMap.set(emp.id, toEmployeeRecordFromLegacy(emp));
       });
 
-      const mapped = (result.data || []).map(toEmployeeRecord);
-      setEmployeeData(mapped);
-      setTotalItems(
-        typeof result.total === "number" ? result.total : mapped.length,
-      );
+      // Then overlay eservice employees (more complete data)
+      (eserviceResult.data || []).forEach((emp) => {
+        const mappedEmployee = toEmployeeRecord(emp);
+        const existing = employeeMap.get(emp.id);
+
+        // Merge: keep legacy data where eservice is missing
+        employeeMap.set(emp.id, {
+          ...existing,
+          ...mappedEmployee,
+          // Preserve fields that might only be in legacy data
+          schoolId: mappedEmployee.schoolId ?? (existing?.schoolId || null),
+          employeeType: mappedEmployee.employeeType || existing?.employeeType,
+        });
+      });
+
+      // Convert map to array and apply sort
+      let merged = Array.from(employeeMap.values());
+
+      // Apply sorting
+      merged.sort((a, b) => {
+        const nameCompare = a.fullName.localeCompare(b.fullName);
+        return sortOrder === "asc" ? nameCompare : -nameCompare;
+      });
+
+      setEmployeeData(merged);
+      const totalCount = merged.length; // Approximation from merged data
+      setTotalItems(totalCount);
       setEmployeeError(null);
     } catch (err) {
       setEmployeeError(
