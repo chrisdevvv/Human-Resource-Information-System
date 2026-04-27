@@ -3,6 +3,7 @@ const {
   getAllEmployeePersonalInfo,
   getEmployeePersonalInfoById,
   getEmployeePersonalInfoCount,
+  getRetirementCounts,
   createEmployeePersonalInfo,
   updateEmployeePersonalInfo,
   deleteEmployeePersonalInfo,
@@ -47,6 +48,13 @@ router.get(
   authMiddleware,
   roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
   getEmployeePersonalInfoCount,
+);
+
+router.get(
+  "/employees/retirement-counts",
+  authMiddleware,
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  getRetirementCounts,
 );
 
 router.get(

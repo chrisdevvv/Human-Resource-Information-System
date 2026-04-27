@@ -182,6 +182,18 @@ const deleteEmployeePersonalInfo = async (req, res) => {
   }
 };
 
+const getRetirementCounts = async (req, res) => {
+  try {
+    const result = await EService.getRetirementCounts();
+    return res.status(200).json({ data: result });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error retrieving retirement counts",
+      error: err.message,
+    });
+  }
+};
+
 const getEmployeePersonalInfoCount = async (req, res) => {
   try {
     const result = await EService.getCount();
@@ -226,6 +238,7 @@ module.exports = {
   getAllEmployeePersonalInfo,
   getEmployeePersonalInfoById,
   getEmployeePersonalInfoCount,
+  getRetirementCounts,
   createEmployeePersonalInfo,
   updateEmployeePersonalInfo,
   deleteEmployeePersonalInfo,

@@ -177,6 +177,27 @@ const EService = {
     };
   },
 
+  getRetirementCounts: async () => {
+    const [[{ retirable, mandatory }]] = await pool.query(
+      `SELECT
+        SUM(CASE WHEN age >= 55 AND age < 61 THEN 1 ELSE 0 END) AS retirable,
+        SUM(CASE WHEN age >= 61 THEN 1 ELSE 0 END) AS mandatory
+       FROM (
+         SELECT
+           TIMESTAMPDIFF(YEAR,
+             STR_TO_DATE(dateOfBirth, '%m/%d/%Y'),
+             CURDATE()
+           ) AS age
+         FROM emppersonalinfo
+         WHERE dateOfBirth IS NOT NULL AND TRIM(dateOfBirth) <> ''
+       ) AS ages`,
+    );
+    return {
+      retirable: Number(retirable || 0),
+      mandatory: Number(mandatory || 0),
+    };
+  },
+
   getCount: async () => {
     const [[{ total }]] = await pool.query(
       `SELECT COUNT(*) AS total FROM emppersonalinfo`,

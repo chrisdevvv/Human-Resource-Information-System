@@ -41,6 +41,11 @@ type ParsedUser = {
   school_id?: number | string;
 };
 
+export type RetirementCounts = {
+  retirable: number;
+  mandatory: number;
+};
+
 type DashboardStats = {
   totalEmployees: number;
   totalUsers: number;
@@ -172,6 +177,7 @@ export const useDashboardData = ({
   const [error, setError] = useState("");
   const [recentLogs, setRecentLogs] = useState<BacklogRecord[]>([]);
   const [canAccessDashboard, setCanAccessDashboard] = useState(false);
+  const [retirementCounts, setRetirementCounts] = useState<RetirementCounts>({ retirable: 0, mandatory: 0 });
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -221,6 +227,7 @@ export const useDashboardData = ({
           backlogs,
           employeeStatusCountsResponse,
           eserviceEmployeesCount,
+          retirementData,
         ] = await Promise.all([
           fetchApiList<Record<string, unknown>>(scopedEmployeesEndpoint, token),
           fetchApiList<Record<string, unknown>>(scopedUsersEndpoint, token),
@@ -242,6 +249,15 @@ export const useDashboardData = ({
             .then((res) => res.json())
             .then((data) => Number(data?.total || 0))
             .catch(() => 0),
+          fetch(`${API_BASE_URL}/api/eservice/employees/retirement-counts`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+            .then((res) => res.json())
+            .then((data) => ({
+              retirable: Number(data?.data?.retirable || 0),
+              mandatory: Number(data?.data?.mandatory || 0),
+            }))
+            .catch(() => ({ retirable: 0, mandatory: 0 })),
         ]);
 
         const totalEmployees = eserviceEmployeesCount;
@@ -296,6 +312,7 @@ export const useDashboardData = ({
           employeesOnLeave,
           archivedEmployees,
         });
+        setRetirementCounts(retirementData as RetirementCounts);
         setRecentLogs(showRecentLogs ? backlogs.slice(0, 3) : []);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
@@ -315,6 +332,7 @@ export const useDashboardData = ({
     error,
     recentLogs,
     canAccessDashboard,
+    retirementCounts,
   };
 };
 

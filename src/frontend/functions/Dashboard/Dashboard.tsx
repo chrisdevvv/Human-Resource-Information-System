@@ -13,7 +13,7 @@ import {
   Clock3,
   Sparkles,
 } from "lucide-react";
-import { type BacklogRecord, useDashboardData } from "./useDashboardData";
+import { type BacklogRecord, type RetirementCounts, useDashboardData } from "./useDashboardData";
 import DashboardSkeleton from "./DashboardSkeleton";
 
 type StatCard = {
@@ -36,6 +36,79 @@ type DashboardProps = {
   onTabChange?: (tab: string) => void;
   showRecentLogs?: boolean;
 };
+
+function RetirementChart({ counts }: { counts: RetirementCounts }) {
+  const total = counts.retirable + counts.mandatory;
+  const retirablePct = total > 0 ? Math.round((counts.retirable / total) * 100) : 0;
+  const mandatoryPct = total > 0 ? Math.round((counts.mandatory / total) * 100) : 0;
+
+  const bars = [
+    {
+      label: "Retirable",
+      sublabel: "55 – 60 years old",
+      count: counts.retirable,
+      pct: retirablePct,
+      bar: "bg-amber-400",
+      badge: "bg-amber-100 text-amber-700 border border-amber-200",
+      dot: "bg-amber-400",
+    },
+    {
+      label: "Mandatory Retirement",
+      sublabel: "61 years old and above",
+      count: counts.mandatory,
+      pct: mandatoryPct,
+      bar: "bg-rose-500",
+      badge: "bg-rose-100 text-rose-700 border border-rose-200",
+      dot: "bg-rose-500",
+    },
+  ];
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div className="border-b border-gray-200 bg-gradient-to-r from-orange-50 to-white px-6 py-5">
+        <h2 className="text-lg font-bold text-orange-700">Retirement Overview</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Based on employee birthdates from eService records.
+        </p>
+      </div>
+
+      <div className="p-6">
+        <div className="mb-5 flex items-center gap-2">
+          <span className="text-3xl font-bold text-gray-900">{total}</span>
+          <span className="text-sm text-gray-500">employees approaching or at retirement age</span>
+        </div>
+
+        <div className="space-y-5">
+          {bars.map((bar) => (
+            <div key={bar.label}>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className={`inline-block h-2.5 w-2.5 rounded-full ${bar.dot}`} />
+                  <span className="text-sm font-semibold text-gray-800">{bar.label}</span>
+                  <span className="text-xs text-gray-400">{bar.sublabel}</span>
+                </div>
+                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${bar.badge}`}>
+                  {bar.count}
+                </span>
+              </div>
+              <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${bar.bar}`}
+                  style={{ width: `${bar.pct}%` }}
+                />
+              </div>
+              <p className="mt-1 text-right text-xs text-gray-400">{bar.pct}% of retirement-age employees</p>
+            </div>
+          ))}
+        </div>
+
+        {total === 0 && (
+          <p className="mt-2 text-center text-sm text-gray-400">No employees in retirement age range.</p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 const getCardAccentClasses = (title: string) => {
   switch (title) {
@@ -109,6 +182,7 @@ export default function Dashboard({
     error,
     recentLogs,
     canAccessDashboard,
+    retirementCounts,
   } = useDashboardData({ showRecentLogs });
 
   if (!canAccessDashboard) {
@@ -297,6 +371,11 @@ export default function Dashboard({
             })}
           </div>
 
+          {/* Retirement Chart */}
+          <div className="mb-8">
+            <RetirementChart counts={retirementCounts} />
+          </div>
+
           {showRecentLogs && (
             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
               <div className="flex flex-col gap-3 border-b border-gray-200 bg-gradient-to-r from-yellow-50 to-white px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
@@ -482,6 +561,9 @@ export default function Dashboard({
               })}
             </div>
           </div>
+
+          {/* Retirement Chart */}
+          <RetirementChart counts={retirementCounts} />
 
           {showRecentLogs && (
             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
