@@ -21,20 +21,17 @@ import ViewEmployeeModal from "./EmployeeDetails/ViewEmployeeModal";
 import ToastMessage from "../../components/ToastMessage";
 import { archiveEmployee } from "../LeaveManagement/leaveApi";
 import { EmployeesProfileSkeleton } from "../../components/Skeleton/SkeletonLoaders";
+import {
+  getEServiceEmployees,
+  type EmployeePersonalInfoApi,
+} from "../eservice/eserviceApi";
 
-type EmployeeRecordApi = {
-  id: number;
-  first_name: string;
-  middle_name?: string | null;
-  last_name: string;
-  email?: string | null;
-  school_name?: string | null;
-  school_id?: number | null;
-  employee_type?: "teaching" | "non-teaching" | "teaching-related";
-  resolved_employee_type?: "teaching" | "non-teaching" | "teaching-related";
-  birthdate?: string | null;
-};
-
+/**
+ * Data Source: eservice/emppersonalinfo API
+ * This component fetches employee data from the eservice module which retrieves
+ * comprehensive employee personal information from the emppersonalinfo database table.
+ * It does NOT use the legacy employees API to avoid data conflicts.
+ */
 type EmployeeRecord = {
   id: number;
   firstName: string;
@@ -43,17 +40,18 @@ type EmployeeRecord = {
   email: string;
   fullName: string;
   employeeType: "teaching" | "non-teaching" | "teaching-related";
+  teacherStatus: string;
   schoolId: number | null;
+  district?: string;
   schoolName: string;
+  civilStatus?: string;
+  sex?: string;
   birthdate: string;
 };
 
 type EmployeeApiResponse = {
-  data?: EmployeeRecordApi[];
+  data?: EmployeePersonalInfoApi[];
   total?: number;
-  page?: number;
-  pageSize?: number;
-  message?: string;
 };
 
 const parseApiBody = async <T extends { message?: string }>(
@@ -96,35 +94,6 @@ const getInitialEmployeesTab = (): "list" | "archived" => {
   return "list";
 };
 
-const normalizeRole = (role: unknown) =>
-  String(role || "")
-    .trim()
-    .toUpperCase()
-    .replace(/-/g, "_");
-
-const getEmployeesEndpoint = () => {
-  const rawUser = localStorage.getItem("user");
-  if (!rawUser) {
-    return "/api/employees/";
-  }
-
-  try {
-    const parsed = JSON.parse(rawUser) as SessionUser;
-    const normalizedRole = normalizeRole(parsed.role);
-    const schoolId = Number(parsed.school_id ?? parsed.schoolId);
-    const isSchoolScopedRole =
-      normalizedRole === "ADMIN" || normalizedRole === "DATA_ENCODER";
-
-    if (isSchoolScopedRole && Number.isFinite(schoolId) && schoolId > 0) {
-      return "/api/employees/";
-    }
-  } catch {
-    // Fall back to broad endpoint when user payload is malformed.
-  }
-
-  return "/api/employees/";
-};
-
 const getCurrentUserRole = (): string => {
   const rawUser = localStorage.getItem("user");
   if (!rawUser) {
@@ -132,17 +101,22 @@ const getCurrentUserRole = (): string => {
   }
   try {
     const parsed = JSON.parse(rawUser) as SessionUser;
-    return normalizeRole(parsed.role);
+    return String(parsed.role || "")
+      .trim()
+      .toUpperCase()
+      .replace(/-/g, "_");
   } catch {
     return "";
   }
 };
 
-const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
-  const firstName = item.first_name?.trim() || "Unknown";
-  const rawMiddleName = item.middle_name?.trim() || "";
+const toEmployeeRecord = (item: EmployeePersonalInfoApi): EmployeeRecord => {
+  // Maps emppersonalinfo API response to local EmployeeRecord type
+  // Source: eservice/emppersonalinfo database
+  const firstName = item.firstName?.trim() || "Unknown";
+  const rawMiddleName = item.middleName?.trim() || "";
   const middleName = rawMiddleName.toUpperCase() === "N/A" ? "" : rawMiddleName;
-  const lastName = item.last_name?.trim() || "Employee";
+  const lastName = item.lastName?.trim() || "Employee";
   const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
 
   return {
@@ -151,13 +125,48 @@ const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
     middleName,
     lastName,
     fullName,
-    employeeType: item.resolved_employee_type || item.employee_type || "non-teaching",
+    employeeType: "non-teaching",
+    teacherStatus: item.teacher_status?.trim() || "N/A",
     email: item.email?.trim() || "",
-    schoolId:
-      typeof item.school_id === "number" ? item.school_id || null : null,
-    schoolName: item.school_name?.trim() || "",
-    birthdate: typeof item.birthdate === "string" ? item.birthdate || "" : "",
+    schoolId: null,
+    district: item.district?.trim() || "",
+    schoolName: item.school?.trim() || "",
+    civilStatus: item.civilStatus?.trim() || "",
+    sex: item.gender?.trim() || "",
+    birthdate: item.dateOfBirth?.trim() || "",
   };
+};
+
+const getStatusClasses = (status?: string | null) => {
+  const normalized = (status || "").trim().toLowerCase();
+
+  if (
+    normalized === "active" ||
+    normalized === "permanent" ||
+    normalized === "regular" ||
+    normalized === "teaching" ||
+    normalized === "non-teaching"
+  ) {
+    return "border border-emerald-200 bg-emerald-100 text-emerald-700";
+  }
+
+  if (
+    normalized === "inactive" ||
+    normalized === "resigned" ||
+    normalized === "separated"
+  ) {
+    return "border border-red-200 bg-red-100 text-red-700";
+  }
+
+  if (
+    normalized === "pending" ||
+    normalized === "temporary" ||
+    normalized === "provisional"
+  ) {
+    return "border border-amber-200 bg-amber-100 text-amber-700";
+  }
+
+  return "border border-gray-200 bg-gray-100 text-gray-700";
 };
 
 export default function EmployeesListLayout() {
@@ -214,46 +223,28 @@ export default function EmployeesListLayout() {
         throw new Error("No authentication token found.");
       }
 
-      const scopedEndpoint = getEmployeesEndpoint();
-      const params = new URLSearchParams();
-      if (searchQuery.trim()) params.set("search", searchQuery.trim());
-      if (employeeTypeFilter !== "ALL") {
-        params.set("employee_type", employeeTypeFilter);
-      }
-      if (currentUserRole === "SUPER_ADMIN" && schoolFilter !== "ALL") {
-        params.set("school_id", schoolFilter);
-      }
-      if (letterFilter !== "ALL") params.set("letter", letterFilter);
-      if (retirementFilter !== "ALL") {
-        params.set("retirement", retirementFilter);
-      }
-      params.set("sortOrder", sortOrder);
-      params.set("page", String(currentPage));
-      params.set("pageSize", String(itemsPerPage));
+      void token;
 
-      const response = await fetch(
-        `${API_BASE}${scopedEndpoint}?${params.toString()}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      // Fetch from eservice/emppersonalinfo API - complete employee personal information
+      // This replaces the legacy employees API to ensure data consistency and avoid conflicts
+      const result = await getEServiceEmployees({
+        search: searchQuery,
+        district: undefined,
+        school: schoolFilter === "ALL" ? undefined : schoolFilter,
+        civilStatus: undefined,
+        sex: undefined,
+        employeeType:
+          employeeTypeFilter === "ALL" ? undefined : employeeTypeFilter,
+        letter: letterFilter === "ALL" ? undefined : letterFilter,
+        sortOrder: sortOrder.toUpperCase() as "ASC" | "DESC",
+        page: currentPage,
+        pageSize: itemsPerPage,
+      });
 
-      const body = await parseApiBody<EmployeeApiResponse>(response);
-      if (!response.ok) {
-        throw new Error(
-          body.message ||
-            `Failed to fetch employees (HTTP ${response.status}).`,
-        );
-      }
-
-      const mapped = (body.data || []).map(toEmployeeRecord);
+      const mapped = (result.data || []).map(toEmployeeRecord);
       setEmployeeData(mapped);
       setTotalItems(
-        typeof body.total === "number" ? body.total : mapped.length,
+        typeof result.total === "number" ? result.total : mapped.length,
       );
       setEmployeeError(null);
     } catch (err) {
@@ -283,38 +274,17 @@ export default function EmployeesListLayout() {
         return;
       }
 
-      const scopedEndpoint = getEmployeesEndpoint();
-      const params = new URLSearchParams();
-      params.set("sortOrder", "asc");
-      params.set("page", "1");
-      params.set("pageSize", "1000");
-
-      const response = await fetch(
-        `${API_BASE}${scopedEndpoint}?${params.toString()}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      const body = await parseApiBody<EmployeeApiResponse>(response);
-      if (!response.ok) {
-        throw new Error(
-          body.message || `Failed to fetch schools (HTTP ${response.status}).`,
-        );
-      }
-
       const unique = new Map<number, string>();
-      (body.data || []).forEach((item) => {
-        if (
-          typeof item.school_id === "number" &&
-          item.school_id > 0 &&
-          item.school_name?.trim()
-        ) {
-          unique.set(item.school_id, item.school_name.trim());
+      const result = await getEServiceEmployees({
+        search: "",
+        sortOrder: "ASC",
+        page: 1,
+        pageSize: 1000,
+      });
+
+      (result.data || []).forEach((item) => {
+        if (item.school?.trim()) {
+          unique.set(item.id, item.school.trim());
         }
       });
 
@@ -373,8 +343,8 @@ export default function EmployeesListLayout() {
     });
 
     employeeData.forEach((employee) => {
-      if (employee.schoolId && employee.schoolName.trim()) {
-        unique.set(employee.schoolId, employee.schoolName.trim());
+      if (employee.schoolName.trim()) {
+        unique.set(employee.id, employee.schoolName.trim());
       }
     });
 
@@ -488,13 +458,33 @@ export default function EmployeesListLayout() {
     setSelectedArchiveEmployee(null);
   };
 
-  const handleEmployeeUpdated = (updatedEmployee: EmployeeRecord) => {
+  const handleEmployeeUpdated = (updatedEmployee: {
+    id: number;
+    firstName: string;
+    middleName: string;
+    lastName: string;
+    fullName: string;
+    email: string;
+    employeeType: "teaching" | "non-teaching" | "teaching-related";
+    schoolId: number | null;
+    schoolName: string;
+    birthdate: string;
+    teacherStatus?: string;
+    district?: string;
+    civilStatus?: string;
+    sex?: string;
+  }) => {
+    const normalizedEmployee: EmployeeRecord = {
+      ...updatedEmployee,
+      teacherStatus: updatedEmployee.teacherStatus?.trim() || "N/A",
+    };
+
     setEmployeeData((prev) =>
       prev.map((employee) =>
-        employee.id === updatedEmployee.id ? updatedEmployee : employee,
+        employee.id === normalizedEmployee.id ? normalizedEmployee : employee,
       ),
     );
-    setSelectedViewEmployee(updatedEmployee);
+    setSelectedViewEmployee(normalizedEmployee);
   };
 
   const hasActiveFilters =
@@ -699,14 +689,20 @@ export default function EmployeesListLayout() {
                         <p className="text-sm font-semibold text-gray-900 truncate">
                           {employee.fullName}
                         </p>
-                        <p className="text-xs text-gray-500 capitalize">
-                          {employee.employeeType}
-                        </p>
                         <p className="mt-1 text-xs text-gray-600 truncate">
                           {employee.email || "N/A"}
                         </p>
                         <p className="text-xs text-gray-600 truncate">
                           {employee.schoolName || "N/A"}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-600">
+                          <span
+                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${getStatusClasses(
+                              employee.teacherStatus,
+                            )}`}
+                          >
+                            {employee.teacherStatus || "N/A"}
+                          </span>
                         </p>
 
                         <div className="mt-2 flex items-center justify-end gap-2">
@@ -747,16 +743,16 @@ export default function EmployeesListLayout() {
                     <thead className="sticky top-0 z-10 bg-blue-100">
                       <tr className="border-b-2 border-gray-200">
                         <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                          Name
+                          Full Name
                         </th>
                         <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                          Employee Type
-                        </th>
-                        <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
-                          Email
+                          DepEd Email
                         </th>
                         <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                           School
+                        </th>
+                        <th className="text-left py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
+                          Status
                         </th>
                         <th className="text-right py-1 px-3 font-semibold text-blue-600 uppercase text-xs bg-blue-100">
                           Action
@@ -774,14 +770,20 @@ export default function EmployeesListLayout() {
                               <td className="py-1 px-3 text-gray-900 text-sm font-medium">
                                 {employee.fullName}
                               </td>
-                              <td className="py-1 px-3 text-gray-500 text-sm capitalize">
-                                {employee.employeeType}
-                              </td>
                               <td className="py-1 px-3 text-gray-500 text-sm">
                                 {employee.email || "N/A"}
                               </td>
                               <td className="py-1 px-3 text-gray-500 text-sm">
                                 {employee.schoolName || "N/A"}
+                              </td>
+                              <td className="py-1 px-3 text-gray-500 text-sm">
+                                <span
+                                  className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${getStatusClasses(
+                                    employee.teacherStatus,
+                                  )}`}
+                                >
+                                  {employee.teacherStatus || "N/A"}
+                                </span>
                               </td>
                               <td className="py-1 px-3">
                                 <div className="flex items-center justify-end gap-2">
@@ -981,7 +983,7 @@ export default function EmployeesListLayout() {
                       <button
                         key={item}
                         onClick={() => setCurrentPage(item)}
-                        className={`min-w-[32px] h-8 px-2 rounded font-medium text-xs transition cursor-pointer ${
+                        className={`min-w-8 h-8 px-2 rounded font-medium text-xs transition cursor-pointer ${
                           currentPage === item
                             ? "bg-blue-600 text-white"
                             : "text-gray-500 hover:bg-white"
