@@ -764,18 +764,10 @@ export default function ViewEmployeeModal({
   const resolvedDetails = details || fallbackDetails;
   const resolvedSalaryDate = isEditing
     ? editDateOfFirstAppointment
-    : (resolvedDetails?.resolved_appointment_date || 
-       resolvedDetails?.current_appointment_date || 
-       resolvedDetails?.date_of_first_appointment || 
-       null);
+    : (resolvedDetails?.date_of_first_appointment || null);
   const computedSalaryMetrics = computeServiceMetrics(resolvedSalaryDate);
-  const resolvedYearsInService = isEditing
-    ? computedSalaryMetrics.yearsInService
-    : (resolvedDetails?.years_in_service ??
-      computedSalaryMetrics.yearsInService);
-  const resolvedLoyaltyBonus = isEditing
-    ? computedSalaryMetrics.loyaltyBonus
-    : (resolvedDetails?.loyalty_bonus ?? computedSalaryMetrics.loyaltyBonus);
+  const resolvedYearsInService = computedSalaryMetrics.yearsInService;
+  const resolvedLoyaltyBonus = computedSalaryMetrics.loyaltyBonus;
   const latestSalaryHistoryRow = useMemo(() => {
     if (!salaryHistoryRows.length) return null;
 
@@ -800,12 +792,8 @@ export default function ViewEmployeeModal({
       null,
     );
   }, [salaryHistoryRows]);
-  const resolvedWorkSg =
-    latestSalaryHistoryRow?.sg ?? 
-    resolvedDetails?.resolved_sg ?? 
-    resolvedDetails?.current_sg ?? 
-    resolvedDetails?.sg ?? 
-    null;
+  const originalWorkSg =
+    resolvedDetails?.sg ?? employee?.sg ?? latestSalaryHistoryRow?.sg ?? null;
   const canManageSalaryHistory = isEditing && canEdit;
   const hasPendingSalaryHistoryDraft =
     Boolean(salaryHistoryCreateDraft) || Boolean(salaryHistoryEditDraft);
@@ -958,10 +946,10 @@ export default function ViewEmployeeModal({
   useEffect(() => {
     if (isEditing) return;
 
-    const normalizedSg = String(resolvedWorkSg ?? "").trim();
+    const normalizedSg = String(originalWorkSg ?? "").trim();
     setEditWorkSg(normalizedSg);
     setInitialWorkSg(normalizedSg);
-  }, [isEditing, resolvedWorkSg]);
+  }, [employee?.sg, isEditing, originalWorkSg]);
 
   useEffect(() => {
     if (isEditing) {
@@ -2242,9 +2230,13 @@ export default function ViewEmployeeModal({
               isEditing={isEditing}
               resolvedSchoolName={resolvedDetails?.school_name}
               employeeSchoolName={employee.schoolName}
-              workDateOfFirstAppointment={resolvedDetails?.date_of_first_appointment || null}
+              workDateOfFirstAppointment={
+                isEditing
+                  ? editDateOfFirstAppointment
+                  : (resolvedDetails?.date_of_first_appointment ?? null)
+              }
               setEditDateOfFirstAppointment={setEditDateOfFirstAppointment}
-              workSg={isEditing ? editWorkSg : resolvedWorkSg}
+              workSg={isEditing ? editWorkSg : originalWorkSg}
               setEditWorkSg={setEditWorkSg}
               editEmployeeType={editEmployeeType}
               setEditEmployeeType={setEditEmployeeType}
@@ -2362,7 +2354,7 @@ export default function ViewEmployeeModal({
               <button
                 type="button"
                 onClick={() => {
-                  const baselineSg = String(resolvedWorkSg ?? "").trim();
+                  const baselineSg = String(originalWorkSg ?? "").trim();
                   setEditWorkSg(baselineSg);
                   setInitialWorkSg(baselineSg);
                   setIsEditing(true);
