@@ -20,7 +20,6 @@ export type SalaryHistoryDraft = {
   date: string;
   plantilla: string;
   sg: string;
-  step: string;
   salary: string;
   increment: string;
   remarks: string;
@@ -1011,22 +1010,14 @@ export default function SalaryInformation({
                               </td>
 
                               <td className="px-3 py-3 text-gray-700">
-                                {isEditingRow ? (
-                                  <input
-                                    type="text"
-                                    value={salaryHistoryEditDraft?.step || ""}
-                                    onChange={(e) =>
-                                      onChangeSalaryHistoryEditDraft(
-                                        "step",
-                                        e.target.value,
-                                      )
-                                    }
-                                    disabled={salaryHistoryUpdating}
-                                    className={tableInputClass}
-                                  />
-                                ) : (
-                                  formatCellValue(row.step)
-                                )}
+                                <div className="flex items-center gap-2">
+                                  <span>{formatCellValue(row.step)}</span>
+                                  {isEditingRow ? (
+                                    <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+                                      Auto
+                                    </span>
+                                  ) : null}
+                                </div>
                               </td>
 
                               <td className="px-3 py-3 text-right font-medium text-gray-900">
@@ -1217,20 +1208,10 @@ export default function SalaryInformation({
                               />
                             </td>
 
-                            <td className="px-3 py-3">
-                              <input
-                                type="text"
-                                value={salaryHistoryCreateDraft.step}
-                                onChange={(e) =>
-                                  onChangeSalaryHistoryDraft(
-                                    "step",
-                                    e.target.value,
-                                  )
-                                }
-                                disabled={salaryHistoryCreating}
-                                placeholder="Step"
-                                className={tableInputClass}
-                              />
+                            <td className="px-3 py-3 text-gray-700">
+                              <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700">
+                                Auto
+                              </span>
                             </td>
 
                             <td className="px-3 py-3">
@@ -1335,8 +1316,9 @@ export default function SalaryInformation({
 
             {salaryHistoryCreateDraft ? (
               <p className="mt-3 rounded-lg border border-blue-100 bg-white px-3 py-2 text-xs text-gray-500">
-                Increment is optional. Leave it blank for AUTO mode, or enter a
-                value for MANUAL mode.
+                Step is auto-calculated (1 to 8, capped at 8, resets to 1 on
+                Promotion). Increment is optional. Leave it blank for AUTO
+                mode, or enter a value for MANUAL mode.
               </p>
             ) : null}
           </div>

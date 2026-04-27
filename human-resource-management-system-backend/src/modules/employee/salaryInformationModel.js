@@ -5,10 +5,14 @@ const THREE_YEAR_INTERVAL = 3;
 const DEFAULT_AUTO_REMARK = "Step Increment";
 const INCREMENT_MODE_AUTO = "AUTO";
 const INCREMENT_MODE_MANUAL = "MANUAL";
+const MAX_STEP = 8;
+
 const hasOwn = (obj, key) =>
   Object.prototype.hasOwnProperty.call(obj || {}, key);
+
 const hasProvidedIncrement = (payload = {}) =>
   hasOwn(payload, "increment") || hasOwn(payload, "increment_amount");
+
 const getProvidedIncrementValue = (payload = {}) => {
   if (hasOwn(payload, "increment") && payload.increment !== undefined) {
     return payload.increment;
@@ -76,6 +80,23 @@ const addYearsToIsoDate = (isoDate, years) => {
   return next.toISOString().slice(0, 10);
 };
 
+const isPromotionRemark = (remarks) =>
+  String(remarks || "").trim().toLowerCase() === "promotion";
+
+const getNextStep = (previousStep, remarks) => {
+  if (isPromotionRemark(remarks)) {
+    return "1";
+  }
+
+  const parsedStep = Number(previousStep);
+
+  if (!Number.isInteger(parsedStep) || parsedStep < 1) {
+    return "1";
+  }
+
+  return String(Math.min(parsedStep + 1, MAX_STEP));
+};
+
 const SalaryInformation = {
   getByEmployeeId: async (employeeId, filters = {}) => {
     const page = Number(filters.page) || null;
@@ -133,15 +154,63 @@ const SalaryInformation = {
     return rows[0] || null;
   },
 
+  getPreviousRecordForStep: async (employeeId, salaryDate, excludeId = null) => {
+    const normalizedSalaryDate = normalizeOptionalDate(salaryDate);
+
+    if (!normalizedSalaryDate) {
+      return SalaryInformation.getLatestByEmployeeId(employeeId);
+    }
+
+    const params = [
+      employeeId,
+      normalizedSalaryDate,
+      normalizedSalaryDate,
+    ];
+
+    let excludeCurrentRecordClause = "";
+
+    if (excludeId) {
+      excludeCurrentRecordClause = "AND id <> ?";
+      params.push(excludeId);
+    }
+
+    const [rows] = await pool.promise().query(
+      `SELECT id, employee_id, DATE_FORMAT(salary_date, '%Y-%m-%d') AS salary_date, step, remarks
+       FROM salary_information
+       WHERE employee_id = ?
+         AND (
+           salary_date < ?
+           OR salary_date = ?
+         )
+         ${excludeCurrentRecordClause}
+       ORDER BY salary_date DESC, id DESC
+       LIMIT 1`,
+      params,
+    );
+
+    return rows[0] || null;
+  },
+
   create: async (employeeId, payload, options = {}) => {
     const normalizedSalaryDate = normalizeOptionalDate(payload.date);
     const normalizedSalary = toMoney(payload.salary);
+    const normalizedRemarks = normalizeOptionalText(payload.remarks);
+
+    const previousRecord = await SalaryInformation.getPreviousRecordForStep(
+      employeeId,
+      normalizedSalaryDate,
+    );
+
+    const autoStep = getNextStep(previousRecord?.step, normalizedRemarks);
+
     const providedIncrement = getProvidedIncrementValue(payload);
     const hasManualIncrement =
       providedIncrement !== undefined &&
       providedIncrement !== null &&
       providedIncrement !== "";
-    const normalizedIncrement = hasManualIncrement ? toMoney(providedIncrement) : 0;
+    const normalizedIncrement = hasManualIncrement
+      ? toMoney(providedIncrement)
+      : 0;
     const incrementMode = hasManualIncrement
       ? INCREMENT_MODE_MANUAL
       : INCREMENT_MODE_AUTO;
@@ -155,15 +224,16 @@ const SalaryInformation = {
         normalizedSalaryDate,
         normalizeOptionalText(payload.plantilla),
         normalizeOptionalText(payload.sg),
-        normalizeOptionalText(payload.step),
+        autoStep,
         normalizedSalary,
         normalizedIncrement,
         incrementMode,
-        normalizeOptionalText(payload.remarks),
+        normalizedRemarks,
       ],
     );
 
     await SalaryInformation.recomputeEmployeeIncrements(employeeId);
+    await SalaryInformation.recomputeEmployeeSteps(employeeId);
 
     await SalaryIncrementNotice.upsertFromSalaryInformation(
       employeeId,
@@ -183,28 +253,51 @@ const SalaryInformation = {
     const fields = [];
     const params = [];
 
+    const nextDate = hasOwn(payload, "date")
+      ? normalizeOptionalDate(payload.date)
+      : existing.salary_date;
+
+    const nextRemarks = hasOwn(payload, "remarks")
+      ? normalizeOptionalText(payload.remarks)
+      : existing.remarks;
+
+    const previousRecord = await SalaryInformation.getPreviousRecordForStep(
+      employeeId,
+      nextDate,
+      id,
+    );
+
+    const autoStep = getNextStep(previousRecord?.step, nextRemarks);
+
     if (Object.prototype.hasOwnProperty.call(payload, "date")) {
       fields.push("salary_date = ?");
-      params.push(normalizeOptionalDate(payload.date));
+      params.push(nextDate);
     }
+
     if (Object.prototype.hasOwnProperty.call(payload, "plantilla")) {
       fields.push("plantilla = ?");
       params.push(normalizeOptionalText(payload.plantilla));
     }
+
     if (Object.prototype.hasOwnProperty.call(payload, "sg")) {
       fields.push("sg = ?");
       params.push(normalizeOptionalText(payload.sg));
     }
-    if (Object.prototype.hasOwnProperty.call(payload, "step")) {
-      fields.push("step = ?");
-      params.push(normalizeOptionalText(payload.step));
-    }
+
+    // Always recompute step on update.
+    // This intentionally ignores any manually submitted payload.step.
+    fields.push("step = ?");
+    params.push(autoStep);
+
     if (Object.prototype.hasOwnProperty.call(payload, "salary")) {
       fields.push("salary = ?");
       params.push(toMoney(payload.salary));
     }
+
     if (hasProvidedIncrement(payload)) {
-      const normalizedIncrement = toNumberOrNull(getProvidedIncrementValue(payload));
+      const normalizedIncrement = toNumberOrNull(
+        getProvidedIncrementValue(payload),
+      );
 
       if (normalizedIncrement === null) {
         fields.push("increment_amount = ?");
@@ -218,9 +311,10 @@ const SalaryInformation = {
         params.push(INCREMENT_MODE_MANUAL);
       }
     }
+
     if (Object.prototype.hasOwnProperty.call(payload, "remarks")) {
       fields.push("remarks = ?");
-      params.push(normalizeOptionalText(payload.remarks));
+      params.push(nextRemarks);
     }
 
     if (fields.length === 0) {
@@ -241,6 +335,7 @@ const SalaryInformation = {
     }
 
     await SalaryInformation.recomputeEmployeeIncrements(employeeId);
+    await SalaryInformation.recomputeEmployeeSteps(employeeId);
 
     await SalaryIncrementNotice.upsertFromSalaryInformation(
       employeeId,
@@ -261,6 +356,7 @@ const SalaryInformation = {
 
     if (result.affectedRows > 0) {
       await SalaryInformation.recomputeEmployeeIncrements(employeeId);
+      await SalaryInformation.recomputeEmployeeSteps(employeeId);
     }
 
     return result;
@@ -301,10 +397,10 @@ const SalaryInformation = {
       if (needsUpdate) {
         await pool
           .promise()
-          .query("UPDATE salary_information SET increment_amount = ? WHERE id = ?", [
-            computedIncrement,
-            row.id,
-          ]);
+          .query(
+            "UPDATE salary_information SET increment_amount = ? WHERE id = ?",
+            [computedIncrement, row.id],
+          );
         updated += 1;
       }
 
@@ -314,14 +410,47 @@ const SalaryInformation = {
     return { employeeId: Number(employeeId), total: rows.length, updated };
   },
 
+  recomputeEmployeeSteps: async (employeeId) => {
+    const [rows] = await pool.promise().query(
+      `SELECT id, step, remarks
+       FROM salary_information
+       WHERE employee_id = ?
+       ORDER BY salary_date ASC, id ASC`,
+      [employeeId],
+    );
+
+    let previousStep = null;
+    let updated = 0;
+
+    for (const row of rows) {
+      const computedStep = getNextStep(previousStep, row.remarks);
+      const storedStep = normalizeOptionalText(row.step);
+
+      if (storedStep !== computedStep) {
+        await pool
+          .promise()
+          .query("UPDATE salary_information SET step = ? WHERE id = ?", [
+            computedStep,
+            row.id,
+          ]);
+        updated += 1;
+      }
+
+      previousStep = computedStep;
+    }
+
+    return { employeeId: Number(employeeId), total: rows.length, updated };
+  },
+
   syncThreeYearSalaryDateEntries: async (options = {}) => {
     const todayIso =
-      normalizeOptionalDate(options.today) || new Date().toISOString().slice(0, 10);
+      normalizeOptionalDate(options.today) ||
+      new Date().toISOString().slice(0, 10);
 
     const [latestPerEmployeeRows] = await pool.promise().query(
       `SELECT
          si.employee_id,
-        DATE_FORMAT(si.salary_date, '%Y-%m-%d') AS salary_date,
+         DATE_FORMAT(si.salary_date, '%Y-%m-%d') AS salary_date,
          si.plantilla,
          si.sg,
          si.step,
@@ -345,6 +474,8 @@ const SalaryInformation = {
 
     for (const row of latestPerEmployeeRows) {
       let cursorDate = normalizeOptionalDate(row.salary_date);
+      let cursorStep = normalizeOptionalText(row.step);
+
       if (!cursorDate) continue;
 
       while (true) {
@@ -354,7 +485,7 @@ const SalaryInformation = {
         }
 
         const [existingRows] = await pool.promise().query(
-          `SELECT id
+          `SELECT id, step
            FROM salary_information
            WHERE employee_id = ? AND salary_date = ?
            LIMIT 1`,
@@ -363,8 +494,11 @@ const SalaryInformation = {
 
         if (existingRows.length > 0) {
           cursorDate = nextDate;
+          cursorStep = normalizeOptionalText(existingRows[0].step) || cursorStep;
           continue;
         }
+
+        const nextStep = getNextStep(cursorStep, DEFAULT_AUTO_REMARK);
 
         const [insertResult] = await pool.promise().query(
           `INSERT INTO salary_information
@@ -375,7 +509,7 @@ const SalaryInformation = {
             nextDate,
             normalizeOptionalText(row.plantilla),
             normalizeOptionalText(row.sg),
-            normalizeOptionalText(row.step),
+            nextStep,
             toMoney(row.salary),
             0,
             INCREMENT_MODE_AUTO,
@@ -392,12 +526,15 @@ const SalaryInformation = {
         generatedSalaryInfoIdsByEmployee
           .get(normalizedEmployeeId)
           .push(Number(insertResult.insertId));
+
         cursorDate = nextDate;
+        cursorStep = nextStep;
       }
     }
 
     for (const employeeId of touchedEmployeeIds) {
       await SalaryInformation.recomputeEmployeeIncrements(employeeId);
+      await SalaryInformation.recomputeEmployeeSteps(employeeId);
 
       const insertedIds = generatedSalaryInfoIdsByEmployee.get(employeeId) || [];
       for (const salaryInformationId of insertedIds) {
