@@ -1594,7 +1594,7 @@ export default function ProfileSettings() {
                           schoolId: "",
                         });
                       }}
-                      className={`${actionPrimaryClass} w-full sm:w-auto`}
+                      className={`${actionPrimaryClass} cursor-pointer w-full sm:w-auto`}
                     >
                       <span className="cursor-pointer inline-flex items-center gap-1.5">
                         <Pencil size={14} />
@@ -1610,7 +1610,7 @@ export default function ProfileSettings() {
                           resetProfileEditor();
                         }}
                         disabled={savingProfile}
-                        className={`${actionSecondaryClass} w-full sm:w-auto`}
+                        className={`${actionSecondaryClass} cursor-pointer w-full sm:w-auto`}
                       >
                         <span className="cursor-pointer inline-flex items-center gap-1.5">
                           <XCircle size={14} />
@@ -1621,7 +1621,7 @@ export default function ProfileSettings() {
                         type="button"
                         onClick={handleRequestProfileSave}
                         disabled={savingProfile || !hasProfileChanges}
-                        className={`${actionPrimaryClass} w-full sm:w-auto`}
+                        className={`${actionPrimaryClass} cursor-pointer w-full sm:w-auto`}
                       >
                         <span className="cursor-pointer inline-flex items-center gap-1.5">
                           <Save size={14} />
