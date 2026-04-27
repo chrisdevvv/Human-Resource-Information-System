@@ -177,6 +177,13 @@ const EService = {
     };
   },
 
+  getCount: async () => {
+    const [[{ total }]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM emppersonalinfo`,
+    );
+    return Number(total);
+  },
+
   getById: async (id) => {
     const [rows] = await pool.query(
       `

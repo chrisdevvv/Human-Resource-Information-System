@@ -182,6 +182,18 @@ const deleteEmployeePersonalInfo = async (req, res) => {
   }
 };
 
+const getEmployeePersonalInfoCount = async (req, res) => {
+  try {
+    const result = await EService.getCount();
+    return res.status(200).json({ total: result });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error retrieving employee count",
+      error: err.message,
+    });
+  }
+};
+
 const getDistricts = async (req, res) => {
   try {
     const results = await EService.getDistricts();
@@ -213,6 +225,7 @@ const getSchools = async (req, res) => {
 module.exports = {
   getAllEmployeePersonalInfo,
   getEmployeePersonalInfoById,
+  getEmployeePersonalInfoCount,
   createEmployeePersonalInfo,
   updateEmployeePersonalInfo,
   deleteEmployeePersonalInfo,

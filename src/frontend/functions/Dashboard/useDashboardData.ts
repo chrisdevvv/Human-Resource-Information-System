@@ -220,6 +220,7 @@ export const useDashboardData = ({
           schools,
           backlogs,
           employeeStatusCountsResponse,
+          eserviceEmployeesCount,
         ] = await Promise.all([
           fetchApiList<Record<string, unknown>>(scopedEmployeesEndpoint, token),
           fetchApiList<Record<string, unknown>>(scopedUsersEndpoint, token),
@@ -235,9 +236,15 @@ export const useDashboardData = ({
             ? fetchApiList<BacklogRecord>("/api/backlogs", token)
             : Promise.resolve([]),
           fetchStatusCounts(statusCountsUrl, token),
+          fetch(`${API_BASE_URL}/api/eservice/employees/count`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+            .then((res) => res.json())
+            .then((data) => Number(data?.total || 0))
+            .catch(() => 0),
         ]);
 
-        const totalEmployees = employees.length;
+        const totalEmployees = eserviceEmployeesCount;
         const totalUsers = users.length;
         const totalSchools = schools.length;
         const pendingRegistrations = pendingRegistrationsList.length;

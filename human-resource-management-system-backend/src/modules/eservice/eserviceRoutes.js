@@ -2,6 +2,7 @@ const express = require("express");
 const {
   getAllEmployeePersonalInfo,
   getEmployeePersonalInfoById,
+  getEmployeePersonalInfoCount,
   createEmployeePersonalInfo,
   updateEmployeePersonalInfo,
   deleteEmployeePersonalInfo,
@@ -39,6 +40,13 @@ router.get(
   authMiddleware,
   roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
   getAllEmployeePersonalInfo,
+);
+
+router.get(
+  "/employees/count",
+  authMiddleware,
+  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  getEmployeePersonalInfoCount,
 );
 
 router.get(
