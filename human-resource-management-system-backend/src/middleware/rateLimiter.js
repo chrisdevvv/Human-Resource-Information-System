@@ -1,15 +1,5 @@
 const rateLimit = require("express-rate-limit");
-const { ipKeyGenerator } = require("express-rate-limit");
-
-const getEmailOrIpKey = (req) => {
-  const email = req.body?.email;
-
-  if (email && typeof email === "string") {
-    return email.trim().toLowerCase();
-  }
-
-  return ipKeyGenerator(req);
-};
+const { ipKeyGenerator } = rateLimit;
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -39,7 +29,13 @@ const passwordResetResendLimiter = rateLimit({
   max: 3,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: getEmailOrIpKey,
+  keyGenerator: (req) => {
+    const email = req.body?.email;
+    if (email && typeof email === "string") {
+      return email.trim().toLowerCase();
+    }
+    return ipKeyGenerator(req.ip);
+  },
   message: {
     success: false,
     message:
@@ -50,7 +46,11 @@ const passwordResetResendLimiter = rateLimit({
 const cooldownStore = new Map();
 
 const passwordResetCooldown = (req, res, next) => {
-  const key = getEmailOrIpKey(req);
+  const email = req.body?.email;
+  const key =
+    email && typeof email === "string"
+      ? email.trim().toLowerCase()
+      : ipKeyGenerator(req.ip);
   const now = Date.now();
   const lastAttempt = cooldownStore.get(key);
 
