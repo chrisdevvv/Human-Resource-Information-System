@@ -26,26 +26,6 @@ import {
   type EmployeePersonalInfoApi,
 } from "../eservice/eserviceApi";
 
-/**
- * Data Sources: Both eservice/emppersonalinfo AND legacy /api/employees/
- * This component fetches employee data from TWO sources and merges them:
- * 1. eservice/emppersonalinfo - comprehensive personal employee information
- * 2. legacy /api/employees/ - employee summary data
- * Merged by ID to avoid duplicates and provide complete employee profiles.
- */
-type EmployeeRecordApi = {
-  id: number;
-  first_name: string;
-  middle_name?: string | null;
-  last_name: string;
-  email?: string | null;
-  school_name?: string | null;
-  school_id?: number | null;
-  employee_type?: "teaching" | "non-teaching" | "teaching-related";
-  teacher_status?: string | null;
-  birthdate?: string | null;
-};
-
 type EmployeeRecord = {
   id: number;
   firstName: string;
@@ -63,33 +43,12 @@ type EmployeeRecord = {
   birthdate: string;
 };
 
-type EmployeeApiResponse = {
-  data?: EmployeePersonalInfoApi[];
-  total?: number;
-};
-
-const parseApiBody = async <T extends { message?: string }>(
-  response: Response,
-): Promise<T> => {
-  const contentType = response.headers.get("content-type") || "";
-
-  if (contentType.toLowerCase().includes("application/json")) {
-    return (await response.json().catch(() => ({}))) as T;
-  }
-
-  const text = await response.text().catch(() => "");
-  return {
-    message: text || undefined,
-  } as T;
-};
-
 type SessionUser = {
   role?: string;
   school_id?: number | string | null;
   schoolId?: number | string | null;
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const EMPLOYEES_LIST_TAB_KEY = "employeesList:activeTab";
@@ -124,57 +83,6 @@ const getCurrentUserRole = (): string => {
   }
 };
 
-/**
- * Fetch employees from legacy /api/employees/ endpoint
- */
-const fetchLegacyEmployees = async (params?: {
-  search?: string;
-  employeeType?: string;
-  letter?: string;
-  page?: number;
-  pageSize?: number;
-}): Promise<EmployeeRecordApi[]> => {
-  const token = localStorage.getItem("authToken");
-  if (!token) {
-    throw new Error("No authentication token found.");
-  }
-
-  const query = new URLSearchParams();
-  if (params?.search) query.append("search", params.search);
-  if (params?.employeeType && params.employeeType !== "ALL") {
-    query.append("employee_type", params.employeeType);
-  }
-  if (params?.letter && params.letter !== "ALL") {
-    query.append("letter", params.letter);
-  }
-  if (params?.page) query.append("page", String(params.page));
-  if (params?.pageSize) query.append("page_size", String(params.pageSize));
-
-  const url = query.toString()
-    ? `${API_BASE}/api/employees?${query.toString()}`
-    : `${API_BASE}/api/employees`;
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorBody = await parseApiBody<{ message?: string }>(response);
-    throw new Error(
-      errorBody.message || `Legacy API error: ${response.statusText}`,
-    );
-  }
-
-  const body = (await response.json().catch(() => ({}))) as {
-    data?: EmployeeRecordApi[];
-  };
-  return body.data || [];
-};
-
 const toEmployeeRecord = (item: EmployeePersonalInfoApi): EmployeeRecord => {
   // Maps emppersonalinfo API response to local EmployeeRecord type
   // Source: eservice/emppersonalinfo database
@@ -199,33 +107,6 @@ const toEmployeeRecord = (item: EmployeePersonalInfoApi): EmployeeRecord => {
     civilStatus: item.civilStatus?.trim() || "",
     sex: item.gender?.trim() || "",
     birthdate: item.dateOfBirth?.trim() || "",
-  };
-};
-
-/**
- * Convert legacy /api/employees/ format to EmployeeRecord
- */
-const toEmployeeRecordFromLegacy = (
-  item: EmployeeRecordApi,
-): EmployeeRecord => {
-  const firstName = item.first_name?.trim() || "Unknown";
-  const rawMiddleName = item.middle_name?.trim() || "";
-  const middleName = rawMiddleName.toUpperCase() === "N/A" ? "" : rawMiddleName;
-  const lastName = item.last_name?.trim() || "Employee";
-  const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
-
-  return {
-    id: item.id,
-    firstName,
-    middleName,
-    lastName,
-    fullName,
-    employeeType: item.employee_type || "non-teaching",
-    teacherStatus: item.teacher_status?.trim() || "N/A",
-    email: item.email?.trim() || "",
-    schoolId: item.school_id ?? null,
-    schoolName: item.school_name?.trim() || "",
-    birthdate: item.birthdate?.trim() || "",
   };
 };
 
@@ -306,138 +187,30 @@ export default function EmployeesListLayout() {
 
   const fetchEmployees = async (showSpinner = true) => {
     try {
-      if (showSpinner) {
-        setEmployeeLoading(true);
-      }
+      if (showSpinner) setEmployeeLoading(true);
 
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        throw new Error("No authentication token found.");
-      }
-
-      void token;
-
-      // Build filter parameters
-      const filterParams = {
+      const result = await getEServiceEmployees({
         search: searchQuery || undefined,
-        district: undefined,
         school: schoolFilter === "ALL" ? undefined : schoolFilter,
-        civilStatus: undefined,
-        sex: undefined,
-        employeeType:
-          employeeTypeFilter === "ALL" ? undefined : employeeTypeFilter,
+        employeeType: employeeTypeFilter === "ALL" ? undefined : employeeTypeFilter,
         letter: letterFilter === "ALL" ? undefined : letterFilter,
         sortOrder: sortOrder.toUpperCase() as "ASC" | "DESC",
-      };
-
-      // Fetch from BOTH sources sequentially to avoid rate limiting
-      // 1. Legacy /api/employees/
-      let legacyEmployees: EmployeeRecordApi[] = [];
-      try {
-        const firstLegacy = await fetchLegacyEmployees({
-          search: searchQuery,
-          employeeType:
-            employeeTypeFilter === "ALL" ? undefined : employeeTypeFilter,
-          letter: letterFilter === "ALL" ? undefined : letterFilter,
-          page: 1,
-          pageSize: 100,
-        });
-        legacyEmployees = [...firstLegacy];
-
-        // Fetch remaining legacy pages sequentially
-        if (firstLegacy.length === 100) {
-          let page = 2;
-          let hasMore = true;
-          while (hasMore) {
-            const nextPage = await fetchLegacyEmployees({
-              search: searchQuery,
-              employeeType:
-                employeeTypeFilter === "ALL" ? undefined : employeeTypeFilter,
-              letter: letterFilter === "ALL" ? undefined : letterFilter,
-              page: page,
-              pageSize: 100,
-            });
-
-            if (nextPage.length === 0) {
-              hasMore = false;
-            } else {
-              legacyEmployees = [...legacyEmployees, ...nextPage];
-              page++;
-            }
-          }
-        }
-      } catch {
-        legacyEmployees = [];
-      }
-
-      // 2. eservice/emppersonalinfo - fetch sequentially
-      let eserviceData: EmployeePersonalInfoApi[] = [];
-      const firstPage = await getEServiceEmployees({
-        ...filterParams,
-        page: 1,
-        pageSize: 100,
+        page: currentPage,
+        pageSize: itemsPerPage,
       });
 
-      eserviceData = [...(firstPage.data || [])];
-      const totalCount = firstPage.total || 0;
-
-      // Fetch remaining eservice pages sequentially (not in parallel)
-      if (totalCount > 100) {
-        const totalPages = Math.ceil(totalCount / 100);
-
-        for (let page = 2; page <= totalPages; page++) {
-          const result = await getEServiceEmployees({
-            ...filterParams,
-            page: page,
-            pageSize: 100,
-          });
-          eserviceData = [...eserviceData, ...(result.data || [])];
-        }
-      }
-
-      // Merge data by ID: eservice takes precedence
-      const employeeMap = new Map<number, EmployeeRecord>();
-
-      // Add legacy employees first
-      legacyEmployees.forEach((emp) => {
-        employeeMap.set(emp.id, toEmployeeRecordFromLegacy(emp));
-      });
-
-      // Overlay eservice employees (more complete data)
-      eserviceData.forEach((emp) => {
-        const mappedEmployee = toEmployeeRecord(emp);
-        const existing = employeeMap.get(emp.id);
-
-        employeeMap.set(emp.id, {
-          ...existing,
-          ...mappedEmployee,
-          schoolId: mappedEmployee.schoolId ?? (existing?.schoolId || null),
-          employeeType: mappedEmployee.employeeType || existing?.employeeType,
-        });
-      });
-
-      // Convert to array and sort
-      let merged = Array.from(employeeMap.values());
-      merged.sort((a, b) => {
-        const nameCompare = a.fullName.localeCompare(b.fullName);
-        return sortOrder === "asc" ? nameCompare : -nameCompare;
-      });
-
-      setEmployeeData(merged);
-      setTotalItems(merged.length);
+      const mapped = (result.data || []).map(toEmployeeRecord);
+      setEmployeeData(mapped);
+      setTotalItems(result.total || 0);
       setEmployeeError(null);
     } catch (err) {
-      setEmployeeError(
-        err instanceof Error ? err.message : "An error occurred",
-      );
+      setEmployeeError(err instanceof Error ? err.message : "An error occurred");
       if (showSpinner) {
         setEmployeeData([]);
         setTotalItems(0);
       }
     } finally {
-      if (showSpinner) {
-        setEmployeeLoading(false);
-      }
+      if (showSpinner) setEmployeeLoading(false);
     }
   };
 
@@ -448,27 +221,20 @@ export default function EmployeesListLayout() {
     }
 
     try {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        return;
-      }
-
-      const unique = new Map<number, string>();
       const result = await getEServiceEmployees({
         search: "",
         sortOrder: "ASC",
         page: 1,
-        pageSize: 1000,
+        pageSize: 500,
       });
 
+      const unique = new Map<string, string>();
       (result.data || []).forEach((item) => {
-        if (item.school?.trim()) {
-          unique.set(item.id, item.school.trim());
-        }
+        if (item.school?.trim()) unique.set(item.school.trim(), item.school.trim());
       });
 
-      const schools = Array.from(unique.entries())
-        .map(([id, name]) => ({ id, name }))
+      const schools = Array.from(unique.values())
+        .map((name, idx) => ({ id: idx + 1, name }))
         .sort((a, b) => a.name.localeCompare(b.name));
 
       setAllSchoolOptions(schools);
@@ -478,14 +244,10 @@ export default function EmployeesListLayout() {
   };
 
   useEffect(() => {
-    if (activeTab !== "list") {
-      return;
-    }
-
+    if (activeTab !== "list") return;
     const id = window.setTimeout(() => {
       fetchEmployees();
     }, 300);
-
     return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -496,10 +258,12 @@ export default function EmployeesListLayout() {
     letterFilter,
     retirementFilter,
     sortOrder,
+    currentPage,
+    itemsPerPage,
     currentUserRole,
   ]);
 
-  // Reset pagination when filters change
+  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
     setPageJumpInput("1");
@@ -524,33 +288,19 @@ export default function EmployeesListLayout() {
   const filteredEmployees = useMemo(() => employeeData, [employeeData]);
 
   const schoolOptions = useMemo(() => {
-    const unique = new Map<number, string>();
-
+    const unique = new Map<string, string>();
     allSchoolOptions.forEach((school) => {
-      if (school.id > 0 && school.name.trim()) {
-        unique.set(school.id, school.name.trim());
-      }
+      if (school.name.trim()) unique.set(school.name.trim(), school.name.trim());
     });
-
-    employeeData.forEach((employee) => {
-      if (employee.schoolName.trim()) {
-        unique.set(employee.id, employee.schoolName.trim());
-      }
-    });
-
-    return Array.from(unique.entries())
-      .map(([id, name]) => ({ id, name }))
+    return Array.from(unique.values())
+      .map((name, idx) => ({ id: idx + 1, name }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [allSchoolOptions, employeeData]);
+  }, [allSchoolOptions]);
 
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
-  // Paginate the full merged dataset locally
-  const paginatedEmployees = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    return filteredEmployees.slice(start, end);
-  }, [filteredEmployees, currentPage, itemsPerPage]);
+  // Data is already paginated server-side
+  const paginatedEmployees = filteredEmployees;
 
   const PAGE_WINDOW_SIZE = 5;
   const pageGroupStart =

@@ -219,7 +219,6 @@ export const useDashboardData = ({
           (isAdmin && schoolId ? `&school_id=${schoolId}` : "");
 
         const [
-          employees,
           users,
           leaves,
           pendingRegistrationsList,
@@ -229,7 +228,6 @@ export const useDashboardData = ({
           eserviceEmployeesCount,
           retirementData,
         ] = await Promise.all([
-          fetchApiList<Record<string, unknown>>(scopedEmployeesEndpoint, token),
           fetchApiList<Record<string, unknown>>(scopedUsersEndpoint, token),
           fetchApiList<LeaveRecord>("/api/leave", token),
           fetchApiList<Record<string, unknown>>(
