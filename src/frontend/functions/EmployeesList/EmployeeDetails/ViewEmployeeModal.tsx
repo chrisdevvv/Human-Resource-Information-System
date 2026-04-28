@@ -746,10 +746,7 @@ export default function ViewEmployeeModal({
     string | null
   >(null);
   const [salaryHistoryUpdating, setSalaryHistoryUpdating] = useState(false);
-  const [
-    salaryHistoryEditIncrementTouched,
-    setSalaryHistoryEditIncrementTouched,
-  ] = useState(false);
+  // Increment is automated by the server; no client-side editing needed.
 
   const applyEditSnapshot = (snapshot: EditSnapshot) => {
     setEditFirstName(snapshot.firstName);
@@ -962,7 +959,7 @@ export default function ViewEmployeeModal({
     setSalaryHistoryUpdateError(null);
     setSalaryHistoryCreating(false);
     setSalaryHistoryUpdating(false);
-    setSalaryHistoryEditIncrementTouched(false);
+    
     loadDetails();
 
     return () => {
@@ -979,7 +976,7 @@ export default function ViewEmployeeModal({
     setSalaryHistoryCreateError(null);
     setSalaryHistoryEditDraft(null);
     setSalaryHistoryUpdateError(null);
-    setSalaryHistoryEditIncrementTouched(false);
+    
     void loadSalaryHistory(employee.id);
   }, [employee, loadSalaryHistory, visible]);
 
@@ -990,7 +987,7 @@ export default function ViewEmployeeModal({
     setSalaryHistoryCreateError(null);
     setSalaryHistoryEditDraft(null);
     setSalaryHistoryUpdateError(null);
-    setSalaryHistoryEditIncrementTouched(false);
+    
   }, [isEditing]);
 
   useEffect(() => {
@@ -1779,8 +1776,16 @@ export default function ViewEmployeeModal({
         latestSalaryHistoryRow?.salary_date ?? null,
         resolvedDetails?.date_of_first_appointment ?? null,
       ),
-      plantilla: "",
-      sg: "",
+      plantilla:
+        String(latestSalaryHistoryRow?.plantilla || resolvedDetails?.plantilla_no || "").trim(),
+      sg:
+        String(
+          latestSalaryHistoryRow?.sg ||
+            resolvedDetails?.resolved_sg ||
+            resolvedDetails?.current_sg ||
+            resolvedDetails?.sg ||
+            "",
+        ).trim(),
       salary: "",
       increment: "",
       remarks: "",
@@ -1808,9 +1813,7 @@ export default function ViewEmployeeModal({
 
     const dateValue = salaryHistoryCreateDraft.date.trim();
     const salaryValueRaw = salaryHistoryCreateDraft.salary.trim();
-    const incrementValueRaw = salaryHistoryCreateDraft.increment.trim();
     const numericSalary = Number(salaryValueRaw);
-    const numericIncrement = Number(incrementValueRaw);
     const remarksValue = salaryHistoryCreateDraft.remarks.trim();
 
     if (!dateValue) {
@@ -1834,15 +1837,7 @@ export default function ViewEmployeeModal({
       return;
     }
 
-    if (
-      incrementValueRaw &&
-      (!Number.isFinite(numericIncrement) || numericIncrement < 0)
-    ) {
-      setSalaryHistoryCreateError(
-        "Increment must be a non-negative number when provided.",
-      );
-      return;
-    }
+    // Increment is automated by the server; client should not submit it.
 
     if (
       remarksValue &&
@@ -1877,9 +1872,6 @@ export default function ViewEmployeeModal({
             plantilla: salaryHistoryCreateDraft.plantilla.trim() || null,
             sg: salaryHistoryCreateDraft.sg.trim() || null,
             salary: Number(numericSalary.toFixed(2)),
-            ...(incrementValueRaw
-              ? { increment_amount: Number(numericIncrement.toFixed(2)) }
-              : {}),
             remarks: remarksValue || null,
           }),
         },
@@ -1918,7 +1910,6 @@ export default function ViewEmployeeModal({
     setSalaryHistoryCreateDraft(null);
     setSalaryHistoryCreateError(null);
     setSalaryHistoryUpdateError(null);
-    setSalaryHistoryEditIncrementTouched(false);
     setSalaryHistoryEditDraft({
       id: row.id,
       date: toDateInputValue(row.salary_date || null),
@@ -1927,10 +1918,6 @@ export default function ViewEmployeeModal({
       salary:
         Number.isFinite(normalizedSalary) && row.salary !== null
           ? String(Number(normalizedSalary.toFixed(2)))
-          : "",
-      increment:
-        row.increment_amount !== null && row.increment_amount !== undefined
-          ? String(row.increment_amount)
           : "",
       remarks: String(row.remarks || "").trim(),
     });
@@ -1941,17 +1928,12 @@ export default function ViewEmployeeModal({
 
     setSalaryHistoryEditDraft(null);
     setSalaryHistoryUpdateError(null);
-    setSalaryHistoryEditIncrementTouched(false);
   };
 
   const handleChangeSalaryHistoryEditDraft = (
     field: keyof SalaryHistoryDraft,
     value: string,
   ) => {
-    if (field === "increment") {
-      setSalaryHistoryEditIncrementTouched(true);
-    }
-
     setSalaryHistoryEditDraft((current) => {
       if (!current) return current;
       return { ...current, [field]: value };
@@ -1963,9 +1945,7 @@ export default function ViewEmployeeModal({
 
     const dateValue = salaryHistoryEditDraft.date.trim();
     const salaryValueRaw = salaryHistoryEditDraft.salary.trim();
-    const incrementValueRaw = salaryHistoryEditDraft.increment.trim();
     const numericSalary = Number(salaryValueRaw);
-    const numericIncrement = Number(incrementValueRaw);
     const remarksValue = salaryHistoryEditDraft.remarks.trim();
 
     if (!dateValue) {
@@ -1989,15 +1969,7 @@ export default function ViewEmployeeModal({
       return;
     }
 
-    if (
-      incrementValueRaw &&
-      (!Number.isFinite(numericIncrement) || numericIncrement < 0)
-    ) {
-      setSalaryHistoryUpdateError(
-        "Increment must be a non-negative number when provided.",
-      );
-      return;
-    }
+    // Increment is automated by the server; client should not submit it.
 
     if (
       remarksValue &&
@@ -2032,13 +2004,6 @@ export default function ViewEmployeeModal({
             plantilla: salaryHistoryEditDraft.plantilla.trim() || null,
             sg: salaryHistoryEditDraft.sg.trim() || null,
             salary: Number(numericSalary.toFixed(2)),
-            ...(salaryHistoryEditIncrementTouched
-              ? {
-                  increment_amount: incrementValueRaw
-                    ? Number(numericIncrement.toFixed(2))
-                    : null,
-                }
-              : {}),
             remarks: remarksValue || null,
           }),
         },
@@ -2058,7 +2023,6 @@ export default function ViewEmployeeModal({
       await loadSalaryHistory(employee.id);
       setSalaryHistoryEditDraft(null);
       setSalaryHistoryUpdateError(null);
-      setSalaryHistoryEditIncrementTouched(false);
       showToast("Salary history row updated successfully.", "success");
     } catch (err) {
       const message =
