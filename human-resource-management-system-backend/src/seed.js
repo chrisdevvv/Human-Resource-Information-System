@@ -2,6 +2,63 @@ require("./config/loadEnv");
 const bcrypt = require("bcryptjs");
 const pool = require("./config/db");
 
+const DEFAULT_TEST_PASSWORD = process.env.TEST_ADMIN_PASSWORD || "Admin@1234";
+const DEFAULT_ENCODER_PASSWORD =
+  process.env.TEST_ENCODER_PASSWORD || "Encoder@1234";
+
+const DEFAULT_TEST_ACCOUNTS = [
+  {
+    first_name: "Super",
+    last_name: "Admin",
+    email: "superadmin@deped.gov.ph",
+    password: DEFAULT_TEST_PASSWORD,
+    role: "SUPER_ADMIN",
+    school_id: null,
+  },
+  {
+    first_name: "Test",
+    last_name: "Admin",
+    email: "testadmin@deped.gov.ph",
+    password: DEFAULT_TEST_PASSWORD,
+    role: "ADMIN",
+    school_id: "__SAMPLE_SCHOOL__",
+  },
+  {
+    first_name: "Test",
+    last_name: "Encoder",
+    email: "testencoder@deped.gov.ph",
+    password: DEFAULT_ENCODER_PASSWORD,
+    role: "DATA_ENCODER",
+    school_id: "__SAMPLE_SCHOOL__",
+  },
+];
+
+const resolveSchoolColumns = async () => {
+  const db = pool.promise();
+  const [rows] = await db.query(
+    `SELECT COLUMN_NAME AS column_name
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'schools'
+       AND COLUMN_NAME IN ('schoolId', 'id', 'schoolName', 'school_name')`,
+  );
+
+  const columnNames = new Set(rows.map((row) => row.column_name));
+
+  return {
+    idColumn: columnNames.has("schoolId")
+      ? "schoolId"
+      : columnNames.has("id")
+        ? "id"
+        : null,
+    nameColumn: columnNames.has("schoolName")
+      ? "schoolName"
+      : columnNames.has("school_name")
+        ? "school_name"
+        : null,
+  };
+};
+
 // Allow test accounts to be provided via the TEST_ACCOUNTS env var (JSON array).
 // Example (in .env):
 // TEST_ACCOUNTS='[{"first_name":"Super","last_name":"Admin","email":"superadmin@deped.gov.ph","password":"Admin@1234","role":"SUPER_ADMIN","school_id":null}]'
@@ -19,13 +76,9 @@ if (process.env.TEST_ACCOUNTS) {
     console.error("Invalid TEST_ACCOUNTS JSON:", err.message);
     process.exit(1);
   }
-} else if (process.argv.includes("--force")) {
-  // Explicit force: allow built-in defaults when the operator passes --force
 } else {
-  console.error(
-    "TEST_ACCOUNTS is required. Set TEST_ACCOUNTS in your .env (JSON array) or run with --force to use built-in defaults.",
-  );
-  process.exit(1);
+  testAccounts = DEFAULT_TEST_ACCOUNTS;
+  console.log("Using built-in default test accounts.");
 }
 
 const sampleSchool = {
@@ -33,27 +86,53 @@ const sampleSchool = {
   school_code: "SJDMNHS",
 };
 
+const toDbRole = (role) => {
+  const normalized = String(role || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .replace(/-/g, "_");
+
+  if (normalized === "SUPER_ADMIN") return "super_admin";
+  if (normalized === "ADMIN") return "admin";
+  if (normalized === "DATA_ENCODER") return "data_encoder";
+  return "data_encoder";
+};
+
 async function seed() {
   const db = pool.promise();
 
   try {
+    const schoolColumns = await resolveSchoolColumns();
+    if (!schoolColumns.idColumn || !schoolColumns.nameColumn) {
+      throw new Error("Unable to resolve schools table columns");
+    }
+
     // 1. Ensure the sample school exists and capture its actual id
     let sampleSchoolId;
     const [schoolRows] = await db.query(
-      "SELECT id FROM schools WHERE school_name = ? LIMIT 1",
+      `SELECT ${schoolColumns.idColumn} AS school_id
+       FROM schools
+       WHERE ${schoolColumns.nameColumn} = ?
+       LIMIT 1`,
       [sampleSchool.school_name],
     );
     if (schoolRows.length === 0) {
-      const [result] = await db.query(
-        "INSERT INTO schools (school_name, school_code) VALUES (?, ?)",
-        [sampleSchool.school_name, sampleSchool.school_code],
+      const [fallbackSchoolRows] = await db.query(
+        `SELECT ${schoolColumns.idColumn} AS school_id
+         FROM schools
+         ORDER BY ${schoolColumns.idColumn} ASC
+         LIMIT 1`,
       );
-      sampleSchoolId = result.insertId;
-      console.log(
-        `✔  School created: "${sampleSchool.school_name}" (id=${sampleSchoolId})`,
+      sampleSchoolId = fallbackSchoolRows[0]?.school_id || null;
+      if (!sampleSchoolId) {
+        throw new Error("No school rows found to assign test accounts");
+      }
+      console.warn(
+        `Warning: sample school "${sampleSchool.school_name}" not found; using school_id=${sampleSchoolId} instead.`,
       );
     } else {
-      sampleSchoolId = schoolRows[0].id;
+      sampleSchoolId = schoolRows[0].school_id;
       console.log(`✔  School already exists (id=${sampleSchoolId}), skipping.`);
     }
 
@@ -61,7 +140,9 @@ async function seed() {
     const resolvedAccounts = testAccounts.map((a) => ({
       ...a,
       school_id:
-        a.school_id === "__SAMPLE_SCHOOL__" ? sampleSchoolId : a.school_id,
+        typeof a.school_id === "string" && /sample_school/i.test(a.school_id)
+          ? sampleSchoolId
+          : a.school_id,
     }));
 
     // Coerce/validate school_id for each account to avoid foreign key errors
@@ -71,7 +152,10 @@ async function seed() {
       const maybeId = Number(a.school_id);
       if (!Number.isNaN(maybeId)) {
         const [rowsCheck] = await db.query(
-          "SELECT id FROM schools WHERE id = ? LIMIT 1",
+          `SELECT ${schoolColumns.idColumn} AS school_id
+           FROM schools
+           WHERE ${schoolColumns.idColumn} = ?
+           LIMIT 1`,
           [maybeId],
         );
         if (rowsCheck.length === 0) {
@@ -108,7 +192,7 @@ async function seed() {
             account.last_name,
             account.email,
             hashedPassword,
-            account.role,
+            toDbRole(account.role),
             account.school_id,
             existing[0].id,
           ],
@@ -126,7 +210,7 @@ async function seed() {
           account.last_name,
           account.email,
           hashedPassword,
-          account.role,
+          toDbRole(account.role),
           account.school_id,
         ],
       );

@@ -1,5 +1,18 @@
 const pool = require("../../config/db");
 
+const toDbRole = (role) => {
+  const normalized = String(role || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .replace(/-/g, "_");
+
+  if (normalized === "SUPER_ADMIN") return "super_admin";
+  if (normalized === "ADMIN") return "admin";
+  if (normalized === "DATA_ENCODER") return "data_encoder";
+  return "data_encoder";
+};
+
 const Registration = {
   getAll: async (filters = {}, options = {}, pagination) => {
     const {
@@ -102,7 +115,7 @@ const Registration = {
   getSchoolNameById: async (school_id) => {
     const [rows] = await pool
       .promise()
-      .query("SELECT school_name FROM schools WHERE id = ? LIMIT 1", [
+      .query("SELECT school_name FROM schools WHERE schoolId = ? LIMIT 1", [
         school_id,
       ]);
     return rows[0]?.school_name || null;
@@ -112,7 +125,7 @@ const Registration = {
     const [rows] = await pool.promise().query(
       `SELECT u.id, u.role, u.school_id, s.school_name
        FROM users u
-       LEFT JOIN schools s ON u.school_id = s.id
+        LEFT JOIN schools s ON u.school_id = s.schoolId
        WHERE u.id = ?
        LIMIT 1`,
       [user_id],
@@ -139,15 +152,16 @@ const Registration = {
 
       const request = rows[0];
       const role = approved_role || request.requested_role || "DATA_ENCODER";
+      const dbRole = toDbRole(role);
 
       // Look up school by name; create it if it doesn't exist yet
       let school_id;
       const [schoolRows] = await conn.query(
-        "SELECT id FROM schools WHERE school_name = ? LIMIT 1",
+        "SELECT schoolId FROM schools WHERE school_name = ? LIMIT 1",
         [request.school_name.trim()],
       );
       if (schoolRows.length > 0) {
-        school_id = schoolRows[0].id;
+        school_id = schoolRows[0].schoolId;
       } else {
         const school_code = request.school_name
           .trim()
@@ -179,7 +193,7 @@ const Registration = {
           request.last_name,
           request.email,
           password_hash_to_use,
-          role,
+          dbRole,
           school_id,
           request.birthdate || null,
         ],

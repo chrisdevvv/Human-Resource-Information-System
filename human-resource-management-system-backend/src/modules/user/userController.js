@@ -51,6 +51,14 @@ const normalizeRole = (role) =>
     .replace(/\s+/g, "_")
     .replace(/-/g, "_");
 
+const toDbRole = (role) => {
+  const normalized = normalizeRole(role);
+  if (normalized === "SUPER_ADMIN") return "super_admin";
+  if (normalized === "ADMIN") return "admin";
+  if (normalized === "DATA_ENCODER") return "data_encoder";
+  return role;
+};
+
 const normalizeEmail = (value) =>
   String(value || "")
     .trim()
@@ -96,7 +104,7 @@ const resolveOrCreateSchoolsDivisionOfficeId = async () => {
   const [insertResult] = await pool.promise().query(
     `INSERT INTO schools (school_name, school_code)
      VALUES (?, ?)
-     ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)`,
+     ON DUPLICATE KEY UPDATE schoolId = LAST_INSERT_ID(schoolId)`,
     [SCHOOLS_DIVISION_OFFICE, schoolCode],
   );
 
@@ -369,7 +377,7 @@ const updateMyProfile = async (req, res) => {
     ) {
       const [schoolRows] = await pool
         .promise()
-        .query("SELECT id FROM schools WHERE id = ? LIMIT 1", [
+        .query("SELECT schoolId FROM schools WHERE schoolId = ? LIMIT 1", [
           updates.school_id,
         ]);
       if (schoolRows.length === 0) {
@@ -454,7 +462,7 @@ const updateUserDetails = async (req, res) => {
     ) {
       const [schoolRows] = await pool
         .promise()
-        .query("SELECT id FROM schools WHERE id = ? LIMIT 1", [
+        .query("SELECT schoolId FROM schools WHERE schoolId = ? LIMIT 1", [
           updates.school_id,
         ]);
       if (schoolRows.length === 0) {
@@ -518,7 +526,7 @@ const updateUserRole = async (req, res) => {
     }
 
     // Only SUPER_ADMIN can update user roles
-    if (req.user.role !== "SUPER_ADMIN") {
+    if (normalizeRole(req.user?.role) !== "SUPER_ADMIN") {
       return res
         .status(403)
         .json({ message: "Only SUPER_ADMIN users can assign roles" });
@@ -538,7 +546,7 @@ const updateUserRole = async (req, res) => {
     }
 
     const previousRole = user.role;
-    await User.updateRole(req.params.id, role);
+    await User.updateRole(req.params.id, toDbRole(role));
 
     // Fire-and-forget — email failure must not block the response
     if (previousRole !== role) {
@@ -579,7 +587,7 @@ const updateUserStatus = async (req, res) => {
       rawValue === "true";
 
     // Only SUPER_ADMIN can change account status
-    if (req.user.role !== "SUPER_ADMIN") {
+    if (normalizeRole(req.user?.role) !== "SUPER_ADMIN") {
       return res
         .status(403)
         .json({ message: "Only SUPER_ADMIN users can change account status" });
@@ -657,7 +665,7 @@ const deleteUser = async (req, res) => {
 const adminResetPassword = async (req, res) => {
   try {
     // Only SUPER_ADMIN can force-reset another user's password
-    if (req.user.role !== "SUPER_ADMIN") {
+    if (normalizeRole(req.user?.role) !== "SUPER_ADMIN") {
       return res
         .status(403)
         .json({ message: "Only SUPER_ADMIN users can reset passwords" });
@@ -796,12 +804,12 @@ const createDataEncoderByAdmin = async (req, res) => {
         }
 
         const [schoolRows] = await conn.query(
-          "SELECT id FROM schools WHERE school_name = ? LIMIT 1",
+          "SELECT schoolId FROM schools WHERE school_name = ? LIMIT 1",
           [normalizedSchoolName],
         );
 
         if (schoolRows.length > 0) {
-          schoolId = schoolRows[0].id;
+          schoolId = schoolRows[0].schoolId;
         } else {
           const schoolCode = normalizedSchoolName
             .split(/\s+/)
@@ -824,7 +832,7 @@ const createDataEncoderByAdmin = async (req, res) => {
           String(last_name).trim(),
           normalizedEmail,
           hashedPassword,
-          "DATA_ENCODER",
+          "data_encoder",
           schoolId,
           normalizedBirthdate,
         ],

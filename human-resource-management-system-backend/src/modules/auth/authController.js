@@ -32,6 +32,12 @@ const normalizeEmail = (email) =>
   String(email || "")
     .trim()
     .toLowerCase();
+const toApiRole = (role) =>
+  String(role || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .replace(/-/g, "_");
 const normalizeBirthdate = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
@@ -189,7 +195,7 @@ const register = async (req, res) => {
     // Add school to schools table if it doesn't exist yet
     const [existingSchool] = await pool
       .promise()
-      .query("SELECT id FROM schools WHERE school_name = ? LIMIT 1", [
+      .query("SELECT schoolId FROM schools WHERE school_name = ? LIMIT 1", [
         school_name.trim(),
       ]);
     if (existingSchool.length === 0) {
@@ -319,6 +325,7 @@ const login = async (req, res) => {
     }
 
     await clearLoginAttempts(loginAttemptId);
+    const apiRole = toApiRole(user.role);
 
     const jti = randomUUID();
     const token = jwt.sign(
@@ -328,7 +335,7 @@ const login = async (req, res) => {
         first_name: user.first_name,
         last_name: user.last_name,
         email: user.email,
-        role: user.role,
+        role: apiRole,
         school_id: user.school_id,
       },
       JWT_SECRET,
@@ -342,7 +349,7 @@ const login = async (req, res) => {
         first_name: user.first_name,
         last_name: user.last_name,
         email: user.email,
-        role: user.role,
+        role: apiRole,
         school_id: user.school_id,
       },
     });

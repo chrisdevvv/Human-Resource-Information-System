@@ -23,7 +23,7 @@ const School = {
       : "";
 
     const [rows] = await pool.promise().query(
-      `SELECT id, school_name, school_code FROM schools${whereClause} ORDER BY school_name ${sortOrder}, id ASC`,
+      `SELECT schoolId AS id, school_name, school_code FROM schools${whereClause} ORDER BY school_name ${sortOrder}, schoolId ASC`,
       params
     );
 
@@ -33,7 +33,7 @@ const School = {
   getById: async (id) => {
     const [rows] = await pool
       .promise()
-      .query("SELECT * FROM schools WHERE id = ?", [id]);
+      .query("SELECT schoolId AS id, school_name, school_code FROM schools WHERE schoolId = ?", [id]);
     return rows[0];
   },
 
@@ -62,7 +62,7 @@ const School = {
     const [result] = await pool
       .promise()
       .query(
-        "UPDATE schools SET school_name = ?, school_code = ? WHERE id = ?",
+        "UPDATE schools SET school_name = ?, school_code = ? WHERE schoolId = ?",
         [school_name, school_code, id],
       );
     return result;
@@ -71,7 +71,7 @@ const School = {
   delete: async (id) => {
     const [result] = await pool
       .promise()
-      .query("DELETE FROM schools WHERE id = ?", [id]);
+      .query("DELETE FROM schools WHERE schoolId = ?", [id]);
     return result;
   },
 };

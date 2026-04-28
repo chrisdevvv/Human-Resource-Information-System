@@ -1,5 +1,18 @@
 const pool = require("../../config/db");
 
+const toDbRole = (role) => {
+  const normalized = String(role || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .replace(/-/g, "_");
+
+  if (normalized === "SUPER_ADMIN") return "super_admin";
+  if (normalized === "ADMIN") return "admin";
+  if (normalized === "DATA_ENCODER") return "data_encoder";
+  return role;
+};
+
 const User = {
   // Supports optional filters and pagination. If `pagination` is omitted, returns full rows array for backwards compatibility.
   getAll: async (
@@ -8,7 +21,7 @@ const User = {
   ) => {
     let baseQuery = `
             FROM users u
-            LEFT JOIN schools s ON u.school_id = s.id
+          LEFT JOIN schools s ON u.school_id = s.schoolId
             WHERE 1=1
         `;
     const params = [];
@@ -25,7 +38,7 @@ const User = {
 
     if (role) {
       baseQuery += ` AND u.role = ?`;
-      params.push(role);
+      params.push(toDbRole(role));
     }
 
     if (is_active !== undefined && is_active !== null) {
@@ -48,7 +61,7 @@ const User = {
     // If pagination not requested, return full rows (preserve existing behavior)
     if (!pagination || !pagination.page) {
       const [rows] = await pool.promise().query(
-        `SELECT u.id, u.first_name, u.middle_name, u.last_name, u.email, u.role,
+        `SELECT u.id, u.first_name, u.middle_name, u.last_name, u.email, UPPER(u.role) AS role,
                        DATE_FORMAT(u.birthdate, '%Y-%m-%d') AS birthdate,
                        u.school_id,
                        u.is_active, u.created_at, u.updated_at,
@@ -69,7 +82,7 @@ const User = {
       .query(`SELECT COUNT(1) as total ${baseQuery}`, params);
 
     const [rows] = await pool.promise().query(
-      `SELECT u.id, u.first_name, u.middle_name, u.last_name, u.email, u.role,
+      `SELECT u.id, u.first_name, u.middle_name, u.last_name, u.email, UPPER(u.role) AS role,
                        DATE_FORMAT(u.birthdate, '%Y-%m-%d') AS birthdate,
                        u.school_id,
                        u.is_active, u.created_at, u.updated_at,
@@ -83,12 +96,12 @@ const User = {
 
   getById: async (id) => {
     const [rows] = await pool.promise().query(
-      `SELECT u.id, u.first_name, u.middle_name, u.last_name, u.email, u.role,
+      `SELECT u.id, u.first_name, u.middle_name, u.last_name, u.email, UPPER(u.role) AS role,
                     DATE_FORMAT(u.birthdate, '%Y-%m-%d') AS birthdate,
                     u.is_active, u.created_at, u.updated_at,
                     u.school_id, s.school_name, s.school_code
              FROM users u
-             LEFT JOIN schools s ON u.school_id = s.id
+             LEFT JOIN schools s ON u.school_id = s.schoolId
              WHERE u.id = ?`,
       [id],
     );
@@ -98,7 +111,7 @@ const User = {
   updateRole: async (id, role) => {
     const [result] = await pool
       .promise()
-      .query(`UPDATE users SET role = ? WHERE id = ?`, [role, id]);
+      .query(`UPDATE users SET role = ? WHERE id = ?`, [toDbRole(role), id]);
     return result;
   },
 
