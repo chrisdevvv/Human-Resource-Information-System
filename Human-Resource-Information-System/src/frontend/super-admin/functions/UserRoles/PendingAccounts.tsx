@@ -1,0 +1,632 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ArrowUpAZ,
+  ArrowDownAZ,
+  Search,
+  UserCheck,
+  Info,
+  ShieldCheck,
+  XCircle,
+  ArrowRight,
+} from "lucide-react";
+import { UserTableSkeleton } from "../../../components/Skeleton/SkeletonLoaders";
+import UserRolesDetailsModal, {
+  type RegistrationDetail,
+} from "../../components/UserRolesDetailsModal";
+import RoleAssignmentModal from "../../components/RoleAssignmentModal";
+import RejectModal from "../../components/RejectModal";
+import ToastMessage from "../../../components/ToastMessage";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+
+type RegistrationRequest = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  school: string;
+  approved_role?: string | null;
+  rejection_reason?: string | null;
+  reviewed_at?: string | null;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  created_at: string;
+};
+
+type RegistrationApiRow = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  school_name: string;
+  approved_role?: string | null;
+  rejection_reason?: string | null;
+  reviewed_at?: string | null;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  created_at: string;
+};
+
+type PendingAccountsProps = {
+  onRefreshUsers?: () => void;
+};
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+
+export default function PendingAccounts({
+  onRefreshUsers,
+}: PendingAccountsProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("PENDING");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [dateSortOrder, setDateSortOrder] = useState<"newest" | "oldest">(
+    "newest",
+  );
+  const [letterFilter, setLetterFilter] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [totalItems, setTotalItems] = useState<number>(0);
+  const [pageJumpInput, setPageJumpInput] = useState("1");
+  const [data, setData] = useState<RegistrationRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Modal state
+  const [detailsTarget, setDetailsTarget] = useState<RegistrationDetail | null>(
+    null,
+  );
+  const [assignTarget, setAssignTarget] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
+  const [toastState, setToastState] = useState<{
+    isVisible: boolean;
+    variant: "success" | "error";
+    title: string;
+    message: string;
+  }>({
+    isVisible: false,
+    variant: "success",
+    title: "",
+    message: "",
+  });
+
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+  const showToast = (
+    variant: "success" | "error",
+    title: string,
+    message: string,
+  ) => {
+    setToastState({
+      isVisible: true,
+      variant,
+      title,
+      message,
+    });
+  };
+
+  // Fetch registrations from backend and optionally skip the full-page spinner for polling refreshes.
+  const fetchData = async (
+    status: string,
+    page = currentPage,
+    pageSize = itemsPerPage,
+    showSpinner = true,
+  ) => {
+    try {
+      if (showSpinner) {
+        setLoading(true);
+      }
+
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("No authentication token found. Please login first.");
+      }
+
+      const params = new URLSearchParams();
+      if (status !== "ALL") params.set("status", status);
+      if (searchQuery) params.set("search", searchQuery);
+      if (letterFilter !== "ALL") params.set("letter", letterFilter);
+      params.set("sortOrder", sortOrder);
+      params.set("dateSortOrder", dateSortOrder);
+      params.set("page", String(page));
+      params.set("pageSize", String(pageSize));
+
+      const url = `${API_BASE}/api/registrations/?${params.toString()}`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch registrations");
+      }
+
+      const result = await response.json();
+      const rows = (result.data || []) as RegistrationApiRow[];
+      const formattedData = rows.map((item) => ({
+        id: item.id,
+        firstName: item.first_name,
+        lastName: item.last_name,
+        email: item.email,
+        school: item.school_name,
+        approved_role: item.approved_role,
+        rejection_reason: item.rejection_reason,
+        reviewed_at: item.reviewed_at,
+        status: item.status,
+        created_at: item.created_at,
+      }));
+      setData(formattedData);
+      setTotalItems(
+        typeof result.total === "number" ? result.total : formattedData.length,
+      );
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+      if (showSpinner) {
+        setData([]);
+        setTotalItems(0);
+      }
+    } finally {
+      if (showSpinner) {
+        setLoading(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchData(statusFilter, currentPage, itemsPerPage);
+
+    const intervalId = window.setInterval(() => {
+      fetchData(statusFilter, currentPage, itemsPerPage, false);
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    statusFilter,
+    searchQuery,
+    letterFilter,
+    sortOrder,
+    dateSortOrder,
+    currentPage,
+    itemsPerPage,
+  ]);
+
+  const filteredData = data;
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const paginatedData = filteredData;
+  const PAGE_WINDOW_SIZE = 5;
+  const pageGroupStart =
+    Math.floor((currentPage - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
+  const pageGroupEnd = Math.min(
+    totalPages,
+    pageGroupStart + PAGE_WINDOW_SIZE - 1,
+  );
+  const pageNumberItems: Array<number | "ellipsis"> = Array.from(
+    { length: pageGroupEnd - pageGroupStart + 1 },
+    (_, i) => pageGroupStart + i,
+  );
+  if (pageGroupEnd < totalPages) {
+    if (totalPages - pageGroupEnd > 1) {
+      pageNumberItems.push("ellipsis");
+    }
+    pageNumberItems.push(totalPages);
+  }
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+      return;
+    }
+
+    setPageJumpInput(String(currentPage));
+  }, [currentPage, totalPages]);
+
+  const handleSearch = () => {
+    setCurrentPage(1);
+    setPageJumpInput("1");
+  };
+
+  const handleJumpToPage = () => {
+    const parsed = Number.parseInt(pageJumpInput, 10);
+    if (Number.isNaN(parsed)) {
+      setPageJumpInput(String(currentPage));
+      return;
+    }
+
+    const nextPage = Math.min(totalPages, Math.max(1, parsed));
+    setCurrentPage(nextPage);
+    setPageJumpInput(String(nextPage));
+  };
+
+  return (
+    <div className="sticky top-4 flex w-full flex-col rounded-lg bg-white p-2 shadow-lg sm:p-3">
+      <ToastMessage
+        isVisible={toastState.isVisible}
+        variant={toastState.variant}
+        title={toastState.title}
+        message={toastState.message}
+        position="top-right"
+        autoCloseDuration={2600}
+        onClose={() =>
+          setToastState((prev) => ({
+            ...prev,
+            isVisible: false,
+          }))
+        }
+      />
+
+      <h1
+        style={{ fontSize: "20px" }}
+        className="mb-4 inline-flex items-center gap-2 font-bold text-gray-900"
+      >
+        <UserCheck size={24} className="text-blue-600" />
+        Pending Accounts
+      </h1>
+
+      {/* Header with search and controls */}
+      <div className="mb-6 flex flex-col gap-4">
+        {/* Search and Status Row */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <div className="relative min-w-0 flex-1">
+            <input
+              type="text"
+              placeholder="Search name, email, or school"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <button
+            onClick={handleSearch}
+            className="inline-flex w-full cursor-pointer items-center justify-center gap-1 px-4 py-2 text-sm font-medium whitespace-nowrap text-white bg-blue-600 rounded-lg transition hover:bg-blue-700 sm:w-auto"
+          >
+            <Search size={14} />
+            Search
+          </button>
+        </div>
+
+        {/* Filters Row */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-1 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="ALL">All</option>
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+
+          {/* Alphabet Filter */}
+          <select
+            value={letterFilter}
+            onChange={(e) => {
+              setLetterFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-1 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="ALL">All Letters</option>
+            {alphabet.map((letter) => (
+              <option key={letter} value={letter}>
+                {letter}
+              </option>
+            ))}
+          </select>
+
+          {/* Date Sort Filter */}
+          <select
+            value={dateSortOrder}
+            onChange={(e) => {
+              setDateSortOrder(e.target.value as "newest" | "oldest");
+              setCurrentPage(1);
+            }}
+            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-1 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+          </select>
+
+          {/* Sort Button */}
+          <button
+            onClick={() => {
+              setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+            }}
+            className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-500 transition hover:bg-gray-50"
+          >
+            {sortOrder === "asc" ? (
+              <>
+                <ArrowUpAZ size={16} />
+                A-Z
+              </>
+            ) : (
+              <>
+                <ArrowDownAZ size={16} />
+                Z-A
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="max-h-[42vh] overflow-x-auto overflow-y-auto sm:max-h-[50vh]">
+        {loading ? (
+          <UserTableSkeleton rows={5} />
+        ) : error ? (
+          <div className="flex items-center justify-center py-10">
+            <p className="text-red-500">Error: {error}</p>
+          </div>
+        ) : (
+          <table className="w-full">
+            <thead className="sticky top-0 z-10 bg-blue-100">
+              <tr className="border-b-2 border-gray-200">
+                <th className="bg-blue-100 px-3 py-1 text-left text-xs font-semibold text-blue-600 uppercase">
+                  Name
+                </th>
+                <th className="bg-blue-100 px-3 py-1 text-left text-xs font-semibold text-blue-600 uppercase">
+                  Email
+                </th>
+                <th className="bg-blue-100 px-3 py-1 text-center text-xs font-semibold text-blue-600 uppercase">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedData.length > 0 ? (
+                paginatedData.map((item) => (
+                  <tr
+                    key={item.id}
+                    className="border-b border-gray-100 transition hover:bg-gray-50"
+                  >
+                    <td className="px-3 py-0.5 text-sm font-medium text-gray-900">
+                      {item.firstName} {item.lastName}
+                    </td>
+                    <td className="px-3 py-0.5 text-sm text-gray-500">
+                      {item.email}
+                    </td>
+                    <td className="px-3 py-0.5">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() =>
+                            setDetailsTarget({
+                              id: item.id,
+                              firstName: item.firstName,
+                              lastName: item.lastName,
+                              email: item.email,
+                              school: item.school,
+                              approved_role: item.approved_role,
+                              rejection_reason: item.rejection_reason,
+                              reviewed_at: item.reviewed_at,
+                              status: item.status,
+                              created_at: item.created_at,
+                            })
+                          }
+                          className="cursor-pointer rounded bg-blue-400 px-3 py-0.5 text-sm font-medium text-white transition hover:bg-blue-500"
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            <Info size={14} />
+                            Details
+                          </span>
+                        </button>
+                        {item.status === "PENDING" ? (
+                          <>
+                            <button
+                              onClick={() =>
+                                setAssignTarget({
+                                  id: item.id,
+                                  name: `${item.firstName} ${item.lastName}`,
+                                })
+                              }
+                              className="cursor-pointer rounded bg-green-400 px-3 py-0.5 text-sm font-medium text-white transition hover:bg-green-500"
+                            >
+                              <span className="inline-flex items-center gap-1">
+                                <ShieldCheck size={14} />
+                                Assign Role
+                              </span>
+                            </button>
+                            <button
+                              onClick={() =>
+                                setRejectTarget({
+                                  id: item.id,
+                                  name: `${item.firstName} ${item.lastName}`,
+                                })
+                              }
+                              className="cursor-pointer rounded bg-red-400 px-3 py-0.5 text-sm font-medium text-white transition hover:bg-red-500"
+                            >
+                              <span className="inline-flex items-center gap-1">
+                                <XCircle size={14} />
+                                Reject
+                              </span>
+                            </button>
+                          </>
+                        ) : (
+                          <span
+                            className={`rounded px-3 py-0.5 text-sm font-semibold ${
+                              item.status === "APPROVED"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {item.status === "APPROVED"
+                              ? "Approved"
+                              : "Rejected"}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={3} className="py-8 text-center text-gray-500">
+                    No pending accounts found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Pagination */}
+      {filteredData.length > 0 && (
+        <div className="mt-6 space-y-3">
+          <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              Show
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                  setPageJumpInput("1");
+                }}
+                className="cursor-pointer rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+              >
+                {PAGE_SIZE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+              entries
+            </label>
+
+            <div className="flex items-center justify-center gap-2 sm:justify-self-center">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="cursor-pointer rounded p-2 text-gray-500 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Previous page"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              {pageNumberItems.map((item, index) =>
+                item === "ellipsis" ? (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="select-none px-2 text-sm text-gray-400"
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    onClick={() => setCurrentPage(item)}
+                    className={`h-9 w-9 cursor-pointer rounded text-sm font-medium transition ${
+                      currentPage === item
+                        ? "bg-blue-600 text-white"
+                        : "text-gray-500 hover:bg-gray-100"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ),
+              )}
+              <button
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="cursor-pointer rounded p-2 text-gray-500 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Next page"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-gray-600 sm:justify-self-end">
+              <span>Jump to</span>
+              <input
+                type="number"
+                min={1}
+                max={totalPages}
+                value={pageJumpInput}
+                onChange={(e) => setPageJumpInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleJumpToPage();
+                  }
+                }}
+                className="w-16 rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+              />
+              <button
+                onClick={handleJumpToPage}
+                className="cursor-pointer rounded bg-gray-100 px-2 py-1 text-sm text-gray-700 hover:bg-gray-200"
+              >
+                <span className="inline-flex items-center gap-1">
+                  <ArrowRight size={14} />
+                  Go
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modals */}
+      {detailsTarget && (
+        <UserRolesDetailsModal
+          account={detailsTarget}
+          onClose={() => setDetailsTarget(null)}
+        />
+      )}
+
+      {assignTarget && (
+        <RoleAssignmentModal
+          accountId={assignTarget.id}
+          accountName={assignTarget.name}
+          onClose={() => setAssignTarget(null)}
+          onSuccess={() => {
+            setAssignTarget(null);
+            showToast(
+              "success",
+              "Role Assigned",
+              `${assignTarget.name} has been assigned a role.`,
+            );
+            fetchData(statusFilter);
+            onRefreshUsers?.();
+          }}
+        />
+      )}
+
+      {rejectTarget && (
+        <RejectModal
+          accountId={rejectTarget.id}
+          accountName={rejectTarget.name}
+          onClose={() => setRejectTarget(null)}
+          onSuccess={() => {
+            setRejectTarget(null);
+            showToast(
+              "success",
+              "Registration Rejected",
+              `${rejectTarget.name}'s registration has been rejected.`,
+            );
+            fetchData(statusFilter);
+            onRefreshUsers?.();
+          }}
+        />
+      )}
+    </div>
+  );
+}

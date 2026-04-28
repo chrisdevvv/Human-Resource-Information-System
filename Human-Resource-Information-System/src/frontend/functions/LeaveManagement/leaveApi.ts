@@ -1,0 +1,295 @@
+export type LeaveApiRecord = {
+  id: number;
+  employee_id: number;
+  period_of_leave: string;
+  particulars: string | null;
+  earned_vl: number | string | null;
+  abs_with_pay_vl: number | string | null;
+  abs_without_pay_vl: number | string | null;
+  bal_vl: number | string | null;
+  earned_sl: number | string | null;
+  abs_with_pay_sl: number | string | null;
+  abs_without_pay_sl: number | string | null;
+  bal_sl: number | string | null;
+  date_of_action: string | null;
+  full_name?: string;
+  employee_type?: "teaching" | "non-teaching";
+};
+
+export type LeaveHistoryRecord = {
+  id: number;
+  employeeId: number;
+  fullName?: string;
+  periodOfLeave: string;
+  particulars: string;
+  earnedVl: number;
+  absWithPayVl: number;
+  absWithoutPayVl: number;
+  balVl: number;
+  earnedSl: number;
+  absWithPaySl: number;
+  absWithoutPaySl: number;
+  balSl: number;
+  dateOfAction: string;
+  employeeType?: "teaching" | "non-teaching";
+};
+
+export type CreateLeavePayload = {
+  employee_id: number;
+  period_of_leave: string;
+  particulars: string;
+  earned_vl: number;
+  abs_with_pay_vl: number;
+  abs_without_pay_vl: number;
+  earned_sl: number;
+  abs_with_pay_sl: number;
+  abs_without_pay_sl: number;
+};
+
+export type UpdateLeavePayload = {
+  period_of_leave: string;
+  particulars: string;
+  earned_vl: number;
+  abs_with_pay_vl: number;
+  abs_without_pay_vl: number;
+  earned_sl: number;
+  abs_with_pay_sl: number;
+  abs_without_pay_sl: number;
+};
+
+type LeaveListResponse = {
+  data?: LeaveApiRecord[];
+  message?: string;
+};
+
+type LeaveParticularsResponse = {
+  data?: string[];
+  message?: string;
+};
+
+type ApiResponse = {
+  message?: string;
+};
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const LEAVE_ENDPOINT = `${API_BASE_URL}/api/leave`;
+
+const toNumber = (value: number | string | null | undefined) => {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const mapLeaveRecord = (row: LeaveApiRecord): LeaveHistoryRecord => ({
+  id: row.id,
+  employeeId: row.employee_id,
+  fullName: row.full_name,
+  periodOfLeave: row.period_of_leave || "",
+  particulars: row.particulars || "",
+  earnedVl: toNumber(row.earned_vl),
+  absWithPayVl: toNumber(row.abs_with_pay_vl),
+  absWithoutPayVl: toNumber(row.abs_without_pay_vl),
+  balVl: toNumber(row.bal_vl),
+  earnedSl: toNumber(row.earned_sl),
+  absWithPaySl: toNumber(row.abs_with_pay_sl),
+  absWithoutPaySl: toNumber(row.abs_without_pay_sl),
+  balSl: toNumber(row.bal_sl),
+  dateOfAction: row.date_of_action || "",
+  employeeType: row.employee_type,
+});
+
+const getAuthHeaders = (): HeadersInit => {
+  if (typeof window === "undefined") {
+    throw new Error("Leave API can only be called on the client.");
+  }
+
+  const token = localStorage.getItem("authToken");
+  if (!token) {
+    throw new Error("No authentication token found.");
+  }
+
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+};
+
+const parseResponse = async <T>(response: Response): Promise<T> => {
+  const contentType = response.headers.get("content-type") || "";
+  const body = contentType.toLowerCase().includes("application/json")
+    ? ((await response.json().catch(() => ({}))) as T & { message?: string })
+    : ({
+        message: await response.text().catch(() => ""),
+      } as T & { message?: string });
+
+  if (!response.ok) {
+    throw new Error(
+      body.message || `Request failed (HTTP ${response.status}).`,
+    );
+  }
+  return body;
+};
+
+export async function getLeaveHistoryByEmployee(
+  employeeId: number,
+): Promise<LeaveHistoryRecord[]> {
+  const response = await fetch(`${LEAVE_ENDPOINT}/employee/${employeeId}`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  const body = await parseResponse<LeaveListResponse>(response);
+  return (body.data || []).map(mapLeaveRecord).sort((a, b) => a.id - b.id);
+}
+
+export async function getLeaveParticulars(): Promise<string[]> {
+  const response = await fetch(`${LEAVE_ENDPOINT}/particulars`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  const body = await parseResponse<LeaveParticularsResponse>(response);
+  return (body.data || []).filter((item): item is string => Boolean(item));
+}
+
+export async function createLeave(payload: CreateLeavePayload): Promise<void> {
+  const response = await fetch(LEAVE_ENDPOINT, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  await parseResponse<ApiResponse>(response);
+}
+
+export async function updateLeave(
+  leaveId: number,
+  payload: UpdateLeavePayload,
+): Promise<void> {
+  const response = await fetch(`${LEAVE_ENDPOINT}/${leaveId}`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  await parseResponse<ApiResponse>(response);
+}
+
+export async function deleteLeave(leaveId: number): Promise<void> {
+  const response = await fetch(`${LEAVE_ENDPOINT}/${leaveId}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+
+  await parseResponse<ApiResponse>(response);
+}
+
+export async function creditMonthlyLeave(
+  year?: number,
+  month?: number,
+): Promise<void> {
+  const response = await fetch(`${LEAVE_ENDPOINT}/credit-monthly`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ year, month }),
+  });
+
+  await parseResponse<ApiResponse>(response);
+}
+
+export async function archiveEmployee(
+  employeeId: number,
+  password: string,
+  archiveReason: string,
+): Promise<void> {
+  const EMPLOYEE_ENDPOINT = `${API_BASE_URL}/api/employees`;
+  const response = await fetch(`${EMPLOYEE_ENDPOINT}/${employeeId}/archive`, {
+    method: "PATCH",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ password, archive_reason: archiveReason }),
+  });
+
+  await parseResponse<ApiResponse>(response);
+}
+
+export async function unarchiveEmployee(
+  employeeId: number,
+  password: string,
+): Promise<void> {
+  const EMPLOYEE_ENDPOINT = `${API_BASE_URL}/api/employees`;
+  const response = await fetch(`${EMPLOYEE_ENDPOINT}/${employeeId}/unarchive`, {
+    method: "PATCH",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ password }),
+  });
+
+  await parseResponse<ApiResponse>(response);
+}
+
+const parseErrorMessage = async (response: Response): Promise<string> => {
+  try {
+    const body = (await response.json()) as { message?: string };
+    return body.message || "Request failed.";
+  } catch {
+    return "Request failed.";
+  }
+};
+
+export async function fetchLeaveCardPdf(employeeId: number): Promise<Blob> {
+  const response = await fetch(
+    `${LEAVE_ENDPOINT}/employee/${employeeId}/leave-card-pdf`,
+    {
+      method: "GET",
+      headers: getAuthHeaders(),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response));
+  }
+
+  return response.blob();
+}
+
+export async function downloadLeaveCardPdfFromServer(
+  employeeId: number,
+  fileName: string,
+): Promise<void> {
+  const pdfBlob = await fetchLeaveCardPdf(employeeId);
+  const objectUrl = window.URL.createObjectURL(pdfBlob);
+
+  try {
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  } finally {
+    window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1500);
+  }
+}
+
+export async function openLeaveCardPdfForPrint(
+  employeeId: number,
+): Promise<void> {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    throw new Error("Popup blocked. Please allow popups and try again.");
+  }
+
+  const pdfBlob = await fetchLeaveCardPdf(employeeId);
+  const objectUrl = window.URL.createObjectURL(pdfBlob);
+  printWindow.location.href = objectUrl;
+
+  // Give the browser PDF viewer time to initialize before invoking print.
+  window.setTimeout(() => {
+    try {
+      printWindow.focus();
+      printWindow.print();
+    } catch {
+      // Ignore print-trigger errors; PDF will still open in a new tab.
+    }
+  }, 700);
+
+  window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 120000);
+}

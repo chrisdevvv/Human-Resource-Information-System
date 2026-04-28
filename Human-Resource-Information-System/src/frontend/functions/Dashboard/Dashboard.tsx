@@ -1,0 +1,629 @@
+"use client";
+
+import React from "react";
+import {
+  Users,
+  FileText,
+  UserCheck,
+  UserMinus,
+  Archive,
+  Building2,
+  LayoutDashboard,
+  ArrowRight,
+  Clock3,
+  Sparkles,
+} from "lucide-react";
+import { type BacklogRecord, type RetirementCounts, useDashboardData } from "./useDashboardData";
+import DashboardSkeleton from "./DashboardSkeleton";
+
+type StatCard = {
+  title: string;
+  value: number | string;
+  subtitle?: string;
+  icon: React.ReactNode;
+  textColor: string;
+  tab?: string;
+  intent?: {
+    key: string;
+    value: string;
+  };
+};
+
+const EMPLOYEES_LIST_TAB_KEY = "employeesList:activeTab";
+const USER_ROLES_TAB_KEY = "userRoles:activeTab";
+
+type DashboardProps = {
+  onTabChange?: (tab: string) => void;
+  showRecentLogs?: boolean;
+};
+
+function RetirementChart({ counts }: { counts: RetirementCounts }) {
+  const total = counts.retirable + counts.mandatory;
+  const retirablePct = total > 0 ? Math.round((counts.retirable / total) * 100) : 0;
+  const mandatoryPct = total > 0 ? Math.round((counts.mandatory / total) * 100) : 0;
+
+  const bars = [
+    {
+      label: "Retirable",
+      sublabel: "55 – 60 years old",
+      count: counts.retirable,
+      pct: retirablePct,
+      bar: "bg-amber-400",
+      badge: "bg-amber-100 text-amber-700 border border-amber-200",
+      dot: "bg-amber-400",
+    },
+    {
+      label: "Mandatory Retirement",
+      sublabel: "61 years old and above",
+      count: counts.mandatory,
+      pct: mandatoryPct,
+      bar: "bg-rose-500",
+      badge: "bg-rose-100 text-rose-700 border border-rose-200",
+      dot: "bg-rose-500",
+    },
+  ];
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div className="border-b border-gray-200 bg-gradient-to-r from-orange-50 to-white px-6 py-5">
+        <h2 className="text-lg font-bold text-orange-700">Retirement Overview</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Based on employee birthdates from eService records.
+        </p>
+      </div>
+
+      <div className="p-6">
+        <div className="mb-5 flex items-center gap-2">
+          <span className="text-3xl font-bold text-gray-900">{total}</span>
+          <span className="text-sm text-gray-500">employees approaching or at retirement age</span>
+        </div>
+
+        <div className="space-y-5">
+          {bars.map((bar) => (
+            <div key={bar.label}>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className={`inline-block h-2.5 w-2.5 rounded-full ${bar.dot}`} />
+                  <span className="text-sm font-semibold text-gray-800">{bar.label}</span>
+                  <span className="text-xs text-gray-400">{bar.sublabel}</span>
+                </div>
+                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${bar.badge}`}>
+                  {bar.count}
+                </span>
+              </div>
+              <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${bar.bar}`}
+                  style={{ width: `${bar.pct}%` }}
+                />
+              </div>
+              <p className="mt-1 text-right text-xs text-gray-400">{bar.pct}% of retirement-age employees</p>
+            </div>
+          ))}
+        </div>
+
+        {total === 0 && (
+          <p className="mt-2 text-center text-sm text-gray-400">No employees in retirement age range.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const getCardAccentClasses = (title: string) => {
+  switch (title) {
+    case "Total Employees":
+      return {
+        ring: "ring-blue-100",
+        tint: "from-blue-50 to-white",
+        iconWrap: "bg-blue-100 text-blue-700",
+        hover: "hover:border-blue-300",
+        border: "border-blue-200",
+      };
+    case "Total Users":
+      return {
+        ring: "ring-emerald-100",
+        tint: "from-emerald-50 to-white",
+        iconWrap: "bg-emerald-100 text-emerald-700",
+        hover: "hover:border-emerald-300",
+        border: "border-emerald-200",
+      };
+    case "Total Schools":
+      return {
+        ring: "ring-cyan-100",
+        tint: "from-cyan-50 to-white",
+        iconWrap: "bg-cyan-100 text-cyan-700",
+        hover: "hover:border-cyan-300",
+        border: "border-cyan-200",
+      };
+    case "Employees on Leave":
+      return {
+        ring: "ring-amber-100",
+        tint: "from-amber-50 to-white",
+        iconWrap: "bg-amber-100 text-amber-700",
+        hover: "hover:border-amber-300",
+        border: "border-amber-200",
+      };
+    case "Archived Employees":
+      return {
+        ring: "ring-rose-100",
+        tint: "from-rose-50 to-white",
+        iconWrap: "bg-rose-100 text-rose-700",
+        hover: "hover:border-rose-300",
+        border: "border-rose-200",
+      };
+    case "Pending Registrations":
+      return {
+        ring: "ring-violet-100",
+        tint: "from-violet-50 to-white",
+        iconWrap: "bg-violet-100 text-violet-700",
+        hover: "hover:border-violet-300",
+        border: "border-violet-200",
+      };
+    default:
+      return {
+        ring: "ring-gray-100",
+        tint: "from-gray-50 to-white",
+        iconWrap: "bg-gray-100 text-gray-700",
+        hover: "hover:border-gray-300",
+        border: "border-gray-200",
+      };
+  }
+};
+
+export default function Dashboard({
+  onTabChange,
+  showRecentLogs = true,
+}: DashboardProps) {
+  const {
+    stats,
+    isSuperAdmin,
+    loading,
+    error,
+    recentLogs,
+    canAccessDashboard,
+    retirementCounts,
+  } = useDashboardData({ showRecentLogs });
+
+  if (!canAccessDashboard) {
+    return null;
+  }
+
+  const statCards: StatCard[] = [
+    {
+      title: "Total Employees",
+      value: stats.totalEmployees,
+      subtitle: "Active employees in system",
+      icon: <Users className="h-7 w-7" />,
+      textColor: "text-blue-700",
+      tab: "employees-list",
+    },
+    {
+      title: "Total Users",
+      value: stats.totalUsers,
+      subtitle: "Registered system users",
+      icon: <UserCheck className="h-7 w-7" />,
+      textColor: "text-green-700",
+      tab: "user-roles",
+    },
+    ...(isSuperAdmin
+      ? [
+          {
+            title: "Total Schools",
+            value: stats.totalSchools,
+            subtitle: "Registered schools in system",
+            icon: <Building2 className="h-7 w-7" />,
+            textColor: "text-cyan-700",
+            tab: "configuration",
+          } as StatCard,
+        ]
+      : []),
+    {
+      title: "Employees on Leave",
+      value: stats.employeesOnLeave,
+      subtitle: "Currently marked on leave",
+      icon: <UserMinus className="h-7 w-7" />,
+      textColor: "text-amber-700",
+      tab: "employee-management",
+    },
+    {
+      title: "Archived Employees",
+      value: stats.archivedEmployees,
+      subtitle: "Inactive archived employee records",
+      icon: <Archive className="h-7 w-7" />,
+      textColor: "text-rose-700",
+      tab: "employees-list",
+      intent: { key: EMPLOYEES_LIST_TAB_KEY, value: "archived" },
+    },
+    {
+      title: "Pending Registrations",
+      value: stats.pendingRegistrations,
+      subtitle: "New accounts awaiting approval",
+      icon: <FileText className="h-7 w-7" />,
+      textColor: "text-purple-700",
+      tab: "user-roles",
+      intent: { key: USER_ROLES_TAB_KEY, value: "pending" },
+    },
+  ];
+
+  const handleCardClick = (card: StatCard) => {
+    if (card.intent && typeof window !== "undefined") {
+      window.localStorage.setItem(card.intent.key, card.intent.value);
+    }
+
+    if (card.tab && onTabChange) {
+      onTabChange(card.tab);
+    }
+  };
+
+  const handleViewLogs = () => {
+    if (onTabChange) {
+      onTabChange("logs");
+    }
+  };
+
+  const formatLogDate = (value?: string) => {
+    if (!value) return "No date";
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return "No date";
+
+    return parsed.toLocaleString("en-PH", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  const getLogActor = (log: BacklogRecord) => {
+    const name = `${log.first_name || ""} ${log.last_name || ""}`.trim();
+    return name || "System";
+  };
+
+  if (loading) {
+    return <DashboardSkeleton showRecentLogs={showRecentLogs} />;
+  }
+
+  return (
+    <>
+      {/* Desktop / Tablet View */}
+      <div className="hidden min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/40 md:block">
+        {/* Header */}
+        <div className="sticky top-0 z-20 border-b border-gray-200/80 bg-white/85 px-6 py-6 backdrop-blur-md">
+          <div className="mx-auto max-w-7xl">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h1 className="inline-flex items-center gap-3 text-3xl font-bold text-gray-900">
+                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 shadow-sm">
+                    <LayoutDashboard className="h-6 w-6" />
+                  </span>
+                  Dashboard
+                </h1>
+                <p className="mt-2 text-sm text-gray-600 sm:text-base">
+                  Welcome back! Here&apos;s your system overview.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="mx-auto max-w-7xl p-6">
+          {error && (
+            <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 shadow-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Stats Grid */}
+          <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {statCards.map((stat, index) => {
+              const accent = getCardAccentClasses(stat.title);
+
+              return (
+                <div
+                  key={index}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleCardClick(stat)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      handleCardClick(stat);
+                    }
+                  }}
+                  className={`group cursor-pointer overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br ${accent.tint} p-6 shadow-sm ring-1 ${accent.ring} transition-all duration-200 hover:-translate-y-1 hover:shadow-xl ${accent.hover}`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-sm font-semibold ${stat.textColor}`}>
+                        {stat.title}
+                      </p>
+                      <p
+                        className={`mt-3 text-4xl font-bold tracking-tight ${stat.textColor}`}
+                      >
+                        {stat.value}
+                      </p>
+                      {stat.subtitle && (
+                        <p className="mt-3 text-sm leading-relaxed text-gray-500">
+                          {stat.subtitle}
+                        </p>
+                      )}
+                    </div>
+
+                    <div
+                      className={`inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-sm ${accent.iconWrap}`}
+                    >
+                      {stat.icon}
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex items-center justify-between border-t border-gray-200/70 pt-4">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                      View details
+                    </span>
+                    <ArrowRight className="h-4 w-4 text-gray-400 transition-transform duration-200 group-hover:translate-x-1" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Retirement Chart */}
+          <div className="mb-8">
+            <RetirementChart counts={retirementCounts} />
+          </div>
+
+          {showRecentLogs && (
+            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+              <div className="flex flex-col gap-3 border-b border-gray-200 bg-gradient-to-r from-yellow-50 to-white px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-yellow-700">
+                    Recent Logs
+                  </h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Latest activity across the system.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleViewLogs}
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-200"
+                >
+                  <Clock3 className="h-4 w-4" />
+                  View Logs
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-205 border-collapse text-sm">
+                  <thead className="sticky top-0 z-10 bg-blue-100/90 backdrop-blur">
+                    <tr className="border-b border-gray-200">
+                      <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-blue-700">
+                        Date &amp; Time
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-blue-700">
+                        Name
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-blue-700">
+                        Action Taken
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-blue-700">
+                        Details
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {recentLogs.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="px-4 py-12 text-center text-gray-500"
+                        >
+                          No recent logs found.
+                        </td>
+                      </tr>
+                    ) : (
+                      recentLogs.map((log, index) => (
+                        <tr
+                          key={log.id || index}
+                          className="border-b border-gray-100 transition hover:bg-slate-50"
+                        >
+                          <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
+                            {formatLogDate(log.created_at)}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">
+                            {getLogActor(log)}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
+                            <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-gray-700">
+                              {(log.action || "Activity").replaceAll("_", " ")}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            <span
+                              className="block max-w-xl truncate"
+                              title={log.details || "No details available."}
+                            >
+                              {log.details || "No details available."}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile View */}
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/40 pb-16 md:hidden">
+        {/* Header */}
+        <div className="sticky top-0 z-10 border-b border-gray-200/80 bg-white/90 px-3 py-3 backdrop-blur-md">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="inline-flex items-center gap-2 text-lg font-bold text-gray-900">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-blue-100 text-blue-600 shadow-sm">
+                  <LayoutDashboard className="h-4 w-4" />
+                </span>
+                Dashboard
+              </h1>
+              <p className="mt-1 text-xs text-gray-500">System overview</p>
+            </div>
+
+            <div className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-sm">
+              <Sparkles className="h-3 w-3" />
+              Overview
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="space-y-4 p-3">
+          {error && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-700 shadow-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Quick Stats */}
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-xs font-bold uppercase tracking-wide text-gray-600">
+                Stats
+              </h2>
+              <span className="text-xs font-medium text-gray-400">
+                Tap a card
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {statCards.map((stat, index) => {
+                const accent = getCardAccentClasses(stat.title);
+
+                return (
+                  <div
+                    key={index}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleCardClick(stat)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        handleCardClick(stat);
+                      }
+                    }}
+                    className={`cursor-pointer overflow-hidden rounded-2xl border bg-gradient-to-br ${accent.tint} ${accent.border} p-3 shadow-sm transition active:scale-95`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={`${stat.textColor} text-xs font-semibold leading-tight`}
+                        >
+                          {stat.title}
+                        </p>
+                        <p
+                          className={`${stat.textColor} mt-1.5 text-2xl font-bold leading-none tracking-tight`}
+                        >
+                          {stat.value}
+                        </p>
+                      </div>
+
+                      <div
+                        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${accent.iconWrap}`}
+                      >
+                        {React.isValidElement(stat.icon)
+                          ? React.cloneElement(
+                              stat.icon as React.ReactElement<{
+                                className?: string;
+                              }>,
+                              { className: "h-4 w-4" },
+                            )
+                          : stat.icon}
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between border-t border-gray-200/70 pt-2.5">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                        Open
+                      </span>
+                      <ArrowRight className="h-3.5 w-3.5 text-gray-400" />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Retirement Chart */}
+          <RetirementChart counts={retirementCounts} />
+
+          {showRecentLogs && (
+            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between gap-2 border-b border-gray-100 bg-gradient-to-r from-yellow-50 to-white px-3 py-3">
+                <div>
+                  <h2 className="text-xs font-bold uppercase tracking-wide text-yellow-700">
+                    Recent Logs
+                  </h2>
+                  <p className="mt-0.5 text-xs text-gray-500">
+                    Latest activity
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleViewLogs}
+                  className="inline-flex cursor-pointer items-center gap-1 rounded-xl bg-gray-100 px-2.5 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-200"
+                >
+                  <Clock3 className="h-3.5 w-3.5" />
+                  View Logs
+                </button>
+              </div>
+
+              <div className="space-y-2 p-3">
+                {recentLogs.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-3 py-6 text-center text-sm text-gray-500">
+                    No recent logs found.
+                  </div>
+                ) : (
+                  recentLogs.map((log, index) => (
+                    <div
+                      key={log.id || index}
+                      className="rounded-2xl border border-gray-100 bg-gradient-to-br from-gray-50 to-white px-3 py-3 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs text-gray-400">
+                            {formatLogDate(log.created_at)}
+                          </p>
+                          <p className="mt-1 truncate text-sm font-semibold text-gray-900">
+                            {getLogActor(log)}
+                          </p>
+                        </div>
+
+                        <span className="shrink-0 rounded-full bg-blue-50 px-2 py-1 text-xs font-bold uppercase tracking-wide text-blue-700">
+                          {(log.action || "Activity").replaceAll("_", " ")}
+                        </span>
+                      </div>
+
+                      <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-gray-600">
+                        {log.details || "No details available."}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}

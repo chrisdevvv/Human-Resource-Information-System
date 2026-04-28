@@ -1,0 +1,187 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap");
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* Theme variables (moved here to avoid unknown @theme at-rule diagnostics).
+     If you use a build tool or plugin that provides `@theme`, reintroduce it
+     via that toolchain. */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Poppins", var(--font-poppins), Arial, Helvetica, sans-serif;
+  margin: 0;
+  min-height: 100%;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+html {
+  background: var(--background);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Keep scrollbars visible globally for all scrollable areas. */
+* {
+  -ms-overflow-style: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #e5e7eb;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  display: block;
+}
+
+*::-webkit-scrollbar-track {
+  background: #e5e7eb;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Opt-in override for components that need a visible scrollbar. */
+.show-scrollbar {
+  -ms-overflow-style: auto !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #94a3b8 #e5e7eb !important;
+}
+
+.show-scrollbar::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+  display: block !important;
+}
+
+.show-scrollbar::-webkit-scrollbar-track {
+  background: #e5e7eb !important;
+}
+
+.show-scrollbar::-webkit-scrollbar-thumb {
+  background: #94a3b8 !important;
+  border-radius: 9999px;
+}
+
+.show-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748b !important;
+}
+
+/* Ensure sticky positioning works for table headers on all web pages. */
+thead {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 20 !important;
+}
+
+/* Exclude PDF-rendered tables from sticky behavior. */
+[data-leave-card-page="true"] thead,
+[data-logs-report-page="true"] thead,
+.leave-card-root thead {
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
+}
+
+/* Global motion primitives for modal/toast polish */
+@keyframes app-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes app-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes app-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+  }
+}
+
+/* Most app modals share this overlay pattern */
+div.fixed.inset-0[class*="bg-black/"] {
+  animation: app-fade-in 140ms ease-out;
+}
+
+/* Animate modal panels that are direct children of the overlay */
+div.fixed.inset-0[class*="bg-black/"] > div {
+  animation: app-modal-in 180ms ease-out;
+}
+
+/* Common toast placement across the app */
+div.fixed.bottom-5.right-5 {
+  animation: app-toast-in 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  div.fixed.inset-0[class*="bg-black/"],
+  div.fixed.inset-0[class*="bg-black/"] > div,
+  div.fixed.bottom-5.right-5 {
+    animation: none !important;
+  }
+}
+
+@media print {
+  table thead {
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
+  }
+}
