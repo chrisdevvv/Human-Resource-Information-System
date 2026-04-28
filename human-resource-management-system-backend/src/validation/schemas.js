@@ -269,8 +269,6 @@ const salaryInformationCreateBodySchema = Joi.object({
   plantilla: Joi.string().trim().max(100).allow(null, ""),
   sg: Joi.string().trim().max(20).allow(null, ""),
   salary: Joi.number().min(0).precision(2).required(),
-  increment: Joi.number().min(0).precision(2).allow(null),
-  increment_amount: Joi.number().min(0).precision(2).allow(null),
   remarks: salaryInformationRemarksSchema,
 });
 
@@ -279,8 +277,6 @@ const salaryInformationUpdateBodySchema = Joi.object({
   plantilla: Joi.string().trim().max(100).allow(null, ""),
   sg: Joi.string().trim().max(20).allow(null, ""),
   salary: Joi.number().min(0).precision(2),
-  increment: Joi.number().min(0).precision(2).allow(null),
-  increment_amount: Joi.number().min(0).precision(2).allow(null),
   remarks: salaryInformationRemarksSchema,
 }).min(1);
 

@@ -798,16 +798,8 @@ export default function SalaryInformation({
             <InfoField
               label="Date of First Appointment"
               value={formatDate(salaryDateOfFirstAppointment)}
-              isEditing={isEditing}
               errorMessage={getValidationError("Date of First Appointment")}
-            >
-              <input
-                type="date"
-                value={salaryDateOfFirstAppointment || ""}
-                onChange={(e) => setEditDateOfFirstAppointment(e.target.value)}
-                className={baseInputClass}
-              />
-            </InfoField>
+            />
 
             <InfoField
               label="Years in Service"
@@ -879,30 +871,16 @@ export default function SalaryInformation({
               <div className="overflow-x-auto">
                 <table className="w-full min-w-245 border-collapse text-sm">
                   <thead className="bg-blue-100">
-                    <tr className="border-b border-blue-200 text-xs uppercase tracking-wide text-blue-800">
-                      <th className="px-3 py-3 text-left font-semibold">
-                        Date
-                      </th>
-                      <th className="px-3 py-3 text-left font-semibold">
-                        Plantilla
-                      </th>
-                      <th className="px-3 py-3 text-left font-semibold">SG</th>
-                      <th className="px-3 py-3 text-left font-semibold">
-                        Step
-                      </th>
-                      <th className="px-3 py-3 text-right font-semibold">
-                        Salary
-                      </th>
-                      <th className="px-3 py-3 text-right font-semibold">
-                        Increment
-                      </th>
-                      <th className="px-3 py-3 text-left font-semibold">
-                        Remarks
-                      </th>
-                      <th className="px-3 py-3 text-center font-semibold">
-                        Actions
-                      </th>
-                    </tr>
+                      <tr className="border-b border-blue-200 text-xs uppercase tracking-wide text-blue-800">
+                        <th className="px-3 py-3 text-left font-semibold">Remarks</th>
+                        <th className="px-3 py-3 text-left font-semibold">Date</th>
+                        <th className="px-3 py-3 text-left font-semibold">Plantilla</th>
+                        <th className="px-3 py-3 text-left font-semibold">SG</th>
+                        <th className="px-3 py-3 text-left font-semibold">Step</th>
+                        <th className="px-3 py-3 text-right font-semibold">Salary</th>
+                        <th className="px-3 py-3 text-right font-semibold">Increment</th>
+                        <th className="px-3 py-3 text-center font-semibold">Actions</th>
+                      </tr>
                   </thead>
 
                   <tbody>
@@ -950,6 +928,31 @@ export default function SalaryInformation({
                               key={row.id}
                               className={`border-b border-gray-100 align-top transition ${rowBackgroundClass}`}
                             >
+                              <td className="px-3 py-3 text-gray-700">
+                                {isEditingRow ? (
+                                  <select
+                                    value={salaryHistoryEditDraft?.remarks || ""}
+                                    onChange={(e) =>
+                                      onChangeSalaryHistoryEditDraft(
+                                        "remarks",
+                                        e.target.value,
+                                      )
+                                    }
+                                    disabled={salaryHistoryUpdating}
+                                    className={`${tableInputClass} cursor-pointer`}
+                                  >
+                                    <option value="">Select remark</option>
+                                    {salaryHistoryRemarkOptions.map((option) => (
+                                      <option key={option} value={option}>
+                                        {option}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  formatCellValue(row.remarks)
+                                )}
+                              </td>
+
                               <td className="px-3 py-3 font-medium text-gray-900">
                                 {isEditingRow ? (
                                   <input
@@ -973,9 +976,7 @@ export default function SalaryInformation({
                                 {isEditingRow ? (
                                   <input
                                     type="text"
-                                    value={
-                                      salaryHistoryEditDraft?.plantilla || ""
-                                    }
+                                    value={salaryHistoryEditDraft?.plantilla || ""}
                                     onChange={(e) =>
                                       onChangeSalaryHistoryEditDraft(
                                         "plantilla",
@@ -1043,54 +1044,9 @@ export default function SalaryInformation({
 
                               <td className="px-3 py-3 text-right font-medium text-gray-900">
                                 {isEditingRow ? (
-                                  <input
-                                    type="number"
-                                    value={
-                                      salaryHistoryEditDraft?.increment || ""
-                                    }
-                                    onChange={(e) =>
-                                      onChangeSalaryHistoryEditDraft(
-                                        "increment",
-                                        e.target.value,
-                                      )
-                                    }
-                                    disabled={salaryHistoryUpdating}
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="Auto"
-                                    className={`${tableInputClass} text-right`}
-                                  />
+                                  <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700">Auto</span>
                                 ) : (
                                   formatAmountCell(row.increment_amount)
-                                )}
-                              </td>
-
-                              <td className="px-3 py-3 text-gray-700">
-                                {isEditingRow ? (
-                                  <select
-                                    value={
-                                      salaryHistoryEditDraft?.remarks || ""
-                                    }
-                                    onChange={(e) =>
-                                      onChangeSalaryHistoryEditDraft(
-                                        "remarks",
-                                        e.target.value,
-                                      )
-                                    }
-                                    disabled={salaryHistoryUpdating}
-                                    className={`${tableInputClass} cursor-pointer`}
-                                  >
-                                    <option value="">Select remark</option>
-                                    {salaryHistoryRemarkOptions.map(
-                                      (option) => (
-                                        <option key={option} value={option}>
-                                          {option}
-                                        </option>
-                                      ),
-                                    )}
-                                  </select>
-                                ) : (
-                                  formatCellValue(row.remarks)
                                 )}
                               </td>
 
@@ -1162,14 +1118,29 @@ export default function SalaryInformation({
                         {salaryHistoryCreateDraft ? (
                           <tr className="border-b border-blue-100 bg-blue-50/70 align-top">
                             <td className="px-3 py-3">
+                              <select
+                                value={salaryHistoryCreateDraft.remarks}
+                                onChange={(e) =>
+                                  onChangeSalaryHistoryDraft("remarks", e.target.value)
+                                }
+                                disabled={salaryHistoryCreating}
+                                className={`${tableInputClass} cursor-pointer`}
+                              >
+                                <option value="">Select remark</option>
+                                {salaryHistoryRemarkOptions.map((option) => (
+                                  <option key={option} value={option}>
+                                    {option}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+
+                            <td className="px-3 py-3">
                               <input
                                 type="date"
                                 value={salaryHistoryCreateDraft.date}
                                 onChange={(e) =>
-                                  onChangeSalaryHistoryDraft(
-                                    "date",
-                                    e.target.value,
-                                  )
+                                  onChangeSalaryHistoryDraft("date", e.target.value)
                                 }
                                 disabled={salaryHistoryCreating}
                                 className={tableInputClass}
@@ -1181,10 +1152,7 @@ export default function SalaryInformation({
                                 type="text"
                                 value={salaryHistoryCreateDraft.plantilla}
                                 onChange={(e) =>
-                                  onChangeSalaryHistoryDraft(
-                                    "plantilla",
-                                    e.target.value,
-                                  )
+                                  onChangeSalaryHistoryDraft("plantilla", e.target.value)
                                 }
                                 disabled={salaryHistoryCreating}
                                 placeholder="Plantilla"
@@ -1197,10 +1165,7 @@ export default function SalaryInformation({
                                 type="text"
                                 value={salaryHistoryCreateDraft.sg}
                                 onChange={(e) =>
-                                  onChangeSalaryHistoryDraft(
-                                    "sg",
-                                    e.target.value,
-                                  )
+                                  onChangeSalaryHistoryDraft("sg", e.target.value)
                                 }
                                 disabled={salaryHistoryCreating}
                                 placeholder="SG"
@@ -1209,9 +1174,7 @@ export default function SalaryInformation({
                             </td>
 
                             <td className="px-3 py-3 text-gray-700">
-                              <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700">
-                                Auto
-                              </span>
+                              <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700">Auto</span>
                             </td>
 
                             <td className="px-3 py-3">
@@ -1219,10 +1182,7 @@ export default function SalaryInformation({
                                 type="number"
                                 value={salaryHistoryCreateDraft.salary}
                                 onChange={(e) =>
-                                  onChangeSalaryHistoryDraft(
-                                    "salary",
-                                    e.target.value,
-                                  )
+                                  onChangeSalaryHistoryDraft("salary", e.target.value)
                                 }
                                 disabled={salaryHistoryCreating}
                                 min="0"
@@ -1233,42 +1193,7 @@ export default function SalaryInformation({
                             </td>
 
                             <td className="px-3 py-3">
-                              <input
-                                type="number"
-                                value={salaryHistoryCreateDraft.increment}
-                                onChange={(e) =>
-                                  onChangeSalaryHistoryDraft(
-                                    "increment",
-                                    e.target.value,
-                                  )
-                                }
-                                disabled={salaryHistoryCreating}
-                                min="0"
-                                step="0.01"
-                                placeholder="Auto"
-                                className={`${tableInputClass} text-right`}
-                              />
-                            </td>
-
-                            <td className="px-3 py-3">
-                              <select
-                                value={salaryHistoryCreateDraft.remarks}
-                                onChange={(e) =>
-                                  onChangeSalaryHistoryDraft(
-                                    "remarks",
-                                    e.target.value,
-                                  )
-                                }
-                                disabled={salaryHistoryCreating}
-                                className={`${tableInputClass} cursor-pointer`}
-                              >
-                                <option value="">Select remark</option>
-                                {salaryHistoryRemarkOptions.map((option) => (
-                                  <option key={option} value={option}>
-                                    {option}
-                                  </option>
-                                ))}
-                              </select>
+                              <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700">Auto</span>
                             </td>
 
                             <td className="px-3 py-3">
@@ -1316,9 +1241,7 @@ export default function SalaryInformation({
 
             {salaryHistoryCreateDraft ? (
               <p className="mt-3 rounded-lg border border-blue-100 bg-white px-3 py-2 text-xs text-gray-500">
-                Step is auto-calculated (1 to 8, capped at 8, resets to 1 on
-                Promotion). Increment is optional. Leave it blank for AUTO
-                mode, or enter a value for MANUAL mode.
+                Step and Increment are auto-calculated by the server. Increment is not editable from the UI.
               </p>
             ) : null}
           </div>

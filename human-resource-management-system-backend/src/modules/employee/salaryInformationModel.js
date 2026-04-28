@@ -203,17 +203,11 @@ const SalaryInformation = {
 
     const autoStep = getNextStep(previousRecord?.step, normalizedRemarks);
 
-    const providedIncrement = getProvidedIncrementValue(payload);
-    const hasManualIncrement =
-      providedIncrement !== undefined &&
-      providedIncrement !== null &&
-      providedIncrement !== "";
-    const normalizedIncrement = hasManualIncrement
-      ? toMoney(providedIncrement)
-      : 0;
-    const incrementMode = hasManualIncrement
-      ? INCREMENT_MODE_MANUAL
-      : INCREMENT_MODE_AUTO;
+    // Increment is now fully automated by the server. Ignore any client-provided
+    // increment values and set AUTO mode with a placeholder amount (recomputed
+    // immediately after insert).
+    const normalizedIncrement = 0;
+    const incrementMode = INCREMENT_MODE_AUTO;
 
     const [result] = await pool.promise().query(
       `INSERT INTO salary_information
@@ -294,23 +288,8 @@ const SalaryInformation = {
       params.push(toMoney(payload.salary));
     }
 
-    if (hasProvidedIncrement(payload)) {
-      const normalizedIncrement = toNumberOrNull(
-        getProvidedIncrementValue(payload),
-      );
-
-      if (normalizedIncrement === null) {
-        fields.push("increment_amount = ?");
-        params.push(0);
-        fields.push("increment_mode = ?");
-        params.push(INCREMENT_MODE_AUTO);
-      } else {
-        fields.push("increment_amount = ?");
-        params.push(toMoney(normalizedIncrement));
-        fields.push("increment_mode = ?");
-        params.push(INCREMENT_MODE_MANUAL);
-      }
-    }
+    // Do not accept or apply client-provided increment values. Server will
+    // recompute increments after update. No fields pushed for increment here.
 
     if (Object.prototype.hasOwnProperty.call(payload, "remarks")) {
       fields.push("remarks = ?");
