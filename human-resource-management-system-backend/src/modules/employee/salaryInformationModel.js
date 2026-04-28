@@ -7,6 +7,19 @@ const INCREMENT_MODE_AUTO = "AUTO";
 const INCREMENT_MODE_MANUAL = "MANUAL";
 const MAX_STEP = 8;
 
+const resolveEmployeeTableName = async () => {
+  const [rows] = await pool.promise().query(
+    `SELECT TABLE_NAME AS table_name
+     FROM INFORMATION_SCHEMA.TABLES
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME IN ('employees', 'emppersonalinfo')
+     ORDER BY CASE TABLE_NAME WHEN 'employees' THEN 0 ELSE 1 END
+     LIMIT 1`,
+  );
+
+  return rows?.[0]?.table_name || "employees";
+};
+
 const hasOwn = (obj, key) =>
   Object.prototype.hasOwnProperty.call(obj || {}, key);
 
@@ -425,6 +438,7 @@ const SalaryInformation = {
     const todayIso =
       normalizeOptionalDate(options.today) ||
       new Date().toISOString().slice(0, 10);
+    const employeeTable = await resolveEmployeeTableName();
 
     const [latestPerEmployeeRows] = await pool.promise().query(
       `SELECT
@@ -436,7 +450,7 @@ const SalaryInformation = {
          si.salary,
          si.increment_amount
        FROM salary_information si
-       JOIN employees e ON e.id = si.employee_id
+       JOIN ${employeeTable} e ON e.id = si.employee_id
        WHERE COALESCE(e.is_archived, 0) = 0
          AND si.id = (
            SELECT si2.id

@@ -252,7 +252,7 @@ const createEmployee = async (req, res) => {
 
     const [schoolRows] = await pool
       .promise()
-      .query("SELECT id FROM schools WHERE id = ? LIMIT 1", [
+      .query("SELECT schoolId FROM schools WHERE schoolId = ? LIMIT 1", [
         req.body.school_id,
       ]);
 

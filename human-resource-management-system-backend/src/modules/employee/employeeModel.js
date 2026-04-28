@@ -93,6 +93,102 @@ const normalizeOptionalEmail = (value) => {
   return normalized.length > 0 ? normalized : null;
 };
 
+const resolveEmployeeSchemaInfo = async () => {
+  const [rows] = await pool.promise().query(
+    `SELECT TABLE_NAME AS table_name, COLUMN_NAME AS column_name
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME IN ('employees', 'emppersonalinfo')
+       AND COLUMN_NAME IN (
+         'id', 'first_name', 'firstName', 'middle_name', 'middleName',
+         'last_name', 'lastName', 'email', 'birthdate', 'age', 'school_id',
+         'is_archived', 'on_leave', 'on_leave_from', 'on_leave_until'
+       )`,
+  );
+
+  const grouped = rows.reduce((acc, row) => {
+    if (!acc[row.table_name]) {
+      acc[row.table_name] = new Set();
+    }
+    acc[row.table_name].add(row.column_name);
+    return acc;
+  }, {});
+
+  const table = grouped.emppersonalinfo ? 'emppersonalinfo' : 'employees';
+  const columns = grouped[table] || new Set();
+
+  return {
+    table,
+    firstName: columns.has('firstName') ? 'firstName' : 'first_name',
+    middleName: columns.has('middleName') ? 'middleName' : 'middle_name',
+    lastName: columns.has('lastName') ? 'lastName' : 'last_name',
+    email: 'email',
+    birthdate: 'birthdate',
+    age: 'age',
+    schoolId: 'school_id',
+    isArchived: columns.has('is_archived') ? 'is_archived' : null,
+    onLeave: columns.has('on_leave') ? 'on_leave' : null,
+    onLeaveFrom: columns.has('on_leave_from') ? 'on_leave_from' : null,
+    onLeaveUntil: columns.has('on_leave_until') ? 'on_leave_until' : null,
+  };
+};
+
+const resolveSchoolSchemaInfo = async () => {
+  const [rows] = await pool.promise().query(
+    `SELECT COLUMN_NAME AS column_name
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'schools'
+       AND COLUMN_NAME IN ('schoolId', 'id', 'schoolName', 'school_name')`,
+  );
+
+  const columns = new Set(rows.map((row) => row.column_name));
+
+  return {
+    id: columns.has('schoolId') ? 'schoolId' : 'id',
+    name: columns.has('schoolName') ? 'schoolName' : 'school_name',
+  };
+};
+
+const buildEmployeeSelectWithAge = (employee, school) => `
+  employees.*,
+  wi.employee_type,
+  wi.employee_no,
+  wi.work_email,
+  wi.district,
+  wi.position,
+  wi.position_id,
+  wi.plantilla_no,
+  wi.sg,
+  DATE_FORMAT(wi.date_of_first_appointment, '%Y-%m-%d') AS date_of_first_appointment,
+  wi.years_in_service,
+  wi.loyalty_bonus,
+  wi.current_employee_type,
+  wi.current_position,
+  wi.current_plantilla_no,
+  DATE_FORMAT(wi.current_appointment_date, '%Y-%m-%d') AS current_appointment_date,
+  wi.current_sg,
+
+  COALESCE(wi.current_employee_type, wi.employee_type) AS resolved_employee_type,
+  COALESCE(wi.current_position, wi.position) AS resolved_position,
+  COALESCE(wi.current_plantilla_no, wi.plantilla_no) AS resolved_plantilla_no,
+  DATE_FORMAT(
+    COALESCE(wi.current_appointment_date, wi.date_of_first_appointment),
+    '%Y-%m-%d'
+  ) AS resolved_appointment_date,
+  COALESCE(wi.current_sg, wi.sg) AS resolved_sg,
+
+  wi.prc_license_no,
+  wi.tin,
+  wi.gsis_bp_no,
+  wi.gsis_crn_no,
+  wi.pagibig_no,
+  wi.philhealth_no,
+  DATE_FORMAT(employees.${employee.birthdate}, '%Y-%m-%d') AS birthdate,
+  COALESCE(schools.${school.name}, employees.school) AS school_name,
+  COALESCE(employees.${employee.age}, TIMESTAMPDIFF(YEAR, employees.${employee.birthdate}, CURDATE())) AS age
+`;
+
 const EMPLOYEE_UNIQUE_FIELD_DEFINITIONS = [
   {
     column: "email",
@@ -356,6 +452,8 @@ const upsertWorkInformation = async (employeeId, payload) => {
 
 const Employee = {
   getAll: async (filters = {}) => {
+    const employee = await resolveEmployeeSchemaInfo();
+    const school = await resolveSchoolSchemaInfo();
     const page = Number(filters.page) || null;
     const pageSize = Math.min(Number(filters.pageSize) || 25, 200);
     const includeArchived = Boolean(filters.includeArchived);
@@ -396,9 +494,13 @@ const Employee = {
     }
 
     if (filters.onLeave === true) {
-      whereParts.push("employees.on_leave = 1");
+      if (employee.onLeave) {
+        whereParts.push(`employees.${employee.onLeave} = 1`);
+      }
     } else if (filters.onLeave === false) {
-      whereParts.push("employees.on_leave = 0");
+      if (employee.onLeave) {
+        whereParts.push(`employees.${employee.onLeave} = 0`);
+      }
     }
 
     if (filters.schoolId) {
@@ -416,9 +518,9 @@ const Employee = {
     if (search) {
       whereParts.push(
         `(
-          employees.first_name LIKE ?
-          OR employees.middle_name LIKE ?
-          OR employees.last_name LIKE ?
+          employees.${employee.firstName} LIKE ?
+          OR employees.${employee.middleName} LIKE ?
+          OR employees.${employee.lastName} LIKE ?
           OR employees.email LIKE ?
           OR wi.employee_no LIKE ?
           OR wi.work_email LIKE ?
@@ -428,7 +530,7 @@ const Employee = {
           OR wi.current_plantilla_no LIKE ?
           OR wi.sg LIKE ?
           OR wi.current_sg LIKE ?
-          OR schools.school_name LIKE ?
+          OR schools.${school.name} LIKE ?
         )`,
       );
       const like = `%${search}%`;
@@ -450,30 +552,32 @@ const Employee = {
     }
 
     if (letter) {
-      whereParts.push("UPPER(LEFT(COALESCE(employees.first_name, ''), 1)) = ?");
+      whereParts.push(
+        `UPPER(LEFT(COALESCE(employees.${employee.firstName}, ''), 1)) = ?`,
+      );
       params.push(letter);
     }
 
     if (retirement === "retirable") {
       whereParts.push(
-        "COALESCE(employees.age, TIMESTAMPDIFF(YEAR, employees.birthdate, CURDATE())) >= 60 AND COALESCE(employees.age, TIMESTAMPDIFF(YEAR, employees.birthdate, CURDATE())) < 65",
+        `COALESCE(employees.${employee.age}, TIMESTAMPDIFF(YEAR, employees.${employee.birthdate}, CURDATE())) >= 60 AND COALESCE(employees.${employee.age}, TIMESTAMPDIFF(YEAR, employees.${employee.birthdate}, CURDATE())) < 65`,
       );
     } else if (retirement === "mandatory") {
       whereParts.push(
-        "COALESCE(employees.age, TIMESTAMPDIFF(YEAR, employees.birthdate, CURDATE())) >= 65",
+        `COALESCE(employees.${employee.age}, TIMESTAMPDIFF(YEAR, employees.${employee.birthdate}, CURDATE())) >= 65`,
       );
     }
 
     const whereClause =
       whereParts.length > 0 ? `WHERE ${whereParts.join(" AND ")}` : "";
-    const baseQuery = `FROM employees JOIN schools ON employees.school_id = schools.id LEFT JOIN work_information wi ON wi.employee_id = employees.id ${whereClause}`;
-    const orderClause = ` ORDER BY employees.first_name ${sortOrder}, employees.last_name ${sortOrder}, employees.id ASC`;
+    const baseQuery = `FROM ${employee.table} employees LEFT JOIN schools ON employees.school_id = schools.${school.id} LEFT JOIN work_information wi ON wi.employee_id = employees.id ${whereClause}`;
+    const orderClause = ` ORDER BY employees.${employee.firstName} ${sortOrder}, employees.${employee.lastName} ${sortOrder}, employees.id ASC`;
 
     if (!page) {
       const [rows] = await pool
         .promise()
         .query(
-          `SELECT ${EMPLOYEE_SELECT_WITH_AGE} ${baseQuery}${orderClause}`,
+          `SELECT ${buildEmployeeSelectWithAge(employee, school)} ${baseQuery}${orderClause}`,
           params,
         );
       return rows;
@@ -488,7 +592,7 @@ const Employee = {
     const [rows] = await pool
       .promise()
       .query(
-        `SELECT ${EMPLOYEE_SELECT_WITH_AGE} ${baseQuery}${orderClause} LIMIT ? OFFSET ?`,
+        `SELECT ${buildEmployeeSelectWithAge(employee, school)} ${baseQuery}${orderClause} LIMIT ? OFFSET ?`,
         [...params, pageSize, offset],
       );
 
@@ -496,16 +600,20 @@ const Employee = {
   },
 
   getById: async (id, options = {}) => {
+    const employee = await resolveEmployeeSchemaInfo();
+    const school = await resolveSchoolSchemaInfo();
     const includeArchived = Boolean(options.includeArchived);
     const archivedFilter = includeArchived
       ? ""
-      : "AND employees.is_archived = 0";
+      : employee.isArchived
+        ? `AND employees.${employee.isArchived} = 0`
+        : "";
 
     const [rows] = await pool.promise().query(
       `
-        SELECT ${EMPLOYEE_SELECT_WITH_AGE}
-        FROM employees
-        JOIN schools ON employees.school_id = schools.id
+        SELECT ${buildEmployeeSelectWithAge(employee, school)}
+        FROM ${employee.table} employees
+        LEFT JOIN schools ON employees.school_id = schools.${school.id}
         LEFT JOIN work_information wi ON wi.employee_id = employees.id
         WHERE employees.id = ?
         ${archivedFilter}
@@ -891,6 +999,7 @@ const Employee = {
   },
 
   getStatusCounts: async (filters = {}) => {
+    const employee = await resolveEmployeeSchemaInfo();
     const params = [];
     let whereClause = "";
 
@@ -902,11 +1011,11 @@ const Employee = {
     const [rows] = await pool.promise().query(
       `SELECT
          COUNT(1) AS total_all,
-         SUM(CASE WHEN is_archived = 1 THEN 1 ELSE 0 END) AS archived,
-         SUM(CASE WHEN is_archived = 0 THEN 1 ELSE 0 END) AS active_total,
-         SUM(CASE WHEN is_archived = 0 AND on_leave = 1 THEN 1 ELSE 0 END) AS on_leave,
-         SUM(CASE WHEN is_archived = 0 AND on_leave = 0 THEN 1 ELSE 0 END) AS available
-       FROM employees
+         SUM(CASE WHEN ${employee.isArchived || '0'} = 1 THEN 1 ELSE 0 END) AS archived,
+         SUM(CASE WHEN ${employee.isArchived || '0'} = 0 THEN 1 ELSE 0 END) AS active_total,
+         SUM(CASE WHEN ${employee.isArchived || '0'} = 0 AND ${employee.onLeave || '0'} = 1 THEN 1 ELSE 0 END) AS on_leave,
+         SUM(CASE WHEN ${employee.isArchived || '0'} = 0 AND ${employee.onLeave || '0'} = 0 THEN 1 ELSE 0 END) AS available
+       FROM ${employee.table}
        ${whereClause}`,
       params,
     );

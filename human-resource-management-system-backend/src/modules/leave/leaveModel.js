@@ -45,12 +45,56 @@ const parseEnumValues = (columnType) => {
 const toEnumSql = (values) =>
   values.map((v) => `'${String(v).replace(/'/g, "''")}'`).join(",");
 
+const resolveEmployeeTableName = async () => {
+  const [rows] = await pool.promise().query(
+    `SELECT TABLE_NAME AS table_name
+     FROM INFORMATION_SCHEMA.TABLES
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME IN ('employees', 'emppersonalinfo')
+     ORDER BY CASE TABLE_NAME WHEN 'employees' THEN 0 ELSE 1 END
+     LIMIT 1`,
+  );
+
+  return rows?.[0]?.table_name || "employees";
+};
+
+const getEmployeeTableInfo = async () => {
+  const employeeTable = await resolveEmployeeTableName();
+
+  if (employeeTable === "emppersonalinfo") {
+    return {
+      table: employeeTable,
+      firstName: "firstName",
+      lastName: "lastName",
+      isArchived: "is_archived",
+      schoolId: "school_id",
+      onLeave: "on_leave",
+      onLeaveFrom: "on_leave_from",
+      onLeaveUntil: "on_leave_until",
+      employeeType: "teacher_status",
+    };
+  }
+
+  return {
+    table: employeeTable,
+    firstName: "first_name",
+    lastName: "last_name",
+    isArchived: "is_archived",
+    schoolId: "school_id",
+    onLeave: "on_leave",
+    onLeaveFrom: "on_leave_from",
+    onLeaveUntil: "on_leave_until",
+    employeeType: "employee_type",
+  };
+};
+
 const Leave = {
   // Supports optional filtering by employee_id and pagination. If pagination not provided, returns full rows for compatibility.
   getAll: async ({ employee_id, school_id } = {}, pagination) => {
+    const employee = await getEmployeeTableInfo();
     let baseQuery = `
       FROM leaves
-      JOIN employees ON leaves.employee_id = employees.id
+      JOIN ${employee.table} employees ON leaves.employee_id = employees.id
       LEFT JOIN work_information wi ON wi.employee_id = employees.id
       WHERE 1=1
     `;
@@ -62,7 +106,7 @@ const Leave = {
     }
 
     if (school_id) {
-      baseQuery += ` AND employees.school_id = ?`;
+      baseQuery += ` AND employees.${employee.schoolId} = ?`;
       params.push(Number(school_id));
     }
 
@@ -72,9 +116,9 @@ const Leave = {
       const [rows] = await pool.promise().query(
         `SELECT
            leaves.*,
-           CONCAT(employees.first_name, ' ', employees.last_name) AS full_name,
+           CONCAT(employees.${employee.firstName}, ' ', employees.${employee.lastName}) AS full_name,
            COALESCE(wi.current_employee_type, wi.employee_type) AS employee_type,
-           employees.school_id
+           employees.${employee.schoolId} AS school_id
          ${baseQuery} ${orderClause}`,
         params,
       );
@@ -92,9 +136,9 @@ const Leave = {
     const [rows] = await pool.promise().query(
       `SELECT
          leaves.*,
-         CONCAT(employees.first_name, ' ', employees.last_name) AS full_name,
+         CONCAT(employees.${employee.firstName}, ' ', employees.${employee.lastName}) AS full_name,
          COALESCE(wi.current_employee_type, wi.employee_type) AS employee_type,
-         employees.school_id
+         employees.${employee.schoolId} AS school_id
        ${baseQuery} ${orderClause} LIMIT ? OFFSET ?`,
       [...params, pageSize, offset],
     );
@@ -103,14 +147,15 @@ const Leave = {
   },
 
   getById: async (id) => {
+    const employee = await getEmployeeTableInfo();
     const [rows] = await pool.promise().query(
       `
         SELECT leaves.*,
-               CONCAT(employees.first_name, ' ', employees.last_name) AS full_name,
+               CONCAT(employees.${employee.firstName}, ' ', employees.${employee.lastName}) AS full_name,
                COALESCE(wi.current_employee_type, wi.employee_type) AS employee_type,
-               employees.school_id
+               employees.${employee.schoolId} AS school_id
         FROM leaves
-        JOIN employees ON leaves.employee_id = employees.id
+        JOIN ${employee.table} employees ON leaves.employee_id = employees.id
         LEFT JOIN work_information wi ON wi.employee_id = employees.id
         WHERE leaves.id = ?
       `,
@@ -371,18 +416,19 @@ const Leave = {
 
   // Returns all non-teaching employees for batch monthly crediting
   getAllNonTeachingEmployees: async () => {
+    const employee = await getEmployeeTableInfo();
     const [rows] = await pool.promise().query(
       `SELECT
          employees.id,
-         employees.first_name,
-         employees.last_name,
+         employees.${employee.firstName} AS first_name,
+         employees.${employee.lastName} AS last_name,
          COALESCE(wi.current_employee_type, wi.employee_type) AS employee_type,
-         employees.on_leave,
-         employees.on_leave_from,
-         employees.on_leave_until
-       FROM employees
+         employees.${employee.onLeave} AS on_leave,
+         employees.${employee.onLeaveFrom} AS on_leave_from,
+         employees.${employee.onLeaveUntil} AS on_leave_until
+       FROM ${employee.table} employees
        LEFT JOIN work_information wi ON wi.employee_id = employees.id
-       WHERE employees.is_archived = 0
+       WHERE employees.${employee.isArchived} = 0
          AND LOWER(REPLACE(REPLACE(COALESCE(wi.current_employee_type, wi.employee_type), '_', '-'), ' ', '-')) = 'non-teaching'`,
     );
     return rows;
@@ -390,27 +436,29 @@ const Leave = {
 
   // Returns teaching and teaching-related employees (excluded from monthly crediting)
   getAllTeachingEmployees: async () => {
+    const employee = await getEmployeeTableInfo();
     const [rows] = await pool.promise().query(
       `SELECT
          employees.id,
-         employees.first_name,
-         employees.last_name,
+         employees.${employee.firstName} AS first_name,
+         employees.${employee.lastName} AS last_name,
          COALESCE(wi.current_employee_type, wi.employee_type) AS employee_type,
-         employees.on_leave,
-         employees.on_leave_from,
-         employees.on_leave_until
-       FROM employees
+         employees.${employee.onLeave} AS on_leave,
+         employees.${employee.onLeaveFrom} AS on_leave_from,
+         employees.${employee.onLeaveUntil} AS on_leave_until
+       FROM ${employee.table} employees
        LEFT JOIN work_information wi ON wi.employee_id = employees.id
-       WHERE employees.is_archived = 0
+       WHERE employees.${employee.isArchived} = 0
          AND LOWER(REPLACE(REPLACE(COALESCE(wi.current_employee_type, wi.employee_type), '_', '-'), ' ', '-')) IN ('teaching', 'teaching-related')`,
     );
     return rows;
   },
 
   getEmployeeTypeById: async (employee_id) => {
+    const employee = await getEmployeeTableInfo();
     const [rows] = await pool.promise().query(
-      `SELECT COALESCE(wi.current_employee_type, wi.employee_type) AS employee_type
-       FROM employees
+      `SELECT COALESCE(wi.current_employee_type, wi.employee_type, employees.${employee.employeeType}) AS employee_type
+       FROM ${employee.table} employees
        LEFT JOIN work_information wi ON wi.employee_id = employees.id
        WHERE employees.id = ?
        LIMIT 1`,

@@ -4,6 +4,19 @@ const pool = require("../../config/db");
 const queryCache = new Map();
 const CACHE_TTL = 30000; // 30 seconds
 
+const toDbRole = (role) => {
+  const normalized = String(role || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .replace(/-/g, "_");
+
+  if (normalized === "SUPER_ADMIN") return "super_admin";
+  if (normalized === "ADMIN") return "admin";
+  if (normalized === "DATA_ENCODER") return "data_encoder";
+  return role;
+};
+
 const getCacheKey = (key) => queryCache.get(key);
 const setCacheValue = (key, value) => {
   queryCache.set(key, { data: value, timestamp: Date.now() });
@@ -48,7 +61,7 @@ const Backlog = {
 
     const baseQuery = `FROM backlogs 
       LEFT JOIN users ON backlogs.user_id = users.id 
-      LEFT JOIN schools ON users.school_id = schools.id`;
+      LEFT JOIN schools ON users.school_id = schools.schoolId`;
 
     const whereParts = [];
     const params = [];
@@ -71,7 +84,7 @@ const Backlog = {
 
     if (options.role) {
       whereParts.push("users.role = ?");
-      params.push(options.role);
+      params.push(toDbRole(options.role));
     }
 
     const normalizedLetter =
@@ -168,7 +181,7 @@ const Backlog = {
       `SELECT ${selectColumns}
        FROM backlogs
        LEFT JOIN users ON backlogs.user_id = users.id
-       LEFT JOIN schools ON users.school_id = schools.id
+        LEFT JOIN schools ON users.school_id = schools.schoolId
        WHERE backlogs.id = ?`,
       [id],
     );
@@ -253,7 +266,7 @@ const Backlog = {
 
     if (filters.role) {
       whereParts.push("users.role = ?");
-      params.push(filters.role);
+      params.push(toDbRole(filters.role));
     }
 
     const normalizedLetter =
@@ -337,7 +350,7 @@ const Backlog = {
       `SELECT ${selectColumns}
        FROM backlogs
        LEFT JOIN users ON backlogs.user_id = users.id
-       LEFT JOIN schools ON users.school_id = schools.id
+        LEFT JOIN schools ON users.school_id = schools.schoolId
        ${whereClause}
        ${orderClause}
        LIMIT 10000`,
@@ -384,7 +397,7 @@ const Backlog = {
     const normalizedRole = typeof role === "string" ? role.trim() : "";
     if (normalizedRole) {
       whereParts.push("users.role = ?");
-      params.push(normalizedRole);
+      params.push(toDbRole(normalizedRole));
     }
 
     const normalizedLetter =
@@ -397,7 +410,7 @@ const Backlog = {
     const [result] = await pool.promise().query(
       `UPDATE backlogs
        LEFT JOIN users ON backlogs.user_id = users.id
-       LEFT JOIN schools ON users.school_id = schools.id
+        LEFT JOIN schools ON users.school_id = schools.schoolId
        SET backlogs.is_archived = 1
        WHERE ${whereParts.join(" AND ")}`,
       params,

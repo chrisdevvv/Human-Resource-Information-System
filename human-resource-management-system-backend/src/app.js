@@ -211,15 +211,16 @@ const ensureLeaveLedgerSchema = async () => {
 };
 
 const ensureEmployeeArchiveSchema = async () => {
+  const employeeTable = await resolveEmployeeTableName();
   await pool.promise().query(`
-    UPDATE employees
+    UPDATE ${employeeTable}
     SET is_archived = 0
     WHERE is_archived IS NULL;
   `);
 
   const indexStatements = [
-    `CREATE INDEX idx_employees_is_archived ON employees (is_archived)`,
-    `CREATE INDEX idx_employees_archived_by ON employees (archived_by)`,
+    `CREATE INDEX idx_${employeeTable}_is_archived ON ${employeeTable} (is_archived)`,
+    `CREATE INDEX idx_${employeeTable}_archived_by ON ${employeeTable} (archived_by)`,
   ];
 
   for (const sql of indexStatements) {
@@ -234,8 +235,9 @@ const ensureEmployeeArchiveSchema = async () => {
 };
 
 const ensureEmployeeLeaveStatusSchema = async () => {
+  const employeeTable = await resolveEmployeeTableName();
   await pool.promise().query(`
-    UPDATE employees
+    UPDATE ${employeeTable}
     SET on_leave = 0
     WHERE on_leave IS NULL;
   `);
@@ -243,7 +245,7 @@ const ensureEmployeeLeaveStatusSchema = async () => {
   try {
     await pool
       .promise()
-      .query(`CREATE INDEX idx_employees_on_leave ON employees (on_leave)`);
+      .query(`CREATE INDEX idx_${employeeTable}_on_leave ON ${employeeTable} (on_leave)`);
   } catch (err) {
     if (!/Duplicate|exists/i.test(err.message)) {
       console.warn("Employee leave status index warning:", err.message);
@@ -276,8 +278,9 @@ const ensureUniqueIndex = async (tableName, indexName, columns) => {
 };
 
 const ensureBirthdateSchema = async () => {
+  const employeeTable = await resolveEmployeeTableName();
   const targets = [
-    { table: "employees", column: "birthdate", definition: "DATE NULL" },
+    { table: employeeTable, column: "birthdate", definition: "DATE NULL" },
     { table: "users", column: "birthdate", definition: "DATE NULL" },
     {
       table: "registration_requests",
@@ -307,8 +310,9 @@ const ensureBirthdateSchema = async () => {
 };
 
 const ensureMiddleNameSchema = async () => {
+  const employeeTable = await resolveEmployeeTableName();
   const targets = [
-    { table: "employees", column: "middle_name", definition: "VARCHAR(255) NULL" },
+    { table: employeeTable, column: "middle_name", definition: "VARCHAR(255) NULL" },
     { table: "users", column: "middle_name", definition: "VARCHAR(255) NULL" },
     {
       table: "registration_requests",
@@ -338,6 +342,7 @@ const ensureMiddleNameSchema = async () => {
 };
 
 const ensureWorkInformationTable = async () => {
+  const employeeTable = await resolveEmployeeTableName();
   await pool.promise().query(`
     CREATE TABLE IF NOT EXISTS work_information (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -377,7 +382,7 @@ const ensureWorkInformationTable = async () => {
       UNIQUE KEY uk_work_information_pagibig_no (pagibig_no),
       UNIQUE KEY uk_work_information_philhealth_no (philhealth_no),
       KEY idx_work_information_position_id (position_id),
-      CONSTRAINT fk_work_information_employee_id FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT fk_work_information_employee_id FOREIGN KEY (employee_id) REFERENCES ${employeeTable}(id) ON DELETE CASCADE ON UPDATE CASCADE,
       CONSTRAINT fk_work_information_position_id FOREIGN KEY (position_id) REFERENCES positions(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
   `);
@@ -703,7 +708,7 @@ const ensureDistrictsTable = async () => {
   await pool.promise().query(`
     CREATE TABLE IF NOT EXISTS districts (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      district_name VARCHAR(50) NOT NULL UNIQUE,
+      districtName VARCHAR(255) NOT NULL UNIQUE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
   `);
@@ -715,7 +720,7 @@ const ensureDistrictsTable = async () => {
   await pool
     .promise()
     .query(
-      `INSERT IGNORE INTO districts (district_name) VALUES ${districts
+      `INSERT IGNORE INTO districts (districtName) VALUES ${districts
         .map(() => "(?)")
         .join(",")}`,
       districts,
@@ -724,7 +729,7 @@ const ensureDistrictsTable = async () => {
   try {
     await pool
       .promise()
-      .query(`CREATE INDEX idx_districts_name ON districts (district_name)`);
+      .query(`CREATE INDEX idx_districts_name ON districts (districtName)`);
   } catch (err) {
     if (!/Duplicate|exists/i.test(err.message)) {
       console.warn("Districts index warning:", err.message);
@@ -807,29 +812,30 @@ const ensureEmployeePositionFK = async () => {
 };
 
 const ensureEmployeeCivilStatusSexFK = async () => {
+  const employeeTable = await resolveEmployeeTableName();
   const [civilStatusColumns] = await pool.promise().query(`
     SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_NAME = 'employees' AND COLUMN_NAME = 'civil_status_id'
+    WHERE TABLE_NAME = '${employeeTable}' AND COLUMN_NAME = 'civil_status_id'
   `);
 
   if (civilStatusColumns.length === 0) {
     await pool.promise().query(`
-      ALTER TABLE employees
+      ALTER TABLE ${employeeTable}
       ADD COLUMN civil_status_id INT NULL AFTER civil_status,
-      ADD CONSTRAINT fk_employees_civil_status_id FOREIGN KEY (civil_status_id) REFERENCES civil_statuses(id) ON DELETE SET NULL;
+      ADD CONSTRAINT fk_${employeeTable}_civil_status_id FOREIGN KEY (civil_status_id) REFERENCES civil_statuses(id) ON DELETE SET NULL;
     `);
   }
 
   const [sexColumns] = await pool.promise().query(`
     SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_NAME = 'employees' AND COLUMN_NAME = 'sex_id'
+    WHERE TABLE_NAME = '${employeeTable}' AND COLUMN_NAME = 'sex_id'
   `);
 
   if (sexColumns.length === 0) {
     await pool.promise().query(`
-      ALTER TABLE employees
+      ALTER TABLE ${employeeTable}
       ADD COLUMN sex_id INT NULL AFTER sex,
-      ADD CONSTRAINT fk_employees_sex_id FOREIGN KEY (sex_id) REFERENCES sexes(id) ON DELETE SET NULL;
+      ADD CONSTRAINT fk_${employeeTable}_sex_id FOREIGN KEY (sex_id) REFERENCES sexes(id) ON DELETE SET NULL;
     `);
   }
 };
@@ -930,6 +936,19 @@ const ensureForeignKeyConstraint = async ({
   `);
 };
 
+const resolveEmployeeTableName = async () => {
+  const [rows] = await pool.promise().query(
+    `SELECT TABLE_NAME AS table_name
+     FROM INFORMATION_SCHEMA.TABLES
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME IN ('employees', 'emppersonalinfo')
+     ORDER BY CASE TABLE_NAME WHEN 'employees' THEN 0 ELSE 1 END
+     LIMIT 1`,
+  );
+
+  return rows?.[0]?.table_name || "employees";
+};
+
 const ensureSalaryInformationTable = async () => {
   const salaryInformationRemarkValues = [
     "Step Increment",
@@ -940,10 +959,11 @@ const ensureSalaryInformationTable = async () => {
     .map((value) => `'${String(value).replace(/'/g, "''")}'`)
     .join(",");
 
-  const employeeIdColumnType = await getColumnTypeSql("employees", "id", "INT");
+  const employeeTable = await resolveEmployeeTableName();
+  const employeeIdColumnType = await getColumnTypeSql(employeeTable, "id", "INT");
 
-  await ensureTableEngineInnoDb("employees");
-  await ensureIndexedColumn("employees", "id", "idx_employees_id_fk");
+  await ensureTableEngineInnoDb(employeeTable);
+  await ensureIndexedColumn(employeeTable, "id", `idx_${employeeTable}_id_fk`);
 
   await pool.promise().query(`
     CREATE TABLE IF NOT EXISTS salary_information (
@@ -973,7 +993,7 @@ const ensureSalaryInformationTable = async () => {
     tableName: "salary_information",
     constraintName: "fk_salary_information_employee_id",
     columnName: "employee_id",
-    referencedTable: "employees",
+    referencedTable: employeeTable,
     referencedColumn: "id",
     onDelete: "CASCADE",
     onUpdate: "CASCADE",
@@ -1116,16 +1136,17 @@ const ensureSalaryIncrementNoticesTable = async () => {
     .map((value) => `'${String(value).replace(/'/g, "''")}'`)
     .join(",");
 
-  const employeeIdColumnType = await getColumnTypeSql("employees", "id", "INT");
+  const employeeTable = await resolveEmployeeTableName();
+  const employeeIdColumnType = await getColumnTypeSql(employeeTable, "id", "INT");
   const salaryInformationIdColumnType = await getColumnTypeSql(
     "salary_information",
     "id",
     "INT",
   );
 
-  await ensureTableEngineInnoDb("employees");
+  await ensureTableEngineInnoDb(employeeTable);
   await ensureTableEngineInnoDb("salary_information");
-  await ensureIndexedColumn("employees", "id", "idx_employees_id_fk");
+  await ensureIndexedColumn(employeeTable, "id", `idx_${employeeTable}_id_fk`);
   await ensureIndexedColumn(
     "salary_information",
     "id",
@@ -1162,7 +1183,7 @@ const ensureSalaryIncrementNoticesTable = async () => {
     tableName: "salary_increment_notices",
     constraintName: "fk_salary_increment_notices_employee_id",
     columnName: "employee_id",
-    referencedTable: "employees",
+    referencedTable: employeeTable,
     referencedColumn: "id",
     onDelete: "CASCADE",
     onUpdate: "CASCADE",
@@ -1237,14 +1258,15 @@ const archiveOldBacklogs = async () => {
 };
 
 const ensureIndexes = async () => {
+  const employeeTable = await resolveEmployeeTableName();
   const stmts = [
     `CREATE INDEX idx_leaves_employee_id ON leaves (employee_id)`,
     `CREATE INDEX idx_leaves_date_of_action ON leaves (date_of_action)`,
     `CREATE INDEX idx_users_first_last_email ON users (first_name, last_name, email)`,
     `CREATE INDEX idx_users_email ON users (email)`,
-    `CREATE INDEX idx_employees_school_id ON employees (school_id)`,
-    `CREATE INDEX idx_employees_civil_status_id ON employees (civil_status_id)`,
-    `CREATE INDEX idx_employees_sex_id ON employees (sex_id)`,
+    `CREATE INDEX idx_${employeeTable}_school_id ON ${employeeTable} (school_id)`,
+    `CREATE INDEX idx_${employeeTable}_civil_status_id ON ${employeeTable} (civil_status_id)`,
+    `CREATE INDEX idx_${employeeTable}_sex_id ON ${employeeTable} (sex_id)`,
     `CREATE INDEX idx_backlogs_is_archived_created_at ON backlogs (is_archived, created_at DESC)`,
     `CREATE INDEX idx_backlogs_user_id ON backlogs (user_id)`,
     `CREATE INDEX idx_backlogs_school_id ON backlogs (school_id)`,
@@ -1298,7 +1320,7 @@ app.get(
     try {
       const [rows] = await pool
         .promise()
-        .query("SELECT id, district_name FROM districts ORDER BY id ASC");
+        .query("SELECT id, districtName AS district_name FROM districts ORDER BY id ASC");
       return res.status(200).json({ data: rows });
     } catch (err) {
       return res.status(500).json({
@@ -1319,7 +1341,7 @@ app.post(
       const districtName = req.body.district_name.trim();
       const [existingRows] = await pool
         .promise()
-        .query("SELECT id FROM districts WHERE district_name = ? LIMIT 1", [
+        .query("SELECT id FROM districts WHERE districtName = ? LIMIT 1", [
           districtName,
         ]);
 
@@ -1329,7 +1351,7 @@ app.post(
 
       const [result] = await pool
         .promise()
-        .query("INSERT INTO districts (district_name) VALUES (?)", [
+        .query("INSERT INTO districts (districtName) VALUES (?)", [
           districtName,
         ]);
 
@@ -1355,7 +1377,7 @@ app.delete(
     try {
       const [existingRows] = await pool
         .promise()
-        .query("SELECT id, district_name FROM districts WHERE id = ? LIMIT 1", [
+        .query("SELECT id, districtName AS district_name FROM districts WHERE id = ? LIMIT 1", [
           req.params.id,
         ]);
 
