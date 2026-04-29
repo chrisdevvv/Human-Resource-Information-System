@@ -19,11 +19,11 @@ const {
 
 const router = express.Router();
 
-// Backlogs - Admin and Super Admin only
+// Backlogs - Admin and Super Admin can view, Super Admin can modify
 router.get(
   "/",
   authMiddleware,
-  roleAuthMiddleware(["super-admin"]),
+  roleAuthMiddleware(["admin", "super-admin"]),
   getAllBacklogs,
 );
 router.get(

@@ -225,7 +225,7 @@ export const useDashboardData = ({
           schools,
           backlogs,
           employeeStatusCountsResponse,
-          eserviceEmployeesCount,
+          totalEmployeesCount,
           retirementData,
         ] = await Promise.all([
           fetchApiList<Record<string, unknown>>(scopedUsersEndpoint, token),
@@ -241,31 +241,31 @@ export const useDashboardData = ({
             ? fetchApiList<BacklogRecord>("/api/backlogs", token)
             : Promise.resolve([]),
           fetchStatusCounts(statusCountsUrl, token),
-          fetch(`${API_BASE_URL}/api/eservice/employees/count`, {
+          fetch(`${API_BASE_URL}/api/employees/count`, {
             headers: { Authorization: `Bearer ${token}` },
           })
             .then((res) => res.json())
-            .then((data) => Number(data?.total || 0))
+            .then((data) => Number(data?.count || data?.total || 0))
             .catch(() => 0),
-          fetch(`${API_BASE_URL}/api/eservice/employees/retirement-counts`, {
+          fetch(`${API_BASE_URL}/api/employees/retirement-counts`, {
             headers: { Authorization: `Bearer ${token}` },
           })
             .then((res) => res.json())
             .then((data) => ({
-              retirable: Number(data?.data?.retirable || 0),
-              mandatory: Number(data?.data?.mandatory || 0),
+              retirable: Number(data?.retirable || 0),
+              mandatory: Number(data?.mandatory || 0),
             }))
             .catch(() => ({ retirable: 0, mandatory: 0 })),
         ]);
 
-        const totalEmployees = eserviceEmployeesCount;
+        const totalEmployees = totalEmployeesCount;
         const totalUsers = users.length;
         const totalSchools = schools.length;
         const pendingRegistrations = pendingRegistrationsList.length;
         const employeesOnLeave =
-          Number(employeeStatusCountsResponse?.data?.on_leave) || 0;
+          Number(employeeStatusCountsResponse?.data?.on_leave || employeeStatusCountsResponse?.on_leave) || 0;
         const archivedEmployees =
-          Number(employeeStatusCountsResponse?.data?.archived) || 0;
+          Number(employeeStatusCountsResponse?.data?.archived || employeeStatusCountsResponse?.archived) || 0;
 
         const now = new Date();
         const currentMonth = now.getMonth();

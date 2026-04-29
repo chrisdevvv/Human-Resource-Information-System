@@ -13,7 +13,7 @@ const DEFAULT_TEST_ACCOUNTS = [
     email: "superadmin@deped.gov.ph",
     password: DEFAULT_TEST_PASSWORD,
     role: "SUPER_ADMIN",
-    school_id: null,
+    school_id: 63,
   },
   {
     first_name: "Test",
@@ -21,7 +21,7 @@ const DEFAULT_TEST_ACCOUNTS = [
     email: "testadmin@deped.gov.ph",
     password: DEFAULT_TEST_PASSWORD,
     role: "ADMIN",
-    school_id: "__SAMPLE_SCHOOL__",
+    school_id: 63,
   },
   {
     first_name: "Test",
@@ -29,7 +29,7 @@ const DEFAULT_TEST_ACCOUNTS = [
     email: "testencoder@deped.gov.ph",
     password: DEFAULT_ENCODER_PASSWORD,
     role: "DATA_ENCODER",
-    school_id: "__SAMPLE_SCHOOL__",
+    school_id: 63,
   },
 ];
 
