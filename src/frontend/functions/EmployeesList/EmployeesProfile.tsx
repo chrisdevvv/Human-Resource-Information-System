@@ -182,11 +182,13 @@ const normalizeEmployeeType = (
 };
 
 const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
-  const firstName = item.firstName?.trim() || item.first_name?.trim() || "Unknown";
+  const firstName =
+    item.firstName?.trim() || item.first_name?.trim() || "Unknown";
   const rawMiddleName =
     item.middleName?.trim() || item.middle_name?.trim() || "";
   const middleName = rawMiddleName.toUpperCase() === "N/A" ? "" : rawMiddleName;
-  const lastName = item.lastName?.trim() || item.last_name?.trim() || "Employee";
+  const lastName =
+    item.lastName?.trim() || item.last_name?.trim() || "Employee";
   const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
 
   return {
@@ -211,7 +213,10 @@ const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
     schoolId: item.school_id ?? null,
     district: item.district?.trim() || "",
     schoolName:
-      item.schoolName?.trim() || item.school_name?.trim() || item.school?.trim() || "",
+      item.schoolName?.trim() ||
+      item.school_name?.trim() ||
+      item.school?.trim() ||
+      "",
     civilStatus: item.civilStatus?.trim() || "",
     sex: item.gender?.trim() || "",
     birthdate: item.dateOfBirth?.trim() || item.birthdate?.trim() || "",
@@ -227,7 +232,9 @@ const fetchJson = async <T extends { message?: string }>(url: string) => {
   const body = await parseApiBody<T>(response);
 
   if (!response.ok) {
-    throw new Error(body.message || `Request failed (HTTP ${response.status}).`);
+    throw new Error(
+      body.message || `Request failed (HTTP ${response.status}).`,
+    );
   }
 
   return body;
@@ -302,16 +309,18 @@ export default function EmployeesListLayout() {
   const [showAddSuccessToast, setShowAddSuccessToast] = useState(false);
   const [addSuccessMessage, setAddSuccessMessage] = useState("");
   const [currentUserRole, setCurrentUserRole] = useState("");
-  const [currentUserSchoolId, setCurrentUserSchoolId] = useState<
-    number | null
-  >(null);
+  const [currentUserSchoolId, setCurrentUserSchoolId] = useState<number | null>(
+    null,
+  );
 
   useEffect(() => {
     const { role, schoolId } = parseUserContext();
     setCurrentUserRole(role);
     setCurrentUserSchoolId(schoolId);
 
-    if (SCHOOL_ROLE_OPTIONS.includes(role as (typeof SCHOOL_ROLE_OPTIONS)[number])) {
+    if (
+      SCHOOL_ROLE_OPTIONS.includes(role as (typeof SCHOOL_ROLE_OPTIONS)[number])
+    ) {
       setSchoolFilter(schoolId ? String(schoolId) : "ALL");
     }
   }, []);
@@ -339,11 +348,11 @@ export default function EmployeesListLayout() {
       query.set("pageSize", String(itemsPerPage));
       query.set("include_archived", "false");
 
-      console.log('[fetchEmployees] Debug Info:', {
+      console.log("[fetchEmployees] Debug Info:", {
         isSchoolScopedRole,
         currentUserSchoolId,
         currentUserRole,
-        schoolFilter
+        schoolFilter,
       });
 
       const endpoint = isSchoolScopedRole
@@ -354,18 +363,22 @@ export default function EmployeesListLayout() {
             schoolFilter !== "ALL" ? `?school_id=${schoolFilter}&` : "?"
           }${query.toString()}`;
 
-      console.log('[fetchEmployees] Endpoint:', endpoint);
+      console.log("[fetchEmployees] Endpoint:", endpoint);
 
       if (!endpoint) {
         throw new Error("Your account is not assigned to a valid school.");
       }
 
-      const result = await fetchJson<{ data?: EmployeeRecordApi[]; total?: number; message?: string }>(endpoint);
+      const result = await fetchJson<{
+        data?: EmployeeRecordApi[];
+        total?: number;
+        message?: string;
+      }>(endpoint);
 
-      console.log('[fetchEmployees] Result:', {
+      console.log("[fetchEmployees] Result:", {
         hasData: !!result?.data,
         dataLength: result?.data?.length || 0,
-        total: result?.total
+        total: result?.total,
       });
 
       const mapped = (result.data || []).map(toEmployeeRecord);
@@ -373,7 +386,7 @@ export default function EmployeesListLayout() {
       setTotalItems(result.total || 0);
       setEmployeeError(null);
     } catch (err) {
-      console.error('[fetchEmployees] Error:', err);
+      console.error("[fetchEmployees] Error:", err);
       setEmployeeError(
         err instanceof Error ? err.message : "An error occurred",
       );
@@ -412,7 +425,10 @@ export default function EmployeesListLayout() {
             school.school?.trim() ||
             "",
         }))
-        .filter((school) => Number.isFinite(school.id) && school.id > 0 && school.name)
+        .filter(
+          (school) =>
+            Number.isFinite(school.id) && school.id > 0 && school.name,
+        )
         .sort((a, b) => a.name.localeCompare(b.name));
 
       setAllSchoolOptions(schools);
