@@ -58,6 +58,8 @@ export type EmployeePersonalInfoApi = {
   gender?: string | null;
   civilStatus?: string | null;
   teacher_status?: string | null;
+  employee_type?: string | null;
+  current_employee_type?: string | null;
 };
 
 export type EmployeePersonalInfoForm = {
@@ -92,6 +94,7 @@ export const getEServiceEmployees = async (params: {
   civilStatus?: string;
   sex?: string;
   employeeType?: string;
+  retirementStatus?: "retirable" | "mandatory";
   letter?: string;
   sortOrder?: "ASC" | "DESC";
   page?: number;
@@ -106,7 +109,11 @@ export const getEServiceEmployees = async (params: {
     query.set("civilStatus", params.civilStatus.trim());
   }
   if (params.sex?.trim()) query.set("sex", params.sex.trim());
-  if (params.employeeType?.trim()) query.set("employeeType", params.employeeType.trim());
+  if (params.employeeType?.trim())
+    query.set("employeeType", params.employeeType.trim());
+  if (params.retirementStatus?.trim()) {
+    query.set("retirementStatus", params.retirementStatus.trim());
+  }
   if (params.letter?.trim()) query.set("letter", params.letter.trim());
   query.set("sortOrder", params.sortOrder || "DESC");
   query.set("page", String(params.page || 1));
@@ -138,9 +145,10 @@ export const getEServiceDistricts = async (): Promise<DistrictOption[]> => {
     headers: getAuthHeaders(),
   });
 
-  const body = await parseApiBody<{ data?: DistrictOption[]; message?: string }>(
-    response,
-  );
+  const body = await parseApiBody<{
+    data?: DistrictOption[];
+    message?: string;
+  }>(response);
 
   if (!response.ok) {
     throw new Error(

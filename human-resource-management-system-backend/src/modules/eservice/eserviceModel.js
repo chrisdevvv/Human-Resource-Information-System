@@ -12,6 +12,15 @@ const normalizeOptionalEmail = (value) => {
   return normalized.length > 0 ? normalized : null;
 };
 
+const normalizeEmployeeType = (value) => {
+  if (value === undefined || value === null) return null;
+  const normalized = String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s]+/g, "-");
+  return normalized.length > 0 ? normalized : null;
+};
+
 const normalizeDateForStorage = (value) => {
   if (value === undefined || value === null) return null;
 
@@ -52,13 +61,15 @@ const EService = {
     const school =
       typeof filters.school === "string" ? filters.school.trim() : "";
     const civilStatus =
-      typeof filters.civilStatus === "string"
-        ? filters.civilStatus.trim()
-        : "";
+      typeof filters.civilStatus === "string" ? filters.civilStatus.trim() : "";
     const sex = typeof filters.sex === "string" ? filters.sex.trim() : "";
     const employeeType =
       typeof filters.employeeType === "string"
-        ? filters.employeeType.trim()
+        ? normalizeEmployeeType(filters.employeeType)
+        : "";
+    const retirementStatus =
+      typeof filters.retirementStatus === "string"
+        ? filters.retirementStatus.trim().toLowerCase()
         : "";
     const letter =
       typeof filters.letter === "string" ? filters.letter.trim() : "";
@@ -74,20 +85,22 @@ const EService = {
       const like = `%${search}%`;
       whereParts.push(`
         (
-          firstName LIKE ? OR
-          lastName LIKE ? OR
-          middleName LIKE ? OR
-          middle_initial LIKE ? OR
-          email LIKE ? OR
-          district LIKE ? OR
-          school LIKE ? OR
-          place LIKE ? OR
-          civilStatus LIKE ? OR
-          gender LIKE ? OR
-          teacher_status LIKE ?
+          e.firstName LIKE ? OR
+          e.lastName LIKE ? OR
+          e.middleName LIKE ? OR
+          e.middle_initial LIKE ? OR
+          e.email LIKE ? OR
+          e.district LIKE ? OR
+          e.school LIKE ? OR
+          e.place LIKE ? OR
+          e.civilStatus LIKE ? OR
+          e.gender LIKE ? OR
+          e.teacher_status LIKE ? OR
+          COALESCE(wi.current_employee_type, wi.employee_type) LIKE ?
         )
       `);
       params.push(
+        like,
         like,
         like,
         like,
@@ -103,32 +116,45 @@ const EService = {
     }
 
     if (district) {
-      whereParts.push("district = ?");
+      whereParts.push("e.district = ?");
       params.push(district);
     }
 
     if (school) {
-      whereParts.push("school = ?");
+      whereParts.push("e.school = ?");
       params.push(school);
     }
 
     if (civilStatus) {
-      whereParts.push("civilStatus = ?");
+      whereParts.push("e.civilStatus = ?");
       params.push(civilStatus);
     }
 
     if (sex) {
-      whereParts.push("gender = ?");
+      whereParts.push("e.gender = ?");
       params.push(sex);
     }
 
     if (employeeType) {
-      whereParts.push("teacher_status = ?");
+      whereParts.push(
+        "LOWER(REPLACE(REPLACE(COALESCE(wi.current_employee_type, wi.employee_type), '_', '-'), ' ', '-')) = ?",
+      );
       params.push(employeeType);
     }
 
+    if (retirementStatus) {
+      const ageExpression =
+        "TIMESTAMPDIFF(YEAR, STR_TO_DATE(e.dateOfBirth, '%m/%d/%Y'), CURDATE())";
+
+      if (retirementStatus === "retirable") {
+        whereParts.push(`(${ageExpression} >= 55 AND ${ageExpression} < 61)`);
+      } else if (retirementStatus === "mandatory") {
+        whereParts.push(`(${ageExpression} >= 61)`);
+      }
+    }
+
     if (letter) {
-      whereParts.push("firstName LIKE ?");
+      whereParts.push("e.firstName LIKE ?");
       params.push(`${letter}%`);
     }
 
@@ -138,7 +164,8 @@ const EService = {
     const [[{ total }]] = await pool.query(
       `
       SELECT COUNT(*) AS total
-      FROM emppersonalinfo
+      FROM emppersonalinfo e
+      LEFT JOIN work_information wi ON wi.employee_id = e.id
       ${whereClause}
       `,
       params,
@@ -147,23 +174,25 @@ const EService = {
     const [rows] = await pool.query(
       `
       SELECT
-        id,
-        firstName,
-        lastName,
-        middleName,
-        middle_initial,
-        MISR,
-        email,
-        dateOfBirth,
-        place,
-        district,
-        school,
-        gender,
-        civilStatus,
-        teacher_status
-      FROM emppersonalinfo
+        e.id,
+        e.firstName,
+        e.lastName,
+        e.middleName,
+        e.middle_initial,
+        e.MISR,
+        e.email,
+        e.dateOfBirth,
+        e.place,
+        e.district,
+        e.school,
+        e.gender,
+        e.civilStatus,
+        e.teacher_status,
+        COALESCE(wi.current_employee_type, wi.employee_type) AS employee_type
+      FROM emppersonalinfo e
+      LEFT JOIN work_information wi ON wi.employee_id = e.id
       ${whereClause}
-      ORDER BY firstName ${sortOrder}
+      ORDER BY e.firstName ${sortOrder}
       LIMIT ? OFFSET ?
       `,
       [...params, pageSize, offset],
@@ -209,22 +238,24 @@ const EService = {
     const [rows] = await pool.query(
       `
       SELECT
-        id,
-        firstName,
-        lastName,
-        middleName,
-        middle_initial,
-        MISR,
-        email,
-        dateOfBirth,
-        place,
-        district,
-        school,
-        gender,
-        civilStatus,
-        teacher_status
-      FROM emppersonalinfo
-      WHERE id = ?
+        e.id,
+        e.firstName,
+        e.lastName,
+        e.middleName,
+        e.middle_initial,
+        e.MISR,
+        e.email,
+        e.dateOfBirth,
+        e.place,
+        e.district,
+        e.school,
+        e.gender,
+        e.civilStatus,
+        e.teacher_status,
+        COALESCE(wi.current_employee_type, wi.employee_type) AS employee_type
+      FROM emppersonalinfo e
+      LEFT JOIN work_information wi ON wi.employee_id = e.id
+      WHERE e.id = ?
       LIMIT 1
       `,
       [id],
@@ -351,8 +382,8 @@ const EService = {
     return result;
   },
 
-    getDistricts: async () => {
-        const [rows] = await pool.query(`
+  getDistricts: async () => {
+    const [rows] = await pool.query(`
             SELECT
             districtId,
             districtName,
@@ -362,8 +393,8 @@ const EService = {
             ORDER BY districtName ASC
         `);
 
-        return rows;
-    },
+    return rows;
+  },
 
   getSchools: async (district = null) => {
     const normalizedDistrict = normalizeOptionalText(district);

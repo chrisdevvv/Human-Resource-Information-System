@@ -9,6 +9,7 @@ const getAllEmployeePersonalInfo = async (req, res) => {
       civilStatus,
       sex,
       employeeType,
+      retirementStatus,
       letter,
       sortOrder,
       page,
@@ -22,6 +23,7 @@ const getAllEmployeePersonalInfo = async (req, res) => {
       civilStatus: civilStatus || null,
       sex: sex || null,
       employeeType: employeeType || null,
+      retirementStatus: retirementStatus || null,
       letter: letter || null,
       sortOrder: sortOrder || "DESC",
       page: page ? Number(page) : undefined,
@@ -69,14 +71,8 @@ const getEmployeePersonalInfoById = async (req, res) => {
 
 const createEmployeePersonalInfo = async (req, res) => {
   try {
-    const {
-      firstName,
-      lastName,
-      district,
-      school,
-      gender,
-      civilStatus,
-    } = req.body;
+    const { firstName, lastName, district, school, gender, civilStatus } =
+      req.body;
 
     if (!firstName || !String(firstName).trim()) {
       return res.status(400).json({

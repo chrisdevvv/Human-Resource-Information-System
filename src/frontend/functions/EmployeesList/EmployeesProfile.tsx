@@ -43,6 +43,8 @@ type EmployeeRecord = {
   birthdate: string;
 };
 
+type RetirementFilterValue = "ALL" | "retirable" | "mandatory";
+
 type SessionUser = {
   role?: string;
   school_id?: number | string | null;
@@ -83,6 +85,19 @@ const getCurrentUserRole = (): string => {
   }
 };
 
+const normalizeEmployeeType = (
+  value: unknown,
+): EmployeeRecord["employeeType"] => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s]+/g, "-");
+
+  if (normalized === "teaching") return "teaching";
+  if (normalized === "teaching-related") return "teaching-related";
+  return "non-teaching";
+};
+
 const toEmployeeRecord = (item: EmployeePersonalInfoApi): EmployeeRecord => {
   // Maps emppersonalinfo API response to local EmployeeRecord type
   // Source: eservice/emppersonalinfo database
@@ -98,7 +113,9 @@ const toEmployeeRecord = (item: EmployeePersonalInfoApi): EmployeeRecord => {
     middleName,
     lastName,
     fullName,
-    employeeType: "non-teaching",
+    employeeType: normalizeEmployeeType(
+      item.current_employee_type ?? item.employee_type,
+    ),
     teacherStatus: item.teacher_status?.trim() || "N/A",
     email: item.email?.trim() || "",
     schoolId: null,
@@ -154,9 +171,8 @@ export default function EmployeesListLayout() {
   const [schoolFilter, setSchoolFilter] = useState("ALL");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [letterFilter, setLetterFilter] = useState("ALL");
-  const [retirementFilter, setRetirementFilter] = useState<
-    "ALL" | "retirable" | "mandatory"
-  >("ALL");
+  const [retirementFilter, setRetirementFilter] =
+    useState<RetirementFilterValue>("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [pageJumpInput, setPageJumpInput] = useState("1");
@@ -192,7 +208,10 @@ export default function EmployeesListLayout() {
       const result = await getEServiceEmployees({
         search: searchQuery || undefined,
         school: schoolFilter === "ALL" ? undefined : schoolFilter,
-        employeeType: employeeTypeFilter === "ALL" ? undefined : employeeTypeFilter,
+        employeeType:
+          employeeTypeFilter === "ALL" ? undefined : employeeTypeFilter,
+        retirementStatus:
+          retirementFilter === "ALL" ? undefined : retirementFilter,
         letter: letterFilter === "ALL" ? undefined : letterFilter,
         sortOrder: sortOrder.toUpperCase() as "ASC" | "DESC",
         page: currentPage,
@@ -204,7 +223,9 @@ export default function EmployeesListLayout() {
       setTotalItems(result.total || 0);
       setEmployeeError(null);
     } catch (err) {
-      setEmployeeError(err instanceof Error ? err.message : "An error occurred");
+      setEmployeeError(
+        err instanceof Error ? err.message : "An error occurred",
+      );
       if (showSpinner) {
         setEmployeeData([]);
         setTotalItems(0);
@@ -221,17 +242,29 @@ export default function EmployeesListLayout() {
     }
 
     try {
-      const result = await getEServiceEmployees({
-        search: "",
-        sortOrder: "ASC",
-        page: 1,
-        pageSize: 500,
-      });
-
       const unique = new Map<string, string>();
-      (result.data || []).forEach((item) => {
-        if (item.school?.trim()) unique.set(item.school.trim(), item.school.trim());
-      });
+      const pageSize = 200;
+      let page = 1;
+      let totalPages = 1;
+
+      do {
+        const result = await getEServiceEmployees({
+          search: "",
+          sortOrder: "ASC",
+          page,
+          pageSize,
+        });
+
+        (result.data || []).forEach((item) => {
+          if (item.school?.trim()) {
+            unique.set(item.school.trim(), item.school.trim());
+          }
+        });
+
+        const total = Number(result.total || 0);
+        totalPages = Math.max(1, Math.ceil(total / pageSize));
+        page += 1;
+      } while (page <= totalPages);
 
       const schools = Array.from(unique.values())
         .map((name, idx) => ({ id: idx + 1, name }))
@@ -290,7 +323,8 @@ export default function EmployeesListLayout() {
   const schoolOptions = useMemo(() => {
     const unique = new Map<string, string>();
     allSchoolOptions.forEach((school) => {
-      if (school.name.trim()) unique.set(school.name.trim(), school.name.trim());
+      if (school.name.trim())
+        unique.set(school.name.trim(), school.name.trim());
     });
     return Array.from(unique.values())
       .map((name, idx) => ({ id: idx + 1, name }))
@@ -573,7 +607,7 @@ export default function EmployeesListLayout() {
                   value={retirementFilter}
                   onChange={(e) => {
                     setRetirementFilter(
-                      e.target.value as "ALL" | "retirable" | "mandatory",
+                      e.target.value as RetirementFilterValue,
                     );
                     setCurrentPage(1);
                   }}
