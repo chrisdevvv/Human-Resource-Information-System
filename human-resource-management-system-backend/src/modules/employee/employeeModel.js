@@ -1214,51 +1214,59 @@ const Employee = {
   },
 
   archive: async (id, archivedBy, archiveReason) => {
-    const [result] = await pool.promise().query(
-      `UPDATE employees
-       SET is_archived = 1, archived_at = NOW(), archived_by = ?, archived_reason = ?
-       WHERE id = ? AND is_archived = 0`,
-      [archivedBy || null, archiveReason || null, id],
-    );
+    const employee = await resolveEmployeeSchemaInfo();
+    const table = employee.table;
+    const isArchivedCol = employee.isArchived || "is_archived";
+
+    const sql = `UPDATE \`${table}\`\n      SET \`${isArchivedCol}\` = 1, archived_at = NOW(), archived_by = ?, archived_reason = ?\n      WHERE id = ? AND \`${isArchivedCol}\` = 0`;
+
+    const [result] = await pool
+      .promise()
+      .query(sql, [archivedBy || null, archiveReason || null, id]);
+
     return result;
   },
 
   unarchive: async (id) => {
-    const [result] = await pool.promise().query(
-      `UPDATE employees
-       SET is_archived = 0, archived_at = NULL, archived_by = NULL, archived_reason = NULL
-       WHERE id = ? AND is_archived = 1`,
-      [id],
-    );
+    const employee = await resolveEmployeeSchemaInfo();
+    const table = employee.table;
+    const isArchivedCol = employee.isArchived || "is_archived";
+
+    const sql = `UPDATE \`${table}\`\n      SET \`${isArchivedCol}\` = 0, archived_at = NULL, archived_by = NULL, archived_reason = NULL\n      WHERE id = ? AND \`${isArchivedCol}\` = 1`;
+
+    const [result] = await pool.promise().query(sql, [id]);
     return result;
   },
 
   markOnLeave: async (id, data = {}) => {
     const { on_leave_from, on_leave_until, reason } = data;
-    const [result] = await pool.promise().query(
-      `UPDATE employees
-       SET on_leave = 1,
-           on_leave_from = ?,
-           on_leave_until = ?,
-           on_leave_reason = ?,
-           leave_status_updated_at = NOW()
-       WHERE id = ? AND is_archived = 0`,
-      [on_leave_from || null, on_leave_until || null, reason || null, id],
-    );
+    const employee = await resolveEmployeeSchemaInfo();
+    const table = employee.table;
+    const onLeaveCol = employee.onLeave || "on_leave";
+    const onLeaveFromCol = employee.onLeaveFrom || "on_leave_from";
+    const onLeaveUntilCol = employee.onLeaveUntil || "on_leave_until";
+    const isArchivedCol = employee.isArchived || "is_archived";
+
+    const sql = `UPDATE \`${table}\`\n      SET \`${onLeaveCol}\` = 1,\n          \`${onLeaveFromCol}\` = ?,\n          \`${onLeaveUntilCol}\` = ?,\n          on_leave_reason = ?,\n          leave_status_updated_at = NOW()\n      WHERE id = ? AND \`${isArchivedCol}\` = 0`;
+
+    const [result] = await pool
+      .promise()
+      .query(sql, [on_leave_from || null, on_leave_until || null, reason || null, id]);
+
     return result;
   },
 
   markAvailable: async (id) => {
-    const [result] = await pool.promise().query(
-      `UPDATE employees
-       SET on_leave = 0,
-           on_leave_from = NULL,
-           on_leave_until = NULL,
-           on_leave_reason = NULL,
-           leave_status_updated_at = NOW()
-       WHERE id = ? AND is_archived = 0`,
-      [id],
-    );
+    const employee = await resolveEmployeeSchemaInfo();
+    const table = employee.table;
+    const onLeaveCol = employee.onLeave || "on_leave";
+    const onLeaveFromCol = employee.onLeaveFrom || "on_leave_from";
+    const onLeaveUntilCol = employee.onLeaveUntil || "on_leave_until";
+    const isArchivedCol = employee.isArchived || "is_archived";
+
+    const sql = `UPDATE \`${table}\`\n      SET \`${onLeaveCol}\` = 0,\n          \`${onLeaveFromCol}\` = NULL,\n          \`${onLeaveUntilCol}\` = NULL,\n          on_leave_reason = NULL,\n          leave_status_updated_at = NOW()\n      WHERE id = ? AND \`${isArchivedCol}\` = 0`;
+
+    const [result] = await pool.promise().query(sql, [id]);
     return result;
   },
 
@@ -1296,9 +1304,13 @@ const Employee = {
   },
 
   delete: async (id) => {
+    const employee = await resolveEmployeeSchemaInfo();
+    const table = employee.table;
+
     const [result] = await pool
       .promise()
-      .query("DELETE FROM employees WHERE id = ?", [id]);
+      .query(`DELETE FROM \`${table}\` WHERE id = ?`, [id]);
+
     return result;
   },
 };
