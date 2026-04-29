@@ -132,6 +132,8 @@ type EmployeeDetailsResponse = {
   civil_status_id?: number | null;
   sex?: string | null;
   sex_id?: number | null;
+  gender?: string | null;
+  gender_id?: number | null;
   employee_type?: "teaching" | "non-teaching" | "teaching-related";
   resolved_employee_type?: "teaching" | "non-teaching" | "teaching-related";
   resolved_position?: string | null;
@@ -398,6 +400,26 @@ const createEditSnapshotFromDetails = (
   const computedNoMiddleName =
     explicitNoMiddleName || normalizedMiddleName.toUpperCase() === "N/A";
 
+  const resolveSexGender = () => {
+    const sexValue = String(data.sex || "").trim();
+    const genderValue = String(data.gender || "").trim();
+    const sexIdValue = data.sex_id || null;
+    const genderIdValue = data.gender_id || null;
+
+    if (sexValue && genderValue) {
+      return { sex: sexValue, sexId: sexIdValue };
+    }
+    if (sexValue) {
+      return { sex: sexValue, sexId: sexIdValue };
+    }
+    if (genderValue) {
+      return { sex: genderValue, sexId: genderIdValue };
+    }
+    return { sex: "", sexId: null };
+  };
+
+  const { sex: resolvedSex, sexId: resolvedSexId } = resolveSexGender();
+
   return {
     firstName: data.first_name || "",
     middleName: computedNoMiddleName ? "N/A" : normalizedMiddleName,
@@ -411,8 +433,8 @@ const createEditSnapshotFromDetails = (
     placeOfBirth: data.place_of_birth || "",
     civilStatus: data.civil_status || "",
     civilStatusId: data.civil_status_id || null,
-    sex: data.sex || "",
-    sexId: data.sex_id || null,
+    sex: resolvedSex,
+    sexId: resolvedSexId,
     employeeNo: data.employee_no || "",
     workEmail: data.work_email || "",
     district: data.district || data.work_district || "",

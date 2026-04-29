@@ -515,7 +515,7 @@ export default function EmployeePersonalInfoTable({
                           <button
                             type="button"
                             onClick={() => setViewEmployee(employee)}
-                            className="inline-flex h-6 cursor-pointer items-center justify-center gap-1 rounded-md bg-sky-600 px-2 text-sm font-medium text-white transition hover:bg-sky-700"
+                            className="inline-flex h-6 cursor-pointer items-center justify-center gap-1 rounded-md bg-sky-100 px-2 text-sm font-medium text-sky-800 transition hover:bg-sky-200"
                             title="View"
                           >
                             <Eye className="h-3 w-3" />
@@ -525,7 +525,7 @@ export default function EmployeePersonalInfoTable({
                           <button
                             type="button"
                             onClick={() => onEdit(employee)}
-                            className="inline-flex h-6 cursor-pointer items-center justify-center gap-1 rounded-md bg-blue-600 px-2 text-sm font-medium text-white transition hover:bg-blue-700"
+                            className="inline-flex h-6 cursor-pointer items-center justify-center gap-1 rounded-md bg-blue-100 px-2 text-sm font-medium text-blue-800 transition hover:bg-blue-200"
                             title="Edit"
                           >
                             <Pencil className="h-3 w-3" />
@@ -535,7 +535,7 @@ export default function EmployeePersonalInfoTable({
                           <button
                             type="button"
                             onClick={() => onDelete(employee)}
-                            className="inline-flex h-6 cursor-pointer items-center justify-center gap-1 rounded-md bg-red-500 px-2 text-sm font-medium text-white transition hover:bg-red-600"
+                            className="inline-flex h-6 cursor-pointer items-center justify-center gap-1 rounded-md bg-red-100 px-2 text-sm font-medium text-red-800 transition hover:bg-red-200"
                             title="Delete"
                           >
                             <Trash2 className="h-3 w-3" />
