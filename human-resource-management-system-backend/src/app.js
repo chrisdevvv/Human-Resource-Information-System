@@ -1788,12 +1788,6 @@ app.delete(
 );
 
 const ensureAutoIncrementPrimaryKeyId = async (tableName) => {
-  // Skip tables that use custom primary key names (e.g., schoolId for schools table)
-  if (tableName === "schools") {
-    console.log(`[Schema] Skipping ${tableName} - has custom primary key structure.`);
-    return;
-  }
-
   const [columnRows] = await pool.promise().query(
     `SELECT COLUMN_NAME, COLUMN_TYPE, COLUMN_KEY, EXTRA
      FROM INFORMATION_SCHEMA.COLUMNS

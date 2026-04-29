@@ -245,12 +245,6 @@ const getAllBacklogs = async (req, res) => {
       pageSize: results.pageSize,
     });
   } catch (err) {
-    console.error("[Backlogs API Error]", {
-      message: err.message,
-      stack: err.stack,
-      userId: req.user?.id,
-      role: req.user?.role,
-    });
     res
       .status(500)
       .json({ message: "Error retrieving backlogs", error: err.message });

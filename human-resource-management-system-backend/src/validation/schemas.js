@@ -374,8 +374,6 @@ const usersQuerySchema = Joi.object({
     Joi.number().valid(0, 1),
     Joi.string().valid("0", "1"),
   ),
-  page: Joi.number().integer().positive(),
-  pageSize: Joi.number().integer().positive().max(200),
 });
 
 const registrationStatusQuerySchema = Joi.object({

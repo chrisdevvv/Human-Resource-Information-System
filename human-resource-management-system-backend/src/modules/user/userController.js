@@ -275,7 +275,7 @@ const getAllUsers = async (req, res) => {
       search: search || null,
       role: role || null,
       is_active: is_active !== undefined ? Number(is_active) : null,
-      school_id: scopeSchoolId || null,
+      school_id: scopeSchoolId,
       letter: letter || null,
       sortOrder: sortOrder || null,
     };
@@ -298,12 +298,6 @@ const getAllUsers = async (req, res) => {
       pageSize: results.pageSize,
     });
   } catch (err) {
-    console.error("[Users API Error]", {
-      message: err.message,
-      stack: err.stack,
-      userId: req.user?.id,
-      role: req.user?.role,
-    });
     res
       .status(500)
       .json({ message: "Error retrieving users", error: err.message });
