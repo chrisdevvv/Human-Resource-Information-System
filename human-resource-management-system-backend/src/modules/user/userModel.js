@@ -1,5 +1,23 @@
 const pool = require("../../config/db");
 
+const resolveSchoolSchemaInfo = async () => {
+  const [rows] = await pool.promise().query(
+    `SELECT COLUMN_NAME AS column_name
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'schools'
+       AND COLUMN_NAME IN ('schoolId', 'id', 'schoolName', 'school_name', 'school_code')`,
+  );
+
+  const columns = new Set(rows.map((row) => row.column_name));
+
+  return {
+    id: columns.has("schoolId") ? "schoolId" : "id",
+    name: columns.has("schoolName") ? "schoolName" : "school_name",
+    code: columns.has("school_code") ? "school_code" : null,
+  };
+};
+
 const toDbRole = (role) => {
   const normalized = String(role || "")
     .trim()
@@ -19,9 +37,10 @@ const User = {
     { search, role, is_active, school_id, letter, sortOrder } = {},
     pagination,
   ) => {
+    const school = await resolveSchoolSchemaInfo();
     let baseQuery = `
             FROM users u
-          LEFT JOIN schools s ON u.school_id = s.schoolId
+          LEFT JOIN schools s ON u.school_id = s.${school.id}
             WHERE 1=1
         `;
     const params = [];
@@ -31,7 +50,7 @@ const User = {
       String(sortOrder || "asc").toLowerCase() === "desc" ? "DESC" : "ASC";
 
     if (search) {
-      baseQuery += ` AND (u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR s.school_name LIKE ?)`;
+      baseQuery += ` AND (u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR s.${school.name} LIKE ?)`;
       const like = `%${search}%`;
       params.push(like, like, like, like);
     }
@@ -65,7 +84,8 @@ const User = {
                        DATE_FORMAT(u.birthdate, '%Y-%m-%d') AS birthdate,
                        u.school_id,
                        u.is_active, u.created_at, u.updated_at,
-                       s.school_name, s.school_code
+                       s.${school.name} AS school_name,
+                       ${school.code ? `s.${school.code} AS school_code` : "NULL AS school_code"}
                  ${baseQuery} ${orderClause}`,
         params,
       );
@@ -86,7 +106,8 @@ const User = {
                        DATE_FORMAT(u.birthdate, '%Y-%m-%d') AS birthdate,
                        u.school_id,
                        u.is_active, u.created_at, u.updated_at,
-                       s.school_name, s.school_code
+                       s.${school.name} AS school_name,
+                       ${school.code ? `s.${school.code} AS school_code` : "NULL AS school_code"}
              ${baseQuery} ${orderClause} LIMIT ? OFFSET ?`,
       [...params, pageSize, offset],
     );
@@ -95,13 +116,16 @@ const User = {
   },
 
   getById: async (id) => {
+    const school = await resolveSchoolSchemaInfo();
     const [rows] = await pool.promise().query(
       `SELECT u.id, u.first_name, u.middle_name, u.last_name, u.email, UPPER(u.role) AS role,
                     DATE_FORMAT(u.birthdate, '%Y-%m-%d') AS birthdate,
                     u.is_active, u.created_at, u.updated_at,
-                    u.school_id, s.school_name, s.school_code
+                    u.school_id,
+                    s.${school.name} AS school_name,
+                    ${school.code ? `s.${school.code} AS school_code` : "NULL AS school_code"}
              FROM users u
-             LEFT JOIN schools s ON u.school_id = s.schoolId
+             LEFT JOIN schools s ON u.school_id = s.${school.id}
              WHERE u.id = ?`,
       [id],
     );

@@ -1,5 +1,23 @@
 const pool = require("../../config/db");
 
+const resolveSchoolSchemaInfo = async () => {
+  const [rows] = await pool.promise().query(
+    `SELECT COLUMN_NAME AS column_name
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'schools'
+       AND COLUMN_NAME IN ('schoolId', 'id', 'schoolName', 'school_name', 'school_code')`,
+  );
+
+  const columns = new Set(rows.map((row) => row.column_name));
+
+  return {
+    id: columns.has("schoolId") ? "schoolId" : "id",
+    name: columns.has("schoolName") ? "schoolName" : "school_name",
+    code: columns.has("school_code") ? "school_code" : null,
+  };
+};
+
 // Simple in-memory cache with TTL for frequently accessed logs
 const queryCache = new Map();
 const CACHE_TTL = 30000; // 30 seconds
@@ -31,6 +49,7 @@ const Backlog = {
   // Supports optional pagination and filtering. If pagination not provided, returns all rows (backwards compatible).
   // Also applies filtering by is_archived by default for better performance
   getAll: async (pagination, options = {}) => {
+    const school = await resolveSchoolSchemaInfo();
     const includeArchived = options.includeArchived || false; // Default to NOT including archived (optimization)
     const onlyArchived = options.onlyArchived || false;
 
@@ -56,12 +75,12 @@ const Backlog = {
       users.last_name,
       users.role,
       users.email,
-      schools.school_name
+      schools.${school.name} AS school_name
     `;
 
     const baseQuery = `FROM backlogs 
       LEFT JOIN users ON backlogs.user_id = users.id 
-      LEFT JOIN schools ON users.school_id = schools.schoolId`;
+      LEFT JOIN schools ON users.school_id = schools.${school.id}`;
 
     const whereParts = [];
     const params = [];
@@ -76,7 +95,7 @@ const Backlog = {
       typeof options.search === "string" ? options.search.trim() : "";
     if (search) {
       whereParts.push(
-        "(backlogs.action LIKE ? OR backlogs.details LIKE ? OR users.first_name LIKE ? OR users.last_name LIKE ? OR users.email LIKE ? OR schools.school_name LIKE ?)",
+        `(backlogs.action LIKE ? OR backlogs.details LIKE ? OR users.first_name LIKE ? OR users.last_name LIKE ? OR users.email LIKE ? OR schools.${school.name} LIKE ?)` ,
       );
       const like = `%${search}%`;
       params.push(like, like, like, like, like, like);
@@ -174,14 +193,14 @@ const Backlog = {
       users.last_name,
       users.role,
       users.email,
-      schools.school_name
+      schools.${school.name} AS school_name
     `;
 
     const [rows] = await pool.promise().query(
       `SELECT ${selectColumns}
        FROM backlogs
        LEFT JOIN users ON backlogs.user_id = users.id
-        LEFT JOIN schools ON users.school_id = schools.schoolId
+        LEFT JOIN schools ON users.school_id = schools.${school.id}
        WHERE backlogs.id = ?`,
       [id],
     );
@@ -244,6 +263,7 @@ const Backlog = {
   },
 
   getReport: async (filters = {}) => {
+    const school = await resolveSchoolSchemaInfo();
     const whereParts = [];
     const params = [];
     const onlyArchived = Boolean(filters.onlyArchived);
@@ -258,7 +278,7 @@ const Backlog = {
       typeof filters.search === "string" ? filters.search.trim() : "";
     if (search) {
       whereParts.push(
-        "(backlogs.action LIKE ? OR backlogs.details LIKE ? OR users.first_name LIKE ? OR users.last_name LIKE ? OR users.email LIKE ? OR schools.school_name LIKE ?)",
+        `(backlogs.action LIKE ? OR backlogs.details LIKE ? OR users.first_name LIKE ? OR users.last_name LIKE ? OR users.email LIKE ? OR schools.${school.name} LIKE ?)` ,
       );
       const like = `%${search}%`;
       params.push(like, like, like, like, like, like);
@@ -343,14 +363,14 @@ const Backlog = {
       users.last_name,
       users.role,
       users.email,
-      schools.school_name
+      schools.${school.name} AS school_name
     `;
 
     const [rows] = await pool.promise().query(
       `SELECT ${selectColumns}
        FROM backlogs
        LEFT JOIN users ON backlogs.user_id = users.id
-        LEFT JOIN schools ON users.school_id = schools.schoolId
+        LEFT JOIN schools ON users.school_id = schools.${school.id}
        ${whereClause}
        ${orderClause}
        LIMIT 10000`,
@@ -378,6 +398,7 @@ const Backlog = {
   },
 
   archiveByFilters: async ({ from, to, search, role, letter }) => {
+    const school = await resolveSchoolSchemaInfo();
     const whereParts = [
       "backlogs.is_archived = 0",
       "backlogs.created_at >= ?",
@@ -388,7 +409,7 @@ const Backlog = {
     const normalizedSearch = typeof search === "string" ? search.trim() : "";
     if (normalizedSearch) {
       whereParts.push(
-        "(backlogs.action LIKE ? OR backlogs.details LIKE ? OR users.first_name LIKE ? OR users.last_name LIKE ? OR users.email LIKE ? OR schools.school_name LIKE ?)",
+        `(backlogs.action LIKE ? OR backlogs.details LIKE ? OR users.first_name LIKE ? OR users.last_name LIKE ? OR users.email LIKE ? OR schools.${school.name} LIKE ?)` ,
       );
       const like = `%${normalizedSearch}%`;
       params.push(like, like, like, like, like, like);
@@ -410,7 +431,7 @@ const Backlog = {
     const [result] = await pool.promise().query(
       `UPDATE backlogs
        LEFT JOIN users ON backlogs.user_id = users.id
-        LEFT JOIN schools ON users.school_id = schools.schoolId
+        LEFT JOIN schools ON users.school_id = schools.${school.id}
        SET backlogs.is_archived = 1
        WHERE ${whereParts.join(" AND ")}`,
       params,
