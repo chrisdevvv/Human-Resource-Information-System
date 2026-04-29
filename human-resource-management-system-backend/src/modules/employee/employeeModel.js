@@ -151,7 +151,18 @@ const resolveSchoolSchemaInfo = async () => {
 };
 
 const buildEmployeeSelectWithAge = (employee, school) => `
-  employees.*,
+  employees.id,
+  employees.${employee.firstName} AS first_name,
+  employees.${employee.middleName} AS middle_name,
+  employees.${employee.lastName} AS last_name,
+  employees.email,
+  employees.birthdate,
+  employees.age,
+  employees.school_id,
+  employees.is_archived,
+  employees.on_leave,
+  employees.on_leave_from,
+  employees.on_leave_until,
   wi.employee_type,
   wi.employee_no,
   wi.work_email,

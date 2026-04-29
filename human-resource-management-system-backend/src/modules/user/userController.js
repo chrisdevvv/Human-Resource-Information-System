@@ -99,13 +99,38 @@ const parseBooleanFlag = (value) => {
   return null;
 };
 
+const resolveSchoolSchemaInfo = async () => {
+  const [rows] = await pool.promise().query(
+    `SELECT COLUMN_NAME AS column_name
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'schools'
+       AND COLUMN_NAME IN ('schoolId', 'id', 'schoolName', 'school_name', 'school_code')`,
+  );
+
+  const columns = new Set(rows.map((row) => row.column_name));
+
+  return {
+    id: columns.has("schoolId") ? "schoolId" : "id",
+    name: columns.has("schoolName") ? "schoolName" : "school_name",
+    code: columns.has("school_code") ? "school_code" : null,
+  };
+};
+
 const resolveOrCreateSchoolsDivisionOfficeId = async () => {
+  const school = await resolveSchoolSchemaInfo();
   const schoolCode = "SDO";
   const [insertResult] = await pool.promise().query(
-    `INSERT INTO schools (school_name, school_code)
-     VALUES (?, ?)
-     ON DUPLICATE KEY UPDATE schoolId = LAST_INSERT_ID(schoolId)`,
-    [SCHOOLS_DIVISION_OFFICE, schoolCode],
+    `INSERT INTO schools (${[
+      school.name,
+      school.code,
+    ]
+      .filter(Boolean)
+      .map((column) => `\`${column}\``)
+      .join(", ")})
+     VALUES (${school.code ? "?, ?" : "?"})
+     ON DUPLICATE KEY UPDATE \`${school.id}\` = LAST_INSERT_ID(\`${school.id}\`)`,
+    school.code ? [SCHOOLS_DIVISION_OFFICE, schoolCode] : [SCHOOLS_DIVISION_OFFICE],
   );
 
   const schoolId = Number(insertResult?.insertId) || null;

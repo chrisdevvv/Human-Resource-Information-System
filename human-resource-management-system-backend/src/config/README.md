@@ -11,7 +11,7 @@ This folder contains backend configuration setup.
 - `DB_HOST` (default: `127.0.0.1`)
 - `DB_USER` (default: `root`)
 - `DB_PASSWORD` (default: empty)
-- `DB_NAME` (default: `human_resource_information_system`)
+- `DB_NAME` (default: `esrdatabase`)
 - `DB_PORT` (default: `3306`)
 
 ## Notes
