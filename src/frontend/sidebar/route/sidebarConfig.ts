@@ -2,7 +2,6 @@ import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   CalendarDays,
-  FileText,
   LayoutDashboard,
   ShieldCheck,
   SlidersHorizontal,
@@ -28,11 +27,6 @@ const SIDEBAR_TABS: SidebarTab[] = [
     id: "employees-list",
     label: "Employees Profile",
     icon: Users,
-  },
-  {
-    id: "eservice",
-    label: "E-Service Record",
-    icon: FileText,
   },
   {
     id: "employee-management",

@@ -47,6 +47,7 @@ export default function ArchivedLogs() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
+  const [schoolFilter, setSchoolFilter] = useState("ALL");
   const [letterFilter, setLetterFilter] = useState("ALL");
   const [sortMode, setSortMode] = useState<
     "date-desc" | "date-asc" | "name-asc" | "name-desc"
@@ -61,6 +62,9 @@ export default function ArchivedLogs() {
   const [selectedLog, setSelectedLog] = useState<Log | null>(null);
   const [logsLoading, setLogsLoading] = useState(true);
   const [logsError, setLogsError] = useState<string | null>(null);
+  const [schoolOptions, setSchoolOptions] = useState<
+    Array<{ id: number; name: string }>
+  >([]);
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -80,6 +84,42 @@ export default function ArchivedLogs() {
     setDateTo(value);
     setCurrentPage(1);
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSchools = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/schools/public/list`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch schools");
+        }
+
+        const result = await response.json();
+        if (!cancelled) {
+          setSchoolOptions(
+            (result.data || []) as Array<{ id: number; name: string }>,
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setSchoolOptions([]);
+        }
+      }
+    };
+
+    void loadSchools();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleGenerateArchivedReport = () => {
     const params = new URLSearchParams();
@@ -238,6 +278,21 @@ export default function ArchivedLogs() {
     SUPER_ADMIN: "Super Admin",
     ADMIN: "Admin",
     DATA_ENCODER: "Data Encoder",
+  };
+
+  const formatRoleLabel = (raw: string) => {
+    const normalized = String(raw || "")
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, "_");
+
+    return (
+      roleLabelMap[normalized] ||
+      String(raw || "")
+        .replace(/_/g, " ")
+        .toLowerCase()
+        .replace(/\b\w/g, (character) => character.toUpperCase())
+    );
   };
 
   const toRoleLabel = (raw: string) => {

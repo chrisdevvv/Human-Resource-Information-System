@@ -334,48 +334,13 @@ export default function AddUserModal({
         );
       }
 
-      const registerResponse = await fetch(
-        `${API_BASE_URL}/api/auth/register`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            first_name: firstName.trim(),
-            last_name: lastName.trim(),
-            middle_name: noMiddleName ? null : middleName.trim(),
-            no_middle_name: noMiddleName,
-            email: email.trim(),
-            password,
-            birthdate,
-            school_name: schoolName,
-            requested_role: "DATA_ENCODER",
-            suppress_pending_email: true,
-          }),
-        },
-      );
-
-      const registerPayload = await registerResponse
-        .json()
-        .catch(() => ({}) as { message?: string; requestId?: number });
-
-      if (!registerResponse.ok) {
-        throw new Error(
-          registerPayload.message || "Failed to submit registration request.",
-        );
-      }
-
-      const requestId = registerPayload.requestId;
-      if (!requestId) {
-        throw new Error("Missing request ID from registration response.");
-      }
-
       const token = localStorage.getItem("authToken");
       if (!token) {
-        throw new Error("No authentication token found.");
+        throw new Error("No token provided");
       }
 
-      const approveResponse = await fetch(
-        `${API_BASE_URL}/api/registrations/${requestId}/approve`,
+      const createResponse = await fetch(
+        `${API_BASE_URL}/api/users/admin-create`,
         {
           method: "POST",
           headers: {
@@ -383,21 +348,22 @@ export default function AddUserModal({
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            approved_role: "DATA_ENCODER",
-            temporary_password: password,
-            suppress_approved_email: true,
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            email: email.trim(),
+            password,
+            birthdate,
+            school_name: schoolName,
           }),
         },
       );
 
-      const approvePayload = await approveResponse
+      const createPayload = await createResponse
         .json()
         .catch(() => ({}) as { message?: string });
 
-      if (!approveResponse.ok) {
-        throw new Error(
-          approvePayload.message || "Failed to approve new user.",
-        );
+      if (!createResponse.ok) {
+        throw new Error(createPayload.message || "Failed to create user.");
       }
 
       addForcedPasswordChangeEmail(email);

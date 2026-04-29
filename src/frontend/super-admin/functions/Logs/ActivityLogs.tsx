@@ -90,6 +90,7 @@ export default function ActivityLogs() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
+  const [schoolFilter, setSchoolFilter] = useState("ALL");
   const [letterFilter, setLetterFilter] = useState("ALL");
   const [sortMode, setSortMode] = useState<
     "date-desc" | "date-asc" | "name-asc" | "name-desc"
@@ -134,6 +135,9 @@ export default function ActivityLogs() {
   const [archiveMessage, setArchiveMessage] = useState<string | null>(null);
   const [archivedCount, setArchivedCount] = useState(0);
   const [reportGeneratedBy, setReportGeneratedBy] = useState("System");
+  const [schoolOptions, setSchoolOptions] = useState<
+    Array<{ id: number; name: string }>
+  >([]);
   const archiveReportRef = React.useRef<HTMLDivElement | null>(null);
 
   const formatIsoDate = (date: Date) => {
@@ -226,6 +230,42 @@ export default function ActivityLogs() {
         createdAt: log.createdAt,
       }));
   }, [archiveRange.fromIso, archiveRange.toIso, logsData]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSchools = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/schools/public/list`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch schools");
+        }
+
+        const result = await response.json();
+        if (!cancelled) {
+          setSchoolOptions(
+            (result.data || []) as Array<{ id: number; name: string }>,
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setSchoolOptions([]);
+        }
+      }
+    };
+
+    void loadSchools();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const rawUser = localStorage.getItem("user");
@@ -332,6 +372,7 @@ export default function ActivityLogs() {
     if (dateTo) params.set("to", dateTo);
     if (searchQuery.trim()) params.set("search", searchQuery.trim());
     if (roleFilter !== "ALL") params.set("role", roleFilter);
+    if (schoolFilter !== "ALL") params.set("school_id", schoolFilter);
     if (letterFilter !== "ALL") params.set("letter", letterFilter);
     if (sortMode) params.set("sortMode", sortMode);
     params.set("report_scope", "active");
@@ -353,6 +394,7 @@ export default function ActivityLogs() {
       params.set("include_archived", "false");
       if (searchQuery.trim()) params.set("search", searchQuery.trim());
       if (roleFilter !== "ALL") params.set("role", roleFilter);
+      if (schoolFilter !== "ALL") params.set("school_id", schoolFilter);
       if (letterFilter !== "ALL") params.set("letter", letterFilter);
       if (dateFrom) params.set("from", dateFrom);
       if (dateTo) params.set("to", dateTo);
@@ -423,6 +465,7 @@ export default function ActivityLogs() {
   }, [
     searchQuery,
     roleFilter,
+    schoolFilter,
     letterFilter,
     sortMode,
     dateFrom,
@@ -497,6 +540,7 @@ export default function ActivityLogs() {
   const hasActiveFilters =
     searchQuery.trim().length > 0 ||
     roleFilter !== "ALL" ||
+    schoolFilter !== "ALL" ||
     letterFilter !== "ALL" ||
     sortMode !== "date-desc" ||
     Boolean(dateFrom) ||
@@ -520,6 +564,21 @@ export default function ActivityLogs() {
     SUPER_ADMIN: "Super Admin",
     ADMIN: "Admin",
     DATA_ENCODER: "Data Encoder",
+  };
+
+  const formatRoleLabel = (raw: string) => {
+    const normalized = String(raw || "")
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, "_");
+
+    return (
+      roleLabelMap[normalized] ||
+      String(raw || "")
+        .replace(/_/g, " ")
+        .toLowerCase()
+        .replace(/\b\w/g, (character) => character.toUpperCase())
+    );
   };
 
   const toRoleLabel = (raw: string) => {
@@ -635,6 +694,22 @@ export default function ActivityLogs() {
             <option value="SUPER_ADMIN">Super Admin</option>
             <option value="ADMIN">Admin</option>
             <option value="DATA_ENCODER">Data Encoder</option>
+          </select>
+
+          <select
+            value={schoolFilter}
+            onChange={(e) => {
+              setSchoolFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+          >
+            <option value="ALL">All Schools</option>
+            {schoolOptions.map((school) => (
+              <option key={school.id} value={String(school.id)}>
+                {school.name}
+              </option>
+            ))}
           </select>
 
           <select
@@ -762,7 +837,7 @@ export default function ActivityLogs() {
                       {log.firstName} {log.lastName}
                     </td>
                     <td className="py-0.5 px-3 text-gray-500 text-sm">
-                      {roleLabelMap[log.role] ?? log.role.replace(/_/g, " ")}
+                      {formatRoleLabel(log.role)}
                     </td>
                     <td className="py-0.5 px-3 text-gray-500 text-sm">
                       <span
@@ -896,9 +971,7 @@ export default function ActivityLogs() {
           selectedLog
             ? {
                 name: `${selectedLog.firstName} ${selectedLog.lastName}`.trim(),
-                role:
-                  roleLabelMap[selectedLog.role] ??
-                  selectedLog.role.replace(/_/g, " "),
+                role: formatRoleLabel(selectedLog.role),
                 email: selectedLog.email,
                 school: selectedLog.schoolName,
                 dateTime: formatDateTime(selectedLog.createdAt),

@@ -121,16 +121,15 @@ const resolveOrCreateSchoolsDivisionOfficeId = async () => {
   const school = await resolveSchoolSchemaInfo();
   const schoolCode = "SDO";
   const [insertResult] = await pool.promise().query(
-    `INSERT INTO schools (${[
-      school.name,
-      school.code,
-    ]
+    `INSERT INTO schools (${[school.name, school.code]
       .filter(Boolean)
       .map((column) => `\`${column}\``)
       .join(", ")})
      VALUES (${school.code ? "?, ?" : "?"})
      ON DUPLICATE KEY UPDATE \`${school.id}\` = LAST_INSERT_ID(\`${school.id}\`)`,
-    school.code ? [SCHOOLS_DIVISION_OFFICE, schoolCode] : [SCHOOLS_DIVISION_OFFICE],
+    school.code
+      ? [SCHOOLS_DIVISION_OFFICE, schoolCode]
+      : [SCHOOLS_DIVISION_OFFICE],
   );
 
   const schoolId = Number(insertResult?.insertId) || null;
@@ -775,6 +774,7 @@ const adminResetPassword = async (req, res) => {
 const createDataEncoderByAdmin = async (req, res) => {
   try {
     const requesterRole = normalizeRole(req.user?.role);
+    const school = await resolveSchoolSchemaInfo();
 
     if (!["ADMIN", "SUPER_ADMIN"].includes(requesterRole)) {
       return res.status(403).json({
@@ -829,12 +829,12 @@ const createDataEncoderByAdmin = async (req, res) => {
         }
 
         const [schoolRows] = await conn.query(
-          "SELECT schoolId FROM schools WHERE school_name = ? LIMIT 1",
+          `SELECT \`${school.id}\` AS school_id FROM schools WHERE \`${school.name}\` = ? LIMIT 1`,
           [normalizedSchoolName],
         );
 
         if (schoolRows.length > 0) {
-          schoolId = schoolRows[0].schoolId;
+          schoolId = schoolRows[0].school_id;
         } else {
           const schoolCode = normalizedSchoolName
             .split(/\s+/)
@@ -843,7 +843,7 @@ const createDataEncoderByAdmin = async (req, res) => {
             .join("");
 
           const [newSchoolResult] = await conn.query(
-            "INSERT INTO schools (school_name, school_code) VALUES (?, ?)",
+            `INSERT INTO schools (\`${school.name}\`, \`${school.code || "school_code"}\`) VALUES (?, ?)`,
             [normalizedSchoolName, schoolCode || "SCH"],
           );
           schoolId = newSchoolResult.insertId;

@@ -111,7 +111,8 @@ const resolveEmployeeSchemaInfo = async () => {
          'id', 'first_name', 'firstName', 'middle_name', 'middleName',
          'last_name', 'lastName', 'email', 'birthdate', 'dateOfBirth',
          'district', 'work_district', 'age', 'school_id',
-         'is_archived', 'on_leave', 'on_leave_from', 'on_leave_until'
+         'is_archived', 'archived_at', 'archived_by', 'archived_reason',
+         'on_leave', 'on_leave_from', 'on_leave_until'
        )`,
   );
 
@@ -139,6 +140,9 @@ const resolveEmployeeSchemaInfo = async () => {
     age: "age",
     schoolId: "school_id",
     isArchived: columns.has("is_archived") ? "is_archived" : null,
+    archivedAt: columns.has("archived_at") ? "archived_at" : null,
+    archivedBy: columns.has("archived_by") ? "archived_by" : null,
+    archivedReason: columns.has("archived_reason") ? "archived_reason" : null,
     onLeave: columns.has("on_leave") ? "on_leave" : null,
     onLeaveFrom: columns.has("on_leave_from") ? "on_leave_from" : null,
     onLeaveUntil: columns.has("on_leave_until") ? "on_leave_until" : null,
@@ -184,6 +188,9 @@ const buildEmployeeSelectWithAge = (employee, school) => `
   employees.sex_id,
   employees.school_id,
   employees.is_archived,
+  ${employee.archivedAt ? `DATE_FORMAT(employees.${employee.archivedAt}, '%Y-%m-%d %H:%i:%s')` : "NULL"} AS archived_at,
+  ${employee.archivedBy ? `employees.${employee.archivedBy}` : "NULL"} AS archived_by,
+  ${employee.archivedReason ? `employees.${employee.archivedReason}` : "NULL"} AS archived_reason,
   employees.on_leave,
   employees.on_leave_from,
   employees.on_leave_until,
@@ -239,6 +246,9 @@ const buildEmployeeSelectWithAge = (employee, school) => `
   employees.age,
   employees.school_id,
   employees.is_archived,
+  ${employee.archivedAt ? `DATE_FORMAT(employees.${employee.archivedAt}, '%Y-%m-%d %H:%i:%s')` : "NULL"} AS archived_at,
+  ${employee.archivedBy ? `employees.${employee.archivedBy}` : "NULL"} AS archived_by,
+  ${employee.archivedReason ? `employees.${employee.archivedReason}` : "NULL"} AS archived_reason,
   employees.on_leave,
   employees.on_leave_from,
   employees.on_leave_until,
@@ -665,12 +675,18 @@ const Employee = {
     }
 
     if (retirement === "retirable") {
+      const ageCalc = employee.table === "emppersonalinfo"
+        ? "TIMESTAMPDIFF(YEAR, STR_TO_DATE(employees.dateOfBirth, '%m/%d/%Y'), CURDATE())"
+        : `TIMESTAMPDIFF(YEAR, employees.${employee.birthdate}, CURDATE())`;
       whereParts.push(
-        `COALESCE(employees.${employee.age}, TIMESTAMPDIFF(YEAR, employees.${employee.birthdate}, CURDATE())) >= 60 AND COALESCE(employees.${employee.age}, TIMESTAMPDIFF(YEAR, employees.${employee.birthdate}, CURDATE())) < 65`,
+        `COALESCE(employees.${employee.age}, ${ageCalc}) >= 60 AND COALESCE(employees.${employee.age}, ${ageCalc}) < 65`,
       );
     } else if (retirement === "mandatory") {
+      const ageCalc = employee.table === "emppersonalinfo"
+        ? "TIMESTAMPDIFF(YEAR, STR_TO_DATE(employees.dateOfBirth, '%m/%d/%Y'), CURDATE())"
+        : `TIMESTAMPDIFF(YEAR, employees.${employee.birthdate}, CURDATE())`;
       whereParts.push(
-        `COALESCE(employees.${employee.age}, TIMESTAMPDIFF(YEAR, employees.${employee.birthdate}, CURDATE())) >= 65`,
+        `COALESCE(employees.${employee.age}, ${ageCalc}) >= 65`,
       );
     }
 
@@ -680,27 +696,24 @@ const Employee = {
     const orderClause = ` ORDER BY employees.${employee.firstName} ${sortOrder}, employees.${employee.lastName} ${sortOrder}, employees.id ASC`;
 
     if (!page) {
+      const query = `SELECT ${buildEmployeeSelectWithAge(employee, school)} ${baseQuery}${orderClause}`;
       const [rows] = await pool
         .promise()
-        .query(
-          `SELECT ${buildEmployeeSelectWithAge(employee, school)} ${baseQuery}${orderClause}`,
-          params,
-        );
+        .query(query, params);
       return rows;
     }
 
     const offset = (page - 1) * pageSize;
 
+    const countQuery = `SELECT COUNT(1) as total ${baseQuery}`;
     const [[{ total }]] = await pool
       .promise()
-      .query(`SELECT COUNT(1) as total ${baseQuery}`, params);
+      .query(countQuery, params);
 
+    const dataQuery = `SELECT ${buildEmployeeSelectWithAge(employee, school)} ${baseQuery}${orderClause} LIMIT ? OFFSET ?`;
     const [rows] = await pool
       .promise()
-      .query(
-        `SELECT ${buildEmployeeSelectWithAge(employee, school)} ${baseQuery}${orderClause} LIMIT ? OFFSET ?`,
-        [...params, pageSize, offset],
-      );
+      .query(dataQuery, [...params, pageSize, offset]);
 
     return { data: rows, total: Number(total), page, pageSize };
   },
@@ -1251,7 +1264,12 @@ const Employee = {
 
     const [result] = await pool
       .promise()
-      .query(sql, [on_leave_from || null, on_leave_until || null, reason || null, id]);
+      .query(sql, [
+        on_leave_from || null,
+        on_leave_until || null,
+        reason || null,
+        id,
+      ]);
 
     return result;
   },

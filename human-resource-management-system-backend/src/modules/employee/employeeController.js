@@ -75,8 +75,9 @@ const getAllEmployees = async (req, res) => {
         : toBoolean(on_leave);
 
     const requestedSchoolId = school_id ? Number(school_id) : null;
+    const userSchoolId = getScopedSchoolId(req);
     const scopedSchoolId = isSchoolScopedWriteRole(req.user?.role)
-      ? getScopedSchoolId(req)
+      ? userSchoolId
       : requestedSchoolId;
 
     if (isSchoolScopedWriteRole(req.user?.role) && !scopedSchoolId) {
@@ -97,6 +98,7 @@ const getAllEmployees = async (req, res) => {
       onLeave,
       schoolId: scopedSchoolId,
     };
+    
     const results = await Employee.getAll(filters);
 
     if (!filters.page) return res.status(200).json({ data: results });
@@ -120,6 +122,16 @@ const getEmployeeById = async (req, res) => {
     });
     if (!result) return res.status(404).json({ message: "Employee not found" });
 
+    // Check school permission for admin and data encoder
+    if (isSchoolScopedWriteRole(req.user?.role)) {
+      const userSchoolId = getScopedSchoolId(req);
+      if (!userSchoolId || !isSameSchool(userSchoolId, result.school_id)) {
+        return res.status(403).json({
+          message: "Forbidden: You do not have permission to access this resource",
+        });
+      }
+    }
+
     if (result.is_archived && result.archived_by) {
       const [archiverRows] = await pool
         .promise()
@@ -140,15 +152,6 @@ const getEmployeeById = async (req, res) => {
       }
     }
 
-    if (isSchoolScopedWriteRole(req.user?.role)) {
-      if (!isSameSchool(req.user?.school_id, result.school_id)) {
-        return res.status(403).json({
-          message:
-            "You can only view employee records under your assigned school",
-        });
-      }
-    }
-
     res.status(200).json({ data: result });
   } catch (err) {
     res
@@ -160,9 +163,11 @@ const getEmployeeById = async (req, res) => {
 const getEmployeesBySchool = async (req, res) => {
   try {
     const requestedSchoolId = Number(req.params.school_id);
+    const userSchoolId = getScopedSchoolId(req);
+    
     if (
       isSchoolScopedWriteRole(req.user?.role) &&
-      !isSameSchool(req.user?.school_id, requestedSchoolId)
+      !isSameSchool(userSchoolId, requestedSchoolId)
     ) {
       return res.status(403).json({
         message:
@@ -185,12 +190,22 @@ const getEmployeesBySchool = async (req, res) => {
       letter: req.query?.letter || null,
       retirement: req.query?.retirement || null,
       sortOrder: req.query?.sortOrder || null,
+      page: req.query?.page ? Number(req.query.page) : undefined,
+      pageSize: req.query?.pageSize ? Number(req.query.pageSize) : undefined,
       includeArchived,
       onLeave,
+      schoolId: requestedSchoolId,
     };
 
-    const results = await Employee.getBySchool(requestedSchoolId, filters);
-    res.status(200).json({ data: results });
+    const results = await Employee.getAll(filters);
+    
+    if (!filters.page) return res.status(200).json({ data: results });
+    return res.status(200).json({
+      data: results.data,
+      total: results.total,
+      page: results.page,
+      pageSize: results.pageSize,
+    });
   } catch (err) {
     res
       .status(500)

@@ -21,6 +21,7 @@ import PrintableLeaveCard, {
   createLeaveCardFileName,
   downloadLeaveCardPdf,
 } from "../PrintableLeaveCard";
+import ToastMessage from "../../../components/ToastMessage";
 import {
   createLeave,
   deleteLeave,
@@ -63,6 +64,8 @@ export default function LeaveManagementModal({
   const [pendingLeaveStatus, setPendingLeaveStatus] = useState<boolean | null>(
     null,
   );
+  const [leaveStatusToastVisible, setLeaveStatusToastVisible] = useState(false);
+  const [leaveStatusToastMessage, setLeaveStatusToastMessage] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -193,6 +196,12 @@ export default function LeaveManagementModal({
       }
 
       setIsMarkedOnLeave(nextChecked);
+      setLeaveStatusToastMessage(
+        nextChecked
+          ? "Employee has been marked as on leave."
+          : "Employee has been unmarked as on leave.",
+      );
+      setLeaveStatusToastVisible(true);
       onLeaveStatusChanged?.();
     } catch (err) {
       setIsMarkedOnLeave(previousChecked);
@@ -547,7 +556,9 @@ export default function LeaveManagementModal({
                   </span>
                 </p>
                 {leaveStatusError && (
-                  <p className="mt-2 text-sm text-red-500">{leaveStatusError}</p>
+                  <p className="mt-2 text-sm text-red-500">
+                    {leaveStatusError}
+                  </p>
                 )}
               </div>
             </div>
@@ -823,6 +834,15 @@ export default function LeaveManagementModal({
         }? This action cannot be undone.`}
         confirmLabel={`Delete (${selectedHistoryIds.size})`}
         cancelLabel="Cancel"
+      />
+
+      <ToastMessage
+        isVisible={leaveStatusToastVisible}
+        title="Leave Status Updated"
+        message={leaveStatusToastMessage}
+        variant="success"
+        onClose={() => setLeaveStatusToastVisible(false)}
+        autoCloseDuration={2000}
       />
     </div>
   );

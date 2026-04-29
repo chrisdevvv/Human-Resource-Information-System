@@ -13,6 +13,24 @@ const toDbRole = (role) => {
   return "data_encoder";
 };
 
+const resolveSchoolSchemaInfo = async () => {
+  const [rows] = await pool.promise().query(
+    `SELECT COLUMN_NAME AS column_name
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'schools'
+       AND COLUMN_NAME IN ('schoolId', 'id', 'schoolName', 'school_name', 'school_code')`,
+  );
+
+  const columns = new Set(rows.map((row) => row.column_name));
+
+  return {
+    id: columns.has("schoolId") ? "schoolId" : "id",
+    name: columns.has("schoolName") ? "schoolName" : "school_name",
+    code: columns.has("school_code") ? "school_code" : null,
+  };
+};
+
 const Registration = {
   getAll: async (filters = {}, options = {}, pagination) => {
     const {
@@ -113,19 +131,22 @@ const Registration = {
   },
 
   getSchoolNameById: async (school_id) => {
+    const school = await resolveSchoolSchemaInfo();
     const [rows] = await pool
       .promise()
-      .query("SELECT school_name FROM schools WHERE schoolId = ? LIMIT 1", [
-        school_id,
-      ]);
+      .query(
+        `SELECT \`${school.name}\` AS school_name FROM schools WHERE \`${school.id}\` = ? LIMIT 1`,
+        [school_id],
+      );
     return rows[0]?.school_name || null;
   },
 
   getReviewerScopeById: async (user_id) => {
+    const school = await resolveSchoolSchemaInfo();
     const [rows] = await pool.promise().query(
-      `SELECT u.id, u.role, u.school_id, s.school_name
+      `SELECT u.id, u.role, u.school_id, s.\`${school.name}\` AS school_name
        FROM users u
-        LEFT JOIN schools s ON u.school_id = s.schoolId
+        LEFT JOIN schools s ON u.school_id = s.\`${school.id}\`
        WHERE u.id = ?
        LIMIT 1`,
       [user_id],
@@ -142,6 +163,7 @@ const Registration = {
     const conn = await pool.promise().getConnection();
     try {
       await conn.beginTransaction();
+      const school = await resolveSchoolSchemaInfo();
 
       const [rows] = await conn.query(
         "SELECT * FROM registration_requests WHERE id = ? AND status = ?",
@@ -157,20 +179,27 @@ const Registration = {
       // Look up school by name; create it if it doesn't exist yet
       let school_id;
       const [schoolRows] = await conn.query(
-        "SELECT schoolId FROM schools WHERE school_name = ? LIMIT 1",
+        `SELECT \`${school.id}\` AS school_id FROM schools WHERE \`${school.name}\` = ? LIMIT 1`,
         [request.school_name.trim()],
       );
       if (schoolRows.length > 0) {
-        school_id = schoolRows[0].schoolId;
+        school_id = schoolRows[0].school_id;
       } else {
         const school_code = request.school_name
           .trim()
           .split(/\s+/)
           .map((word) => word[0].toUpperCase())
           .join("");
+        const schoolColumns = [`\`${school.name}\``];
+        const schoolValues = [request.school_name.trim()];
+
+        if (school.code) {
+          schoolColumns.push(`\`${school.code}\``);
+          schoolValues.push(school_code);
+        }
         const [newSchool] = await conn.query(
-          "INSERT INTO schools (school_name, school_code) VALUES (?, ?)",
-          [request.school_name.trim(), school_code],
+          `INSERT INTO schools (${schoolColumns.join(", ")}) VALUES (${schoolColumns.map(() => "?").join(", ")})`,
+          school.code ? [...schoolValues] : [request.school_name.trim()],
         );
         school_id = newSchool.insertId;
       }
