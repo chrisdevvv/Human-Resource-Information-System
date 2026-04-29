@@ -488,7 +488,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
               <div className="grid gap-3 sm:grid-cols-2 lg:flex lg:flex-row lg:items-center">
                 <button
                   onClick={() => setShowAddUserModal(true)}
-                  className="inline-flex items-center justify-center gap-1 px-3 py-2 sm:py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium cursor-pointer whitespace-nowrap shrink-0"
+                  className="inline-flex items-center justify-center gap-1 px-3 py-2 sm:py-1.5 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition text-sm font-medium cursor-pointer whitespace-nowrap shrink-0"
                 >
                   <UserPlus size={14} />
                   Add User
