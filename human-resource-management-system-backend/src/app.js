@@ -1320,7 +1320,9 @@ app.get(
     try {
       const [rows] = await pool
         .promise()
-        .query("SELECT id, districtName AS district_name FROM districts ORDER BY id ASC");
+        .query(
+          "SELECT districtId AS id, districtName AS district_name FROM districts ORDER BY districtId ASC",
+        );
       return res.status(200).json({ data: rows });
     } catch (err) {
       return res.status(500).json({
@@ -1341,7 +1343,7 @@ app.post(
       const districtName = req.body.district_name.trim();
       const [existingRows] = await pool
         .promise()
-        .query("SELECT id FROM districts WHERE districtName = ? LIMIT 1", [
+        .query("SELECT districtId AS id FROM districts WHERE districtName = ? LIMIT 1", [
           districtName,
         ]);
 
@@ -1377,7 +1379,7 @@ app.delete(
     try {
       const [existingRows] = await pool
         .promise()
-        .query("SELECT id, districtName AS district_name FROM districts WHERE id = ? LIMIT 1", [
+        .query("SELECT districtId AS id, districtName AS district_name FROM districts WHERE districtId = ? LIMIT 1", [
           req.params.id,
         ]);
 
@@ -1403,7 +1405,7 @@ app.delete(
 
       await pool
         .promise()
-        .query("DELETE FROM districts WHERE id = ?", [req.params.id]);
+        .query("DELETE FROM districts WHERE districtId = ?", [req.params.id]);
 
       return res.status(200).json({
         message: "District deleted successfully",
