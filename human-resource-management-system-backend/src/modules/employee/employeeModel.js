@@ -576,9 +576,6 @@ const Employee = {
     const whereParts = [];
     const params = [];
 
-    console.log('[Employee.getAll] Input filters:', filters);
-    console.log('[Employee.getAll] Schema info:', { employee: employee.table, schoolId: employee.schoolId });
-
     const normalizeEmployeeTypeForFilter = (value) => {
       if (typeof value !== "string") return null;
       const normalized = value
@@ -625,7 +622,6 @@ const Employee = {
     if (filters.schoolId) {
       whereParts.push("employees.school_id = ?");
       params.push(filters.schoolId);
-      console.log('[Employee.getAll] Adding school filter:', filters.schoolId);
     }
 
     if (employeeType) {
@@ -693,34 +689,25 @@ const Employee = {
     const baseQuery = `FROM ${employee.table} employees LEFT JOIN schools ON employees.school_id = schools.${school.id} LEFT JOIN work_information wi ON wi.employee_id = employees.id ${whereClause}`;
     const orderClause = ` ORDER BY employees.${employee.firstName} ${sortOrder}, employees.${employee.lastName} ${sortOrder}, employees.id ASC`;
 
-    console.log('[Employee.getAll] WHERE clause:', whereClause);
-    console.log('[Employee.getAll] Params:', params);
-
     if (!page) {
       const query = `SELECT ${buildEmployeeSelectWithAge(employee, school)} ${baseQuery}${orderClause}`;
-      console.log('[Employee.getAll] Executing non-paginated query');
       const [rows] = await pool
         .promise()
         .query(query, params);
-      console.log('[Employee.getAll] Non-paginated results count:', rows.length);
       return rows;
     }
 
     const offset = (page - 1) * pageSize;
 
     const countQuery = `SELECT COUNT(1) as total ${baseQuery}`;
-    console.log('[Employee.getAll] Count query:', countQuery);
     const [[{ total }]] = await pool
       .promise()
       .query(countQuery, params);
-    console.log('[Employee.getAll] Total count:', total);
 
     const dataQuery = `SELECT ${buildEmployeeSelectWithAge(employee, school)} ${baseQuery}${orderClause} LIMIT ? OFFSET ?`;
-    console.log('[Employee.getAll] Data query with LIMIT', pageSize, 'OFFSET', offset);
     const [rows] = await pool
       .promise()
       .query(dataQuery, [...params, pageSize, offset]);
-    console.log('[Employee.getAll] Paginated results count:', rows.length);
 
     return { data: rows, total: Number(total), page, pageSize };
   },

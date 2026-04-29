@@ -80,14 +80,6 @@ const getAllEmployees = async (req, res) => {
       ? userSchoolId
       : requestedSchoolId;
 
-    console.log('[getAllEmployees] Debug Info:', {
-      userRole: req.user?.role,
-      userSchoolId,
-      requestedSchoolId,
-      scopedSchoolId,
-      isSchoolScoped: isSchoolScopedWriteRole(req.user?.role)
-    });
-
     if (isSchoolScopedWriteRole(req.user?.role) && !scopedSchoolId) {
       return res.status(403).json({
         message: "Your account is not assigned to a valid school",
@@ -107,17 +99,7 @@ const getAllEmployees = async (req, res) => {
       schoolId: scopedSchoolId,
     };
     
-    console.log('[getAllEmployees] Filters:', filters);
-    
     const results = await Employee.getAll(filters);
-    
-    console.log('[getAllEmployees] Results:', {
-      hasData: !!results,
-      isArray: Array.isArray(results),
-      isPaginated: !!results?.data,
-      count: Array.isArray(results) ? results.length : results?.data?.length || 0,
-      total: results?.total
-    });
 
     if (!filters.page) return res.status(200).json({ data: results });
     return res.status(200).json({
@@ -127,7 +109,6 @@ const getAllEmployees = async (req, res) => {
       pageSize: results.pageSize,
     });
   } catch (err) {
-    console.error('[getAllEmployees] Error:', err);
     res
       .status(500)
       .json({ message: "Error retrieving employees", error: err.message });
@@ -184,13 +165,6 @@ const getEmployeesBySchool = async (req, res) => {
     const requestedSchoolId = Number(req.params.school_id);
     const userSchoolId = getScopedSchoolId(req);
     
-    console.log('[getEmployeesBySchool] Debug Info:', {
-      userRole: req.user?.role,
-      userSchoolId,
-      requestedSchoolId,
-      isSchoolScoped: isSchoolScopedWriteRole(req.user?.role)
-    });
-    
     if (
       isSchoolScopedWriteRole(req.user?.role) &&
       !isSameSchool(userSchoolId, requestedSchoolId)
@@ -222,18 +196,8 @@ const getEmployeesBySchool = async (req, res) => {
       onLeave,
       schoolId: requestedSchoolId,
     };
-    
-    console.log('[getEmployeesBySchool] Filters:', filters);
 
     const results = await Employee.getAll(filters);
-    
-    console.log('[getEmployeesBySchool] Results:', {
-      hasData: !!results,
-      isArray: Array.isArray(results),
-      isPaginated: !!results?.data,
-      count: Array.isArray(results) ? results.length : results?.data?.length || 0,
-      total: results?.total
-    });
     
     if (!filters.page) return res.status(200).json({ data: results });
     return res.status(200).json({
@@ -243,7 +207,6 @@ const getEmployeesBySchool = async (req, res) => {
       pageSize: results.pageSize,
     });
   } catch (err) {
-    console.error('[getEmployeesBySchool] Error:', err);
     res
       .status(500)
       .json({ message: "Error retrieving employees", error: err.message });

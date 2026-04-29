@@ -343,17 +343,10 @@ export default function EmployeesListLayout() {
         query.set("retirement", retirementFilter);
       }
       if (letterFilter !== "ALL") query.set("letter", letterFilter);
-      query.set("sortOrder", sortOrder.toUpperCase());
+      query.set("sortOrder", sortOrder.toLowerCase());
       query.set("page", String(currentPage));
       query.set("pageSize", String(itemsPerPage));
       query.set("include_archived", "false");
-
-      console.log("[fetchEmployees] Debug Info:", {
-        isSchoolScopedRole,
-        currentUserSchoolId,
-        currentUserRole,
-        schoolFilter,
-      });
 
       const endpoint = isSchoolScopedRole
         ? currentUserSchoolId
@@ -362,8 +355,6 @@ export default function EmployeesListLayout() {
         : `${API_BASE}/api/employees${
             schoolFilter !== "ALL" ? `?school_id=${schoolFilter}&` : "?"
           }${query.toString()}`;
-
-      console.log("[fetchEmployees] Endpoint:", endpoint);
 
       if (!endpoint) {
         throw new Error("Your account is not assigned to a valid school.");
@@ -375,18 +366,11 @@ export default function EmployeesListLayout() {
         message?: string;
       }>(endpoint);
 
-      console.log("[fetchEmployees] Result:", {
-        hasData: !!result?.data,
-        dataLength: result?.data?.length || 0,
-        total: result?.total,
-      });
-
       const mapped = (result.data || []).map(toEmployeeRecord);
       setEmployeeData(mapped);
       setTotalItems(result.total || 0);
       setEmployeeError(null);
     } catch (err) {
-      console.error("[fetchEmployees] Error:", err);
       setEmployeeError(
         err instanceof Error ? err.message : "An error occurred",
       );
