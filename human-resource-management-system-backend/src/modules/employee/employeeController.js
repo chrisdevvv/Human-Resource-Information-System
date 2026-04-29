@@ -252,9 +252,11 @@ const createEmployee = async (req, res) => {
 
     const [schoolRows] = await pool
       .promise()
-      .query("SELECT schoolId FROM schools WHERE schoolId = ? LIMIT 1", [
-        req.body.school_id,
-      ]);
+      .query(
+        // handle schemas that use either `schoolId` or `id` as the PK
+        "SELECT 1 FROM schools WHERE schoolId = ? OR id = ? LIMIT 1",
+        [req.body.school_id, req.body.school_id],
+      );
 
     if (!schoolRows.length) {
       return res.status(400).json({
