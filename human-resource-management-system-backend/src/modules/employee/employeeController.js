@@ -382,7 +382,7 @@ const updateEmployee = async (req, res) => {
     const [districtRows] = await pool
       .promise()
       .query(
-        "SELECT district_name FROM districts WHERE LOWER(TRIM(district_name)) = LOWER(TRIM(?)) LIMIT 1",
+        "SELECT districtName AS district_name FROM districts WHERE LOWER(TRIM(districtName)) = LOWER(TRIM(?)) LIMIT 1",
         [requestedDistrict],
       );
 
