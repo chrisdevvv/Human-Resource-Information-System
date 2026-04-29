@@ -675,12 +675,18 @@ const Employee = {
     }
 
     if (retirement === "retirable") {
+      const ageCalc = employee.table === "emppersonalinfo"
+        ? "TIMESTAMPDIFF(YEAR, STR_TO_DATE(employees.dateOfBirth, '%m/%d/%Y'), CURDATE())"
+        : `TIMESTAMPDIFF(YEAR, employees.${employee.birthdate}, CURDATE())`;
       whereParts.push(
-        `COALESCE(employees.${employee.age}, TIMESTAMPDIFF(YEAR, employees.${employee.birthdate}, CURDATE())) >= 60 AND COALESCE(employees.${employee.age}, TIMESTAMPDIFF(YEAR, employees.${employee.birthdate}, CURDATE())) < 65`,
+        `COALESCE(employees.${employee.age}, ${ageCalc}) >= 60 AND COALESCE(employees.${employee.age}, ${ageCalc}) < 65`,
       );
     } else if (retirement === "mandatory") {
+      const ageCalc = employee.table === "emppersonalinfo"
+        ? "TIMESTAMPDIFF(YEAR, STR_TO_DATE(employees.dateOfBirth, '%m/%d/%Y'), CURDATE())"
+        : `TIMESTAMPDIFF(YEAR, employees.${employee.birthdate}, CURDATE())`;
       whereParts.push(
-        `COALESCE(employees.${employee.age}, TIMESTAMPDIFF(YEAR, employees.${employee.birthdate}, CURDATE())) >= 65`,
+        `COALESCE(employees.${employee.age}, ${ageCalc}) >= 65`,
       );
     }
 

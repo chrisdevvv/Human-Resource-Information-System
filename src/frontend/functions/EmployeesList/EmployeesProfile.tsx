@@ -466,13 +466,8 @@ export default function EmployeesListLayout() {
   const filteredEmployees = useMemo(() => employeeData, [employeeData]);
 
   const schoolOptions = useMemo(() => {
-    const unique = new Map<string, string>();
-    allSchoolOptions.forEach((school) => {
-      if (school.name.trim())
-        unique.set(school.name.trim(), school.name.trim());
-    });
-    return Array.from(unique.values())
-      .map((name, idx) => ({ id: idx + 1, name }))
+    return allSchoolOptions
+      .filter((school) => school.name.trim())
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [allSchoolOptions]);
 
