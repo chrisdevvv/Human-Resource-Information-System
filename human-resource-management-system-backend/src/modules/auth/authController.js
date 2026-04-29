@@ -44,6 +44,24 @@ const normalizeBirthdate = (value) => {
   return date.toISOString().slice(0, 10);
 };
 
+const resolveSchoolSchemaInfo = async () => {
+  const [rows] = await pool.promise().query(
+    `SELECT COLUMN_NAME AS column_name
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'schools'
+       AND COLUMN_NAME IN ('schoolId', 'id', 'schoolName', 'school_name', 'school_code')`,
+  );
+
+  const columns = new Set(rows.map((row) => row.column_name));
+
+  return {
+    id: columns.has("schoolId") ? "schoolId" : "id",
+    name: columns.has("schoolName") ? "schoolName" : "school_name",
+    code: columns.has("school_code") ? "school_code" : null,
+  };
+};
+
 const getSourceIp = (req) => {
   const forwarded = req.headers["x-forwarded-for"];
   const rawIp =
@@ -187,6 +205,7 @@ const register = async (req, res) => {
   }
 
   try {
+    const school = await resolveSchoolSchemaInfo();
     const normalizedBirthdate = normalizeBirthdate(birthdate);
     if (!normalizedBirthdate) {
       return res.status(400).json({ message: "Valid birthdate is required" });
@@ -195,21 +214,15 @@ const register = async (req, res) => {
     // Add school to schools table if it doesn't exist yet
     const [existingSchool] = await pool
       .promise()
-      .query("SELECT schoolId FROM schools WHERE school_name = ? LIMIT 1", [
-        school_name.trim(),
-      ]);
+      .query(
+        `SELECT \`${school.id}\` AS school_id FROM schools WHERE \`${school.name}\` = ? LIMIT 1`,
+        [school_name.trim()],
+      );
     if (existingSchool.length === 0) {
-      const school_code = school_name
-        .trim()
-        .split(/\s+/)
-        .map((word) => word[0].toUpperCase())
-        .join("");
-      await pool
-        .promise()
-        .query("INSERT INTO schools (school_name, school_code) VALUES (?, ?)", [
-          school_name.trim(),
-          school_code,
-        ]);
+      return res.status(400).json({
+        message:
+          "Selected school is not available. Please choose a valid school from the list.",
+      });
     }
 
     // Block if a PENDING request already exists for this email
@@ -244,19 +257,21 @@ const register = async (req, res) => {
 
     console.log("REGISTER DB CHECK:", dbCheck);
 
-    const [result] = await pool.promise().query(
-      "INSERT INTO registration_requests (first_name, middle_name, last_name, email, password_hash, school_name, requested_role, birthdate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      [
-        first_name,
-        middle_name || null,
-        last_name,
-        email,
-        hashedPassword,
-        school_name.trim(),
-        requested_role || null,
-        normalizedBirthdate,
-      ],
-    );
+    const [result] = await pool
+      .promise()
+      .query(
+        "INSERT INTO registration_requests (first_name, middle_name, last_name, email, password_hash, school_name, requested_role, birthdate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          first_name,
+          middle_name || null,
+          last_name,
+          email,
+          hashedPassword,
+          school_name.trim(),
+          requested_role || null,
+          normalizedBirthdate,
+        ],
+      );
     // Fire-and-forget — email failure must not block the registration response
     const shouldSuppressPendingEmail =
       suppress_pending_email === true || suppress_pending_email === "true";

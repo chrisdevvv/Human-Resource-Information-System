@@ -21,10 +21,42 @@ import ViewEmployeeModal from "./EmployeeDetails/ViewEmployeeModal";
 import ToastMessage from "../../components/ToastMessage";
 import { archiveEmployee } from "../LeaveManagement/leaveApi";
 import { EmployeesProfileSkeleton } from "../../components/Skeleton/SkeletonLoaders";
-import {
-  getEServiceEmployees,
-  type EmployeePersonalInfoApi,
-} from "../eservice/eserviceApi";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+
+type SessionUser = {
+  role?: string;
+  school_id?: number | string | null;
+  schoolId?: number | string | null;
+};
+
+type EmployeeRecordApi = {
+  id: number;
+  first_name?: string | null;
+  firstName?: string | null;
+  middle_name?: string | null;
+  middleName?: string | null;
+  last_name?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  school_name?: string | null;
+  schoolName?: string | null;
+  school?: string | null;
+  school_id?: number | null;
+  employee_type?: string | null;
+  current_employee_type?: string | null;
+  resolved_employee_type?: string | null;
+  teacher_status?: string | null;
+  district?: string | null;
+  birthdate?: string | null;
+  dateOfBirth?: string | null;
+  created_at?: string | null;
+  archived_reason?: string | null;
+  civilStatus?: string | null;
+  civil_status?: string | null;
+  gender?: string | null;
+  sex?: string | null;
+};
 
 type EmployeeRecord = {
   id: number;
@@ -45,15 +77,66 @@ type EmployeeRecord = {
 
 type RetirementFilterValue = "ALL" | "retirable" | "mandatory";
 
-type SessionUser = {
-  role?: string;
-  school_id?: number | string | null;
-  schoolId?: number | string | null;
-};
-
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const EMPLOYEES_LIST_TAB_KEY = "employeesList:activeTab";
+const SCHOOL_ROLE_OPTIONS = ["ADMIN", "DATA_ENCODER"] as const;
+
+const normalizeRole = (value: unknown): string =>
+  String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .replace(/-/g, "_");
+
+const toPositiveNumber = (value: unknown): number | null => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
+const parseUserContext = () => {
+  const rawUser = localStorage.getItem("user");
+  if (!rawUser) {
+    return { role: "", schoolId: null as number | null };
+  }
+
+  try {
+    const parsed = JSON.parse(rawUser) as SessionUser;
+    return {
+      role: normalizeRole(parsed.role),
+      schoolId: toPositiveNumber(parsed.school_id ?? parsed.schoolId),
+    };
+  } catch {
+    return { role: "", schoolId: null as number | null };
+  }
+};
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("authToken");
+  if (!token) {
+    throw new Error("No authentication token found.");
+  }
+
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+};
+
+const parseApiBody = async <T extends { message?: string }>(
+  response: Response,
+): Promise<T> => {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.toLowerCase().includes("application/json")) {
+    return (await response.json().catch(() => ({}))) as T;
+  }
+
+  const text = await response.text().catch(() => "");
+  return {
+    message: text || undefined,
+  } as T;
+};
 
 const getInitialEmployeesTab = (): "list" | "archived" => {
   if (typeof window === "undefined") {
@@ -98,13 +181,12 @@ const normalizeEmployeeType = (
   return "non-teaching";
 };
 
-const toEmployeeRecord = (item: EmployeePersonalInfoApi): EmployeeRecord => {
-  // Maps emppersonalinfo API response to local EmployeeRecord type
-  // Source: eservice/emppersonalinfo database
-  const firstName = item.firstName?.trim() || "Unknown";
-  const rawMiddleName = item.middleName?.trim() || "";
+const toEmployeeRecord = (item: EmployeeRecordApi): EmployeeRecord => {
+  const firstName = item.firstName?.trim() || item.first_name?.trim() || "Unknown";
+  const rawMiddleName =
+    item.middleName?.trim() || item.middle_name?.trim() || "";
   const middleName = rawMiddleName.toUpperCase() === "N/A" ? "" : rawMiddleName;
-  const lastName = item.lastName?.trim() || "Employee";
+  const lastName = item.lastName?.trim() || item.last_name?.trim() || "Employee";
   const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
 
   return {
@@ -114,17 +196,41 @@ const toEmployeeRecord = (item: EmployeePersonalInfoApi): EmployeeRecord => {
     lastName,
     fullName,
     employeeType: normalizeEmployeeType(
-      item.current_employee_type ?? item.employee_type,
+      item.resolved_employee_type ??
+        item.current_employee_type ??
+        item.employee_type ??
+        item.teacher_status,
     ),
-    teacherStatus: item.teacher_status?.trim() || "N/A",
+    teacherStatus:
+      item.teacher_status?.trim() ||
+      item.resolved_employee_type?.trim() ||
+      item.current_employee_type?.trim() ||
+      item.employee_type?.trim() ||
+      "N/A",
     email: item.email?.trim() || "",
-    schoolId: null,
+    schoolId: item.school_id ?? null,
     district: item.district?.trim() || "",
-    schoolName: item.school?.trim() || "",
+    schoolName:
+      item.schoolName?.trim() || item.school_name?.trim() || item.school?.trim() || "",
     civilStatus: item.civilStatus?.trim() || "",
     sex: item.gender?.trim() || "",
-    birthdate: item.dateOfBirth?.trim() || "",
+    birthdate: item.dateOfBirth?.trim() || item.birthdate?.trim() || "",
   };
+};
+
+const fetchJson = async <T extends { message?: string }>(url: string) => {
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  const body = await parseApiBody<T>(response);
+
+  if (!response.ok) {
+    throw new Error(body.message || `Request failed (HTTP ${response.status}).`);
+  }
+
+  return body;
 };
 
 const getStatusClasses = (status?: string | null) => {
@@ -196,26 +302,70 @@ export default function EmployeesListLayout() {
   const [showAddSuccessToast, setShowAddSuccessToast] = useState(false);
   const [addSuccessMessage, setAddSuccessMessage] = useState("");
   const [currentUserRole, setCurrentUserRole] = useState("");
+  const [currentUserSchoolId, setCurrentUserSchoolId] = useState<
+    number | null
+  >(null);
 
   useEffect(() => {
-    setCurrentUserRole(getCurrentUserRole());
+    const { role, schoolId } = parseUserContext();
+    setCurrentUserRole(role);
+    setCurrentUserSchoolId(schoolId);
+
+    if (SCHOOL_ROLE_OPTIONS.includes(role as (typeof SCHOOL_ROLE_OPTIONS)[number])) {
+      setSchoolFilter(schoolId ? String(schoolId) : "ALL");
+    }
   }, []);
+
+  const isSuperAdmin = currentUserRole === "SUPER_ADMIN";
+  const isSchoolScopedRole = SCHOOL_ROLE_OPTIONS.includes(
+    currentUserRole as (typeof SCHOOL_ROLE_OPTIONS)[number],
+  );
 
   const fetchEmployees = async (showSpinner = true) => {
     try {
       if (showSpinner) setEmployeeLoading(true);
 
-      const result = await getEServiceEmployees({
-        search: searchQuery || undefined,
-        school: schoolFilter === "ALL" ? undefined : schoolFilter,
-        employeeType:
-          employeeTypeFilter === "ALL" ? undefined : employeeTypeFilter,
-        retirementStatus:
-          retirementFilter === "ALL" ? undefined : retirementFilter,
-        letter: letterFilter === "ALL" ? undefined : letterFilter,
-        sortOrder: sortOrder.toUpperCase() as "ASC" | "DESC",
-        page: currentPage,
-        pageSize: itemsPerPage,
+      const query = new URLSearchParams();
+      if (searchQuery.trim()) query.set("search", searchQuery.trim());
+      if (employeeTypeFilter !== "ALL") {
+        query.set("employee_type", employeeTypeFilter);
+      }
+      if (retirementFilter !== "ALL") {
+        query.set("retirement", retirementFilter);
+      }
+      if (letterFilter !== "ALL") query.set("letter", letterFilter);
+      query.set("sortOrder", sortOrder.toUpperCase());
+      query.set("page", String(currentPage));
+      query.set("pageSize", String(itemsPerPage));
+      query.set("include_archived", "false");
+
+      console.log('[fetchEmployees] Debug Info:', {
+        isSchoolScopedRole,
+        currentUserSchoolId,
+        currentUserRole,
+        schoolFilter
+      });
+
+      const endpoint = isSchoolScopedRole
+        ? currentUserSchoolId
+          ? `${API_BASE}/api/employees/school/${currentUserSchoolId}?${query.toString()}`
+          : null
+        : `${API_BASE}/api/employees${
+            schoolFilter !== "ALL" ? `?school_id=${schoolFilter}&` : "?"
+          }${query.toString()}`;
+
+      console.log('[fetchEmployees] Endpoint:', endpoint);
+
+      if (!endpoint) {
+        throw new Error("Your account is not assigned to a valid school.");
+      }
+
+      const result = await fetchJson<{ data?: EmployeeRecordApi[]; total?: number; message?: string }>(endpoint);
+
+      console.log('[fetchEmployees] Result:', {
+        hasData: !!result?.data,
+        dataLength: result?.data?.length || 0,
+        total: result?.total
       });
 
       const mapped = (result.data || []).map(toEmployeeRecord);
@@ -223,6 +373,7 @@ export default function EmployeesListLayout() {
       setTotalItems(result.total || 0);
       setEmployeeError(null);
     } catch (err) {
+      console.error('[fetchEmployees] Error:', err);
       setEmployeeError(
         err instanceof Error ? err.message : "An error occurred",
       );
@@ -236,38 +387,32 @@ export default function EmployeesListLayout() {
   };
 
   const fetchAllSchools = async () => {
-    if (currentUserRole !== "SUPER_ADMIN") {
+    if (!isSuperAdmin) {
       setAllSchoolOptions([]);
       return;
     }
 
     try {
-      const unique = new Map<string, string>();
-      const pageSize = 200;
-      let page = 1;
-      let totalPages = 1;
+      const result = await fetchJson<{
+        data?: Array<{
+          id?: number | string;
+          school_name?: string;
+          schoolName?: string;
+          school?: string;
+        }>;
+        message?: string;
+      }>(`${API_BASE}/api/schools`);
 
-      do {
-        const result = await getEServiceEmployees({
-          search: "",
-          sortOrder: "ASC",
-          page,
-          pageSize,
-        });
-
-        (result.data || []).forEach((item) => {
-          if (item.school?.trim()) {
-            unique.set(item.school.trim(), item.school.trim());
-          }
-        });
-
-        const total = Number(result.total || 0);
-        totalPages = Math.max(1, Math.ceil(total / pageSize));
-        page += 1;
-      } while (page <= totalPages);
-
-      const schools = Array.from(unique.values())
-        .map((name, idx) => ({ id: idx + 1, name }))
+      const schools = (result.data || [])
+        .map((school) => ({
+          id: Number(school.id),
+          name:
+            school.schoolName?.trim() ||
+            school.school_name?.trim() ||
+            school.school?.trim() ||
+            "",
+        }))
+        .filter((school) => Number.isFinite(school.id) && school.id > 0 && school.name)
         .sort((a, b) => a.name.localeCompare(b.name));
 
       setAllSchoolOptions(schools);
@@ -371,7 +516,11 @@ export default function EmployeesListLayout() {
   const handleResetFilters = () => {
     setSearchQuery("");
     setEmployeeTypeFilter("ALL");
-    setSchoolFilter("ALL");
+    setSchoolFilter(
+      isSchoolScopedRole && currentUserSchoolId
+        ? String(currentUserSchoolId)
+        : "ALL",
+    );
     setLetterFilter("ALL");
     setRetirementFilter("ALL");
     setSortOrder("asc");
@@ -470,7 +619,7 @@ export default function EmployeesListLayout() {
   const hasActiveFilters =
     searchQuery.trim().length > 0 ||
     employeeTypeFilter !== "ALL" ||
-    schoolFilter !== "ALL" ||
+    (!isSchoolScopedRole && schoolFilter !== "ALL") ||
     letterFilter !== "ALL" ||
     retirementFilter !== "ALL" ||
     sortOrder !== "asc";

@@ -111,7 +111,8 @@ const resolveEmployeeSchemaInfo = async () => {
          'id', 'first_name', 'firstName', 'middle_name', 'middleName',
          'last_name', 'lastName', 'email', 'birthdate', 'dateOfBirth',
          'district', 'work_district', 'age', 'school_id',
-         'is_archived', 'on_leave', 'on_leave_from', 'on_leave_until'
+         'is_archived', 'archived_at', 'archived_by', 'archived_reason',
+         'on_leave', 'on_leave_from', 'on_leave_until'
        )`,
   );
 
@@ -139,6 +140,9 @@ const resolveEmployeeSchemaInfo = async () => {
     age: "age",
     schoolId: "school_id",
     isArchived: columns.has("is_archived") ? "is_archived" : null,
+    archivedAt: columns.has("archived_at") ? "archived_at" : null,
+    archivedBy: columns.has("archived_by") ? "archived_by" : null,
+    archivedReason: columns.has("archived_reason") ? "archived_reason" : null,
     onLeave: columns.has("on_leave") ? "on_leave" : null,
     onLeaveFrom: columns.has("on_leave_from") ? "on_leave_from" : null,
     onLeaveUntil: columns.has("on_leave_until") ? "on_leave_until" : null,
@@ -184,6 +188,9 @@ const buildEmployeeSelectWithAge = (employee, school) => `
   employees.sex_id,
   employees.school_id,
   employees.is_archived,
+  ${employee.archivedAt ? `DATE_FORMAT(employees.${employee.archivedAt}, '%Y-%m-%d %H:%i:%s')` : "NULL"} AS archived_at,
+  ${employee.archivedBy ? `employees.${employee.archivedBy}` : "NULL"} AS archived_by,
+  ${employee.archivedReason ? `employees.${employee.archivedReason}` : "NULL"} AS archived_reason,
   employees.on_leave,
   employees.on_leave_from,
   employees.on_leave_until,
@@ -239,6 +246,9 @@ const buildEmployeeSelectWithAge = (employee, school) => `
   employees.age,
   employees.school_id,
   employees.is_archived,
+  ${employee.archivedAt ? `DATE_FORMAT(employees.${employee.archivedAt}, '%Y-%m-%d %H:%i:%s')` : "NULL"} AS archived_at,
+  ${employee.archivedBy ? `employees.${employee.archivedBy}` : "NULL"} AS archived_by,
+  ${employee.archivedReason ? `employees.${employee.archivedReason}` : "NULL"} AS archived_reason,
   employees.on_leave,
   employees.on_leave_from,
   employees.on_leave_until,
@@ -566,6 +576,9 @@ const Employee = {
     const whereParts = [];
     const params = [];
 
+    console.log('[Employee.getAll] Input filters:', filters);
+    console.log('[Employee.getAll] Schema info:', { employee: employee.table, schoolId: employee.schoolId });
+
     const normalizeEmployeeTypeForFilter = (value) => {
       if (typeof value !== "string") return null;
       const normalized = value
@@ -612,6 +625,7 @@ const Employee = {
     if (filters.schoolId) {
       whereParts.push("employees.school_id = ?");
       params.push(filters.schoolId);
+      console.log('[Employee.getAll] Adding school filter:', filters.schoolId);
     }
 
     if (employeeType) {
@@ -679,28 +693,34 @@ const Employee = {
     const baseQuery = `FROM ${employee.table} employees LEFT JOIN schools ON employees.school_id = schools.${school.id} LEFT JOIN work_information wi ON wi.employee_id = employees.id ${whereClause}`;
     const orderClause = ` ORDER BY employees.${employee.firstName} ${sortOrder}, employees.${employee.lastName} ${sortOrder}, employees.id ASC`;
 
+    console.log('[Employee.getAll] WHERE clause:', whereClause);
+    console.log('[Employee.getAll] Params:', params);
+
     if (!page) {
+      const query = `SELECT ${buildEmployeeSelectWithAge(employee, school)} ${baseQuery}${orderClause}`;
+      console.log('[Employee.getAll] Executing non-paginated query');
       const [rows] = await pool
         .promise()
-        .query(
-          `SELECT ${buildEmployeeSelectWithAge(employee, school)} ${baseQuery}${orderClause}`,
-          params,
-        );
+        .query(query, params);
+      console.log('[Employee.getAll] Non-paginated results count:', rows.length);
       return rows;
     }
 
     const offset = (page - 1) * pageSize;
 
+    const countQuery = `SELECT COUNT(1) as total ${baseQuery}`;
+    console.log('[Employee.getAll] Count query:', countQuery);
     const [[{ total }]] = await pool
       .promise()
-      .query(`SELECT COUNT(1) as total ${baseQuery}`, params);
+      .query(countQuery, params);
+    console.log('[Employee.getAll] Total count:', total);
 
+    const dataQuery = `SELECT ${buildEmployeeSelectWithAge(employee, school)} ${baseQuery}${orderClause} LIMIT ? OFFSET ?`;
+    console.log('[Employee.getAll] Data query with LIMIT', pageSize, 'OFFSET', offset);
     const [rows] = await pool
       .promise()
-      .query(
-        `SELECT ${buildEmployeeSelectWithAge(employee, school)} ${baseQuery}${orderClause} LIMIT ? OFFSET ?`,
-        [...params, pageSize, offset],
-      );
+      .query(dataQuery, [...params, pageSize, offset]);
+    console.log('[Employee.getAll] Paginated results count:', rows.length);
 
     return { data: rows, total: Number(total), page, pageSize };
   },
@@ -1251,7 +1271,12 @@ const Employee = {
 
     const [result] = await pool
       .promise()
-      .query(sql, [on_leave_from || null, on_leave_until || null, reason || null, id]);
+      .query(sql, [
+        on_leave_from || null,
+        on_leave_until || null,
+        reason || null,
+        id,
+      ]);
 
     return result;
   },

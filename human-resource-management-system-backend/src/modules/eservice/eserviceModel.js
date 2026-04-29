@@ -81,6 +81,9 @@ const EService = {
     const whereParts = [];
     const params = [];
 
+    // Employee Profile tab should only show active records.
+    whereParts.push("COALESCE(e.is_archived, 0) = 0");
+
     if (search) {
       const like = `%${search}%`;
       whereParts.push(`

@@ -17,6 +17,11 @@ type LeaveRecord = {
   date_of_action?: string;
 };
 
+type DashboardEmployeeRecord = {
+  age?: number | string | null;
+  retirable?: string | null;
+};
+
 export type BacklogRecord = {
   id?: number;
   action?: string;
@@ -127,6 +132,34 @@ const fetchStatusCounts = async (
   return payload as EmployeeStatusCountsResponse;
 };
 
+const computeRetirementCounts = (
+  employees: DashboardEmployeeRecord[],
+): RetirementCounts => {
+  return employees.reduce<RetirementCounts>(
+    (counts, employee) => {
+      const retirableValue = String(employee.retirable || "")
+        .trim()
+        .toLowerCase();
+      const ageValue = Number(employee.age);
+
+      if (retirableValue === "mandatory retirement" || ageValue >= 65) {
+        counts.mandatory += 1;
+        return counts;
+      }
+
+      if (
+        retirableValue === "yes" ||
+        (Number.isFinite(ageValue) && ageValue >= 60)
+      ) {
+        counts.retirable += 1;
+      }
+
+      return counts;
+    },
+    { retirable: 0, mandatory: 0 },
+  );
+};
+
 const normalizeRole = (role: unknown) =>
   String(role || "")
     .trim()
@@ -177,7 +210,10 @@ export const useDashboardData = ({
   const [error, setError] = useState("");
   const [recentLogs, setRecentLogs] = useState<BacklogRecord[]>([]);
   const [canAccessDashboard, setCanAccessDashboard] = useState(false);
-  const [retirementCounts, setRetirementCounts] = useState<RetirementCounts>({ retirable: 0, mandatory: 0 });
+  const [retirementCounts, setRetirementCounts] = useState<RetirementCounts>({
+    retirable: 0,
+    mandatory: 0,
+  });
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -226,10 +262,8 @@ export const useDashboardData = ({
           schools,
           backlogs,
           employeeStatusCountsResponse,
-          eserviceEmployeesCount,
-          retirementData,
         ] = await Promise.all([
-          fetchApiList<Record<string, unknown>>(scopedEmployeesEndpoint, token),
+          fetchApiList<DashboardEmployeeRecord>(scopedEmployeesEndpoint, token),
           fetchApiList<Record<string, unknown>>(scopedUsersEndpoint, token),
           fetchApiList<LeaveRecord>("/api/leave", token),
           fetchApiList<Record<string, unknown>>(
@@ -243,24 +277,9 @@ export const useDashboardData = ({
             ? fetchApiList<BacklogRecord>("/api/backlogs", token)
             : Promise.resolve([]),
           fetchStatusCounts(statusCountsUrl, token),
-          fetch(`${API_BASE_URL}/api/eservice/employees/count`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-            .then((res) => res.json())
-            .then((data) => Number(data?.total || 0))
-            .catch(() => 0),
-          fetch(`${API_BASE_URL}/api/eservice/employees/retirement-counts`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-            .then((res) => res.json())
-            .then((data) => ({
-              retirable: Number(data?.data?.retirable || 0),
-              mandatory: Number(data?.data?.mandatory || 0),
-            }))
-            .catch(() => ({ retirable: 0, mandatory: 0 })),
         ]);
 
-        const totalEmployees = eserviceEmployeesCount;
+        const totalEmployees = employees.length;
         const totalUsers = users.length;
         const totalSchools = schools.length;
         const pendingRegistrations = pendingRegistrationsList.length;
@@ -268,6 +287,7 @@ export const useDashboardData = ({
           Number(employeeStatusCountsResponse?.data?.on_leave) || 0;
         const archivedEmployees =
           Number(employeeStatusCountsResponse?.data?.archived) || 0;
+        const scopedRetirementCounts = computeRetirementCounts(employees);
 
         const now = new Date();
         const currentMonth = now.getMonth();
@@ -312,7 +332,7 @@ export const useDashboardData = ({
           employeesOnLeave,
           archivedEmployees,
         });
-        setRetirementCounts(retirementData as RetirementCounts);
+        setRetirementCounts(scopedRetirementCounts);
         setRecentLogs(showRecentLogs ? backlogs.slice(0, 3) : []);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);

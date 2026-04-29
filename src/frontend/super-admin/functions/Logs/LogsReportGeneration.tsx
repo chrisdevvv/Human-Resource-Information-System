@@ -134,6 +134,26 @@ const LogsDataRow = React.memo(function LogsDataRow({
   index: number;
   rowRef?: (node: HTMLTableRowElement | null) => void;
 }) {
+  const roleLabelMap: Record<string, string> = {
+    SUPER_ADMIN: "Super Admin",
+    ADMIN: "Admin",
+    DATA_ENCODER: "Data Encoder",
+  };
+
+  const roleDisplay = (() => {
+    const normalized = String(row.role || "")
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, "_");
+    return (
+      roleLabelMap[normalized] ||
+      String(row.role || "")
+        .replace(/_/g, " ")
+        .toLowerCase()
+        .replace(/\b\w/g, (character) => character.toUpperCase())
+    );
+  })();
+
   return (
     <tr
       ref={rowRef}
@@ -158,7 +178,7 @@ const LogsDataRow = React.memo(function LogsDataRow({
         className="border px-1.5 py-1 align-top"
         style={{ borderColor: CARD_COLORS.black }}
       >
-        {row.role || "-"}
+        {roleDisplay || "-"}
       </td>
       <td
         className="border px-1.5 py-1 align-top"

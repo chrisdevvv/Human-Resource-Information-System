@@ -22,14 +22,14 @@ const router = express.Router();
 router.get(
   "/districts",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   getDistricts,
 );
 
 router.get(
   "/schools",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   getSchools,
 );
 
@@ -39,56 +39,56 @@ router.get(
 router.get(
   "/employees",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   getAllEmployeePersonalInfo,
 );
 
 router.get(
   "/employees/count",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   getEmployeePersonalInfoCount,
 );
 
 router.get(
   "/employees/retirement-counts",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   getRetirementCounts,
 );
 
 router.get(
   "/employees/:id",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   getEmployeePersonalInfoById,
 );
 
 router.post(
   "/employees",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   createEmployeePersonalInfo,
 );
 
 router.put(
   "/employees/:id",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   updateEmployeePersonalInfo,
 );
 
 router.patch(
   "/employees/:id",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   updateEmployeePersonalInfo,
 );
 
 router.delete(
   "/employees/:id",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(["super-admin"]),
   deleteEmployeePersonalInfo,
 );
 

@@ -25,6 +25,22 @@ export default function ViewLogsModal({
 }: ViewLogsModalProps) {
   if (!visible || !log) return null;
 
+  const normalizedRole = String(log.role || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_");
+  const roleLabelMap: Record<string, string> = {
+    SUPER_ADMIN: "Super Admin",
+    ADMIN: "Admin",
+    DATA_ENCODER: "Data Encoder",
+  };
+  const roleDisplay =
+    roleLabelMap[normalizedRole] ||
+    String(log.role || "")
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (character) => character.toUpperCase());
+
   return (
     <div
       className="fixed inset-0 z-60 flex items-center justify-center bg-black/45 px-4"
@@ -55,7 +71,7 @@ export default function ViewLogsModal({
             <p className="text-[11px] uppercase tracking-wide text-gray-500 mb-1">
               Role
             </p>
-            <p className="text-sm font-semibold text-gray-800">{log.role}</p>
+            <p className="text-sm font-semibold text-gray-800">{roleDisplay}</p>
           </div>
 
           <div className="bg-gray-50 rounded-lg px-4 py-2.5">

@@ -75,9 +75,18 @@ const getAllEmployees = async (req, res) => {
         : toBoolean(on_leave);
 
     const requestedSchoolId = school_id ? Number(school_id) : null;
+    const userSchoolId = getScopedSchoolId(req);
     const scopedSchoolId = isSchoolScopedWriteRole(req.user?.role)
-      ? getScopedSchoolId(req)
+      ? userSchoolId
       : requestedSchoolId;
+
+    console.log('[getAllEmployees] Debug Info:', {
+      userRole: req.user?.role,
+      userSchoolId,
+      requestedSchoolId,
+      scopedSchoolId,
+      isSchoolScoped: isSchoolScopedWriteRole(req.user?.role)
+    });
 
     if (isSchoolScopedWriteRole(req.user?.role) && !scopedSchoolId) {
       return res.status(403).json({
@@ -97,7 +106,18 @@ const getAllEmployees = async (req, res) => {
       onLeave,
       schoolId: scopedSchoolId,
     };
+    
+    console.log('[getAllEmployees] Filters:', filters);
+    
     const results = await Employee.getAll(filters);
+    
+    console.log('[getAllEmployees] Results:', {
+      hasData: !!results,
+      isArray: Array.isArray(results),
+      isPaginated: !!results?.data,
+      count: Array.isArray(results) ? results.length : results?.data?.length || 0,
+      total: results?.total
+    });
 
     if (!filters.page) return res.status(200).json({ data: results });
     return res.status(200).json({
@@ -107,6 +127,7 @@ const getAllEmployees = async (req, res) => {
       pageSize: results.pageSize,
     });
   } catch (err) {
+    console.error('[getAllEmployees] Error:', err);
     res
       .status(500)
       .json({ message: "Error retrieving employees", error: err.message });
@@ -119,6 +140,16 @@ const getEmployeeById = async (req, res) => {
       includeArchived: true,
     });
     if (!result) return res.status(404).json({ message: "Employee not found" });
+
+    // Check school permission for admin and data encoder
+    if (isSchoolScopedWriteRole(req.user?.role)) {
+      const userSchoolId = getScopedSchoolId(req);
+      if (!userSchoolId || !isSameSchool(userSchoolId, result.school_id)) {
+        return res.status(403).json({
+          message: "Forbidden: You do not have permission to access this resource",
+        });
+      }
+    }
 
     if (result.is_archived && result.archived_by) {
       const [archiverRows] = await pool
@@ -140,15 +171,6 @@ const getEmployeeById = async (req, res) => {
       }
     }
 
-    if (isSchoolScopedWriteRole(req.user?.role)) {
-      if (!isSameSchool(req.user?.school_id, result.school_id)) {
-        return res.status(403).json({
-          message:
-            "You can only view employee records under your assigned school",
-        });
-      }
-    }
-
     res.status(200).json({ data: result });
   } catch (err) {
     res
@@ -160,9 +182,18 @@ const getEmployeeById = async (req, res) => {
 const getEmployeesBySchool = async (req, res) => {
   try {
     const requestedSchoolId = Number(req.params.school_id);
+    const userSchoolId = getScopedSchoolId(req);
+    
+    console.log('[getEmployeesBySchool] Debug Info:', {
+      userRole: req.user?.role,
+      userSchoolId,
+      requestedSchoolId,
+      isSchoolScoped: isSchoolScopedWriteRole(req.user?.role)
+    });
+    
     if (
       isSchoolScopedWriteRole(req.user?.role) &&
-      !isSameSchool(req.user?.school_id, requestedSchoolId)
+      !isSameSchool(userSchoolId, requestedSchoolId)
     ) {
       return res.status(403).json({
         message:
@@ -185,13 +216,34 @@ const getEmployeesBySchool = async (req, res) => {
       letter: req.query?.letter || null,
       retirement: req.query?.retirement || null,
       sortOrder: req.query?.sortOrder || null,
+      page: req.query?.page ? Number(req.query.page) : undefined,
+      pageSize: req.query?.pageSize ? Number(req.query.pageSize) : undefined,
       includeArchived,
       onLeave,
+      schoolId: requestedSchoolId,
     };
+    
+    console.log('[getEmployeesBySchool] Filters:', filters);
 
-    const results = await Employee.getBySchool(requestedSchoolId, filters);
-    res.status(200).json({ data: results });
+    const results = await Employee.getAll(filters);
+    
+    console.log('[getEmployeesBySchool] Results:', {
+      hasData: !!results,
+      isArray: Array.isArray(results),
+      isPaginated: !!results?.data,
+      count: Array.isArray(results) ? results.length : results?.data?.length || 0,
+      total: results?.total
+    });
+    
+    if (!filters.page) return res.status(200).json({ data: results });
+    return res.status(200).json({
+      data: results.data,
+      total: results.total,
+      page: results.page,
+      pageSize: results.pageSize,
+    });
   } catch (err) {
+    console.error('[getEmployeesBySchool] Error:', err);
     res
       .status(500)
       .json({ message: "Error retrieving employees", error: err.message });
