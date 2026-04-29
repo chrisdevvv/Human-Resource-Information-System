@@ -11,9 +11,10 @@ import {
   CircleHelp,
   Clock3,
   Mail as MailContact,
-  FileText,
-  ShieldCheck,
+  FileUp,
   ArrowLeft,
+  Search,
+  CheckCircle2,
 } from "lucide-react";
 import { ForgotModal, ErrorModal, RegistrationModal } from "./components";
 import ToastMessage from "@/frontend/components/ToastMessage";
@@ -33,6 +34,7 @@ const PENDING_PASSWORD_KEY = "forcePasswordChange:pendingLoginPassword";
 const PENDING_EMAIL_KEY = "forcePasswordChange:pendingEmail";
 const ACTIVE_TAB_STORAGE_KEY_ADMIN = "activeTab:admin";
 const ACTIVE_TAB_STORAGE_KEY_SUPER_ADMIN = "activeTab:super-admin";
+const SERVICE_RECORD_COOLDOWN_SECONDS = 30;
 
 function getForcedPasswordChangeEmails(): string[] {
   try {
@@ -64,6 +66,14 @@ export default function LoginPage() {
   const currentYear = new Date().getFullYear();
 
   const [showHrisLogin, setShowHrisLogin] = useState(false);
+  const [showServiceRecordModal, setShowServiceRecordModal] = useState(false);
+  const [showServiceRecordSuccess, setShowServiceRecordSuccess] =
+    useState(false);
+  const [serviceRecordEmail, setServiceRecordEmail] = useState("");
+  const [serviceRecordCooldown, setServiceRecordCooldown] = useState(0);
+  const [serviceRecordError, setServiceRecordError] = useState<string | null>(
+    null,
+  );
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -115,9 +125,40 @@ export default function LoginPage() {
     return () => clearInterval(interval);
   }, [email]);
 
+  useEffect(() => {
+    if (serviceRecordCooldown <= 0) return;
+    const timer = setTimeout(() => {
+      setServiceRecordCooldown((prev) => Math.max(prev - 1, 0));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [serviceRecordCooldown]);
+
   function validateEmail(value: string) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(value);
+  }
+
+  function validateDepedEmail(value: string) {
+    const trimmed = value.trim().toLowerCase();
+    if (!validateEmail(trimmed)) {
+      return "Please enter a valid email address";
+    }
+    if (!trimmed.endsWith("@deped.gov.ph")) {
+      return "Please use your DepEd email address";
+    }
+    return null;
+  }
+
+  function openServiceRecordModal() {
+    setShowServiceRecordModal(true);
+    setShowServiceRecordSuccess(false);
+    setServiceRecordError(null);
+  }
+
+  function closeServiceRecordModal() {
+    setShowServiceRecordModal(false);
+    setShowServiceRecordSuccess(false);
+    setServiceRecordError(null);
   }
 
   async function handleLogin() {
@@ -257,7 +298,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#eef3fb]">
+    <div
+      className={`flex min-h-screen flex-col ${
+        showHrisLogin
+          ? "bg-[#eef3fb]"
+          : "bg-[linear-gradient(135deg,#e8f0f8_0%,#f7f9fb_58%,#f2f0ea_100%)]"
+      }`}
+    >
       <ToastMessage
         isVisible={toastState.isVisible}
         variant={toastState.variant}
@@ -275,11 +322,6 @@ export default function LoginPage() {
 
       <header className="sticky top-0 z-50 border-b border-blue-800/20 bg-blue-700 px-4 py-3 text-white shadow-md sm:px-6 sm:py-4">
         <div className="flex w-full items-center justify-start gap-3">
-          <img
-            src="/images/DepEd-CHRIS.svg"
-            alt="DepEd CHRIS"
-            className="h-10 w-auto sm:h-12"
-          />
           <div className="min-w-0 text-left">
             <p className="text-[10px] font-medium tracking-wide sm:text-sm">
               DEPARTMENT OF EDUCATION
@@ -294,97 +336,83 @@ export default function LoginPage() {
         </div>
       </header>
 
-      <main className="flex flex-1 items-center justify-center px-4 py-6 sm:px-6 sm:py-10">
+      <main
+        className={
+          showHrisLogin
+            ? "flex flex-1 items-center justify-center px-4 py-6 sm:px-6 sm:py-10"
+            : "flex flex-1 items-start justify-center px-3 py-5 sm:px-6 sm:py-8 mb-6 sm:mb-8"
+        }
+      >
         {!showHrisLogin ? (
-          <div className="w-full max-w-5xl">
-            <div className="rounded-[28px] border border-blue-100 bg-white/90 px-5 py-8 shadow-2xl backdrop-blur-sm sm:px-8 sm:py-10">
-              <div className="mx-auto mb-8 flex max-w-4xl flex-wrap items-center justify-center gap-5 sm:gap-8">
+          <div className="w-full max-w-[900px]">
+            <div className="mx-auto flex w-full flex-col items-center text-center">
+              <div className="flex w-full items-center justify-center">
                 <img
-                  src="/images/DepEd-CHRIS.svg"
-                  alt="DepEd CHRIS"
-                  className="h-14 w-auto object-contain sm:h-16"
+                  src="/sdologo-new.svg"
+                  alt="SDO Logo"
+                  className="h-[96px] w-auto max-w-full object-contain md:hidden"
                 />
                 <img
                   src="/sdologo-new.svg"
-                  alt="SD Logo"
-                  className="h-16 w-auto object-contain sm:h-20"
+                  alt="SDO Logo"
+                  className="hidden h-[160px] w-auto max-w-full object-contain md:block lg:h-[200px]"
                 />
               </div>
 
-              <div className="mx-auto max-w-3xl text-center">
-                <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-                  Hello, Guest!
-                </h2>
-                <p className="mt-2 text-lg font-semibold text-gray-800 sm:text-2xl">
-                  Choose your transaction.
-                </p>
-                <p className="mt-3 text-sm leading-relaxed text-gray-500 sm:text-base">
-                  Welcome to the official platform for employee records and
-                  human resource services.
-                </p>
-              </div>
-
-              <div className="mx-auto mt-8 grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
-                <button
-                  type="button"
-                  className="group cursor-pointer rounded-3xl border border-blue-100 bg-white px-6 py-7 text-center shadow-md transition duration-200 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl"
-                >
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 transition group-hover:bg-blue-100">
-                    <FileText className="h-8 w-8" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900">
-                    E-Service Record
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-gray-500">
-                    Access document-related services and record transactions.
+              <div className="mx-auto mt-6 w-full max-w-[748px] md:mt-8">
+                <div className="mx-auto max-w-3xl text-center">
+                  <h2 className="text-[22px] font-semibold leading-tight text-[#071c3f] md:text-[32px]">
+                    Hello, Guest!
+                  </h2>
+                  <p className="text-[22px] font-semibold leading-tight text-[#071c3f] md:text-[32px]">
+                    Choose your transaction.
                   </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowHrisLogin(true)}
-                  className="group cursor-pointer rounded-3xl border border-blue-100 bg-white px-6 py-7 text-center shadow-md transition duration-200 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl"
-                >
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 transition group-hover:bg-blue-100">
-                    <ShieldCheck className="h-8 w-8" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900">
-                    Human Resource Information System
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-gray-500">
-                    Proceed to the CHRIS login portal for authorized users.
+                  <p className="mt-3 text-[15px] leading-tight text-[#687993] md:text-[18px] md:whitespace-nowrap">
+                    Welcome to the official platform for employee records and
+                    human resource services.
                   </p>
-                </button>
+                </div>
+
+                <div className="mt-5 grid w-full grid-cols-2 gap-4 md:gap-7">
+                  <button
+                    type="button"
+                    onClick={openServiceRecordModal}
+                    className="group flex min-h-[112px] cursor-pointer flex-col items-center justify-center rounded-[10px] border border-[#d7e1ee] bg-white px-3 py-4 text-center shadow-[0_6px_14px_rgba(15,23,42,0.12)] transition duration-200 hover:-translate-y-0.5 hover:border-[#b9cce4] hover:shadow-[0_10px_22px_rgba(15,23,42,0.15)] md:min-h-[154px] md:rounded-[12px] md:px-6 md:py-6"
+                  >
+                    <div className="mb-2 flex h-9 w-9 items-center justify-center text-[#005cb9] transition group-hover:scale-105 md:mb-3">
+                      <Search className="h-[29px] w-[29px] stroke-[3] md:h-9 md:w-9" />
+                    </div>
+                    <h3 className="max-w-[260px] text-[14px] font-extrabold uppercase leading-snug text-[#005cb9] md:text-[18px]">
+                      E-Service Record
+                    </h3>
+                    <p className="sr-only">
+                      Access document-related services and record transactions.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowHrisLogin(true)}
+                    className="group flex min-h-[112px] cursor-pointer flex-col items-center justify-center rounded-[10px] border border-[#d7e1ee] bg-white px-3 py-4 text-center shadow-[0_6px_14px_rgba(15,23,42,0.12)] transition duration-200 hover:-translate-y-0.5 hover:border-[#b9cce4] hover:shadow-[0_10px_22px_rgba(15,23,42,0.15)] md:min-h-[154px] md:rounded-[12px] md:px-6 md:py-6"
+                  >
+                    <div className="mb-2 flex h-9 w-9 items-center justify-center text-[#005cb9] transition group-hover:scale-105 md:mb-3">
+                      <FileUp className="h-[29px] w-[29px] stroke-[3] md:h-9 md:w-9" />
+                    </div>
+                    <h3 className="max-w-[280px] text-[14px] font-extrabold uppercase leading-snug text-[#005cb9] md:text-[18px]">
+                      Human Resource Information System
+                    </h3>
+                    <p className="sr-only">
+                      Proceed to the CHRIS login portal for authorized users.
+                    </p>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         ) : (
-          <div className="w-full max-w-5xl">
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_0.95fr] lg:gap-10">
-              <div className="hidden lg:flex">
-                <div className="w-full rounded-[28px] border border-blue-100 bg-white/90 p-8 shadow-2xl backdrop-blur-sm">
-                  <div className="mb-8 flex items-center justify-center">
-                    <img
-                      src="/sdologo-new.svg"
-                      alt="SD Logo"
-                      className="h-64 w-auto object-contain"
-                    />
-                  </div>
-
-                  <div className="text-center">
-                    <h2 className="text-3xl font-bold text-gray-900">
-                      Human Resource Information System
-                    </h2>
-                    <p className="mt-3 text-base leading-relaxed text-gray-600">
-                      Securely sign in to manage employee records, human resource
-                      services, and administrative tasks.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-center">
-                <div className="w-full overflow-hidden rounded-[28px] border border-blue-100 bg-white shadow-2xl">
+          <div className="w-full max-w-xl">
+            <div className="flex items-center justify-center">
+              <div className="w-full overflow-hidden rounded-[28px] border border-blue-100 bg-white shadow-2xl">
                   <div className="border-b border-blue-100 bg-gradient-to-br from-blue-50 to-white px-5 py-5 lg:hidden">
                     <div className="flex flex-col items-center text-center">
                       <img
@@ -575,14 +603,13 @@ export default function LoginPage() {
                     </div>
                   </div>
                 </div>
-              </div>
             </div>
           </div>
         )}
       </main>
 
-      <footer className="border-t border-gray-200 bg-white px-4 py-4 text-gray-600 shadow-inner sm:px-6">
-        <div className="flex w-full flex-col gap-1.5 text-[11px] sm:flex-row sm:items-center sm:justify-between sm:text-xs">
+      <footer className="border-t border-gray-200 bg-white px-4 py-3 text-gray-600 shadow-inner sm:px-6 sm:py-4">
+        <div className="flex w-full flex-col gap-2 text-[11px] sm:flex-row sm:items-center sm:justify-between sm:text-xs">
           <div className="text-left sm:mr-auto">
             <button
               type="button"
@@ -593,15 +620,171 @@ export default function LoginPage() {
             </button>
           </div>
           <div className="text-left sm:text-right">
-            <div className="text-left">
+            <div className="text-left sm:text-right">
               <span>
                 &copy; {currentYear} DepEd Human Resource Information System
               </span>
             </div>
-            <div>Developer: Shania Condalor &amp; Alexis Torrefiel</div>
+            <div className="mt-1">Developer: Shania Condalor &amp; Alexis Torrefiel</div>
           </div>
         </div>
       </footer>
+
+      {showServiceRecordModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
+          onClick={closeServiceRecordModal}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Request service record"
+        >
+          <div
+            className="w-full max-w-lg overflow-hidden rounded-[26px] border border-slate-100 bg-white shadow-[0_28px_70px_rgba(15,23,42,0.2)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-7 pb-7 pt-6 sm:px-8">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                      E-Service Record
+                    </p>
+                    <h3 className="mt-2 text-[22px] font-semibold text-slate-900">
+                      Request Service Record
+                    </h3>
+                </div>
+              </div>
+
+              <p className="mt-3 text-sm leading-relaxed text-slate-500">
+                Enter your DepEd email address to receive your service record
+                request.
+              </p>
+
+              {showServiceRecordSuccess ? (
+                <div className="mt-5">
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="mt-0.5 text-emerald-600" size={20} />
+                      <div>
+                        <p className="text-sm font-semibold text-emerald-800">
+                          Your service record was sent successfully.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={closeServiceRecordModal}
+                      className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                    >
+                      Close
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowServiceRecordSuccess(false);
+                        setServiceRecordEmail("");
+                        setServiceRecordError(null);
+                      }}
+                      className="rounded-2xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={serviceRecordCooldown > 0}
+                    >
+                      {serviceRecordCooldown > 0
+                        ? `Send another (${serviceRecordCooldown}s)`
+                        : "Send another"}
+                    </button>
+                  </div>
+                  {serviceRecordCooldown > 0 && (
+                    <p className="mt-3 text-xs text-slate-500">
+                      Please wait {serviceRecordCooldown}s before sending
+                      another request.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <form
+                  className="mt-5"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const nextError = validateDepedEmail(serviceRecordEmail);
+                    setServiceRecordError(nextError);
+                    if (nextError) return;
+                    if (serviceRecordCooldown > 0) return;
+                    setShowServiceRecordSuccess(true);
+                    setServiceRecordCooldown(SERVICE_RECORD_COOLDOWN_SECONDS);
+                  }}
+                >
+                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    DepEd Email Address
+                  </label>
+                  <div className="relative mt-2">
+                    <Mail
+                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-blue-600"
+                      size={18}
+                    />
+                    <input
+                      type="email"
+                      placeholder="you@deped.gov.ph"
+                      value={serviceRecordEmail}
+                      onChange={(e) => {
+                        const nextValue = e.target.value;
+                        setServiceRecordEmail(nextValue);
+                        if (serviceRecordError) {
+                          setServiceRecordError(validateDepedEmail(nextValue));
+                        }
+                      }}
+                      onBlur={() =>
+                        setServiceRecordError(
+                          validateDepedEmail(serviceRecordEmail),
+                        )
+                      }
+                      className={`w-full rounded-2xl border bg-white px-4 py-3 pl-11 text-sm text-slate-700 placeholder:text-slate-400 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100 ${serviceRecordError ? "border-red-400" : "border-slate-200"}`}
+                    />
+                  </div>
+                  {serviceRecordError && (
+                    <div className="mt-2 flex items-start gap-2 text-sm text-red-600">
+                      <span className="mt-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                        !
+                      </span>
+                      <p className="font-medium">{serviceRecordError}</p>
+                    </div>
+                  )}
+                  {serviceRecordCooldown > 0 && (
+                    <p className="mt-2 text-xs text-slate-500">
+                      Please wait {serviceRecordCooldown}s before sending
+                      another request.
+                    </p>
+                  )}
+
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={closeServiceRecordModal}
+                      className="cursor-pointer rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="cursor-pointer rounded-2xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={
+                        !!validateDepedEmail(serviceRecordEmail) ||
+                        !serviceRecordEmail.trim() ||
+                        serviceRecordCooldown > 0
+                      }
+                    >
+                      {serviceRecordCooldown > 0
+                        ? `Request (${serviceRecordCooldown}s)`
+                        : "Request"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showContactModal && (
         <div

@@ -87,6 +87,13 @@ const normalizeOptionalDate = (value) => {
   return parsed.toISOString().slice(0, 10);
 };
 
+const toMmDdYyyy = (value) => {
+  const normalized = normalizeOptionalDate(value);
+  if (!normalized) return null;
+  const [yyyy, mm, dd] = normalized.split("-");
+  return `${mm}/${dd}/${yyyy}`;
+};
+
 const normalizeOptionalEmail = (value) => {
   if (value === undefined || value === null) return null;
   const normalized = String(value).trim().toLowerCase();
@@ -114,22 +121,22 @@ const resolveEmployeeSchemaInfo = async () => {
     return acc;
   }, {});
 
-  const table = grouped.emppersonalinfo ? 'emppersonalinfo' : 'employees';
+  const table = grouped.emppersonalinfo ? "emppersonalinfo" : "employees";
   const columns = grouped[table] || new Set();
 
   return {
     table,
-    firstName: columns.has('firstName') ? 'firstName' : 'first_name',
-    middleName: columns.has('middleName') ? 'middleName' : 'middle_name',
-    lastName: columns.has('lastName') ? 'lastName' : 'last_name',
-    email: 'email',
-    birthdate: 'birthdate',
-    age: 'age',
-    schoolId: 'school_id',
-    isArchived: columns.has('is_archived') ? 'is_archived' : null,
-    onLeave: columns.has('on_leave') ? 'on_leave' : null,
-    onLeaveFrom: columns.has('on_leave_from') ? 'on_leave_from' : null,
-    onLeaveUntil: columns.has('on_leave_until') ? 'on_leave_until' : null,
+    firstName: columns.has("firstName") ? "firstName" : "first_name",
+    middleName: columns.has("middleName") ? "middleName" : "middle_name",
+    lastName: columns.has("lastName") ? "lastName" : "last_name",
+    email: "email",
+    birthdate: "birthdate",
+    age: "age",
+    schoolId: "school_id",
+    isArchived: columns.has("is_archived") ? "is_archived" : null,
+    onLeave: columns.has("on_leave") ? "on_leave" : null,
+    onLeaveFrom: columns.has("on_leave_from") ? "on_leave_from" : null,
+    onLeaveUntil: columns.has("on_leave_until") ? "on_leave_until" : null,
   };
 };
 
@@ -145,8 +152,8 @@ const resolveSchoolSchemaInfo = async () => {
   const columns = new Set(rows.map((row) => row.column_name));
 
   return {
-    id: columns.has('schoolId') ? 'schoolId' : 'id',
-    name: columns.has('schoolName') ? 'schoolName' : 'school_name',
+    id: columns.has("schoolId") ? "schoolId" : "id",
+    name: columns.has("schoolName") ? "schoolName" : "school_name",
   };
 };
 
@@ -200,19 +207,19 @@ const buildEmployeeSelectWithAge = (employee, school) => `
   COALESCE(employees.${employee.age}, TIMESTAMPDIFF(YEAR, employees.${employee.birthdate}, CURDATE())) AS age
 `;
 
-const EMPLOYEE_UNIQUE_FIELD_DEFINITIONS = [
+const buildEmployeeUniqueFieldDefinitions = (employeeTable) => [
   {
     column: "email",
     key: "personalEmail",
     label: "personal email",
-    table: "employees",
+    table: employeeTable,
     idColumn: "id",
   },
   {
     column: "mobile_number",
     key: "mobileNumber",
     label: "mobile number",
-    table: "employees",
+    table: employeeTable,
     idColumn: "id",
   },
   {
@@ -296,8 +303,15 @@ const normalizeEmployeeUniqueValues = (data = {}) => ({
   philhealthNo: normalizeOptionalText(data.philhealth_no),
 });
 
-const findEmployeeUniqueConflict = async (uniqueValues, excludeId = null) => {
-  for (const field of EMPLOYEE_UNIQUE_FIELD_DEFINITIONS) {
+const findEmployeeUniqueConflict = async (
+  uniqueValues,
+  excludeId = null,
+  employeeTable = "employees",
+) => {
+  const uniqueFieldDefinitions =
+    buildEmployeeUniqueFieldDefinitions(employeeTable);
+
+  for (const field of uniqueFieldDefinitions) {
     const value = uniqueValues[field.key];
     if (value === null || value === undefined) {
       continue;
@@ -733,47 +747,125 @@ const Employee = {
       serviceMetricBaseDate,
     );
 
-    const duplicateField = await findEmployeeUniqueConflict(uniqueValues);
+    const employeeSchema = await resolveEmployeeSchemaInfo();
+    const employeeTable = employeeSchema.table;
+
+    const duplicateField = await findEmployeeUniqueConflict(
+      uniqueValues,
+      null,
+      employeeTable,
+    );
     if (duplicateField) {
       throw createDuplicateEmployeeError(duplicateField.label);
     }
 
-    const [result] = await pool.promise().query(
-      `INSERT INTO employees (
-        first_name,
-        middle_name,
-        last_name,
-        middle_initial,
-        email,
-        mobile_number,
-        home_address,
-        place_of_birth,
-        civil_status,
-        civil_status_id,
-        sex,
-        sex_id,
-        school_id,
-        age,
-        birthdate
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        first_name,
-        middle_name || null,
-        last_name,
-        middleInitial || null,
-        personalEmail,
-        normalizedMobileNumber,
-        home_address || null,
-        place_of_birth || null,
-        civil_status || null,
-        civil_status_id || null,
-        sex || null,
-        sex_id || null,
-        school_id,
-        age || null,
-        birthdate,
-      ],
-    );
+    let result;
+
+    if (employeeTable === "emppersonalinfo") {
+      const schoolSchema = await resolveSchoolSchemaInfo();
+      const [schoolRows] = await pool
+        .promise()
+        .query(
+          `SELECT ${schoolSchema.name} AS school_name FROM schools WHERE ${schoolSchema.id} = ? LIMIT 1`,
+          [school_id],
+        );
+
+      const schoolName = schoolRows?.[0]?.school_name || null;
+      const normalizedBirthdate = normalizeOptionalDate(birthdate);
+      const normalizedDateOfBirth = toMmDdYyyy(normalizedBirthdate);
+      const resolvedMisr =
+        normalizeOptionalText(data.MISR) ||
+        normalizeOptionalText(last_name) ||
+        "N/A";
+
+      [result] = await pool.promise().query(
+        `INSERT INTO emppersonalinfo (
+          firstName,
+          middleName,
+          lastName,
+          middle_initial,
+          MISR,
+          email,
+          mobile_number,
+          home_address,
+          place_of_birth,
+          dateOfBirth,
+          birthdate,
+          place,
+          district,
+          school,
+          gender,
+          sex,
+          civilStatus,
+          civil_status_id,
+          sex_id,
+          teacher_status,
+          school_id,
+          age
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          first_name,
+          middle_name || null,
+          last_name,
+          middleInitial || "N/A",
+          resolvedMisr,
+          personalEmail,
+          normalizedMobileNumber,
+          home_address || null,
+          place_of_birth || null,
+          normalizedDateOfBirth,
+          normalizedBirthdate,
+          place_of_birth || null,
+          resolvedDistrict,
+          schoolName,
+          sex || null,
+          sex || null,
+          civil_status || null,
+          civil_status_id || null,
+          sex_id || null,
+          "Active",
+          school_id,
+          age || null,
+        ],
+      );
+    } else {
+      [result] = await pool.promise().query(
+        `INSERT INTO employees (
+          first_name,
+          middle_name,
+          last_name,
+          middle_initial,
+          email,
+          mobile_number,
+          home_address,
+          place_of_birth,
+          civil_status,
+          civil_status_id,
+          sex,
+          sex_id,
+          school_id,
+          age,
+          birthdate
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          first_name,
+          middle_name || null,
+          last_name,
+          middleInitial || null,
+          personalEmail,
+          normalizedMobileNumber,
+          home_address || null,
+          place_of_birth || null,
+          civil_status || null,
+          civil_status_id || null,
+          sex || null,
+          sex_id || null,
+          school_id,
+          age || null,
+          birthdate,
+        ],
+      );
+    }
 
     await upsertWorkInformation(result.insertId, {
       employee_type: normalizedEmployeeType,
@@ -863,9 +955,8 @@ const Employee = {
         ? null
         : normalizeEmployeeTypeForStorage(current_employee_type);
     const normalizedCurrentPosition = normalizeOptionalText(current_position);
-    const normalizedCurrentPlantillaNo = normalizeOptionalText(
-      current_plantilla_no,
-    );
+    const normalizedCurrentPlantillaNo =
+      normalizeOptionalText(current_plantilla_no);
     const normalizedCurrentAppointmentDate = normalizeOptionalDate(
       current_appointment_date,
     );
@@ -1022,10 +1113,10 @@ const Employee = {
     const [rows] = await pool.promise().query(
       `SELECT
          COUNT(1) AS total_all,
-         SUM(CASE WHEN ${employee.isArchived || '0'} = 1 THEN 1 ELSE 0 END) AS archived,
-         SUM(CASE WHEN ${employee.isArchived || '0'} = 0 THEN 1 ELSE 0 END) AS active_total,
-         SUM(CASE WHEN ${employee.isArchived || '0'} = 0 AND ${employee.onLeave || '0'} = 1 THEN 1 ELSE 0 END) AS on_leave,
-         SUM(CASE WHEN ${employee.isArchived || '0'} = 0 AND ${employee.onLeave || '0'} = 0 THEN 1 ELSE 0 END) AS available
+         SUM(CASE WHEN ${employee.isArchived || "0"} = 1 THEN 1 ELSE 0 END) AS archived,
+         SUM(CASE WHEN ${employee.isArchived || "0"} = 0 THEN 1 ELSE 0 END) AS active_total,
+         SUM(CASE WHEN ${employee.isArchived || "0"} = 0 AND ${employee.onLeave || "0"} = 1 THEN 1 ELSE 0 END) AS on_leave,
+         SUM(CASE WHEN ${employee.isArchived || "0"} = 0 AND ${employee.onLeave || "0"} = 0 THEN 1 ELSE 0 END) AS available
        FROM ${employee.table}
        ${whereClause}`,
       params,

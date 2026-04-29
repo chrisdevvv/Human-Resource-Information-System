@@ -37,6 +37,20 @@ const getEffectiveEmployeeType = (payload = {}) =>
   payload.employee_type ||
   null;
 
+const resolveSchoolPrimaryKeyColumn = async () => {
+  const [rows] = await pool.promise().query(
+    `SELECT COLUMN_NAME AS column_name
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'schools'
+       AND COLUMN_NAME IN ('schoolId', 'id')
+     ORDER BY CASE COLUMN_NAME WHEN 'schoolId' THEN 0 ELSE 1 END
+     LIMIT 1`,
+  );
+
+  return rows?.[0]?.column_name || "schoolId";
+};
+
 const getAllEmployees = async (req, res) => {
   try {
     const {
@@ -250,13 +264,12 @@ const createEmployee = async (req, res) => {
       req.body.school_id = requestedSchoolId;
     }
 
+    const schoolPkColumn = await resolveSchoolPrimaryKeyColumn();
     const [schoolRows] = await pool
       .promise()
-      .query(
-        // handle schemas that use either `schoolId` or `id` as the PK
-        "SELECT 1 FROM schools WHERE schoolId = ? OR id = ? LIMIT 1",
-        [req.body.school_id, req.body.school_id],
-      );
+      .query(`SELECT 1 FROM schools WHERE ${schoolPkColumn} = ? LIMIT 1`, [
+        req.body.school_id,
+      ]);
 
     if (!schoolRows.length) {
       return res.status(400).json({
@@ -318,9 +331,10 @@ const createEmployee = async (req, res) => {
       });
     }
 
-    res
-      .status(500)
-      .json({ message: "Error creating employee", error: err.message });
+    res.status(500).json({
+      message: err.message || "Error creating employee",
+      error: err.message,
+    });
   }
 };
 
@@ -368,10 +382,7 @@ const updateEmployee = async (req, res) => {
     }
 
     const resolvedDistrictInput =
-      req.body?.district ??
-      req.body?.work_district ??
-      existing.district ??
-      "";
+      req.body?.district ?? req.body?.work_district ?? existing.district ?? "";
 
     const requestedDistrict = String(resolvedDistrictInput).trim();
 
@@ -423,8 +434,7 @@ const updateEmployee = async (req, res) => {
       sg: req.body.sg ?? existing.sg,
       current_employee_type:
         req.body.current_employee_type ?? existing.current_employee_type,
-      current_position:
-        req.body.current_position ?? existing.current_position,
+      current_position: req.body.current_position ?? existing.current_position,
       current_plantilla_no:
         req.body.current_plantilla_no ?? existing.current_plantilla_no,
       current_appointment_date:
@@ -439,7 +449,8 @@ const updateEmployee = async (req, res) => {
       age: req.body.age ?? existing.age,
       birthdate: req.body.birthdate ?? existing.birthdate,
       date_of_first_appointment:
-        req.body.date_of_first_appointment ?? existing.date_of_first_appointment,
+        req.body.date_of_first_appointment ??
+        existing.date_of_first_appointment,
     };
 
     const hasRequestedSgUpdate =
@@ -453,13 +464,11 @@ const updateEmployee = async (req, res) => {
 
     if (hasRequestedSgUpdate) {
       const employeeId = Number(req.params.id);
-      const latestSalaryInfo = await SalaryInformation.getLatestByEmployeeId(
-        employeeId,
-      );
+      const latestSalaryInfo =
+        await SalaryInformation.getLatestByEmployeeId(employeeId);
 
       if (latestSalaryInfo?.id) {
-        const effectiveSgValue =
-          mergedBody.current_sg ?? mergedBody.sg ?? null;
+        const effectiveSgValue = mergedBody.current_sg ?? mergedBody.sg ?? null;
         const normalizedSg =
           effectiveSgValue === undefined || effectiveSgValue === null
             ? null
