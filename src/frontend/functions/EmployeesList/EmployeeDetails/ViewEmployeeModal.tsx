@@ -154,6 +154,7 @@ type EmployeeDetailsResponse = {
   current_appointment_date?: string | null;
   current_sg?: string | null;
   age?: number | null;
+  dateOfBirth?: string | null;
   birthdate?: string | null;
   date_of_first_appointment?: string | null;
   years_in_service?: number | string | null;
@@ -353,7 +354,9 @@ const getNextThreeYearIncrementDate = (
     return `${year}-${month}-${day}`;
   }
 
-  const normalizedFirstAppointment = String(dateOfFirstAppointment || "").trim();
+  const normalizedFirstAppointment = String(
+    dateOfFirstAppointment || "",
+  ).trim();
   if (!normalizedFirstAppointment) return "";
 
   const [firstYear, firstMonth, firstDay] = normalizedFirstAppointment
@@ -401,7 +404,7 @@ const createEditSnapshotFromDetails = (
     noMiddleName: computedNoMiddleName,
     middleInitial: computedNoMiddleName ? "N/A" : data.middle_initial || "",
     lastName: data.last_name || "",
-    birthdate: toDateInputValue(data.birthdate),
+    birthdate: toDateInputValue(data.dateOfBirth || data.birthdate),
     personalEmail: data.email || "",
     mobileNumber: data.mobile_number || "",
     homeAddress: data.home_address || "",
@@ -416,12 +419,18 @@ const createEditSnapshotFromDetails = (
     position: data.position || "",
     plantillaNo: normalizePlantillaNo(data.plantilla_no || ""),
     dateOfFirstAppointment: toDateInputValue(data.date_of_first_appointment),
-    currentEmployeeType: String(data.current_employee_type || "").trim(),
+    currentEmployeeType: String(
+      data.current_employee_type ||
+        data.resolved_employee_type ||
+        data.employee_type ||
+        "",
+    ).trim(),
     currentPosition: String(data.current_position || "").trim(),
     currentPlantillaNo: normalizePlantillaNo(data.current_plantilla_no || ""),
     currentAppointmentDate: toDateInputValue(data.current_appointment_date),
     currentSg: String(data.current_sg || "").trim(),
-    employeeType: data.employee_type || "non-teaching",
+    employeeType:
+      data.resolved_employee_type || data.employee_type || "non-teaching",
     schoolId: data.school_id || null,
     schoolName: data.school_name || "",
     positionId: data.position_id || null,
@@ -771,7 +780,9 @@ export default function ViewEmployeeModal({
     setEditDateOfFirstAppointment(snapshot.dateOfFirstAppointment);
     setEditCurrentEmployeeType(snapshot.currentEmployeeType);
     setEditCurrentPosition(snapshot.currentPosition);
-    setEditCurrentPlantillaNo(normalizePlantillaNo(snapshot.currentPlantillaNo));
+    setEditCurrentPlantillaNo(
+      normalizePlantillaNo(snapshot.currentPlantillaNo),
+    );
     setEditCurrentAppointmentDate(snapshot.currentAppointmentDate);
     setEditCurrentSg(snapshot.currentSg);
     setEditEmployeeType(snapshot.employeeType);
@@ -803,6 +814,7 @@ export default function ViewEmployeeModal({
       employee_type: employee.employeeType,
       school_id: employee.schoolId,
       school_name: employee.schoolName,
+      dateOfBirth: employee.birthdate || null,
       birthdate: employee.birthdate || null,
       sg: employee.sg || null,
     };
@@ -811,7 +823,7 @@ export default function ViewEmployeeModal({
   const resolvedDetails = details || fallbackDetails;
   const resolvedSalaryDate = isEditing
     ? editDateOfFirstAppointment
-    : (resolvedDetails?.date_of_first_appointment || null);
+    : resolvedDetails?.date_of_first_appointment || null;
   const computedSalaryMetrics = computeServiceMetrics(resolvedSalaryDate);
   const resolvedYearsInService = computedSalaryMetrics.yearsInService;
   const resolvedLoyaltyBonus = computedSalaryMetrics.loyaltyBonus;
@@ -959,7 +971,7 @@ export default function ViewEmployeeModal({
     setSalaryHistoryUpdateError(null);
     setSalaryHistoryCreating(false);
     setSalaryHistoryUpdating(false);
-    
+
     loadDetails();
 
     return () => {
@@ -976,7 +988,7 @@ export default function ViewEmployeeModal({
     setSalaryHistoryCreateError(null);
     setSalaryHistoryEditDraft(null);
     setSalaryHistoryUpdateError(null);
-    
+
     void loadSalaryHistory(employee.id);
   }, [employee, loadSalaryHistory, visible]);
 
@@ -987,7 +999,6 @@ export default function ViewEmployeeModal({
     setSalaryHistoryCreateError(null);
     setSalaryHistoryEditDraft(null);
     setSalaryHistoryUpdateError(null);
-    
   }, [isEditing]);
 
   useEffect(() => {
@@ -1154,7 +1165,11 @@ export default function ViewEmployeeModal({
 
   const ageValue =
     resolvedDetails?.age ??
-    computeAge(resolvedDetails?.birthdate || employee.birthdate);
+    computeAge(
+      resolvedDetails?.dateOfBirth ||
+        resolvedDetails?.birthdate ||
+        employee.birthdate,
+    );
   const isArchived = Boolean(resolvedDetails?.is_archived);
   const retirableValue =
     normalizeRetirableValue(resolvedDetails?.retirable) ||
@@ -1165,17 +1180,23 @@ export default function ViewEmployeeModal({
       ? `User #${resolvedDetails.archived_by}`
       : "N/A");
 
-  const displayEmployeeType: "teaching" | "non-teaching" | "teaching-related" = (() => {
-    const type = 
-      resolvedDetails?.current_employee_type || 
-      resolvedDetails?.employee_type || 
-      employee.employeeType;
-    
-    if (type === "teaching" || type === "non-teaching" || type === "teaching-related") {
-      return type;
-    }
-    return "non-teaching";
-  })();
+  const displayEmployeeType: "teaching" | "non-teaching" | "teaching-related" =
+    (() => {
+      const type =
+        resolvedDetails?.resolved_employee_type ||
+        resolvedDetails?.current_employee_type ||
+        resolvedDetails?.employee_type ||
+        employee.employeeType;
+
+      if (
+        type === "teaching" ||
+        type === "non-teaching" ||
+        type === "teaching-related"
+      ) {
+        return type;
+      }
+      return "non-teaching";
+    })();
 
   const getValidationError = (field: string): string | null =>
     errors.find((error) => error.field === field)?.message ?? null;
@@ -1298,8 +1319,7 @@ export default function ViewEmployeeModal({
       });
     }
 
-    const normalizedCurrentAppointmentDate =
-      editCurrentAppointmentDate.trim();
+    const normalizedCurrentAppointmentDate = editCurrentAppointmentDate.trim();
     if (
       normalizedCurrentAppointmentDate &&
       !isValidDateValue(normalizedCurrentAppointmentDate)
@@ -1311,7 +1331,9 @@ export default function ViewEmployeeModal({
     }
 
     if (normalizedCurrentAppointmentDate) {
-      const parsedCurrentAppointmentDate = new Date(normalizedCurrentAppointmentDate);
+      const parsedCurrentAppointmentDate = new Date(
+        normalizedCurrentAppointmentDate,
+      );
       const currentDate = new Date();
       if (
         !Number.isNaN(parsedCurrentAppointmentDate.getTime()) &&
@@ -1611,6 +1633,7 @@ export default function ViewEmployeeModal({
           ? "N/A"
           : normalizeMiddleInitialInput(editMiddleInitial.trim()),
         last_name: editLastName.trim(),
+        dateOfBirth: editBirthdate,
         birthdate: editBirthdate,
         email: editPersonalEmail.trim(),
         personal_email: editPersonalEmail.trim(),
@@ -1706,8 +1729,10 @@ export default function ViewEmployeeModal({
         message?: string;
       };
 
+      let refreshedDetails: EmployeeDetailsResponse | null = null;
+
       if (refreshedResponse.ok && refreshedBody.data) {
-        const refreshedDetails = refreshedBody.data;
+        refreshedDetails = refreshedBody.data;
         setDetails(refreshedDetails);
         const refreshedSnapshot =
           createEditSnapshotFromDetails(refreshedDetails);
@@ -1720,14 +1745,33 @@ export default function ViewEmployeeModal({
 
       onEmployeeUpdated({
         id: employee.id,
-        firstName: editFirstName.trim(),
-        middleName: editMiddleName.trim(),
-        lastName: editLastName.trim(),
-        fullName: `${editFirstName.trim()} ${editMiddleName.trim()} ${editLastName.trim()}`,
-        email: editPersonalEmail.trim(),
-        employeeType: editEmployeeType,
-        schoolId: editSchoolId || employee.schoolId,
-        schoolName: editSchoolName || employee.schoolName,
+        firstName: refreshedDetails?.first_name?.trim() || editFirstName.trim(),
+        middleName:
+          refreshedDetails?.middle_name?.trim() ||
+          (noMiddleName ? "" : editMiddleName.trim()),
+        lastName: refreshedDetails?.last_name?.trim() || editLastName.trim(),
+        fullName: buildFullName(
+          refreshedDetails?.first_name?.trim() || editFirstName.trim(),
+          refreshedDetails?.middle_name?.trim() ||
+            (noMiddleName ? "" : editMiddleName.trim()),
+          refreshedDetails?.last_name?.trim() || editLastName.trim(),
+        ),
+        email: refreshedDetails?.email?.trim() || editPersonalEmail.trim(),
+        employeeType:
+          refreshedDetails?.resolved_employee_type ||
+          refreshedDetails?.current_employee_type ||
+          refreshedDetails?.employee_type ||
+          editEmployeeType,
+        schoolId:
+          refreshedDetails?.school_id ?? editSchoolId ?? employee.schoolId,
+        schoolName:
+          refreshedDetails?.school_name ||
+          editSchoolName ||
+          employee.schoolName,
+        dateOfBirth:
+          refreshedDetails?.dateOfBirth ||
+          refreshedDetails?.birthdate ||
+          editBirthdate,
         birthdate: editBirthdate,
       });
 
@@ -1776,16 +1820,18 @@ export default function ViewEmployeeModal({
         latestSalaryHistoryRow?.salary_date ?? null,
         resolvedDetails?.date_of_first_appointment ?? null,
       ),
-      plantilla:
-        String(latestSalaryHistoryRow?.plantilla || resolvedDetails?.plantilla_no || "").trim(),
-      sg:
-        String(
-          latestSalaryHistoryRow?.sg ||
-            resolvedDetails?.resolved_sg ||
-            resolvedDetails?.current_sg ||
-            resolvedDetails?.sg ||
-            "",
-        ).trim(),
+      plantilla: String(
+        latestSalaryHistoryRow?.plantilla ||
+          resolvedDetails?.plantilla_no ||
+          "",
+      ).trim(),
+      sg: String(
+        latestSalaryHistoryRow?.sg ||
+          resolvedDetails?.resolved_sg ||
+          resolvedDetails?.current_sg ||
+          resolvedDetails?.sg ||
+          "",
+      ).trim(),
       salary: "",
       increment: "",
       remarks: "",
@@ -2349,17 +2395,33 @@ export default function ViewEmployeeModal({
               onSubmitSalaryHistory={handleSubmitSalaryHistory}
               onStartEditSalaryHistory={handleStartEditSalaryHistory}
               onCancelEditSalaryHistory={handleCancelEditSalaryHistory}
-              onChangeSalaryHistoryEditDraft={handleChangeSalaryHistoryEditDraft}
+              onChangeSalaryHistoryEditDraft={
+                handleChangeSalaryHistoryEditDraft
+              }
               onSubmitSalaryHistoryUpdate={handleSubmitSalaryHistoryUpdate}
               employeeName={fullName}
               employeeSex={resolvedDetails?.sex}
               employeeLastName={resolvedDetails?.last_name || employee.lastName}
               schoolName={resolvedDetails?.school_name || employee.schoolName}
               employeeNumber={resolvedDetails?.employee_no || ""}
-              districtName={resolvedDetails?.district || resolvedDetails?.work_district || ""}
-              currentPosition={resolvedDetails?.current_position || resolvedDetails?.position || ""}
-              currentSalaryGrade={resolvedDetails?.current_sg || resolvedDetails?.sg}
-              currentPlantillaNo={resolvedDetails?.current_plantilla_no || resolvedDetails?.plantilla_no || ""}
+              districtName={
+                resolvedDetails?.district ||
+                resolvedDetails?.work_district ||
+                ""
+              }
+              currentPosition={
+                resolvedDetails?.current_position ||
+                resolvedDetails?.position ||
+                ""
+              }
+              currentSalaryGrade={
+                resolvedDetails?.current_sg || resolvedDetails?.sg
+              }
+              currentPlantillaNo={
+                resolvedDetails?.current_plantilla_no ||
+                resolvedDetails?.plantilla_no ||
+                ""
+              }
             />
           )}
           <div className="mt-4 flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">

@@ -34,6 +34,7 @@ const EMPLOYEE_SELECT_WITH_AGE = `
   wi.gsis_crn_no,
   wi.pagibig_no,
   wi.philhealth_no,
+  DATE_FORMAT(employees.birthdate, '%Y-%m-%d') AS dateOfBirth,
   DATE_FORMAT(employees.birthdate, '%Y-%m-%d') AS birthdate,
   schools.school_name,
   COALESCE(employees.age, TIMESTAMPDIFF(YEAR, employees.birthdate, CURDATE())) AS age
@@ -108,7 +109,8 @@ const resolveEmployeeSchemaInfo = async () => {
        AND TABLE_NAME IN ('employees', 'emppersonalinfo')
        AND COLUMN_NAME IN (
          'id', 'first_name', 'firstName', 'middle_name', 'middleName',
-         'last_name', 'lastName', 'email', 'birthdate', 'age', 'school_id',
+         'last_name', 'lastName', 'email', 'birthdate', 'dateOfBirth',
+         'district', 'work_district', 'age', 'school_id',
          'is_archived', 'on_leave', 'on_leave_from', 'on_leave_until'
        )`,
   );
@@ -131,6 +133,9 @@ const resolveEmployeeSchemaInfo = async () => {
     lastName: columns.has("lastName") ? "lastName" : "last_name",
     email: "email",
     birthdate: "birthdate",
+    dateOfBirth: columns.has("dateOfBirth") ? "dateOfBirth" : "birthdate",
+    district: columns.has("district") ? "district" : null,
+    workDistrict: columns.has("work_district") ? "work_district" : null,
     age: "age",
     schoolId: "school_id",
     isArchived: columns.has("is_archived") ? "is_archived" : null,
@@ -158,12 +163,79 @@ const resolveSchoolSchemaInfo = async () => {
 };
 
 const buildEmployeeSelectWithAge = (employee, school) => `
+  ${
+    employee.table === "emppersonalinfo"
+      ? `
+  employees.id,
+  employees.firstName AS first_name,
+  employees.middleName AS middle_name,
+  employees.lastName AS last_name,
+  employees.middle_initial,
+  employees.MISR,
+  employees.email,
+  employees.mobile_number,
+  employees.home_address,
+  employees.place_of_birth,
+  employees.dateOfBirth,
+  DATE_FORMAT(employees.birthdate, '%Y-%m-%d') AS birthdate,
+  employees.civilStatus AS civil_status,
+  employees.civil_status_id,
+  employees.sex,
+  employees.sex_id,
+  employees.school_id,
+  employees.is_archived,
+  employees.on_leave,
+  employees.on_leave_from,
+  employees.on_leave_until,
+  wi.employee_type,
+  wi.employee_no,
+  wi.work_email,
+  wi.district,
+  wi.position,
+  wi.position_id,
+  wi.plantilla_no,
+  wi.sg,
+  DATE_FORMAT(wi.date_of_first_appointment, '%Y-%m-%d') AS date_of_first_appointment,
+  wi.years_in_service,
+  wi.loyalty_bonus,
+  wi.current_employee_type,
+  wi.current_position,
+  wi.current_plantilla_no,
+  DATE_FORMAT(wi.current_appointment_date, '%Y-%m-%d') AS current_appointment_date,
+  wi.current_sg,
+
+  COALESCE(wi.current_employee_type, wi.employee_type) AS resolved_employee_type,
+  COALESCE(wi.current_position, wi.position) AS resolved_position,
+  COALESCE(wi.current_plantilla_no, wi.plantilla_no) AS resolved_plantilla_no,
+  DATE_FORMAT(
+    COALESCE(wi.current_appointment_date, wi.date_of_first_appointment),
+    '%Y-%m-%d'
+  ) AS resolved_appointment_date,
+  COALESCE(wi.current_sg, wi.sg) AS resolved_sg,
+
+  wi.prc_license_no,
+  wi.tin,
+  wi.gsis_bp_no,
+  wi.gsis_crn_no,
+  wi.pagibig_no,
+  wi.philhealth_no,
+  COALESCE(wi.district, employees.district, employees.work_district) AS district,
+  COALESCE(wi.district, employees.district, employees.work_district) AS work_district,
+  COALESCE(schools.${school.name}, employees.school) AS school_name,
+  COALESCE(employees.age, TIMESTAMPDIFF(YEAR, STR_TO_DATE(employees.dateOfBirth, '%m/%d/%Y'), CURDATE())) AS age
+  `
+      : `
   employees.id,
   employees.${employee.firstName} AS first_name,
   employees.${employee.middleName} AS middle_name,
   employees.${employee.lastName} AS last_name,
   employees.email,
-  employees.birthdate,
+  ${
+    employee.dateOfBirth === "dateOfBirth"
+      ? "employees.dateOfBirth"
+      : "DATE_FORMAT(employees.birthdate, '%Y-%m-%d')"
+  } AS dateOfBirth,
+  DATE_FORMAT(employees.${employee.birthdate}, '%Y-%m-%d') AS birthdate,
   employees.age,
   employees.school_id,
   employees.is_archived,
@@ -202,9 +274,18 @@ const buildEmployeeSelectWithAge = (employee, school) => `
   wi.gsis_crn_no,
   wi.pagibig_no,
   wi.philhealth_no,
-  DATE_FORMAT(employees.${employee.birthdate}, '%Y-%m-%d') AS birthdate,
+  ${employee.district ? `COALESCE(wi.district, employees.${employee.district})` : "wi.district"} AS district,
+  ${
+    employee.workDistrict
+      ? `COALESCE(wi.district, employees.${employee.workDistrict}, employees.${employee.district || employee.workDistrict})`
+      : employee.district
+        ? `COALESCE(wi.district, employees.${employee.district})`
+        : "wi.district"
+  } AS work_district,
   COALESCE(schools.${school.name}, employees.school) AS school_name,
   COALESCE(employees.${employee.age}, TIMESTAMPDIFF(YEAR, employees.${employee.birthdate}, CURDATE())) AS age
+  `
+  }
 `;
 
 const buildEmployeeUniqueFieldDefinitions = (employeeTable) => [
@@ -668,6 +749,8 @@ const Employee = {
       civil_status_id,
       sex,
       sex_id,
+      MISR,
+      teacher_status,
       employee_type,
       school_id,
       employee_no,
@@ -690,6 +773,7 @@ const Employee = {
       pagibig_no,
       philhealth_no,
       age,
+      dateOfBirth,
       birthdate,
       date_of_first_appointment,
     } = data;
@@ -771,7 +855,9 @@ const Employee = {
         );
 
       const schoolName = schoolRows?.[0]?.school_name || null;
-      const normalizedBirthdate = normalizeOptionalDate(birthdate);
+      const normalizedBirthdate = normalizeOptionalDate(
+        dateOfBirth || birthdate,
+      );
       const normalizedDateOfBirth = toMmDdYyyy(normalizedBirthdate);
       const resolvedMisr =
         normalizeOptionalText(data.MISR) ||
@@ -978,48 +1064,124 @@ const Employee = {
       serviceMetricBaseDate,
     );
 
+    const employeeSchema = await resolveEmployeeSchemaInfo();
+    const employeeTable = employeeSchema.table;
+    const schoolSchema = await resolveSchoolSchemaInfo();
+
     const duplicateField = await findEmployeeUniqueConflict(uniqueValues, id);
     if (duplicateField) {
       throw createDuplicateEmployeeError(duplicateField.label);
     }
 
-    const [result] = await pool.promise().query(
-      `UPDATE employees SET
-        first_name = ?,
-        middle_name = ?,
-        last_name = ?,
-        middle_initial = ?,
-        email = ?,
-        mobile_number = ?,
-        home_address = ?,
-        place_of_birth = ?,
-        civil_status = ?,
-        civil_status_id = ?,
-        sex = ?,
-        sex_id = ?,
-        school_id = ?,
-        age = ?,
-        birthdate = ?
-      WHERE id = ? AND is_archived = 0`,
-      [
-        first_name,
-        middle_name || null,
-        last_name,
-        middleInitial || null,
-        personalEmail,
-        normalizedMobileNumber,
-        home_address || null,
-        place_of_birth || null,
-        civil_status || null,
-        civil_status_id || null,
-        sex || null,
-        sex_id || null,
-        school_id,
-        age || null,
-        birthdate || null,
-        id,
-      ],
-    );
+    let result;
+
+    if (employeeTable === "emppersonalinfo") {
+      const [schoolRows] = await pool
+        .promise()
+        .query(
+          `SELECT ${schoolSchema.name} AS school_name FROM schools WHERE ${schoolSchema.id} = ? LIMIT 1`,
+          [school_id],
+        );
+      const schoolName = schoolRows?.[0]?.school_name || null;
+      const normalizedBirthdate = normalizeOptionalDate(
+        dateOfBirth || birthdate,
+      );
+      const normalizedDateOfBirth = toMmDdYyyy(normalizedBirthdate);
+      const resolvedTeacherStatus =
+        normalizeOptionalText(teacher_status) || null;
+
+      [result] = await pool.promise().query(
+        `UPDATE emppersonalinfo SET
+          firstName = ?,
+          middleName = ?,
+          lastName = ?,
+          middle_initial = ?,
+          MISR = ?,
+          email = ?,
+          mobile_number = ?,
+          home_address = ?,
+          place_of_birth = ?,
+          dateOfBirth = ?,
+          birthdate = ?,
+          place = ?,
+          district = ?,
+          work_district = ?,
+          school = ?,
+          gender = ?,
+          sex = ?,
+          civilStatus = ?,
+          civil_status_id = ?,
+          sex_id = ?,
+          teacher_status = ?,
+          school_id = ?,
+          age = ?
+        WHERE id = ?`,
+        [
+          first_name,
+          middle_name || null,
+          last_name,
+          middleInitial || null,
+          normalizeOptionalText(MISR) || null,
+          personalEmail,
+          normalizedMobileNumber,
+          home_address || null,
+          place_of_birth || null,
+          normalizedDateOfBirth,
+          normalizedBirthdate,
+          place_of_birth || null,
+          resolvedDistrict,
+          resolvedDistrict,
+          schoolName,
+          sex || null,
+          sex || null,
+          civil_status || null,
+          civil_status_id || null,
+          sex_id || null,
+          resolvedTeacherStatus,
+          school_id,
+          age || null,
+          id,
+        ],
+      );
+    } else {
+      [result] = await pool.promise().query(
+        `UPDATE employees SET
+          first_name = ?,
+          middle_name = ?,
+          last_name = ?,
+          middle_initial = ?,
+          email = ?,
+          mobile_number = ?,
+          home_address = ?,
+          place_of_birth = ?,
+          civil_status = ?,
+          civil_status_id = ?,
+          sex = ?,
+          sex_id = ?,
+          school_id = ?,
+          age = ?,
+          birthdate = ?
+        WHERE id = ? AND is_archived = 0`,
+        [
+          first_name,
+          middle_name || null,
+          last_name,
+          middleInitial || null,
+          personalEmail,
+          normalizedMobileNumber,
+          home_address || null,
+          place_of_birth || null,
+          civil_status || null,
+          civil_status_id || null,
+          sex || null,
+          sex_id || null,
+          school_id,
+          age || null,
+          birthdate || null,
+          id,
+        ],
+      );
+    }
 
     if (result.affectedRows > 0) {
       await upsertWorkInformation(id, {

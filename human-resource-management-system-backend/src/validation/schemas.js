@@ -62,15 +62,15 @@ const optionalEmployeeTypeSchema = Joi.string()
 
 const ensureAtLeastOneEmployeeType = (value, helpers) => {
   const hasEmployeeType =
-    typeof value.employee_type === "string" && value.employee_type.trim() !== "";
+    typeof value.employee_type === "string" &&
+    value.employee_type.trim() !== "";
   const hasCurrentEmployeeType =
     typeof value.current_employee_type === "string" &&
     value.current_employee_type.trim() !== "";
 
   if (!hasEmployeeType && !hasCurrentEmployeeType) {
     return helpers.error("any.custom", {
-      message:
-        "Either employee_type or current_employee_type is required.",
+      message: "Either employee_type or current_employee_type is required.",
     });
   }
 
@@ -134,6 +134,7 @@ const employeeCreateBodySchema = Joi.object({
   gsis_crn_no: gsisCrnNoSchema,
   pagibig_no: pagibigNoSchema,
   philhealth_no: philhealthNoSchema,
+  dateOfBirth: birthdateSchema.required(),
   birthdate: birthdateSchema.required(),
   date_of_first_appointment: firstAppointmentDateSchema.allow(null, ""),
   age: ageSchema,
@@ -187,6 +188,7 @@ const employeeUpdateBodySchemaFields = {
   gsis_crn_no: gsisCrnNoSchema,
   pagibig_no: pagibigNoSchema,
   philhealth_no: philhealthNoSchema,
+  dateOfBirth: birthdateSchema.allow(null),
   birthdate: birthdateSchema.allow(null),
   date_of_first_appointment: firstAppointmentDateSchema.allow(null, ""),
   age: ageSchema,

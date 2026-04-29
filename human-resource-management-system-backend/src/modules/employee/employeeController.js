@@ -422,6 +422,8 @@ const updateEmployee = async (req, res) => {
       civil_status_id: req.body.civil_status_id ?? existing.civil_status_id,
       sex: req.body.sex ?? existing.sex,
       sex_id: req.body.sex_id ?? existing.sex_id,
+      MISR: req.body.MISR ?? existing.MISR,
+      teacher_status: req.body.teacher_status ?? existing.teacher_status,
       employee_type: req.body.employee_type ?? existing.employee_type,
       school_id: req.body.school_id ?? existing.school_id,
       employee_no: req.body.employee_no ?? existing.employee_no,
@@ -447,6 +449,8 @@ const updateEmployee = async (req, res) => {
       pagibig_no: req.body.pagibig_no ?? existing.pagibig_no,
       philhealth_no: req.body.philhealth_no ?? existing.philhealth_no,
       age: req.body.age ?? existing.age,
+      dateOfBirth:
+        req.body.dateOfBirth ?? existing.dateOfBirth ?? existing.birthdate,
       birthdate: req.body.birthdate ?? existing.birthdate,
       date_of_first_appointment:
         req.body.date_of_first_appointment ??
