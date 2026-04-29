@@ -770,7 +770,7 @@ export default function EmployeesListLayout() {
                                   <button
                                     type="button"
                                     onClick={() => handleOpenView(employee)}
-                                    className="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 transition cursor-pointer"
+                                    className="inline-flex items-center gap-1 rounded bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800 hover:bg-blue-200 transition cursor-pointer"
                                     aria-label="View employee"
                                     title="View"
                                   >
@@ -783,7 +783,7 @@ export default function EmployeesListLayout() {
                                       onClick={() =>
                                         handleOpenArchive(employee)
                                       }
-                                      className="inline-flex items-center gap-1 rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 transition cursor-pointer"
+                                      className="inline-flex items-center gap-1 rounded bg-red-100 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-200 transition cursor-pointer"
                                       aria-label="Deactivate employee"
                                       title="Deactivate"
                                     >

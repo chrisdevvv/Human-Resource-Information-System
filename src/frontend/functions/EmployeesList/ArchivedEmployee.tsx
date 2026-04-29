@@ -438,7 +438,7 @@ export default function ArchivedEmployee() {
               className={`px-3 py-1.5 rounded-lg transition font-medium text-sm cursor-pointer ${
                 isEditMode
                   ? "bg-gray-700 text-white hover:bg-gray-800"
-                  : "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-blue-100 text-blue-800 hover:bg-blue-200"
               }`}
             >
               <span className="inline-flex items-center gap-2">
