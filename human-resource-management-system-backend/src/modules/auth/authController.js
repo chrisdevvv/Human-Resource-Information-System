@@ -230,7 +230,7 @@ const register = async (req, res) => {
       .promise()
       .query(
         "SELECT id FROM registration_requests WHERE email = ? AND status = 'PENDING' LIMIT 1",
-        [email],
+        [normalizedEmail],
       );
     if (pendingRows.length > 0) {
       return res.status(409).json({
@@ -242,7 +242,7 @@ const register = async (req, res) => {
     // Block if the email is already an active user account
     const [userRows] = await pool
       .promise()
-      .query("SELECT id FROM users WHERE email = ? LIMIT 1", [email]);
+      .query("SELECT id FROM users WHERE email = ? LIMIT 1", [normalizedEmail]);
     if (userRows.length > 0) {
       return res.status(409).json({
         message: "An account with this email already exists.",

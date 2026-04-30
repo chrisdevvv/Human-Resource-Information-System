@@ -10,13 +10,16 @@ const toBoolean = (value) => {
   return false;
 };
 
+const normalizeRole = (role) =>
+  String(role || "").trim().toUpperCase().replace(/-/g, "_");
+
 const isAdminLevel = (role) => {
-  const normalized = String(role || "").toUpperCase();
+  const normalized = normalizeRole(role);
   return normalized === "ADMIN" || normalized === "SUPER_ADMIN";
 };
 
 const isSchoolScopedWriteRole = (role) => {
-  const normalized = String(role || "").toUpperCase();
+  const normalized = normalizeRole(role);
   return normalized === "ADMIN" || normalized === "DATA_ENCODER";
 };
 
@@ -465,8 +468,15 @@ const updateEmployee = async (req, res) => {
       philhealth_no: req.body.philhealth_no ?? existing.philhealth_no,
       age: req.body.age ?? existing.age,
       dateOfBirth:
-        req.body.dateOfBirth ?? existing.dateOfBirth ?? existing.birthdate,
-      birthdate: req.body.birthdate ?? existing.birthdate,
+        req.body.dateOfBirth ??
+        req.body.birthdate ??
+        existing.dateOfBirth ??
+        existing.birthdate,
+      birthdate:
+        req.body.birthdate ??
+        req.body.dateOfBirth ??
+        existing.birthdate ??
+        existing.dateOfBirth,
       date_of_first_appointment:
         req.body.date_of_first_appointment ??
         existing.date_of_first_appointment,

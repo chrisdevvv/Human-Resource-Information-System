@@ -34,6 +34,17 @@ const AUTO_MONTHLY_CREDIT_ENABLED = process.env.AUTO_MONTHLY_CREDIT !== "false";
 const MAX_JSON_BODY_SIZE = process.env.MAX_JSON_BODY_SIZE || "100kb";
 const MAX_FORM_BODY_SIZE = process.env.MAX_FORM_BODY_SIZE || "100kb";
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
+const ROLE_DATA_ENCODER_ADMIN_SUPER_ADMIN = [
+  "data-encoder",
+  "data_encoder",
+  "DATA_ENCODER",
+  "admin",
+  "ADMIN",
+  "super-admin",
+  "super_admin",
+  "SUPER_ADMIN",
+];
+const ROLE_SUPER_ADMIN = ["super-admin", "super_admin", "SUPER_ADMIN"];
 
 const LOCALHOST_ORIGIN_PATTERN =
   /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
@@ -707,24 +718,31 @@ const ensureSexesTable = async () => {
 const ensureDistrictsTable = async () => {
   await pool.promise().query(`
     CREATE TABLE IF NOT EXISTS districts (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      districtName VARCHAR(255) NOT NULL UNIQUE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      districtId INT AUTO_INCREMENT PRIMARY KEY,
+      districtName VARCHAR(255) NOT NULL,
+      status TINYINT(1) NOT NULL DEFAULT 1 COMMENT '1=active | 0=inactive',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      KEY idx_districts_name (districtName)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
   `);
 
-  const districts = Array.from({ length: 10 }, (_, index) => [
-    `District ${index + 1}`,
-  ]);
+  const districts = Array.from(
+    { length: 10 },
+    (_, index) => `District ${index + 1}`,
+  );
 
-  await pool
-    .promise()
-    .query(
-      `INSERT IGNORE INTO districts (districtName) VALUES ${districts
-        .map(() => "(?)")
-        .join(",")}`,
-      districts,
+  for (const districtName of districts) {
+    await pool.promise().query(
+      `INSERT INTO districts (districtName)
+       SELECT ?
+       WHERE NOT EXISTS (
+         SELECT 1
+         FROM districts
+         WHERE LOWER(TRIM(districtName)) = LOWER(TRIM(?))
+       )`,
+      [districtName, districtName],
     );
+  }
 
   try {
     await pool
@@ -813,31 +831,70 @@ const ensureEmployeePositionFK = async () => {
 
 const ensureEmployeeCivilStatusSexFK = async () => {
   const employeeTable = await resolveEmployeeTableName();
-  const [civilStatusColumns] = await pool.promise().query(`
-    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_NAME = '${employeeTable}' AND COLUMN_NAME = 'civil_status_id'
-  `);
 
-  if (civilStatusColumns.length === 0) {
+  const getEmployeeColumns = async () => {
+    const [rows] = await pool.promise().query(
+      `SELECT COLUMN_NAME AS column_name
+       FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = ?`,
+      [employeeTable],
+    );
+
+    return new Set(rows.map((row) => row.column_name));
+  };
+
+  const addColumnIfMissing = async (columnName, definition, afterCandidates) => {
+    const columns = await getEmployeeColumns();
+    if (columns.has(columnName)) return;
+
+    const afterColumn = afterCandidates.find((candidate) =>
+      columns.has(candidate),
+    );
+    const afterClause = afterColumn ? ` AFTER \`${afterColumn}\`` : "";
+
     await pool.promise().query(`
-      ALTER TABLE ${employeeTable}
-      ADD COLUMN civil_status_id INT NULL AFTER civil_status,
-      ADD CONSTRAINT fk_${employeeTable}_civil_status_id FOREIGN KEY (civil_status_id) REFERENCES civil_statuses(id) ON DELETE SET NULL;
+      ALTER TABLE \`${employeeTable}\`
+      ADD COLUMN \`${columnName}\` ${definition}${afterClause};
     `);
-  }
+  };
 
-  const [sexColumns] = await pool.promise().query(`
-    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_NAME = '${employeeTable}' AND COLUMN_NAME = 'sex_id'
-  `);
+  await addColumnIfMissing("civil_status_id", "INT NULL", [
+    "civilStatus",
+    "civil_status",
+  ]);
+  await addColumnIfMissing("sex_id", "INT NULL", ["sex", "gender"]);
 
-  if (sexColumns.length === 0) {
-    await pool.promise().query(`
-      ALTER TABLE ${employeeTable}
-      ADD COLUMN sex_id INT NULL AFTER sex,
-      ADD CONSTRAINT fk_${employeeTable}_sex_id FOREIGN KEY (sex_id) REFERENCES sexes(id) ON DELETE SET NULL;
-    `);
-  }
+  await ensureIndexedColumn(
+    employeeTable,
+    "civil_status_id",
+    `idx_${employeeTable}_civil_status_id`,
+  );
+  await ensureIndexedColumn(
+    employeeTable,
+    "sex_id",
+    `idx_${employeeTable}_sex_id`,
+  );
+
+  await ensureForeignKeyConstraint({
+    tableName: employeeTable,
+    constraintName: `fk_${employeeTable}_civil_status_id`,
+    columnName: "civil_status_id",
+    referencedTable: "civil_statuses",
+    referencedColumn: "id",
+    onDelete: "SET NULL",
+    onUpdate: "CASCADE",
+  });
+
+  await ensureForeignKeyConstraint({
+    tableName: employeeTable,
+    constraintName: `fk_${employeeTable}_sex_id`,
+    columnName: "sex_id",
+    referencedTable: "sexes",
+    referencedColumn: "id",
+    onDelete: "SET NULL",
+    onUpdate: "CASCADE",
+  });
 };
 
 const getColumnTypeSql = async (
@@ -942,11 +999,11 @@ const resolveEmployeeTableName = async () => {
      FROM INFORMATION_SCHEMA.TABLES
      WHERE TABLE_SCHEMA = DATABASE()
        AND TABLE_NAME IN ('employees', 'emppersonalinfo')
-     ORDER BY CASE TABLE_NAME WHEN 'employees' THEN 0 ELSE 1 END
+     ORDER BY CASE TABLE_NAME WHEN 'emppersonalinfo' THEN 0 ELSE 1 END
      LIMIT 1`,
   );
 
-  return rows?.[0]?.table_name || "employees";
+  return rows?.[0]?.table_name || "emppersonalinfo";
 };
 
 const ensureSalaryInformationTable = async () => {
@@ -1315,7 +1372,7 @@ app.use("/api/eservice", eserviceRoutes);
 app.get(
   "/api/districts",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(ROLE_DATA_ENCODER_ADMIN_SUPER_ADMIN),
   async (req, res) => {
     try {
       const [rows] = await pool
@@ -1336,7 +1393,7 @@ app.get(
 app.post(
   "/api/districts",
   authMiddleware,
-  roleAuthMiddleware(["super-admin"]),
+  roleAuthMiddleware(ROLE_SUPER_ADMIN),
   validateRequest({ body: districtBodySchema }),
   async (req, res) => {
     try {
@@ -1373,7 +1430,7 @@ app.post(
 app.delete(
   "/api/districts/:id",
   authMiddleware,
-  roleAuthMiddleware(["super-admin"]),
+  roleAuthMiddleware(ROLE_SUPER_ADMIN),
   validateRequest({ params: idParamSchema }),
   async (req, res) => {
     try {
@@ -1423,7 +1480,7 @@ app.delete(
 app.get(
   "/api/archiving-reasons",
   authMiddleware,
-  roleAuthMiddleware(["super-admin"]),
+  roleAuthMiddleware(ROLE_SUPER_ADMIN),
   async (_req, res) => {
     try {
       const [rows] = await pool
@@ -1442,7 +1499,7 @@ app.get(
 app.post(
   "/api/archiving-reasons",
   authMiddleware,
-  roleAuthMiddleware(["super-admin"]),
+  roleAuthMiddleware(ROLE_SUPER_ADMIN),
   validateRequest({ body: archivingReasonBodySchema }),
   async (req, res) => {
     try {
@@ -1482,7 +1539,7 @@ app.post(
 app.delete(
   "/api/archiving-reasons/:id",
   authMiddleware,
-  roleAuthMiddleware(["super-admin"]),
+  roleAuthMiddleware(ROLE_SUPER_ADMIN),
   validateRequest({ params: idParamSchema }),
   async (req, res) => {
     try {
@@ -1517,7 +1574,7 @@ app.delete(
 app.get(
   "/api/positions",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(ROLE_DATA_ENCODER_ADMIN_SUPER_ADMIN),
   async (req, res) => {
     try {
       const positions = await Position.getAll();
@@ -1534,7 +1591,7 @@ app.get(
 app.get(
   "/api/civil-statuses",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(ROLE_DATA_ENCODER_ADMIN_SUPER_ADMIN),
   async (_req, res) => {
     try {
       const [rows] = await pool
@@ -1555,7 +1612,7 @@ app.get(
 app.post(
   "/api/civil-statuses",
   authMiddleware,
-  roleAuthMiddleware(["super-admin"]),
+  roleAuthMiddleware(ROLE_SUPER_ADMIN),
   validateRequest({ body: civilStatusBodySchema }),
   async (req, res) => {
     try {
@@ -1598,7 +1655,7 @@ app.post(
 app.delete(
   "/api/civil-statuses/:id",
   authMiddleware,
-  roleAuthMiddleware(["super-admin"]),
+  roleAuthMiddleware(ROLE_SUPER_ADMIN),
   validateRequest({ params: idParamSchema }),
   async (req, res) => {
     try {
@@ -1633,7 +1690,7 @@ app.delete(
 app.get(
   "/api/sexes",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(ROLE_DATA_ENCODER_ADMIN_SUPER_ADMIN),
   async (_req, res) => {
     try {
       const [rows] = await pool
@@ -1652,7 +1709,7 @@ app.get(
 app.post(
   "/api/sexes",
   authMiddleware,
-  roleAuthMiddleware(["super-admin"]),
+  roleAuthMiddleware(ROLE_SUPER_ADMIN),
   validateRequest({ body: sexBodySchema }),
   async (req, res) => {
     try {
@@ -1685,7 +1742,7 @@ app.post(
 app.delete(
   "/api/sexes/:id",
   authMiddleware,
-  roleAuthMiddleware(["super-admin"]),
+  roleAuthMiddleware(ROLE_SUPER_ADMIN),
   validateRequest({ params: idParamSchema }),
   async (req, res) => {
     try {
@@ -1719,7 +1776,7 @@ app.delete(
 app.post(
   "/api/positions",
   authMiddleware,
-  roleAuthMiddleware(["super-admin"]),
+  roleAuthMiddleware(ROLE_SUPER_ADMIN),
   validateRequest({ body: positionBodySchema }),
   async (req, res) => {
     try {
@@ -1758,7 +1815,7 @@ app.post(
 app.delete(
   "/api/positions/:id",
   authMiddleware,
-  roleAuthMiddleware(["super-admin"]),
+  roleAuthMiddleware(ROLE_SUPER_ADMIN),
   validateRequest({ params: idParamSchema }),
   async (req, res) => {
     try {
