@@ -39,7 +39,7 @@ export default function SuperAdmin({
     switch (activeTab) {
       case "employees-list":
         return <EmployeesListLayout key={tabKey} />;
-      case "eservice":
+      case "eservice-record":
         return <EServiceRecord key={tabKey} />;
       case "employee-management":
         return <EmployeeLeaveManagement key={tabKey} />;

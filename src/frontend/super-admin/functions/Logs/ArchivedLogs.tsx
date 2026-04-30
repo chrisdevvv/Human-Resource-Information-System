@@ -127,6 +127,7 @@ export default function ArchivedLogs() {
     if (dateTo) params.set("to", dateTo);
     if (searchQuery.trim()) params.set("search", searchQuery.trim());
     if (roleFilter !== "ALL") params.set("role", roleFilter);
+    if (schoolFilter !== "ALL") params.set("school_id", schoolFilter);
     if (letterFilter !== "ALL") params.set("letter", letterFilter);
     if (sortMode) params.set("sortMode", sortMode);
     params.set("report_scope", "archived");
@@ -148,6 +149,7 @@ export default function ArchivedLogs() {
       params.set("only_archived", "true");
       if (searchQuery.trim()) params.set("search", searchQuery.trim());
       if (roleFilter !== "ALL") params.set("role", roleFilter);
+      if (schoolFilter !== "ALL") params.set("school_id", schoolFilter);
       if (letterFilter !== "ALL") params.set("letter", letterFilter);
       if (dateFrom) params.set("from", dateFrom);
       if (dateTo) params.set("to", dateTo);
@@ -211,6 +213,7 @@ export default function ArchivedLogs() {
   }, [
     searchQuery,
     roleFilter,
+    schoolFilter,
     letterFilter,
     sortMode,
     dateFrom,
@@ -244,6 +247,7 @@ export default function ArchivedLogs() {
   const handleResetFilters = () => {
     setSearchQuery("");
     setRoleFilter("ALL");
+    setSchoolFilter("ALL");
     setLetterFilter("ALL");
     setSortMode("date-desc");
     setDateFrom("");
@@ -255,6 +259,7 @@ export default function ArchivedLogs() {
   const hasActiveFilters =
     searchQuery.trim().length > 0 ||
     roleFilter !== "ALL" ||
+    schoolFilter !== "ALL" ||
     letterFilter !== "ALL" ||
     sortMode !== "date-desc" ||
     Boolean(dateFrom) ||
@@ -428,6 +433,22 @@ export default function ArchivedLogs() {
           </select>
 
           <select
+            value={schoolFilter}
+            onChange={(e) => {
+              setSchoolFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="text-gray-500 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer"
+          >
+            <option value="ALL">All Schools</option>
+            {schoolOptions.map((school) => (
+              <option key={school.id} value={String(school.id)}>
+                {school.name}
+              </option>
+            ))}
+          </select>
+
+          <select
             value={letterFilter}
             onChange={(e) => {
               setLetterFilter(e.target.value);
@@ -588,10 +609,10 @@ export default function ArchivedLogs() {
       </div>
 
       {logsData.length > 0 && (
-        <div className="mt-6 space-y-3">
-          <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-            <label className="flex items-center gap-2 text-sm text-gray-600">
-              Show
+        <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-2 text-sm text-gray-700">
+              <span>Show</span>
               <select
                 value={itemsPerPage}
                 onChange={(e) => {
@@ -599,7 +620,7 @@ export default function ArchivedLogs() {
                   setCurrentPage(1);
                   setPageJumpInput("1");
                 }}
-                className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+                className="h-6 cursor-pointer rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-700 outline-none transition focus:border-blue-600"
               >
                 {PAGE_SIZE_OPTIONS.map((option) => (
                   <option key={option} value={option}>
@@ -607,23 +628,24 @@ export default function ArchivedLogs() {
                   </option>
                 ))}
               </select>
-              entries
-            </label>
+              <span>entries</span>
+            </div>
 
-            <div className="flex items-center justify-center gap-2 sm:justify-self-center">
+            <div className="flex flex-wrap items-center justify-center gap-1">
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                className="inline-flex h-6 cursor-pointer items-center justify-center gap-0.5 rounded-md border border-gray-200 bg-white px-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Previous page"
               >
-                <ChevronLeft size={18} />
+                <ChevronLeft size={12} />
+                Previous
               </button>
               {pageNumberItems.map((item, index) =>
                 item === "ellipsis" ? (
                   <span
                     key={`ellipsis-${index}`}
-                    className="px-2 text-sm text-gray-400 select-none"
+                    className="select-none px-2 text-sm text-gray-400"
                   >
                     ...
                   </span>
@@ -631,10 +653,10 @@ export default function ArchivedLogs() {
                   <button
                     key={item}
                     onClick={() => setCurrentPage(item)}
-                    className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
+                    className={`inline-flex h-6 min-w-6 cursor-pointer items-center justify-center rounded-md px-1.5 text-sm font-medium transition ${
                       currentPage === item
                         ? "bg-blue-600 text-white"
-                        : "text-gray-500 hover:bg-gray-100"
+                        : "text-gray-600 hover:bg-gray-100"
                     }`}
                   >
                     {item}
@@ -646,14 +668,15 @@ export default function ArchivedLogs() {
                   setCurrentPage(Math.min(totalPages, currentPage + 1))
                 }
                 disabled={currentPage === totalPages}
-                className="p-2 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                className="inline-flex h-6 cursor-pointer items-center justify-center gap-0.5 rounded-md border border-gray-200 bg-white px-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Next page"
               >
-                <ChevronRight size={18} />
+                Next
+                <ChevronRight size={12} />
               </button>
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-gray-600 sm:justify-self-end">
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-700 lg:justify-end">
               <span>Jump to</span>
               <input
                 type="number"
@@ -667,11 +690,11 @@ export default function ArchivedLogs() {
                     handleJumpToPage();
                   }
                 }}
-                className="w-16 rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+                className="h-6 w-12 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-700 outline-none"
               />
               <button
                 onClick={handleJumpToPage}
-                className="rounded bg-gray-100 px-2 py-1 text-sm text-gray-700 hover:bg-gray-200 cursor-pointer"
+                className="cursor-pointer rounded-md px-2 py-1 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
               >
                 Go
               </button>

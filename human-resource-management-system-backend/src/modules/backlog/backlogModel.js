@@ -106,6 +106,11 @@ const Backlog = {
       params.push(toDbRole(options.role));
     }
 
+    if (options.schoolId) {
+      whereParts.push("users.school_id = ?");
+      params.push(options.schoolId);
+    }
+
     const normalizedLetter =
       typeof options.letter === "string"
         ? options.letter.trim().toUpperCase()
@@ -298,6 +303,11 @@ const Backlog = {
       params.push(normalizedLetter);
     }
 
+    if (filters.schoolId) {
+      whereParts.push("users.school_id = ?");
+      params.push(filters.schoolId);
+    }
+
     // Apply date range filters first (uses created_at index)
     if (filters.from) {
       whereParts.push("backlogs.created_at >= ?");
@@ -320,7 +330,7 @@ const Backlog = {
     }
 
     if (filters.schoolId) {
-      whereParts.push("backlogs.school_id = ?");
+      whereParts.push("users.school_id = ?");
       params.push(filters.schoolId);
     }
 

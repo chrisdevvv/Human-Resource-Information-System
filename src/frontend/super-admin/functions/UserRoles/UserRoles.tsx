@@ -423,16 +423,16 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
         }
       />
 
-      <div className="flex flex-col sm:flex-row justify-start gap-2 mb-4">
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-start">
         <button
           onClick={() => setActiveTab("users")}
-          className={`w-full sm:w-auto px-4 py-1 sm:py-1 font-medium text-sm rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "users"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          <span className="inline-flex items-center gap-2">
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
             <Settings size={16} />
             User & Roles
           </span>
@@ -440,13 +440,13 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
 
         <button
           onClick={() => setActiveTab("pending")}
-          className={`w-full sm:w-auto px-4 py-1 font-medium text-sm rounded-lg sm:rounded-t-lg transition cursor-pointer ${
+          className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-1 font-medium text-xs rounded-lg sm:rounded-t-lg transition cursor-pointer ${
             activeTab === "pending"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          <span className="inline-flex items-center gap-2">
+          <span className="inline-flex w-full items-center justify-center gap-2 text-center">
             <UserCheck size={16} />
             Pending Accounts
           </span>
@@ -730,10 +730,10 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
           </div>
 
           {filteredUsers.length > 0 && (
-            <div className="mt-6">
-              <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-                <label className="flex items-center gap-2 text-sm text-gray-600">
-                  Show
+            <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <span>Show</span>
                   <select
                     value={itemsPerPage}
                     onChange={(e) => {
@@ -741,7 +741,7 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                       setCurrentPage(1);
                       setPageJumpInput("1");
                     }}
-                    className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+                    className="h-6 cursor-pointer rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-700 outline-none transition focus:border-blue-600"
                   >
                     {PAGE_SIZE_OPTIONS.map((option) => (
                       <option key={option} value={option}>
@@ -749,24 +749,25 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                       </option>
                     ))}
                   </select>
-                  entries
-                </label>
+                  <span>entries</span>
+                </div>
 
-                <div className="flex items-center justify-center gap-2 sm:justify-self-center">
+                <div className="flex flex-wrap items-center justify-center gap-1">
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="p-2 text-gray-500 hover:bg-gray-50 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    className="inline-flex h-6 cursor-pointer items-center justify-center gap-0.5 rounded-md border border-gray-200 bg-white px-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label="Previous page"
                   >
-                    <ChevronLeft size={18} />
+                    <ChevronLeft size={12} />
+                    Previous
                   </button>
 
                   {pageNumberItems.map((item, index) =>
                     item === "ellipsis" ? (
                       <span
                         key={`ellipsis-${index}`}
-                        className="px-2 text-sm text-gray-400 select-none"
+                        className="select-none px-2 text-sm text-gray-400"
                       >
                         ...
                       </span>
@@ -774,10 +775,10 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                       <button
                         key={item}
                         onClick={() => setCurrentPage(item)}
-                        className={`w-9 h-9 rounded font-medium text-sm transition cursor-pointer ${
+                        className={`inline-flex h-6 min-w-6 cursor-pointer items-center justify-center rounded-md px-1.5 text-sm font-medium transition ${
                           currentPage === item
                             ? "bg-blue-600 text-white"
-                            : "text-gray-500 hover:bg-gray-50"
+                            : "text-gray-600 hover:bg-gray-100"
                         }`}
                       >
                         {item}
@@ -790,14 +791,15 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                       setCurrentPage(Math.min(totalPages, currentPage + 1))
                     }
                     disabled={currentPage === totalPages}
-                    className="p-2 text-gray-500 hover:bg-gray-50 rounded disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    className="inline-flex h-6 cursor-pointer items-center justify-center gap-0.5 rounded-md border border-gray-200 bg-white px-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label="Next page"
                   >
-                    <ChevronRight size={18} />
+                    Next
+                    <ChevronRight size={12} />
                   </button>
                 </div>
 
-                <div className="flex items-center gap-2 text-sm text-gray-600 sm:justify-self-end">
+                <div className="flex items-center justify-center gap-2 text-sm text-gray-700 lg:justify-end">
                   <span>Jump to</span>
                   <input
                     type="number"
@@ -811,11 +813,11 @@ export default function UserRoles({ mode = "super-admin" }: UserRolesProps) {
                         handleJumpToPage();
                       }
                     }}
-                    className="w-16 rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+                    className="h-6 w-12 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-700 outline-none"
                   />
                   <button
                     onClick={handleJumpToPage}
-                    className="rounded bg-gray-100 px-2 py-1 text-sm text-gray-700 hover:bg-gray-200"
+                    className="cursor-pointer rounded-md px-2 py-1 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
                   >
                     Go
                   </button>

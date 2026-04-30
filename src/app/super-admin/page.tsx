@@ -16,7 +16,7 @@ const ALLOWED_TABS = new Set([
   "dashboard",
   "employee-management",
   "employees-list",
-  "eservice",
+  "eservice-record",
   "user-roles",
   "logs",
   "configuration",
@@ -152,7 +152,7 @@ export default function Page() {
           />
           <main
             className={`bg-white flex-1 min-w-0 w-full transition-all duration-300 ${
-              activeTab === "employees-list" ? "p-3 sm:p-4" : "p-6"
+              activeTab === "employees-list" || activeTab === "eservice-record" ? "p-3 sm:p-4" : "p-6"
             }`}
           >
             <SuperAdmin activeTab={activeTab} onTabChange={handleTabChange} />
@@ -164,7 +164,7 @@ export default function Page() {
       <div className="md:hidden min-h-screen flex flex-col">
         <main
           className={`bg-white flex-1 w-full ${
-            activeTab === "employees-list" ? "p-3" : "p-4"
+            activeTab === "employees-list" || activeTab === "eservice-record" ? "p-3" : "p-4"
           }`}
         >
           <SuperAdmin activeTab={activeTab} onTabChange={handleTabChange} />

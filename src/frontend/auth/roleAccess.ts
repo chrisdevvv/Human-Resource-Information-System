@@ -25,6 +25,11 @@ export const ACCESSIBLE_FEATURES: AccessibleFeature[] = [
     roles: ["admin", "super-admin"],
   },
   {
+    id: "eservice-record",
+    label: "E-Service Record",
+    roles: ["super-admin"],
+  },
+  {
     id: "user-roles",
     label: "User & Roles",
     roles: ["admin", "super-admin"],
@@ -131,6 +136,8 @@ export function canAccessPage(
         normalizeRole(userRole) === "admin" ||
         normalizeRole(userRole) === "super-admin"
       );
+    case "eservice-record":
+      return normalizeRole(userRole) === "super-admin";
     case "logs":
     case "admin-logs":
       return normalizeRole(userRole) === "super-admin";
