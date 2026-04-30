@@ -176,6 +176,7 @@ const buildEmployeeSelectWithAge = (employee, school) => `
   employees.lastName AS last_name,
   employees.middle_initial,
   employees.MISR,
+  employees.teacher_status,
   employees.email,
   employees.mobile_number,
   employees.home_address,
@@ -876,6 +877,8 @@ const Employee = {
         normalizeOptionalText(data.MISR) ||
         normalizeOptionalText(last_name) ||
         "N/A";
+      const resolvedTeacherStatus =
+        normalizeOptionalText(teacher_status) || "Active";
 
       [result] = await pool.promise().query(
         `INSERT INTO emppersonalinfo (
@@ -917,12 +920,12 @@ const Employee = {
           place_of_birth || null,
           resolvedDistrict,
           schoolName,
-          sex || null,
-          sex || null,
-          civil_status || null,
+          normalizeOptionalText(sex) || "N/A",
+          normalizeOptionalText(sex) || null,
+          normalizeOptionalText(civil_status) || "N/A",
           civil_status_id || null,
           sex_id || null,
-          "Active",
+          resolvedTeacherStatus,
           school_id,
           age || null,
         ],
@@ -1009,6 +1012,8 @@ const Employee = {
       civil_status_id,
       sex,
       sex_id,
+      MISR,
+      teacher_status,
       employee_type,
       school_id,
       employee_no,
@@ -1031,6 +1036,7 @@ const Employee = {
       pagibig_no,
       philhealth_no,
       age,
+      dateOfBirth,
       birthdate,
       date_of_first_appointment,
     } = data;
@@ -1081,7 +1087,11 @@ const Employee = {
     const employeeTable = employeeSchema.table;
     const schoolSchema = await resolveSchoolSchemaInfo();
 
-    const duplicateField = await findEmployeeUniqueConflict(uniqueValues, id);
+    const duplicateField = await findEmployeeUniqueConflict(
+      uniqueValues,
+      id,
+      employeeTable,
+    );
     if (duplicateField) {
       throw createDuplicateEmployeeError(duplicateField.label);
     }
@@ -1100,8 +1110,12 @@ const Employee = {
         dateOfBirth || birthdate,
       );
       const normalizedDateOfBirth = toMmDdYyyy(normalizedBirthdate);
+      const resolvedMisr =
+        normalizeOptionalText(MISR) ||
+        normalizeOptionalText(last_name) ||
+        "N/A";
       const resolvedTeacherStatus =
-        normalizeOptionalText(teacher_status) || null;
+        normalizeOptionalText(teacher_status) || "Active";
 
       [result] = await pool.promise().query(
         `UPDATE emppersonalinfo SET
@@ -1133,8 +1147,8 @@ const Employee = {
           first_name,
           middle_name || null,
           last_name,
-          middleInitial || null,
-          normalizeOptionalText(MISR) || null,
+          middleInitial || "N/A",
+          resolvedMisr,
           personalEmail,
           normalizedMobileNumber,
           home_address || null,
@@ -1145,9 +1159,9 @@ const Employee = {
           resolvedDistrict,
           resolvedDistrict,
           schoolName,
-          sex || null,
-          sex || null,
-          civil_status || null,
+          normalizeOptionalText(sex) || "N/A",
+          normalizeOptionalText(sex) || null,
+          normalizeOptionalText(civil_status) || "N/A",
           civil_status_id || null,
           sex_id || null,
           resolvedTeacherStatus,

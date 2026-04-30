@@ -43,32 +43,55 @@ const {
 
 const router = express.Router();
 
+const EMPLOYEE_READ_WRITE_ROLES = [
+  "data-encoder",
+  "data_encoder",
+  "DATA_ENCODER",
+  "admin",
+  "ADMIN",
+  "super-admin",
+  "super_admin",
+  "SUPER_ADMIN",
+];
+const EMPLOYEE_ADMIN_ROLES = [
+  "admin",
+  "ADMIN",
+  "super-admin",
+  "super_admin",
+  "SUPER_ADMIN",
+];
+const EMPLOYEE_SUPER_ADMIN_ROLES = [
+  "super-admin",
+  "super_admin",
+  "SUPER_ADMIN",
+];
+
 // Read operations - All authenticated users
 router.get(
   "/",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_READ_WRITE_ROLES),
   validateRequest({ query: employeeListQuerySchema }),
   getAllEmployees,
 );
 router.get(
   "/school/:school_id",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_READ_WRITE_ROLES),
   validateRequest({ params: schoolIdParamSchema }),
   getEmployeesBySchool,
 );
 router.get(
   "/status-counts",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_READ_WRITE_ROLES),
   validateRequest({ query: employeeStatusCountsQuerySchema }),
   getEmployeeStatusCounts,
 );
 router.get(
   "/:employee_id/salary-information",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_READ_WRITE_ROLES),
   validateRequest({
     params: employeeIdParamSchema,
     query: salaryInformationListQuerySchema,
@@ -78,21 +101,21 @@ router.get(
 router.get(
   "/:employee_id/salary-information/:id",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_READ_WRITE_ROLES),
   validateRequest({ params: salaryInformationIdParamSchema }),
   getSalaryInformationById,
 );
 router.get(
   "/:employee_id/salary-information/:id/step-increment-notice-pdf",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_READ_WRITE_ROLES),
   validateRequest({ params: salaryInformationIdParamSchema }),
   getStepIncrementNoticePdf,
 );
 router.post(
   "/:employee_id/salary-information",
   authMiddleware,
-  roleAuthMiddleware(["super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_SUPER_ADMIN_ROLES),
   validateRequest({
     params: employeeIdParamSchema,
     body: salaryInformationCreateBodySchema,
@@ -102,7 +125,7 @@ router.post(
 router.patch(
   "/:employee_id/salary-information/:id",
   authMiddleware,
-  roleAuthMiddleware(["super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_SUPER_ADMIN_ROLES),
   validateRequest({
     params: salaryInformationIdParamSchema,
     body: salaryInformationUpdateBodySchema,
@@ -112,14 +135,14 @@ router.patch(
 router.delete(
   "/:employee_id/salary-information/:id",
   authMiddleware,
-  roleAuthMiddleware(["super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_SUPER_ADMIN_ROLES),
   validateRequest({ params: salaryInformationIdParamSchema }),
   deleteSalaryInformation,
 );
 router.get(
   "/:id",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_READ_WRITE_ROLES),
   validateRequest({ params: idParamSchema }),
   getEmployeeById,
 );
@@ -128,49 +151,49 @@ router.get(
 router.post(
   "/",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_READ_WRITE_ROLES),
   validateRequest({ body: employeeCreateBodySchema }),
   createEmployee,
 );
 router.put(
   "/:id",
   authMiddleware,
-  roleAuthMiddleware(["super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_SUPER_ADMIN_ROLES),
   validateRequest({ params: idParamSchema, body: employeeUpdateBodySchema }),
   updateEmployee,
 );
 router.patch(
   "/:id",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_READ_WRITE_ROLES),
   validateRequest({ params: idParamSchema, body: employeePatchBodySchema }),
   updateEmployee,
 );
 router.delete(
   "/:id",
   authMiddleware,
-  roleAuthMiddleware(["data-encoder", "admin", "super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_READ_WRITE_ROLES),
   validateRequest({ params: idParamSchema }),
   deleteEmployee,
 );
 router.patch(
   "/:id/archive",
   authMiddleware,
-  roleAuthMiddleware(["admin", "super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_ADMIN_ROLES),
   validateRequest({ params: idParamSchema, body: employeeArchiveBodySchema }),
   archiveEmployee,
 );
 router.patch(
   "/:id/unarchive",
   authMiddleware,
-  roleAuthMiddleware(["admin", "super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_ADMIN_ROLES),
   validateRequest({ params: idParamSchema, body: employeeUnarchiveBodySchema }),
   unarchiveEmployee,
 );
 router.patch(
   "/:id/mark-on-leave",
   authMiddleware,
-  roleAuthMiddleware(["admin", "super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_ADMIN_ROLES),
   validateRequest({
     params: idParamSchema,
     body: employeeMarkOnLeaveBodySchema,
@@ -180,7 +203,7 @@ router.patch(
 router.patch(
   "/:id/mark-available",
   authMiddleware,
-  roleAuthMiddleware(["admin", "super-admin"]),
+  roleAuthMiddleware(EMPLOYEE_ADMIN_ROLES),
   validateRequest({ params: idParamSchema }),
   markEmployeeAvailable,
 );
