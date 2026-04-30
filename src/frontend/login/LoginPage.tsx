@@ -413,196 +413,194 @@ export default function LoginPage() {
           <div className="w-full max-w-xl">
             <div className="flex items-center justify-center">
               <div className="w-full overflow-hidden rounded-[28px] border border-blue-100 bg-white shadow-2xl">
-                  <div className="border-b border-blue-100 bg-gradient-to-br from-blue-50 to-white px-5 py-5 lg:hidden">
-                    <div className="flex flex-col items-center text-center">
-                      <img
-                        src="/sdologo-new.svg"
-                        alt="SD Logo"
-                        className="mb-3 h-24 w-auto object-contain"
-                      />
-                      <h2 className="text-lg font-bold text-gray-900">
-                        Human Resource Information System
-                      </h2>
-                      <p className="mt-1 text-xs leading-relaxed text-gray-500">
-                        Sign in to continue to CHRIS.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="p-5 sm:p-7">
-                    <button
-                      type="button"
-                      onClick={() => setShowHrisLogin(false)}
-                      className="mb-4 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 hover:text-gray-800"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                      Back
-                    </button>
-
-                    <div className="mb-1 flex items-center gap-2">
-                      <Lock className="text-blue-600" size={20} />
-                      <h2 className="text-xl font-bold text-gray-800">
-                        Sign in
-                      </h2>
-                    </div>
-                    <p className="mb-5 text-sm text-gray-500">
-                      Use your email and password to continue
+                <div className="border-b border-blue-100 bg-gradient-to-br from-blue-50 to-white px-5 py-5 lg:hidden">
+                  <div className="flex flex-col items-center text-center">
+                    <img
+                      src="/sdologo-new.svg"
+                      alt="SD Logo"
+                      className="mb-3 h-24 w-auto object-contain"
+                    />
+                    <h2 className="text-lg font-bold text-gray-900">
+                      Human Resource Information System
+                    </h2>
+                    <p className="mt-1 text-xs leading-relaxed text-gray-500">
+                      Sign in to continue to CHRIS.
                     </p>
+                  </div>
+                </div>
 
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        handleLogin();
-                      }}
-                    >
-                      <div className="mb-4">
-                        <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-                          <Mail className="text-blue-600" size={18} />
-                          Email
-                        </label>
+                <div className="p-5 sm:p-7">
+                  <button
+                    type="button"
+                    onClick={() => setShowHrisLogin(false)}
+                    className="mb-4 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 hover:text-gray-800"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back
+                  </button>
+
+                  <div className="mb-1 flex items-center gap-2">
+                    <Lock className="text-blue-600" size={20} />
+                    <h2 className="text-xl font-bold text-gray-800">Sign in</h2>
+                  </div>
+                  <p className="mb-5 text-sm text-gray-500">
+                    Use your email and password to continue
+                  </p>
+
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleLogin();
+                    }}
+                  >
+                    <div className="mb-4">
+                      <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <Mail className="text-blue-600" size={18} />
+                        Email
+                      </label>
+                      <input
+                        id="loginEmail"
+                        type="email"
+                        placeholder="you@deped.gov.ph"
+                        value={email}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setEmail(v);
+                          if (emailError && validateEmail(v)) {
+                            setEmailError(null);
+                          }
+                        }}
+                        onBlur={() => {
+                          if (!email) setEmailError("Email is required");
+                          else if (!validateEmail(email)) {
+                            setEmailError("Please enter a valid email address");
+                          } else {
+                            setEmailError(null);
+                          }
+                        }}
+                        className={`w-full rounded-xl border bg-white px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${emailError ? "border-red-500" : "border-gray-300"}`}
+                        disabled={isLoading}
+                      />
+                      {emailError && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {emailError}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="mb-6">
+                      <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <Lock className="text-blue-600" size={18} />
+                        Password
+                      </label>
+                      <div className="relative">
                         <input
-                          id="loginEmail"
-                          type="email"
-                          placeholder="you@deped.gov.ph"
-                          value={email}
+                          placeholder="••••••••"
+                          id="loginPassword"
+                          type={showPassword ? "text" : "password"}
+                          value={password}
                           onChange={(e) => {
-                            const v = e.target.value;
-                            setEmail(v);
-                            if (emailError && validateEmail(v)) {
-                              setEmailError(null);
-                            }
+                            setPassword(e.target.value);
+                            if (passwordError) setPasswordError(null);
                           }}
                           onBlur={() => {
-                            if (!email) setEmailError("Email is required");
-                            else if (!validateEmail(email)) {
-                              setEmailError("Please enter a valid email address");
+                            if (!password) {
+                              setPasswordError("Password is required");
                             } else {
-                              setEmailError(null);
+                              setPasswordError(null);
                             }
                           }}
-                          className={`w-full rounded-xl border bg-white px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${emailError ? "border-red-500" : "border-gray-300"}`}
+                          className={`w-full rounded-xl border bg-white px-4 py-3 pr-11 text-sm text-gray-700 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${passwordError ? "border-red-500" : "border-gray-300"}`}
                           disabled={isLoading}
                         />
-                        {emailError && (
-                          <p className="mt-1 text-sm text-red-600">
-                            {emailError}
-                          </p>
-                        )}
+                        <button
+                          type="button"
+                          aria-label={
+                            showPassword ? "Hide password" : "Show password"
+                          }
+                          onClick={() => setShowPassword((s) => !s)}
+                          className="absolute right-3 top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center text-gray-500 transition hover:text-gray-700"
+                          disabled={isLoading}
+                        >
+                          {showPassword ? (
+                            <EyeOff size={18} />
+                          ) : (
+                            <Eye size={18} />
+                          )}
+                        </button>
                       </div>
-
-                      <div className="mb-6">
-                        <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-                          <Lock className="text-blue-600" size={18} />
-                          Password
-                        </label>
-                        <div className="relative">
-                          <input
-                            placeholder="••••••••"
-                            id="loginPassword"
-                            type={showPassword ? "text" : "password"}
-                            value={password}
-                            onChange={(e) => {
-                              setPassword(e.target.value);
-                              if (passwordError) setPasswordError(null);
-                            }}
-                            onBlur={() => {
-                              if (!password) {
-                                setPasswordError("Password is required");
-                              } else {
-                                setPasswordError(null);
-                              }
-                            }}
-                            className={`w-full rounded-xl border bg-white px-4 py-3 pr-11 text-sm text-gray-700 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${passwordError ? "border-red-500" : "border-gray-300"}`}
-                            disabled={isLoading}
-                          />
-                          <button
-                            type="button"
-                            aria-label={
-                              showPassword ? "Hide password" : "Show password"
-                            }
-                            onClick={() => setShowPassword((s) => !s)}
-                            className="absolute right-3 top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center text-gray-500 transition hover:text-gray-700"
-                            disabled={isLoading}
-                          >
-                            {showPassword ? (
-                              <EyeOff size={18} />
-                            ) : (
-                              <Eye size={18} />
-                            )}
-                          </button>
-                        </div>
-                        {passwordError && (
-                          <p className="mt-1 text-sm text-red-600">
-                            {passwordError}
-                          </p>
-                        )}
-                      </div>
-
-                      {remainingLockTime > 0 && (
-                        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 shadow-sm">
-                          <p className="text-sm font-medium text-red-800">
-                            Too many failed login attempts
-                          </p>
-                          <p className="mt-1 text-sm text-red-700">
-                            Account locked. Try again in {remainingLockTime}{" "}
-                            second{remainingLockTime !== 1 ? "s" : ""}.
-                          </p>
-                        </div>
+                      {passwordError && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {passwordError}
+                        </p>
                       )}
+                    </div>
 
-                      <button
-                        id="submitLogin"
-                        type="submit"
-                        className="flex w-full cursor-pointer items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={isLoading || remainingLockTime > 0}
-                      >
-                        {isLoading ? (
-                          <div className="flex min-h-5 items-center justify-center">
-                            <DotLoader size={6} color="bg-white" />
-                          </div>
-                        ) : (
-                          "Login"
-                        )}
-                      </button>
-                    </form>
-
-                    {isLoading && (
-                      <div className="mt-6 flex flex-col items-center justify-center gap-3 rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-6">
-                        <DotLoader size={10} color="bg-blue-600" />
-                        <p className="text-sm font-medium text-blue-700">
-                          Signing in, please wait...
+                    {remainingLockTime > 0 && (
+                      <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 shadow-sm">
+                        <p className="text-sm font-medium text-red-800">
+                          Too many failed login attempts
+                        </p>
+                        <p className="mt-1 text-sm text-red-700">
+                          Account locked. Try again in {remainingLockTime}{" "}
+                          second{remainingLockTime !== 1 ? "s" : ""}.
                         </p>
                       </div>
                     )}
 
-                    <div className="mt-5 flex flex-col gap-2 text-sm sm:flex-row sm:justify-between">
-                      <a
-                        href="#"
-                        id="registerLink"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (isLoading) return;
-                          setShowRegister(true);
-                        }}
-                        className="text-blue-600 transition hover:text-blue-700 hover:underline"
-                      >
-                        Create account
-                      </a>
-                      <a
-                        href="#"
-                        id="forgotLink"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (isLoading) return;
-                          setShowForgot(true);
-                        }}
-                        className="text-gray-600 transition hover:text-gray-800 hover:underline"
-                      >
-                        Forgot password?
-                      </a>
+                    <button
+                      id="submitLogin"
+                      type="submit"
+                      className="flex w-full cursor-pointer items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={isLoading || remainingLockTime > 0}
+                    >
+                      {isLoading ? (
+                        <div className="flex min-h-5 items-center justify-center">
+                          <DotLoader size={6} color="bg-white" />
+                        </div>
+                      ) : (
+                        "Login"
+                      )}
+                    </button>
+                  </form>
+
+                  {isLoading && (
+                    <div className="mt-6 flex flex-col items-center justify-center gap-3 rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-6">
+                      <DotLoader size={10} color="bg-blue-600" />
+                      <p className="text-sm font-medium text-blue-700">
+                        Signing in, please wait...
+                      </p>
                     </div>
+                  )}
+
+                  <div className="mt-5 flex flex-col gap-2 text-sm sm:flex-row sm:justify-between">
+                    <a
+                      href="#"
+                      id="registerLink"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (isLoading) return;
+                        setShowRegister(true);
+                      }}
+                      className="text-blue-600 transition hover:text-blue-700 hover:underline"
+                    >
+                      Create account
+                    </a>
+                    <a
+                      href="#"
+                      id="forgotLink"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (isLoading) return;
+                        setShowForgot(true);
+                      }}
+                      className="text-gray-600 transition hover:text-gray-800 hover:underline"
+                    >
+                      Forgot password?
+                    </a>
                   </div>
                 </div>
+              </div>
             </div>
           </div>
         )}
@@ -625,7 +623,9 @@ export default function LoginPage() {
                 &copy; {currentYear} DepEd Human Resource Information System
               </span>
             </div>
-            <div className="mt-1">Developer: Shania Condalor &amp; Alexis Torrefiel</div>
+            <div className="mt-1">
+              Developer: Shania Condalor &amp; Alexis Torrefiel
+            </div>
           </div>
         </div>
       </footer>
@@ -645,12 +645,12 @@ export default function LoginPage() {
             <div className="px-7 pb-7 pt-6 sm:px-8">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                      E-Service Record
-                    </p>
-                    <h3 className="mt-2 text-[22px] font-semibold text-slate-900">
-                      Request Service Record
-                    </h3>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                    E-Service Record
+                  </p>
+                  <h3 className="mt-2 text-[22px] font-semibold text-slate-900">
+                    Request Service Record
+                  </h3>
                 </div>
                 <button
                   type="button"
@@ -671,7 +671,10 @@ export default function LoginPage() {
                 <div className="mt-5">
                   <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4">
                     <div className="flex items-start gap-3">
-                      <CheckCircle2 className="mt-0.5 text-emerald-600" size={20} />
+                      <CheckCircle2
+                        className="mt-0.5 text-emerald-600"
+                        size={20}
+                      />
                       <div>
                         <p className="text-sm font-semibold text-emerald-800">
                           Your service record was sent successfully.
