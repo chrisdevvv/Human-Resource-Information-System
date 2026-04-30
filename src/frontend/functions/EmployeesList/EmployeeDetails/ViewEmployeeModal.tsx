@@ -452,7 +452,7 @@ const createEditSnapshotFromDetails = (
     currentAppointmentDate: toDateInputValue(data.current_appointment_date),
     currentSg: String(data.current_sg || "").trim(),
     employeeType:
-      data.resolved_employee_type || data.employee_type || "non-teaching",
+      data.employee_type || "non-teaching",
     schoolId: data.school_id || null,
     schoolName: data.school_name || "",
     positionId: data.position_id || null,
