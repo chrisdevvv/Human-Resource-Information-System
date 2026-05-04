@@ -74,6 +74,7 @@ export default function LoginPage() {
   const [serviceRecordError, setServiceRecordError] = useState<string | null>(
     null,
   );
+  const [isServiceRecordSending, setIsServiceRecordSending] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -138,7 +139,7 @@ export default function LoginPage() {
     return re.test(value);
   }
 
-  function validateDepedEmail(value: string) {
+  function validateServiceRecordEmail(value: string) {
     const trimmed = value.trim().toLowerCase();
     if (!validateEmail(trimmed)) {
       return "Please enter a valid email address";
@@ -159,6 +160,51 @@ export default function LoginPage() {
     setShowServiceRecordModal(false);
     setShowServiceRecordSuccess(false);
     setServiceRecordError(null);
+  }
+
+  async function handleServiceRecordRequest() {
+    const trimmedEmail = serviceRecordEmail.trim().toLowerCase();
+    const nextError = validateServiceRecordEmail(trimmedEmail);
+    setServiceRecordError(nextError);
+    if (nextError || serviceRecordCooldown > 0 || isServiceRecordSending) return;
+
+    setIsServiceRecordSending(true);
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/eservice/service-records/send`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ reqEmail: trimmedEmail }),
+        },
+      );
+
+      const contentType = response.headers.get("content-type");
+      const data = contentType?.includes("application/json")
+        ? await response.json()
+        : { message: await response.text() };
+
+      if (!response.ok) {
+        throw new Error(data?.message || "Failed to send service record.");
+      }
+
+      if (data?.status !== "found") {
+        throw new Error("No service record was found for this email address.");
+      }
+
+      setShowServiceRecordSuccess(true);
+      setServiceRecordCooldown(SERVICE_RECORD_COOLDOWN_SECONDS);
+      setServiceRecordError(null);
+    } catch (err) {
+      setServiceRecordError(
+        err instanceof Error ? err.message : "Failed to send service record.",
+      );
+    } finally {
+      setIsServiceRecordSending(false);
+    }
   }
 
   async function handleLogin() {
@@ -718,12 +764,7 @@ export default function LoginPage() {
                   className="mt-5"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    const nextError = validateDepedEmail(serviceRecordEmail);
-                    setServiceRecordError(nextError);
-                    if (nextError) return;
-                    if (serviceRecordCooldown > 0) return;
-                    setShowServiceRecordSuccess(true);
-                    setServiceRecordCooldown(SERVICE_RECORD_COOLDOWN_SECONDS);
+                    void handleServiceRecordRequest();
                   }}
                 >
                   <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -742,12 +783,14 @@ export default function LoginPage() {
                         const nextValue = e.target.value;
                         setServiceRecordEmail(nextValue);
                         if (serviceRecordError) {
-                          setServiceRecordError(validateDepedEmail(nextValue));
+                          setServiceRecordError(
+                            validateServiceRecordEmail(nextValue),
+                          );
                         }
                       }}
                       onBlur={() =>
                         setServiceRecordError(
-                          validateDepedEmail(serviceRecordEmail),
+                          validateServiceRecordEmail(serviceRecordEmail),
                         )
                       }
                       className={`w-full rounded-2xl border bg-white px-4 py-3 pl-11 text-sm text-slate-700 placeholder:text-slate-400 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100 ${serviceRecordError ? "border-red-400" : "border-slate-200"}`}
@@ -780,14 +823,17 @@ export default function LoginPage() {
                       type="submit"
                       className="rounded-2xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                       disabled={
-                        !!validateDepedEmail(serviceRecordEmail) ||
+                        !!validateServiceRecordEmail(serviceRecordEmail) ||
                         !serviceRecordEmail.trim() ||
-                        serviceRecordCooldown > 0
+                        serviceRecordCooldown > 0 ||
+                        isServiceRecordSending
                       }
                     >
-                      {serviceRecordCooldown > 0
-                        ? `Request (${serviceRecordCooldown}s)`
-                        : "Request"}
+                      {isServiceRecordSending
+                        ? "Sending..."
+                        : serviceRecordCooldown > 0
+                          ? `Request (${serviceRecordCooldown}s)`
+                          : "Request"}
                     </button>
                   </div>
                 </form>

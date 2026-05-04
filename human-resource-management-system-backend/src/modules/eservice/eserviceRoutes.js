@@ -9,12 +9,18 @@ const {
   deleteEmployeePersonalInfo,
   getDistricts,
   getSchools,
+  sendServiceRecord,
 } = require("./eserviceController");
 
 const authMiddleware = require("../../middleware/authMiddleware");
 const { roleAuthMiddleware } = require("../../middleware/roleAuthMiddleware");
 
 const router = express.Router();
+
+// ==========================
+// SERVICE RECORD ROUTE
+// ==========================
+router.post("/service-records/send", sendServiceRecord);
 
 // ==========================
 // LOOKUP ROUTES
