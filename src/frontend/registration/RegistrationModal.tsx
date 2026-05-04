@@ -69,15 +69,12 @@ export default function RegistrationModal({ visible, onClose }: Props) {
       try {
         setSchoolsLoading(true);
         setSchoolsError("");
-        const response = await fetch(
-          `${API_BASE_URL}/api/schools/public/list`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
+        const response = await fetch(`${API_BASE_URL}/api/schools/list`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+        });
 
         console.log("Schools API Response Status:", response.status);
         const body = await response.json();
@@ -694,7 +691,7 @@ export default function RegistrationModal({ visible, onClose }: Props) {
                     {useSchoolsDivisionOffice ? (
                       <input
                         type="text"
-                        value={SCHOOLS_DIVISION_OFFICE}
+                        value="SDO"
                         readOnly
                         disabled
                         className="w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-700 cursor-not-allowed"
