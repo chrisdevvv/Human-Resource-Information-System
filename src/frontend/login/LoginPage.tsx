@@ -652,14 +652,6 @@ export default function LoginPage() {
                     Request Service Record
                   </h3>
                 </div>
-                <button
-                  type="button"
-                  onClick={closeServiceRecordModal}
-                  aria-label="Close service record modal"
-                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-slate-200 text-base font-bold text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
-                >
-                  X
-                </button>
               </div>
 
               <p className="mt-3 text-sm leading-relaxed text-slate-500">
@@ -687,7 +679,7 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={closeServiceRecordModal}
-                      className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                      className="cursor-pointer rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
                     >
                       Close
                     </button>
@@ -772,13 +764,13 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={closeServiceRecordModal}
-                      className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                      className="cursor-pointer rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="rounded-2xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="cursor-pointer rounded-2xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                       disabled={
                         !!validateDepedEmail(serviceRecordEmail) ||
                         !serviceRecordEmail.trim() ||

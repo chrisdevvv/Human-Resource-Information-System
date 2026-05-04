@@ -96,7 +96,7 @@ export default function ClearAllConfirmation() {
           <button
             type="button"
             onClick={() => closeWith(true)}
-            className="cursor-pointer rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-700"
+            className="cursor-pointer rounded-lg bg-red-100 px-3 py-1.5 text-sm font-medium text-red-800 transition hover:bg-red-200"
           >
             {dialog.confirmText}
           </button>
