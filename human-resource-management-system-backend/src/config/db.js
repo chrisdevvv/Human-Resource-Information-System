@@ -1,7 +1,7 @@
 ﻿require("./loadEnv");
 const mysql = require("mysql2");
 
-const dbName = process.env.DB_NAME || "esrdatabase";
+const dbName = process.env.DB_NAME;
 
 if (!process.env.DB_NAME) {
   console.warn("[DB] DB_NAME is not set. Falling back to 'esrdatabase'.");

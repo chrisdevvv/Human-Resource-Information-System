@@ -1,7 +1,7 @@
 require("./loadEnv");
 const mysql = require("mysql2");
 
-const dbName2 = process.env.DB_NAME2 || "deped_csjdm_db";
+const dbName2 = process.env.DB_NAME;
 
 if (!process.env.DB_NAME2) {
   console.warn("[DB] DB_NAME2 is not set. Falling back to 'deped_csjdm_db'.");

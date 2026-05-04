@@ -6,7 +6,7 @@ const resolveSchoolSchemaInfo = async () => {
      FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = DATABASE()
        AND TABLE_NAME = 'schools'
-       AND COLUMN_NAME IN ('schoolId', 'id', 'schoolName', 'school_name', 'school_code')`,
+       AND COLUMN_NAME IN ('schoolId', 'id', 'schoolName', 'school_name', 'school_code', 'districtId', 'district_id')`,
   );
 
   const columns = new Set(rows.map((row) => row.column_name));
@@ -15,7 +15,25 @@ const resolveSchoolSchemaInfo = async () => {
     id: columns.has("schoolId") ? "schoolId" : "id",
     name: columns.has("schoolName") ? "schoolName" : "school_name",
     code: columns.has("school_code") ? "school_code" : null,
+    district: columns.has("districtId")
+      ? "districtId"
+      : columns.has("district_id")
+        ? "district_id"
+        : null,
   };
+};
+
+const resolveEmployeeTableName = async () => {
+  const [rows] = await pool.promise().query(
+    `SELECT TABLE_NAME AS table_name
+     FROM INFORMATION_SCHEMA.TABLES
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME IN ('employees', 'emppersonalinfo')
+     ORDER BY CASE TABLE_NAME WHEN 'employees' THEN 0 ELSE 1 END
+     LIMIT 1`,
+  );
+
+  return rows?.[0]?.table_name || null;
 };
 
 const School = {
@@ -49,7 +67,7 @@ const School = {
       `SELECT schools.${school.id} AS id, ${nameSelect}, ${codeSelect}
        FROM schools${whereClause}
        ORDER BY schools.${school.name} ${sortOrder}, schools.${school.id} ASC`,
-      params
+      params,
     );
 
     return rows;
@@ -57,33 +75,42 @@ const School = {
 
   getById: async (id) => {
     const school = await resolveSchoolSchemaInfo();
-    const [rows] = await pool
-      .promise()
-      .query(
-        `SELECT schools.${school.id} AS id, schools.${school.name} AS school_name, ${
-          school.code ? `schools.${school.code} AS school_code` : "NULL AS school_code"
-        }
+    const [rows] = await pool.promise().query(
+      `SELECT schools.${school.id} AS id, schools.${school.name} AS school_name, ${
+        school.code
+          ? `schools.${school.code} AS school_code`
+          : "NULL AS school_code"
+      }
          FROM schools
          WHERE schools.${school.id} = ?`,
-        [id],
-      );
+      [id],
+    );
     return rows[0];
   },
 
   countAssignedEmployees: async (id) => {
+    const employeeTable = await resolveEmployeeTableName();
+    if (!employeeTable) return 0;
+
     const [rows] = await pool
       .promise()
-      .query("SELECT COUNT(*) AS total FROM employees WHERE school_id = ?", [
-        id,
-      ]);
+      .query(
+        `SELECT COUNT(*) AS total FROM ${employeeTable} WHERE school_id = ?`,
+        [id],
+      );
     return Number(rows[0]?.total || 0);
   },
 
   create: async (data) => {
     const school = await resolveSchoolSchemaInfo();
-    const { school_name, school_code } = data;
+    const { school_name, school_code, district_id } = data;
     const columns = [school.name];
     const values = [school_name];
+
+    if (school.district) {
+      columns.push(school.district);
+      values.push(district_id);
+    }
 
     if (school.code) {
       columns.push(school.code);

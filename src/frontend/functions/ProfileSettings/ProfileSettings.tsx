@@ -381,13 +381,22 @@ export default function ProfileSettings() {
 
       try {
         setSchoolsLoading(true);
+        const token =
+          typeof window !== "undefined"
+            ? localStorage.getItem("authToken")
+            : null;
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
         const response = await fetch(
           `${API_BASE_URL}/api/schools/public/list`,
           {
             method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers,
           },
         );
 
@@ -1023,7 +1032,11 @@ export default function ProfileSettings() {
           </div>
 
           <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
-            <SkeletonBlock width="w-full sm:w-32" height="h-11" rounded="rounded-2xl" />
+            <SkeletonBlock
+              width="w-full sm:w-32"
+              height="h-11"
+              rounded="rounded-2xl"
+            />
           </div>
         </div>
       </div>
@@ -1068,7 +1081,11 @@ export default function ProfileSettings() {
           </div>
 
           <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
-            <SkeletonBlock width="w-full sm:w-36" height="h-11" rounded="rounded-2xl" />
+            <SkeletonBlock
+              width="w-full sm:w-36"
+              height="h-11"
+              rounded="rounded-2xl"
+            />
           </div>
         </div>
       </div>
@@ -1305,7 +1322,9 @@ export default function ProfileSettings() {
                         }}
                         readOnly={!isEditingProfile || noMiddleName}
                         placeholder={
-                          noMiddleName ? "No middle name provided" : "Middle name"
+                          noMiddleName
+                            ? "No middle name provided"
+                            : "Middle name"
                         }
                         className={
                           isEditingProfile && !noMiddleName
@@ -1407,7 +1426,9 @@ export default function ProfileSettings() {
 
                     <div className="md:col-span-2">
                       <div className={fieldCardClass}>
-                        <label className={helperLabelClass}>Email Address</label>
+                        <label className={helperLabelClass}>
+                          Email Address
+                        </label>
                         <input
                           type="email"
                           value={profileEditor.email}
@@ -1474,7 +1495,8 @@ export default function ProfileSettings() {
                                         schoolName:
                                           schools.find(
                                             (school) =>
-                                              String(school.id) === e.target.value,
+                                              String(school.id) ===
+                                              e.target.value,
                                           )?.school_name || prev.schoolName,
                                       }));
                                       if (profileFieldErrors.schoolId) {
@@ -1484,7 +1506,9 @@ export default function ProfileSettings() {
                                         }));
                                       }
                                     }}
-                                    disabled={!isEditingProfile || schoolsLoading}
+                                    disabled={
+                                      !isEditingProfile || schoolsLoading
+                                    }
                                     className={
                                       isEditingProfile
                                         ? editableInputClass
@@ -1671,7 +1695,9 @@ export default function ProfileSettings() {
                 <div className={subtlePanelClass}>
                   <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                     <div className={fieldCardClass}>
-                      <label className={helperLabelClass}>Current Password</label>
+                      <label className={helperLabelClass}>
+                        Current Password
+                      </label>
                       <div className="relative mt-2">
                         <input
                           type={showCurrentPassword ? "text" : "password"}
@@ -1681,10 +1707,14 @@ export default function ProfileSettings() {
                         />
                         <button
                           type="button"
-                          onClick={() => setShowCurrentPassword((prev) => !prev)}
+                          onClick={() =>
+                            setShowCurrentPassword((prev) => !prev)
+                          }
                           className="absolute inset-y-0 right-0 px-3 text-[#6f86b6] transition hover:text-[#254ee5]"
                           aria-label={
-                            showCurrentPassword ? "Hide password" : "Show password"
+                            showCurrentPassword
+                              ? "Hide password"
+                              : "Show password"
                           }
                         >
                           {showCurrentPassword ? (
@@ -1738,7 +1768,9 @@ export default function ProfileSettings() {
                           onClick={() => setShowRetypePassword((prev) => !prev)}
                           className="absolute inset-y-0 right-0 px-3 text-[#6f86b6] transition hover:text-[#254ee5]"
                           aria-label={
-                            showRetypePassword ? "Hide password" : "Show password"
+                            showRetypePassword
+                              ? "Hide password"
+                              : "Show password"
                           }
                         >
                           {showRetypePassword ? (

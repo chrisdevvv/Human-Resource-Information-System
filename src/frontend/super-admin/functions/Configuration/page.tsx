@@ -32,6 +32,11 @@ type School = {
   school_code: string;
 };
 
+type District = {
+  id: number;
+  district_name: string;
+};
+
 type ConfigTab =
   | "schools"
   | "particulars"
@@ -49,6 +54,7 @@ export default function ConfigurationPage() {
   const [particularSort, setParticularSort] = useState<"a-z" | "z-a">("a-z");
   const [schools, setSchools] = useState<School[]>([]);
   const [particulars, setParticulars] = useState<string[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showEntryModal, setShowEntryModal] = useState(false);
@@ -58,6 +64,7 @@ export default function ConfigurationPage() {
     "success",
   );
   const [modalInput, setModalInput] = useState("");
+  const [selectedDistrictId, setSelectedDistrictId] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [showAddConfirm, setShowAddConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -102,7 +109,7 @@ export default function ConfigurationPage() {
       }
       particularParams.set("sortOrder", particularSort);
 
-      const [schoolsRes, particularsRes] = await Promise.all([
+      const [schoolsRes, particularsRes, districtsRes] = await Promise.all([
         fetch(
           `${API_BASE_URL}/api/schools/config/list?${schoolParams.toString()}`,
           { headers },
@@ -111,6 +118,7 @@ export default function ConfigurationPage() {
           `${API_BASE_URL}/api/leave/particulars/config?${particularParams.toString()}`,
           { headers },
         ),
+        fetch(`${API_BASE_URL}/api/districts`, { headers }),
       ]);
 
       if (schoolsRes.ok) {
@@ -134,6 +142,19 @@ export default function ConfigurationPage() {
           particularsRes.statusText,
         );
       }
+
+      if (districtsRes?.ok) {
+        const districtsData = await districtsRes.json();
+        setDistricts(
+          Array.isArray(districtsData.data) ? districtsData.data : [],
+        );
+      } else if (
+        districtsRes &&
+        districtsRes.status !== 401 &&
+        districtsRes.status !== 403
+      ) {
+        console.error("Failed to fetch districts:", districtsRes.statusText);
+      }
     } catch (err) {
       setError(
         err instanceof Error
@@ -152,6 +173,15 @@ export default function ConfigurationPage() {
     void refreshConfigurationData(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schoolSearch, schoolSort, particularSearch, particularSort]);
+
+  useEffect(() => {
+    if (showEntryModal && activeTab === "schools") {
+      setSelectedDistrictId((current) => {
+        if (current) return current;
+        return districts[0] ? String(districts[0].id) : "";
+      });
+    }
+  }, [activeTab, districts, showEntryModal]);
 
   const handleDeleteSchool = (id: number, name: string) => {
     setDeleteTarget({ id, name, type: "school" });
@@ -259,6 +289,11 @@ export default function ConfigurationPage() {
       return;
     }
 
+    if (activeTab === "schools" && !selectedDistrictId) {
+      showFeedback("error", "Please select a district");
+      return;
+    }
+
     setShowAddConfirm(true);
   };
 
@@ -295,12 +330,20 @@ export default function ConfigurationPage() {
           .toUpperCase()
           .replace(/\s+/g, "");
 
+        const districtId = Number(selectedDistrictId);
+        if (!Number.isInteger(districtId) || districtId <= 0) {
+          showFeedback("error", "Please select a valid district");
+          setIsSaving(false);
+          return;
+        }
+
         const res = await fetch(`${API_BASE_URL}/api/schools`, {
           method: "POST",
           headers,
           body: JSON.stringify({
             school_name: modalInput.trim(),
             school_code: schoolCode,
+            district_id: districtId,
           }),
         });
 
@@ -331,6 +374,7 @@ export default function ConfigurationPage() {
         }
       }
       setModalInput("");
+      setSelectedDistrictId(districts[0] ? String(districts[0].id) : "");
     } catch (err) {
       showFeedback(
         "error",
@@ -524,6 +568,25 @@ export default function ConfigurationPage() {
             </div>
             <div className="space-y-4 px-5 py-4">
               <label className="block text-sm font-medium text-gray-700">
+                {activeTab === "schools" ? "District" : "Particular Name"}
+                {activeTab === "schools" ? (
+                  <select
+                    value={selectedDistrictId}
+                    onChange={(e) => setSelectedDistrictId(e.target.value)}
+                    className="mt-1 h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    disabled={districts.length === 0 || isSaving}
+                  >
+                    <option value="">Select district</option>
+                    {districts.map((district) => (
+                      <option key={district.id} value={String(district.id)}>
+                        {district.district_name}
+                      </option>
+                    ))}
+                  </select>
+                ) : null}
+              </label>
+
+              <label className="block text-sm font-medium text-gray-700">
                 {activeTab === "schools" ? "School Name" : "Particular Name"}
                 <input
                   type="text"
@@ -543,6 +606,11 @@ export default function ConfigurationPage() {
                   disabled={isSaving}
                 />
               </label>
+              {activeTab === "schools" && districts.length === 0 ? (
+                <p className="text-xs text-red-600">
+                  No districts available. Please add a district first.
+                </p>
+              ) : null}
             </div>
             <div className="flex justify-end gap-2 border-t border-gray-200 px-5 py-4">
               <button
@@ -550,6 +618,7 @@ export default function ConfigurationPage() {
                 onClick={() => {
                   setShowEntryModal(false);
                   setModalInput("");
+                  setSelectedDistrictId("");
                 }}
                 className="cursor-pointer rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
                 disabled={isSaving}

@@ -291,6 +291,7 @@ const salaryInformationUpdateBodySchema = Joi.object({
 const schoolBodySchema = Joi.object({
   school_name: Joi.string().trim().min(1).max(255).required(),
   school_code: Joi.string().trim().min(1).max(50).required(),
+  district_id: Joi.number().integer().positive().required(),
 });
 
 const civilStatusBodySchema = Joi.object({

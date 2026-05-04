@@ -1,5 +1,6 @@
 const School = require("./schoolModel");
 const Backlog = require("../backlog/backlogModel");
+const pool = require("../../config/db");
 
 const getAllSchools = async (req, res) => {
   try {
@@ -33,6 +34,21 @@ const getSchoolById = async (req, res) => {
 
 const createSchool = async (req, res) => {
   try {
+    const districtId = Number(req.body?.district_id);
+    if (!Number.isInteger(districtId) || districtId <= 0) {
+      return res.status(400).json({ message: "district_id is required" });
+    }
+
+    const [[districtRow]] = await pool
+      .promise()
+      .query(
+        "SELECT districtId AS id FROM districts WHERE districtId = ? LIMIT 1",
+        [districtId],
+      );
+    if (!districtRow) {
+      return res.status(400).json({ message: "District not found" });
+    }
+
     const result = await School.create(req.body);
     await Backlog.record({
       user_id: req.user?.id || null,
@@ -40,7 +56,7 @@ const createSchool = async (req, res) => {
       employee_id: null,
       leave_id: null,
       action: "SCHOOL_CREATED",
-      details: `${req.body.school_name} (${req.body.school_code})`,
+      details: `${req.body.school_name} (${req.body.school_code}) - district ${districtId}`,
     });
     res
       .status(201)
@@ -85,13 +101,49 @@ const deleteSchool = async (req, res) => {
       return res.status(404).json({ message: "School not found" });
     }
 
-    const assignedEmployees = await School.countAssignedEmployees(
-      req.params.id,
-    );
-    if (assignedEmployees > 0) {
+    const schoolId = Number(req.params.id);
+
+    const countIfTableExists = async (tableName) => {
+      const [[tableRow]] = await pool.promise().query(
+        `SELECT COUNT(*) AS total
+         FROM INFORMATION_SCHEMA.TABLES
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?`,
+        [tableName],
+      );
+
+      if (!Number(tableRow?.total || 0)) {
+        return 0;
+      }
+
+      const [[countRow]] = await pool
+        .promise()
+        .query(
+          `SELECT COUNT(*) AS total FROM ${tableName} WHERE school_id = ?`,
+          [schoolId],
+        );
+
+      return Number(countRow?.total || 0);
+    };
+
+    // Check referencing records in multiple tables to provide a clear error message
+    const assignedEmployees = await School.countAssignedEmployees(schoolId);
+    const usersTotal = await countIfTableExists("users");
+    const backlogsTotal = await countIfTableExists("backlogs");
+
+    const refCounts = {
+      employees: Number(assignedEmployees || 0),
+      users: Number(usersTotal || 0),
+      backlogs: Number(backlogsTotal || 0),
+    };
+
+    const nonZero = Object.entries(refCounts).filter(([, v]) => Number(v) > 0);
+    if (nonZero.length > 0) {
+      const details = nonZero.map(([k, v]) => `${k}: ${v}`).join(", ");
       return res.status(409).json({
-        message: `Cannot delete school. ${assignedEmployees} employee record(s) are still assigned to it. Reassign employees first.`,
-        data: { assignedEmployees },
+        message:
+          "Cannot delete school because related records still reference it.",
+        data: { counts: refCounts, details },
       });
     }
 
@@ -121,7 +173,8 @@ const deleteSchool = async (req, res) => {
           "Cannot delete school because related records still reference it.",
       });
     }
-
+    // Log full error for debugging (includes SQL errors and stack trace)
+    console.error("deleteSchool error:", err);
     res
       .status(500)
       .json({ message: "Error deleting school", error: err.message });
