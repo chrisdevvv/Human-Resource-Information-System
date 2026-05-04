@@ -13,8 +13,8 @@ const { idParamSchema, schoolBodySchema } = require("../../validation/schemas");
 
 const router = express.Router();
 
-// Public endpoint - for registration form (no auth required)
-router.get("/public/list", getAllSchools);
+// Public endpoint - for registration form (requires auth for security)
+router.get("/public/list", authMiddleware, getAllSchools);
 
 // Read operations - All authenticated users
 router.get(
