@@ -117,7 +117,9 @@ export default function EServicePersonalInfo() {
       const mapped = (result.data || []).map(mapEmployeeToRecord);
 
       setEmployees(mapped);
-      setTotalItems(typeof result.total === "number" ? result.total : mapped.length);
+      setTotalItems(
+        typeof result.total === "number" ? result.total : mapped.length,
+      );
       setError(null);
     } catch (err) {
       setError(
@@ -241,7 +243,7 @@ export default function EServicePersonalInfo() {
   return (
     <div className="w-full rounded-2xl bg-gray-100 p-2 sm:p-4">
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div className="px-4 py-5 text-gray-800 sm:px-6">
+        <div className="flex flex-col gap-3 px-4 py-4 text-gray-800 sm:px-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
               <ClipboardList className="h-5 w-5" />
@@ -251,22 +253,18 @@ export default function EServicePersonalInfo() {
               E-Service Record
             </h1>
           </div>
+
+          <button
+            type="button"
+            onClick={handleOpenAdd}
+            className="hidden cursor-pointer items-center gap-1.5 rounded-lg bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-800 shadow-sm transition hover:bg-green-200 sm:text-sm md:inline-flex"
+          >
+            <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            Add New
+          </button>
         </div>
 
-        <div className="p-4 sm:p-6">
-          {/* Desktop / Tablet Header */}
-          <div className="mb-4 hidden items-center justify-between gap-4 md:flex">
-            <button
-              type="button"
-              onClick={handleOpenAdd}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-800 shadow-sm transition hover:bg-green-200 sm:text-sm"
-            >
-              <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              Add New
-            </button>
-          </div>
-
-          {/* Mobile Header */}
+        <div className="p-4 pt-2 sm:p-6 sm:pt-3">
           <div className="mb-4 md:hidden">
             <div className="rounded-2xl border border-blue-100 bg-linear-to-br from-blue-50 to-white p-3 shadow-sm">
               <div className="flex flex-col gap-2.5">
