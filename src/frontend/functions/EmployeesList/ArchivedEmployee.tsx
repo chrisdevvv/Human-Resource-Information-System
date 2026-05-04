@@ -424,7 +424,7 @@ export default function ArchivedEmployee() {
           </div>
           <button
             onClick={handleSearch}
-            className="inline-flex shrink-0 items-center gap-1 px-4 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer sm:px-5"
+            className="inline-flex shrink-0 items-center gap-1 px-4 py-1 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition font-medium text-sm cursor-pointer sm:px-5"
           >
             <Search size={14} />
             Search
@@ -437,7 +437,7 @@ export default function ArchivedEmployee() {
               onClick={handleEditToggle}
               className={`px-3 py-1.5 rounded-lg transition font-medium text-sm cursor-pointer ${
                 isEditMode
-                  ? "bg-gray-700 text-white hover:bg-gray-800"
+                  ? "bg-gray-100 text-gray-800 hover:bg-gray-200"
                   : "bg-blue-100 text-blue-800 hover:bg-blue-200"
               }`}
             >
@@ -450,7 +450,7 @@ export default function ArchivedEmployee() {
               <button
                 onClick={handleBulkUnarchiveClick}
                 disabled={selectedEmployeeIds.size === 0 || isUnarchiving}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg transition font-medium text-sm cursor-pointer bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg transition font-medium text-sm cursor-pointer bg-green-100 text-green-800 hover:bg-green-200 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Undo2 size={14} />
                 Activate Selected ({selectedEmployeeIds.size})

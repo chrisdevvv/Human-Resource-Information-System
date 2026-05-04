@@ -664,7 +664,7 @@ export default function EmployeesListLayout() {
             <button
               type="button"
               onClick={() => setIsAddEmployeeOpen(true)}
-              className="inline-flex items-center gap-1 px-5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer self-start sm:self-auto"
+              className="inline-flex items-center gap-1 px-5 py-1 bg-sky-100 text-sky-800 rounded-lg hover:bg-sky-200 transition font-medium text-sm cursor-pointer self-start sm:self-auto"
             >
               <Plus size={14} />
               Add Employee
@@ -684,7 +684,7 @@ export default function EmployeesListLayout() {
               </div>
               <button
                 onClick={handleSearch}
-                className="inline-flex items-center gap-1 px-5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+                className="inline-flex items-center gap-1 px-5 py-1 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition font-medium text-sm cursor-pointer"
               >
                 <Search size={14} />
                 Search

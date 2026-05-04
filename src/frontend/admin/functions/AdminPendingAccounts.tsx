@@ -47,8 +47,7 @@ type AdminPendingAccountsProps = {
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 export default function AdminPendingAccounts({
   onRefreshUsers,
@@ -258,7 +257,7 @@ export default function AdminPendingAccounts({
           </div>
           <button
             onClick={handleSearch}
-            className="inline-flex items-center gap-1 px-5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+            className="inline-flex items-center gap-1 px-5 py-1 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition font-medium text-sm cursor-pointer"
           >
             <Search size={14} />
             Search
@@ -569,4 +568,3 @@ export default function AdminPendingAccounts({
     </div>
   );
 }
-

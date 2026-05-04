@@ -2458,7 +2458,7 @@ export default function AddEmployeeModal({
               <button
                 type="button"
                 onClick={handleGoNext}
-                className="cursor-pointer rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700"
+                className="cursor-pointer rounded-lg bg-blue-100 px-3 py-1.5 text-sm font-medium text-blue-800 transition hover:bg-blue-200"
                 disabled={submitLoading || isConfirmOpen}
               >
                 <span className="inline-flex items-center gap-1">

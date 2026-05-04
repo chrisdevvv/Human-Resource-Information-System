@@ -688,7 +688,7 @@ export default function LogsMobile() {
           />
           <button
             onClick={() => setCurrentPage(1)}
-            className="inline-flex items-center gap-1 px-4 py-1 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer"
+            className="inline-flex items-center gap-1 px-4 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-lg hover:bg-blue-200 transition cursor-pointer"
           >
             <Search size={14} />
             Search

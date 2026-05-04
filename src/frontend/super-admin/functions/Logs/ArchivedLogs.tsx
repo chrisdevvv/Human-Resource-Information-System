@@ -402,14 +402,14 @@ export default function ArchivedLogs() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage(1)}
-              className="inline-flex items-center gap-1 px-5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer"
+              className="inline-flex items-center gap-1 px-5 py-1 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition font-medium text-sm cursor-pointer"
             >
               <Search size={14} />
               Search
             </button>
             <button
               onClick={handleGenerateArchivedReport}
-              className="inline-flex items-center gap-1 px-5 py-1 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium text-sm cursor-pointer"
+              className="inline-flex items-center gap-1 px-5 py-1 bg-emerald-100 text-emerald-800 rounded-lg hover:bg-emerald-200 transition font-medium text-sm cursor-pointer"
             >
               <FileDown size={14} />
               Generate Report

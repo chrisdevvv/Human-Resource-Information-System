@@ -460,7 +460,7 @@ export default function EmployeeLeaveManagement() {
               </div>
               <button
                 onClick={handleSearch}
-                className="inline-flex shrink-0 items-center gap-1 px-4 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm cursor-pointer sm:px-5"
+                className="inline-flex shrink-0 items-center gap-1 px-4 py-1 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition font-medium text-sm cursor-pointer sm:px-5"
               >
                 <Search size={14} />
                 Search

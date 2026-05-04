@@ -77,6 +77,10 @@ export default function LeaveManagementModal({
 
   const employeeId = leave?.employeeId ?? leave?.id ?? null;
   const employeeType = leave?.employeeType ?? "non-teaching";
+  const normalizedEmployeeType: "teaching" | "non-teaching" =
+    employeeType === "teaching-related"
+      ? "teaching"
+      : (employeeType as "teaching" | "non-teaching");
   const employeeSchool =
     employeeSchoolFromApi || (leave?.schoolName || "").trim() || "N/A";
   const [activeTab, setActiveTab] = useState<"history" | "card">("history");
@@ -575,7 +579,7 @@ export default function LeaveManagementModal({
               }`}
             >
               <FileText size={16} />
-              Leave History
+              History
             </button>
 
             <button
@@ -604,7 +608,7 @@ export default function LeaveManagementModal({
               type="button"
               onClick={handleDeleteSelectedEntries}
               disabled={activeTab !== "history" || isDeletingEntries}
-              className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-red-100 px-4 py-2 text-sm font-semibold text-red-800 transition hover:bg-red-200 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Trash2 size={16} />
               {isDeleteMode
@@ -629,7 +633,7 @@ export default function LeaveManagementModal({
                 type="button"
                 onClick={() => setIsAddOpen(true)}
                 disabled={isSaving}
-                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-800 transition hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Plus size={16} />
                 Add Leave
@@ -649,7 +653,7 @@ export default function LeaveManagementModal({
                 type="button"
                 onClick={handleDownloadPdf}
                 disabled={isSaving || pdfCooldownRemaining > 0}
-                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-800 transition hover:bg-rose-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Download size={16} />
                 {pdfCooldownRemaining > 0
@@ -797,7 +801,7 @@ export default function LeaveManagementModal({
             <PrintableLeaveCard
               ref={cardRef}
               employeeName={leave.fullName}
-              employeeType={employeeType}
+              employeeType={normalizedEmployeeType}
               rows={historyRows}
             />
           )}

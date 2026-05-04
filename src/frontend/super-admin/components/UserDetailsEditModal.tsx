@@ -747,7 +747,7 @@ export default function UserDetailsEditModal({
                   type="button"
                   onClick={onOpenAccountSettings}
                   disabled={saving}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Shield size={14} />
                   Role/Status
@@ -768,7 +768,7 @@ export default function UserDetailsEditModal({
                 type="button"
                 onClick={handleOpenSaveConfirm}
                 disabled={saving || !hasChanges}
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-800 transition hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Save size={14} />
                 {saving ? "Saving..." : "Save Changes"}

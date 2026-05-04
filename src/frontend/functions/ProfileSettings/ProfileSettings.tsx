@@ -1596,7 +1596,7 @@ export default function ProfileSettings() {
                       }}
                       className={`${actionPrimaryClass} cursor-pointer w-full sm:w-auto`}
                     >
-                      <span className="cursor-pointer inline-flex items-center gap-1.5">
+                      <span className="cursor-pointer inline-flex items-center gap-1.5 transition">
                         <Pencil size={14} />
                         Edit Profile
                       </span>

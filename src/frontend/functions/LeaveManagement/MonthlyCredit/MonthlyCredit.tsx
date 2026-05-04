@@ -575,7 +575,7 @@ export default function MonthlyCredit() {
                 type="button"
                 onClick={simulate}
                 disabled={loading}
-                className="col-span-1 cursor-pointer rounded-md bg-blue-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1 sm:text-xs"
+                className="col-span-1 cursor-pointer rounded-md bg-blue-100 px-3 py-1.5 text-[11px] font-medium text-blue-800 hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1 sm:text-xs"
               >
                 {loading ? "Processing..." : "Simulate"}
               </button>
@@ -584,7 +584,7 @@ export default function MonthlyCredit() {
                 type="button"
                 onClick={() => handleOpenAction("apply")}
                 disabled={loading || !simulationResult}
-                className="col-span-1 cursor-pointer rounded-md bg-emerald-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1 sm:text-xs"
+                className="col-span-1 cursor-pointer rounded-md bg-emerald-100 px-3 py-1.5 text-[11px] font-medium text-emerald-800 hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1 sm:text-xs"
               >
                 Apply Real Credit
               </button>
@@ -593,7 +593,7 @@ export default function MonthlyCredit() {
                 type="button"
                 onClick={() => handleOpenAction("delete")}
                 disabled={loading || !simulationResult}
-                className="col-span-2 cursor-pointer rounded-md bg-rose-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1 sm:text-xs"
+                className="col-span-2 cursor-pointer rounded-md bg-rose-100 px-3 py-1.5 text-[11px] font-medium text-rose-800 hover:bg-rose-200 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1 sm:text-xs"
               >
                 Delete Applied Credit
               </button>

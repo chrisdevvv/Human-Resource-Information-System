@@ -147,7 +147,8 @@ export default function EmployeePersonalInfoTable({
     React.useState<EmployeePersonalInfoRecord | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-  const startIndex = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const startIndex =
+    totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const endIndex = Math.min(currentPage * itemsPerPage, totalItems);
 
   const PAGE_WINDOW_SIZE = 5;
@@ -435,7 +436,7 @@ export default function EmployeePersonalInfoTable({
               <button
                 type="button"
                 onClick={onSearch}
-                className="inline-flex w-full cursor-pointer items-center justify-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700"
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-1 rounded-lg bg-blue-100 px-3 py-1.5 text-sm font-medium text-blue-800 transition hover:bg-blue-200"
               >
                 <Search className="h-3 w-3" />
                 Search
@@ -450,16 +451,20 @@ export default function EmployeePersonalInfoTable({
             <table className="w-full">
               <thead className="sticky top-0 z-10 bg-blue-100">
                 <tr>
-                  {["FULL NAME", "DEPED EMAIL", "SCHOOL", "STATUS", "ACTIONS"].map(
-                    (header) => (
-                      <th
-                        key={header}
-                        className="whitespace-nowrap px-2 py-1 text-left text-xs font-semibold uppercase tracking-wide text-blue-600"
-                      >
-                        {header}
-                      </th>
-                    ),
-                  )}
+                  {[
+                    "FULL NAME",
+                    "DEPED EMAIL",
+                    "SCHOOL",
+                    "STATUS",
+                    "ACTIONS",
+                  ].map((header) => (
+                    <th
+                      key={header}
+                      className="whitespace-nowrap px-2 py-1 text-left text-xs font-semibold uppercase tracking-wide text-blue-600"
+                    >
+                      {header}
+                    </th>
+                  ))}
                 </tr>
               </thead>
 
@@ -590,12 +595,18 @@ export default function EmployeePersonalInfoTable({
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 px-4 py-4">
-                      <MobileField label="Full Name" value={getFullName(employee)} />
+                      <MobileField
+                        label="Full Name"
+                        value={getFullName(employee)}
+                      />
                       <MobileField
                         label="DepEd Email"
                         value={employee.email || "—"}
                       />
-                      <MobileField label="School" value={employee.school || "—"} />
+                      <MobileField
+                        label="School"
+                        value={employee.school || "—"}
+                      />
                       <MobileField
                         label="Status"
                         value={employee.teacherStatus || "—"}
@@ -758,7 +769,9 @@ export default function EmployeePersonalInfoTable({
 
               <button
                 type="button"
-                onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                onClick={() =>
+                  onPageChange(Math.min(totalPages, currentPage + 1))
+                }
                 disabled={currentPage === totalPages || !hasData}
                 className="inline-flex h-6 cursor-pointer items-center justify-center gap-0.5 rounded-md border border-gray-200 bg-white px-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -872,22 +885,15 @@ function ViewEmployeeDetailsModal({
             <DetailField label="Last Name" value={employee.lastName} />
             <DetailField label="First Name" value={employee.firstName} />
             <DetailField label="Middle Name" value={employee.middleName} />
-            <DetailField label="Middle Initial" value={employee.middleInitial} />
+            <DetailField
+              label="Middle Initial"
+              value={employee.middleInitial}
+            />
             <DetailField label="Civil Status" value={employee.civilStatus} />
             <DetailField label="Sex" value={employee.gender} />
             <DetailField label="Date of Birth" value={employee.dateOfBirth} />
             <DetailField label="Place of Birth" value={employee.place} />
           </div>
-        </div>
-
-        <div className="flex justify-end border-t border-gray-200 bg-gray-50 px-5 py-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex cursor-pointer items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-          >
-            Close
-          </button>
         </div>
       </div>
     </div>

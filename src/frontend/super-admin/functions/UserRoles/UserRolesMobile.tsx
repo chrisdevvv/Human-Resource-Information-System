@@ -413,7 +413,7 @@ export default function UserRolesMobile() {
               />
               <button
                 onClick={() => setCurrentPage(1)}
-                className="inline-flex w-full sm:w-auto items-center justify-center gap-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer whitespace-nowrap"
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-1 px-4 py-2 bg-blue-100 text-blue-800 text-sm font-medium rounded-lg hover:bg-blue-200 transition cursor-pointer whitespace-nowrap"
               >
                 <Search size={14} />
                 Search

@@ -259,7 +259,7 @@ export default function EServicePersonalInfo() {
             <button
               type="button"
               onClick={handleOpenAdd}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-green-700 sm:text-sm"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-800 shadow-sm transition hover:bg-green-200 sm:text-sm"
             >
               <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               Add New

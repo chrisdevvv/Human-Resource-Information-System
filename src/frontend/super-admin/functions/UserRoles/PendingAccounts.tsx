@@ -291,7 +291,7 @@ export default function PendingAccounts({
           </div>
           <button
             onClick={handleSearch}
-            className="inline-flex w-full cursor-pointer items-center justify-center gap-1 px-4 py-2 text-sm font-medium whitespace-nowrap text-white bg-blue-600 rounded-lg transition hover:bg-blue-700 sm:w-auto"
+            className="inline-flex w-full cursor-pointer items-center justify-center gap-1 px-4 py-2 text-sm font-medium whitespace-nowrap bg-blue-100 text-blue-800 rounded-lg transition hover:bg-blue-200 sm:w-auto"
           >
             <Search size={14} />
             Search
