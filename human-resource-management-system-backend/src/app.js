@@ -2028,3 +2028,27 @@ app.listen(PORT, async () => {
     console.error("✘  MySQL connection failed:", err.message);
   }
 });
+
+// Global error handler middleware - MUST be last
+app.use((err, req, res, next) => {
+  console.error(
+    "[Error Handler]",
+    {
+      message: err.message,
+      path: req.path,
+      method: req.method,
+      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    },
+  );
+
+  const status = err.status || err.statusCode || 500;
+  const message =
+    status === 500 && process.env.NODE_ENV === "production"
+      ? "Internal server error"
+      : err.message || "An error occurred";
+
+  return res.status(status).json({
+    message,
+    ...(process.env.NODE_ENV === "development" && { error: err.message }),
+  });
+});

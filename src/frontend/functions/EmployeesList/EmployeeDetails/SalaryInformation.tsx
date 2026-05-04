@@ -142,11 +142,19 @@ const isMeaningfulText = (value: unknown): boolean => {
   return !["n/a", "na", "null", "undefined", "-", "--"].includes(lowered);
 };
 
+const cleanDisplayName = (value: unknown): string => {
+  return normalizeText(value)
+    .split(/\s+/)
+    .filter((part) => isMeaningfulText(part))
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
 const firstMeaningful = (...values: unknown[]): string => {
   for (const value of values) {
-    if (isMeaningfulText(value)) {
-      return normalizeText(value).replace(/\s+/g, " ").trim();
-    }
+    const cleaned = cleanDisplayName(value);
+    if (isMeaningfulText(cleaned)) return cleaned;
   }
   return "";
 };
@@ -216,13 +224,8 @@ const toDateOnly = (value: string | null | undefined): string => {
   const raw = String(value || "").trim();
   if (!raw) return "";
 
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-    return raw;
-  }
-
-  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
-    return raw.slice(0, 10);
-  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
 
   const parsed = new Date(raw);
   if (Number.isNaN(parsed.getTime())) return "";
@@ -246,16 +249,13 @@ const subtractOneDay = (dateString: string): string => {
 };
 
 const getSalutation = (sex: string | null | undefined): "Ms." | "Mr." => {
-  const normalized = String(sex || "")
-    .trim()
-    .toLowerCase();
+  const normalized = String(sex || "").trim().toLowerCase();
   if (normalized === "f" || normalized === "female") return "Ms.";
   return "Mr.";
 };
 
 const sanitizeFileName = (value: string) =>
-  value
-    .trim()
+  cleanDisplayName(value)
     .replace(/[^\w\s-]/g, "")
     .replace(/\s+/g, "_");
 
@@ -281,9 +281,7 @@ const getFirstMeaningfulFromSources = (
   for (const source of sources) {
     for (const path of candidatePaths) {
       const value = getValueByPath(source, path);
-      if (isMeaningfulText(value)) {
-        return normalizeText(value).replace(/\s+/g, " ").trim();
-      }
+      if (isMeaningfulText(value)) return cleanDisplayName(value);
     }
   }
   return "";
@@ -401,9 +399,7 @@ export default function SalaryInformation({
       const aDate = toDateOnly(a.salary_date);
       const bDate = toDateOnly(b.salary_date);
 
-      if (aDate !== bDate) {
-        return aDate.localeCompare(bDate);
-      }
+      if (aDate !== bDate) return aDate.localeCompare(bDate);
 
       return Number(a.id || 0) - Number(b.id || 0);
     });
@@ -470,12 +466,14 @@ export default function SalaryInformation({
         ]),
       );
 
-    return firstMeaningful(
-      fullName,
-      employeeName,
-      builtEditName,
-      builtDirectName,
-      nestedName,
+    return cleanDisplayName(
+      firstMeaningful(
+        fullName,
+        employeeName,
+        builtEditName,
+        builtDirectName,
+        nestedName,
+      ),
     );
   }, [
     fullName,
@@ -678,7 +676,7 @@ export default function SalaryInformation({
     const wholeName = firstMeaningful(resolvedEmployeeName);
     if (!wholeName) return "";
 
-    const pieces = wholeName.split(/\s+/);
+    const pieces = cleanDisplayName(wholeName).split(/\s+/);
     return pieces[pieces.length - 1] || "";
   }, [
     employeeLastName,
@@ -693,9 +691,7 @@ export default function SalaryInformation({
       (item) => Number(item.id) === Number(row.id),
     );
 
-    if (currentIndex <= 0) {
-      return 0;
-    }
+    if (currentIndex <= 0) return 0;
 
     return toMoneyNumber(sortedSalaryRows[currentIndex - 1]?.salary);
   };
@@ -774,7 +770,7 @@ export default function SalaryInformation({
       : Number((newSalary - previousSalary).toFixed(2));
 
   const salutation = getSalutation(resolvedNoticeSex);
-  const noticeLastName = resolvedNoticeLastName.replace(/\s+/g, " ").trim();
+  const noticeLastName = cleanDisplayName(resolvedNoticeLastName);
 
   const previousStepValue =
     Number(formatCellValue(activeNoticeRow?.step)) > 1
@@ -794,7 +790,7 @@ export default function SalaryInformation({
         </div>
 
         <div className="space-y-5">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
             <InfoField
               label="Date of First Appointment"
               value={formatDate(salaryDateOfFirstAppointment)}
@@ -810,7 +806,7 @@ export default function SalaryInformation({
                   type="text"
                   readOnly
                   value={formatYearsInService(salaryYearsInService)}
-                  className={`${baseInputClass} bg-gray-50 cursor-not-allowed`}
+                  className={`${baseInputClass} cursor-not-allowed bg-gray-50`}
                   title="Auto-calculated from appointment date"
                 />
                 <span
@@ -831,7 +827,7 @@ export default function SalaryInformation({
                   type="text"
                   readOnly
                   value={formatLoyaltyBonus(salaryLoyaltyBonus)}
-                  className={`${baseInputClass} bg-gray-50 cursor-not-allowed`}
+                  className={`${baseInputClass} cursor-not-allowed bg-gray-50`}
                   title="Auto-calculated from years in service"
                 />
                 <span
@@ -871,16 +867,30 @@ export default function SalaryInformation({
               <div className="overflow-x-auto">
                 <table className="w-full min-w-245 border-collapse text-sm">
                   <thead className="bg-blue-100">
-                      <tr className="border-b border-blue-200 text-xs uppercase tracking-wide text-blue-800">
-                        <th className="px-3 py-3 text-left font-semibold">Remarks</th>
-                        <th className="px-3 py-3 text-left font-semibold">Date</th>
-                        <th className="px-3 py-3 text-left font-semibold">Plantilla</th>
-                        <th className="px-3 py-3 text-left font-semibold">SG</th>
-                        <th className="px-3 py-3 text-left font-semibold">Step</th>
-                        <th className="px-3 py-3 text-right font-semibold">Salary</th>
-                        <th className="px-3 py-3 text-right font-semibold">Increment</th>
-                        <th className="px-3 py-3 text-center font-semibold">Actions</th>
-                      </tr>
+                    <tr className="border-b border-blue-200 text-xs uppercase tracking-wide text-blue-800">
+                      <th className="px-3 py-3 text-left font-semibold">
+                        Remarks
+                      </th>
+                      <th className="px-3 py-3 text-left font-semibold">
+                        Date
+                      </th>
+                      <th className="px-3 py-3 text-left font-semibold">
+                        Plantilla
+                      </th>
+                      <th className="px-3 py-3 text-left font-semibold">SG</th>
+                      <th className="px-3 py-3 text-left font-semibold">
+                        Step
+                      </th>
+                      <th className="px-3 py-3 text-right font-semibold">
+                        Salary
+                      </th>
+                      <th className="px-3 py-3 text-right font-semibold">
+                        Increment
+                      </th>
+                      <th className="px-3 py-3 text-center font-semibold">
+                        Actions
+                      </th>
+                    </tr>
                   </thead>
 
                   <tbody>
@@ -931,7 +941,9 @@ export default function SalaryInformation({
                               <td className="px-3 py-3 text-gray-700">
                                 {isEditingRow ? (
                                   <select
-                                    value={salaryHistoryEditDraft?.remarks || ""}
+                                    value={
+                                      salaryHistoryEditDraft?.remarks || ""
+                                    }
                                     onChange={(e) =>
                                       onChangeSalaryHistoryEditDraft(
                                         "remarks",
@@ -942,11 +954,13 @@ export default function SalaryInformation({
                                     className={`${tableInputClass} cursor-pointer`}
                                   >
                                     <option value="">Select remark</option>
-                                    {salaryHistoryRemarkOptions.map((option) => (
-                                      <option key={option} value={option}>
-                                        {option}
-                                      </option>
-                                    ))}
+                                    {salaryHistoryRemarkOptions.map(
+                                      (option) => (
+                                        <option key={option} value={option}>
+                                          {option}
+                                        </option>
+                                      ),
+                                    )}
                                   </select>
                                 ) : (
                                   formatCellValue(row.remarks)
@@ -976,7 +990,9 @@ export default function SalaryInformation({
                                 {isEditingRow ? (
                                   <input
                                     type="text"
-                                    value={salaryHistoryEditDraft?.plantilla || ""}
+                                    value={
+                                      salaryHistoryEditDraft?.plantilla || ""
+                                    }
                                     onChange={(e) =>
                                       onChangeSalaryHistoryEditDraft(
                                         "plantilla",
@@ -1025,7 +1041,9 @@ export default function SalaryInformation({
                                 {isEditingRow ? (
                                   <input
                                     type="number"
-                                    value={salaryHistoryEditDraft?.salary || ""}
+                                    value={
+                                      salaryHistoryEditDraft?.salary || ""
+                                    }
                                     onChange={(e) =>
                                       onChangeSalaryHistoryEditDraft(
                                         "salary",
@@ -1044,7 +1062,9 @@ export default function SalaryInformation({
 
                               <td className="px-3 py-3 text-right font-medium text-gray-900">
                                 {isEditingRow ? (
-                                  <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700">Auto</span>
+                                  <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700">
+                                    Auto
+                                  </span>
                                 ) : (
                                   formatAmountCell(row.increment_amount)
                                 )}
@@ -1102,7 +1122,7 @@ export default function SalaryInformation({
                                       disabled={Boolean(
                                         salaryHistoryCreateDraft,
                                       )}
-                                      className="cursor-pointer inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                      className="inline-flex h-8 cursor-pointer items-center justify-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
                                       title="Generate NOSI PDF"
                                     >
                                       <FileText size={13} />
@@ -1121,7 +1141,10 @@ export default function SalaryInformation({
                               <select
                                 value={salaryHistoryCreateDraft.remarks}
                                 onChange={(e) =>
-                                  onChangeSalaryHistoryDraft("remarks", e.target.value)
+                                  onChangeSalaryHistoryDraft(
+                                    "remarks",
+                                    e.target.value,
+                                  )
                                 }
                                 disabled={salaryHistoryCreating}
                                 className={`${tableInputClass} cursor-pointer`}
@@ -1140,7 +1163,10 @@ export default function SalaryInformation({
                                 type="date"
                                 value={salaryHistoryCreateDraft.date}
                                 onChange={(e) =>
-                                  onChangeSalaryHistoryDraft("date", e.target.value)
+                                  onChangeSalaryHistoryDraft(
+                                    "date",
+                                    e.target.value,
+                                  )
                                 }
                                 disabled={salaryHistoryCreating}
                                 className={tableInputClass}
@@ -1152,7 +1178,10 @@ export default function SalaryInformation({
                                 type="text"
                                 value={salaryHistoryCreateDraft.plantilla}
                                 onChange={(e) =>
-                                  onChangeSalaryHistoryDraft("plantilla", e.target.value)
+                                  onChangeSalaryHistoryDraft(
+                                    "plantilla",
+                                    e.target.value,
+                                  )
                                 }
                                 disabled={salaryHistoryCreating}
                                 placeholder="Plantilla"
@@ -1165,7 +1194,10 @@ export default function SalaryInformation({
                                 type="text"
                                 value={salaryHistoryCreateDraft.sg}
                                 onChange={(e) =>
-                                  onChangeSalaryHistoryDraft("sg", e.target.value)
+                                  onChangeSalaryHistoryDraft(
+                                    "sg",
+                                    e.target.value,
+                                  )
                                 }
                                 disabled={salaryHistoryCreating}
                                 placeholder="SG"
@@ -1174,7 +1206,9 @@ export default function SalaryInformation({
                             </td>
 
                             <td className="px-3 py-3 text-gray-700">
-                              <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700">Auto</span>
+                              <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700">
+                                Auto
+                              </span>
                             </td>
 
                             <td className="px-3 py-3">
@@ -1182,7 +1216,10 @@ export default function SalaryInformation({
                                 type="number"
                                 value={salaryHistoryCreateDraft.salary}
                                 onChange={(e) =>
-                                  onChangeSalaryHistoryDraft("salary", e.target.value)
+                                  onChangeSalaryHistoryDraft(
+                                    "salary",
+                                    e.target.value,
+                                  )
                                 }
                                 disabled={salaryHistoryCreating}
                                 min="0"
@@ -1193,7 +1230,9 @@ export default function SalaryInformation({
                             </td>
 
                             <td className="px-3 py-3">
-                              <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700">Auto</span>
+                              <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700">
+                                Auto
+                              </span>
                             </td>
 
                             <td className="px-3 py-3">
@@ -1241,7 +1280,8 @@ export default function SalaryInformation({
 
             {salaryHistoryCreateDraft ? (
               <p className="mt-3 rounded-lg border border-blue-100 bg-white px-3 py-2 text-xs text-gray-500">
-                Step and Increment are auto-calculated by the server. Increment is not editable from the UI.
+                Step and Increment are auto-calculated by the server. Increment
+                is not editable from the UI.
               </p>
             ) : null}
           </div>
@@ -1455,6 +1495,7 @@ export default function SalaryInformation({
                             follows:
                           </p>
                         </div>
+
                         <div style={{ marginTop: "10mm" }}>
                           <div
                             style={{
@@ -1480,6 +1521,7 @@ export default function SalaryInformation({
                               P {formatNoticeCurrency(previousSalary)}
                             </div>
                           </div>
+
                           <div
                             style={{
                               display: "grid",
@@ -1498,6 +1540,7 @@ export default function SalaryInformation({
                               P {formatNoticeCurrency(incrementAmount)}
                             </div>
                           </div>
+
                           <div
                             style={{
                               display: "grid",
@@ -1619,7 +1662,7 @@ export default function SalaryInformation({
                 type="button"
                 onClick={closeNoticeModal}
                 disabled={isDownloadingPdf}
-                className="cursor-pointer inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -1628,7 +1671,7 @@ export default function SalaryInformation({
                 type="button"
                 onClick={handleDownloadPdf}
                 disabled={isDownloadingPdf}
-                className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <FileText size={16} />
                 {isDownloadingPdf ? "Generating PDF..." : "Download PDF"}

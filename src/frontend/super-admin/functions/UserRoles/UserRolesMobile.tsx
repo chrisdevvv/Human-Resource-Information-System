@@ -167,10 +167,15 @@ export default function UserRolesMobile() {
 
       try {
         setSchoolsLoading(true);
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          throw new Error("No authentication token found.");
+        }
         const response = await fetch(`${API_BASE}/api/schools/public/list`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
         });
 
