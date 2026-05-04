@@ -445,3 +445,55 @@ const EService = {
 };
 
 module.exports = EService;
+
+// ---------------------------------------------------------------------------
+// Additional helpers used by the service-record email endpoint
+// ---------------------------------------------------------------------------
+
+EService.getByEmail = async (email) => {
+  const normalized = normalizeOptionalEmail(email);
+  if (!normalized) return null;
+
+  const [rows] = await pool.query(
+    `SELECT id, firstName, lastName, middleName, middle_initial, MISR, email, dateOfBirth, place, district, school, gender, civilStatus
+     FROM emppersonalinfo
+     WHERE LOWER(TRIM(email)) = ?
+     LIMIT 1`,
+    [normalized],
+  );
+
+  return rows[0] || null;
+};
+
+EService.getServiceRecordsByEmpId = async (empId) => {
+  const [rows] = await pool.query(
+    `SELECT * FROM servicerecord WHERE empId = ? ORDER BY dateStart ASC`,
+    [String(empId)],
+  );
+  return rows || [];
+};
+
+EService.getAdministrativeOfficerBySchool = async (school) => {
+  if (!school) return null;
+  const [rows] = await pool.query(
+    `SELECT AOName FROM administrativeofficer WHERE AOStation = ? ORDER BY AOId DESC LIMIT 1`,
+    [school],
+  );
+  return rows && rows[0] ? rows[0].AOName : null;
+};
+
+EService.insertLogServiceRequest = async (email, dateLabel, timeLabel) => {
+  const adminName = 'Non-admin';
+  const description = 'Requested a service record';
+  const action = 'Request';
+  try {
+    await pool.query(
+      `INSERT INTO logs (admin_name, email, description, action, AddedData, previousData, ChangedData, date, time)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [adminName, email, description, action, '-', '-', '-', dateLabel, timeLabel],
+    );
+  } catch (err) {
+    // Don't fail the whole flow just because logging failed
+    console.warn('[ESERVICE] Failed to insert service-record log:', err.message);
+  }
+};

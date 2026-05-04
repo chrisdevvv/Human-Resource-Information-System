@@ -1480,7 +1480,7 @@ export default function SalaryInformation({
                             textAlign: "justify",
                           }}
                         >
-                          <p style={{ margin: 0 }}>
+                          <p style={{ margin: 0, textIndent: "12mm" }}>
                             Pursuant to Joint Civil Service Commission (CSC) and
                             Department of Budget and Management Circular No. 1
                             dated September 3, 2012, implementing item (4)(d) of
@@ -1503,21 +1503,44 @@ export default function SalaryInformation({
                               gridTemplateColumns: "1fr auto auto",
                               columnGap: "6mm",
                               alignItems: "start",
+                              marginBottom: "4mm",
                             }}
                           >
                             <div>
-                              <p style={{ margin: 0 }}>
+                              <p
+                                style={{
+                                  margin: 0,
+                                  textDecoration: "underline",
+                                }}
+                              >
                                 1. Actual Monthly basic salary as of
                               </p>
-                              <p style={{ margin: 0, paddingLeft: "12mm" }}>
-                                SG-{formatCellValue(resolvedCurrentSalaryGrade)}{" "}
+                              <p
+                                style={{
+                                  margin: 0,
+                                  paddingLeft: "12mm",
+                                  textDecoration: "underline",
+                                }}
+                              >
+                                SG-
+                                {formatCellValue(resolvedCurrentSalaryGrade)}{" "}
                                 Step {previousStepValue}
                               </p>
                             </div>
-                            <div style={{ whiteSpace: "nowrap" }}>
+                            <div
+                              style={{
+                                whiteSpace: "nowrap",
+                                textDecoration: "underline",
+                              }}
+                            >
                               {formatDateCell(previousDate)}
                             </div>
-                            <div style={{ whiteSpace: "nowrap" }}>
+                            <div
+                              style={{
+                                whiteSpace: "nowrap",
+                                textDecoration: "underline",
+                              }}
+                            >
                               P {formatNoticeCurrency(previousSalary)}
                             </div>
                           </div>
@@ -1528,15 +1551,25 @@ export default function SalaryInformation({
                               gridTemplateColumns: "1fr auto",
                               columnGap: "6mm",
                               alignItems: "start",
-                              marginTop: 0,
+                              marginBottom: "4mm",
                             }}
                           >
                             <div>
-                              <p style={{ margin: 0 }}>
+                              <p
+                                style={{
+                                  margin: 0,
+                                  textDecoration: "underline",
+                                }}
+                              >
                                 2. Add ( 1 ) step increment
                               </p>
                             </div>
-                            <div style={{ whiteSpace: "nowrap" }}>
+                            <div
+                              style={{
+                                whiteSpace: "nowrap",
+                                textDecoration: "underline",
+                              }}
+                            >
                               P {formatNoticeCurrency(incrementAmount)}
                             </div>
                           </div>
@@ -1547,18 +1580,32 @@ export default function SalaryInformation({
                               gridTemplateColumns: "1fr auto auto",
                               columnGap: "6mm",
                               alignItems: "start",
-                              marginTop: 0,
                             }}
                           >
                             <div>
-                              <p style={{ margin: 0 }}>
+                              <p
+                                style={{
+                                  margin: 0,
+                                  textDecoration: "underline",
+                                }}
+                              >
                                 3. Adjusted monthly basic salary effective
                               </p>
                             </div>
-                            <div style={{ whiteSpace: "nowrap" }}>
+                            <div
+                              style={{
+                                whiteSpace: "nowrap",
+                                textDecoration: "underline",
+                              }}
+                            >
                               {formatDateCell(activeNoticeEffectivityDate)}
                             </div>
-                            <div style={{ whiteSpace: "nowrap" }}>
+                            <div
+                              style={{
+                                whiteSpace: "nowrap",
+                                textDecoration: "underline",
+                              }}
+                            >
                               P {formatNoticeCurrency(newSalary)}
                             </div>
                           </div>
@@ -1570,71 +1617,82 @@ export default function SalaryInformation({
                             textAlign: "justify",
                           }}
                         >
-                          <p style={{ margin: 0 }}>
+                          <p style={{ margin: 0, textIndent: "12mm" }}>
                             This salary adjustment is subject to review and post
                             audit, and to appropriate re-adjustment and refund
                             if found not in order.
                           </p>
                         </div>
+
+                        <table
+                          style={{
+                            width: "100%",
+                            marginTop: "8mm",
+                            borderCollapse: "collapse",
+                            border: 0,
+                          }}
+                        >
+                          <tbody>
+                            <tr>
+                              <td
+                                style={{
+                                  width: "50%",
+                                  border: 0,
+                                  padding: 0,
+                                }}
+                              />
+                              <td
+                                style={{
+                                  width: "50%",
+                                  border: 0,
+                                  padding: 0,
+                                  textAlign: "center",
+                                  verticalAlign: "top",
+                                }}
+                              >
+                                <p style={{ margin: 0, textAlign: "center" }}>
+                                  Very truly yours,
+                                </p>
+
+                                <div style={{ height: "21mm" }} />
+
+                                <p
+                                  style={{
+                                    margin: 0,
+                                    fontFamily: DOCUMENT_FONT,
+                                    fontSize: "12pt",
+                                    fontWeight: 700,
+                                    textTransform: "uppercase",
+                                    wordBreak: "break-word",
+                                    overflowWrap: "anywhere",
+                                    whiteSpace: "normal",
+                                    textAlign: "center",
+                                  }}
+                                >
+                                  {noticeModal.headOfAgencyName || "-"}
+                                </p>
+
+                                <p
+                                  style={{
+                                    margin: 0,
+                                    fontFamily: DOCUMENT_FONT,
+                                    fontSize: "12pt",
+                                    wordBreak: "break-word",
+                                    overflowWrap: "anywhere",
+                                    whiteSpace: "normal",
+                                    textAlign: "center",
+                                  }}
+                                >
+                                  {noticeModal.headOfAgencyTitle || "-"}
+                                </p>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
                       </div>
 
                       <div>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "flex-end",
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: "72mm",
-                              textAlign: "center",
-                              overflow: "visible",
-                            }}
-                          >
-                            <p style={{ margin: 0, textAlign: "right" }}>
-                              Very truly yours,
-                            </p>
-                            <div style={{ height: "25mm" }} />
-                            <div
-                              style={{
-                                marginLeft: "auto",
-                                width: "fit-content",
-                              }}
-                            >
-                              <p
-                                style={{
-                                  margin: 0,
-                                  fontFamily: DOCUMENT_FONT,
-                                  fontSize: "12pt",
-                                  fontWeight: 700,
-                                  textTransform: "uppercase",
-                                  wordBreak: "break-word",
-                                  overflowWrap: "anywhere",
-                                  whiteSpace: "normal",
-                                  textAlign: "center",
-                                }}
-                              >
-                                {noticeModal.headOfAgencyName || "-"}
-                              </p>
-                              <p
-                                style={{
-                                  margin: 0,
-                                  fontFamily: DOCUMENT_FONT,
-                                  fontSize: "12pt",
-                                  wordBreak: "break-word",
-                                  overflowWrap: "anywhere",
-                                  whiteSpace: "normal",
-                                  textAlign: "center",
-                                }}
-                              >
-                                {noticeModal.headOfAgencyTitle || "-"}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div style={{ marginTop: "12mm" }}>
+                        <div style={{ marginTop: "-20mm" }}>
                           <p style={{ margin: 0 }}>
                             Item No./Unique Item No, FY{" "}
                             {activeNoticeEffectivityDate
@@ -1646,8 +1704,10 @@ export default function SalaryInformation({
                           </p>
                           <p style={{ margin: 0 }}>
                             And/or Plantilla of Personnel{" "}
-                            {resolvedCurrentPlantilla ||
-                              formatCellValue(activeNoticeRow.plantilla)}
+                            <span style={{ textDecoration: "underline" }}>
+                              {resolvedCurrentPlantilla ||
+                                formatCellValue(activeNoticeRow.plantilla)}
+                            </span>
                           </p>
                         </div>
                       </div>
